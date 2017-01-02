@@ -440,7 +440,7 @@ module Min2 (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP 
 				
 		let updateMap : map_t -> frontier list -> (Cs.t * eval) list -> map_t
 			= if String.compare LP.name "Glpk" = 0
-			 then updateMap_desespoir
+			 then updateMap_v2
 			 else if String.compare LP.name "Splx" = 0
 			 	then updateMap_v2
 			 	else Pervasives.invalid_arg "Min.updateMap: name"
