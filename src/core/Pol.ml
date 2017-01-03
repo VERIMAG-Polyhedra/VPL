@@ -1030,4 +1030,15 @@ let plot_opt : 'c t option -> string
 	= function
 	| None -> "P = Polyhedron(eqns = [1,0])"
 	| Some p -> plot p
-	
+
+let to_unit : 'c t -> unit t
+	= fun ph ->
+	{
+		eqs = List.map
+			(fun (var, (cstr, _)) -> (var, (cstr,())))
+			(get_eqs ph);
+		ineqs = List.map
+			(fun (cstr, _) -> (cstr,()))
+			(get_ineqs ph);
+	}
+

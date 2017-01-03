@@ -9,19 +9,7 @@ module Coeff = Scalar.Rat
 
 module CW = CWrappers
 
-module type Factory_T = sig
-	type t
-	
-	val factory : t Pol.Cert.t
-	
-	val mk : Pol.Cs.t -> t Pol.Cons.t
-	
-	val check : t Pol.t -> bool
-	
-	val equal : Pol.Cs.t -> t -> bool
-end
-
-module Polyhedron (F : Factory_T) = struct
+module Polyhedron (F : Factory.Type) = struct
 	
 	type t = 
 		| NonBot of F.t Pol.t
@@ -184,71 +172,6 @@ module Polyhedron (F : Factory_T) = struct
 
 end
 
-module Factory_Cstr = struct
-	
-	type t = Pol.Cs.t
-
-	module Cert = Pol.Cert
-
-	let factory : t Cert.t = { 
-		Cert.name = "Cstr"; 
-		Cert.top = (Cs.mk Cstr.Eq [] Scalar.Rat.z);
-		Cert.triv = (fun cmp n -> Cs.mk cmp [] n);
-		Cert.add = Cs.add;    
-		Cert.mul = Cs.mulc;
-		Cert.to_le = (fun c -> {c with Cs.typ = Cstr.Le});
-		Cert.merge = (fun c1 c2 ->
-			let c1' = {c1 with Cs.typ = Cstr.Eq}
-			and c2' = {c2 with Cs.typ = Cstr.Eq} in
-			if Cs.equal c1' c2'
-			then c1'
-			else failwith "merge"); 
-		Cert.to_string = Cs.to_string Cs.Vec.V.to_string;
-		Cert.rename = Cs.rename;
-	}
-
-	let mk : Pol.Cs.t -> t Pol.Cons.t
-		= fun cs -> (cs,cs)
-	
-	let check : t Pol.t -> bool
-		= fun p ->
-		List.for_all 
-			(fun (c,cert) -> Cs.equal c cert)
-			(Pol.get_cons p)
-		
-	let equal : Pol.Cs.t -> t -> bool
-		= fun cs cert ->
-		Cs.equalSyn cs cert
-end
-
-module Factory_Unit = struct
-	
-	type t = unit
-
-	module Cert = Pol.Cert
-
-	let factory : t Cert.t = { 
-		Cert.name = "Unit"; 
-		Cert.top = ();
-		Cert.triv = (fun _ _ -> ());
-		Cert.add = (fun _ _ -> ());  
-		Cert.mul = (fun _ _ -> ());
-		Cert.to_le = (fun _ -> ());
-		Cert.merge = (fun _ _ -> ());
-		Cert.to_string = (fun _ -> "unit");
-		Cert.rename = (fun _ _ _ -> ());
-	}
-
-	let mk : Pol.Cs.t -> t Pol.Cons.t
-		= fun cs -> (cs,())
-	
-	let check : t Pol.t -> bool
-		= fun _ -> true
-		
-	let equal : Pol.Cs.t -> t -> bool
-		= fun _ _ -> true
-end
-
 let translate_cstr : Cs.t -> Vec.t -> Cs.t
 	= fun cstr vec ->
 	let v = Cs.get_v cstr in
@@ -264,7 +187,7 @@ let translate_cstr : Cs.t -> Vec.t -> Cs.t
 (** High level domain with ocaml verification of certificates. *)
 module NCVPL_Cstr = struct
 	module P = struct
-		include Polyhedron (Factory_Cstr)
+		include Polyhedron (Factory.Cstr)
 		
 		let translate : t -> Vec.t -> t
 			= fun pol vec ->
@@ -281,7 +204,24 @@ module NCVPL_Cstr = struct
 						(fun (cstr, cert) -> (translate_cstr cstr vec, translate_cstr cert vec)) 
 						ineqs;
 				}
+		
+		(** Careful : addNLM is UNcertified. *)
+		let addNLM : t -> CP.t list -> t
+			= fun p cps ->
+			match p with
+			| Bottom -> Bottom
+			| NonBot pol -> match Lin.addPolyM Factory.Cstr.factory pol cps with
+				| None -> Bottom
+				| Some pol' -> NonBot {
+					Pol.eqs = List.map
+						(fun (var, (cstr, _)) -> (var, Factory.Cstr.mk cstr))
+						(Pol.get_eqs pol');
+					Pol.ineqs = List.map
+						(fun (cstr, _) -> Factory.Cstr.mk cstr)
+						(Pol.get_ineqs pol');
+					}
 			
+				
 	end
 	module I = NCInterface.Interface (P)
 	module I_Q = I.QInterface
@@ -294,23 +234,30 @@ end
 (** High level domain with NO certificates. *)
 module NCVPL_Unit = struct
 	module P = struct
-		include Polyhedron (Factory_Unit)
+		include Polyhedron (Factory.Unit)
 		
 		let translate : t -> Vec.t -> t
 			= fun pol vec ->
 			match pol with
 			| Bottom -> Bottom
 			| NonBot pol ->
-				let eqs = Pol.get_eqs pol in
-				let ineqs = Pol.get_ineqs pol in
 				NonBot {
 					Pol.eqs = List.map 
 						(fun (v,(cstr, cert)) -> (v, (translate_cstr cstr vec, cert))) 
-						eqs;
+						(Pol.get_eqs pol);
 					Pol.ineqs = List.map 
 						(fun (cstr, cert) -> (translate_cstr cstr vec, cert)) 
-						ineqs;
+						(Pol.get_ineqs pol);
 				}
+		
+		let addNLM : t -> CP.t list -> t
+			= fun p cps ->
+			match p with
+			| Bottom -> Bottom
+			| NonBot pol -> match Lin.addPolyM Factory.Unit.factory pol cps with
+				| None -> Bottom
+				| Some pol' -> NonBot pol'
+			
 	end
 	module I = NCInterface.Interface (P)
 	module I_Q = I.QInterface

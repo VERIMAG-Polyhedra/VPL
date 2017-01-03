@@ -189,3 +189,4 @@ val inter : 'c t -> 'c t -> 'c t option
 *)
 val equal : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> bool
 
+val to_unit : 'c t -> unit t

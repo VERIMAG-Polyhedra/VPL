@@ -19,5 +19,5 @@ Calculator
 UserInterface_debug
 ASTCert ASTDomain
 PoltoPLP
-Handelman HOracle_backend
-Smtlib_build Smtlib_lex Smtlib_parse Smtlib_syntax Smtlib_util Lin
+Handelman HOracle_backend Lin Factory
+Smtlib_build Smtlib_lex Smtlib_parse Smtlib_syntax Smtlib_util 

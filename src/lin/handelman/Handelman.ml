@@ -356,8 +356,22 @@ module Handelman (Minimization : Min.Type) = struct
 	= fun i -> match i with 
 	| j when j = Sys.sigalrm -> Pervasives.failwith "Timeout"
 	| _ -> Pervasives.failwith (Printf.sprintf "Signal %s received" (string_of_int i))
-				
-	module Pb = struct
+	
+	module type Type = sig
+		type t = {
+			ph : unit HPol.t ; 
+			g : Poly.t;
+		}
+
+		val mkHPol : 'c Pol.t -> unit HPol.t
+		
+		(** Used for Coq only *)
+		val run_oracle : 'c Pol.t -> CP.t -> (CP.t * Hi.Cert.schweighofer list) list option
+			
+		val run : 'c Pol.t -> CP.t list -> t
+	end
+	
+	module Pb : Type = struct
   		
 	  	let running_time : float Pervasives.ref
 	  		= Pervasives.ref 0.0
@@ -483,6 +497,13 @@ module Handelman (Minimization : Min.Type) = struct
 			| j when j = Sys.sigalrm -> Pervasives.failwith "Timeout"
 			| _ -> Pervasives.failwith (Printf.sprintf "Signal %s received" (string_of_int i))
 		
+		let mkHPol : 'c Pol.t -> unit HPol.t
+			= fun phPol ->
+			let phPol_unit = Pol.to_unit phPol in
+			let ph = new HPol.t in
+			ph#mkPol phPol_unit;
+			ph
+		
 		(** Used for Coq only *)
 		let run_oracle : 'c Pol.t -> CP.t -> (CP.t * Hi.Cert.schweighofer list) list option
 			= fun phPol poly ->
@@ -491,8 +512,7 @@ module Handelman (Minimization : Min.Type) = struct
 				(lazy (Printf.sprintf "Polyhedron %s and polynomial constraint %s"
 				(Pol.to_string Cs.Vec.V.to_string phPol)
 				(CP.to_string poly)));
-			let ph = new HPol.t in
-			ph#mkPol phPol;
+			let ph = mkHPol phPol in
 			let pl' = rewrite_polynomials phPol [poly] (* rewritting w.r.t equalities in phPol *)
 				|> List.fold_left 
 					(fun res cp -> (HOtypes.Pneuma.neg_poly cp) @ res) []
@@ -513,8 +533,7 @@ module Handelman (Minimization : Min.Type) = struct
 				(lazy (Printf.sprintf "Polyhedron %s and polynomial constraints %s"
 				(Pol.to_string Cs.Vec.V.to_string phPol)
 				(Misc.list_to_string CP.to_string pl " ; ")));
-			let ph = new HPol.t in
-			ph#mkPol phPol;
+			let ph = mkHPol phPol in
 			let pl' = rewrite_polynomials phPol pl (* rewritting w.r.t equalities in phPol *)
 				|> List.fold_left 
 					(fun res cp -> (HOtypes.Pneuma.neg_poly cp) @ res) []
@@ -541,6 +560,7 @@ module Handelman (Minimization : Min.Type) = struct
 			| _ -> List.nth res ((List.length res)-1)
 				
 		end
+		
 end
 
 
