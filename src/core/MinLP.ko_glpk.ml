@@ -29,6 +29,17 @@ module Debug = DebugTypes.Debug(struct let name = "MinLP" end)
 module Stat = struct
 		
 	module Glpk = struct
+		
+		let enabled : bool ref = ref false
+		
+		let enable : unit -> unit
+			= fun _b ->
+			enabled := true
+			
+		let disable : unit -> unit
+			= fun _b ->
+			enabled := false
+		
 		let n_lp : int ref = ref 0
 		
 		let size_lp : int ref = ref 0
@@ -38,16 +49,29 @@ module Stat = struct
 			n_lp := 0;
 			size_lp := 0
 		
+		
 		let incr_size : int -> unit
 			= fun size ->
-			size_lp := !size_lp + size 
+			if !enabled
+			then size_lp := !size_lp + size 
 		
 		let incr : unit -> unit
 			= fun () ->
-			n_lp := !n_lp + 1
+			if !enabled
+			then n_lp := !n_lp + 1
 	end
 	
 	module Splx = struct
+		let enabled : bool ref = ref false
+		
+		let enable : unit -> unit
+			= fun _b ->
+			enabled := true
+			
+		let disable : unit -> unit
+			= fun _b ->
+			enabled := false
+		
 		let n_lp : int ref = ref 0
 		
 		let size_lp : int ref = ref 0
@@ -57,13 +81,16 @@ module Stat = struct
 			n_lp := 0;
 			size_lp := 0
 		
+		
 		let incr_size : int -> unit
 			= fun size ->
-			size_lp := !size_lp + size 
+			if !enabled
+			then size_lp := !size_lp + size 
 		
 		let incr : unit -> unit
 			= fun () ->
-			n_lp := !n_lp + 1
+			if !enabled
+			then n_lp := !n_lp + 1
 	end
 end
 
