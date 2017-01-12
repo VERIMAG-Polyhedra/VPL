@@ -70,7 +70,22 @@ module Interface (Coeff : Scalar.Type) = struct
 
 		val to_term: t -> Term.t
 	end
+	
+	(** If you want to use directly the VPL datatypes, instanciate the functor Interface with this module Expr.*)
+	module VPL_Expr = struct
+		module Ident = struct
+			include Var
+			let compare x y = cmp x y
+			
+			let toVar x = x
+		end
 		
+		type t = Term.t
+		
+		exception Out_of_Scope
+		let to_term x = x
+	end
+	
 	module Interface (I : HighLevelDomain)(Expr : Expr_t) = struct
 		
 		type t = {
@@ -121,22 +136,25 @@ module Interface (Coeff : Scalar.Type) = struct
 		module Track = struct
 			let is_bottom : t -> unit
 				= fun p ->
-				Printf.sprintf "is_bottom %s" p.name
+				Printf.sprintf "%s %s" Symbols.s_is_bottom p.name
 				|> Record.write
 			
 			let assume : Cond.t -> t -> string
 				= fun cond p ->
 				let next = Names.mk() in
-				Printf.sprintf "%s := %s && %s"
+				Printf.sprintf "%s %s %s %s %s"
 					next 
+					Symbols.s_assign
 					p.name
+					Symbols.s_meet
 					(Cond.to_string Pol.Var.to_string cond)
 				|> Record.write;
 				next
 			
 			let asserts : Cond.t -> t -> unit
 				= fun cond p ->
-				Printf.sprintf "assert %s in %s"
+				Printf.sprintf "%s %s in %s"
+					Symbols.s_assert
 					(Cond.to_string Pol.Var.to_string cond)
 					p.name
 				|> Record.write
@@ -145,8 +163,9 @@ module Interface (Coeff : Scalar.Type) = struct
 				= let assign_to_string : (Var.t * Term.t) list -> string
 					= fun l ->
 					List.map 
-						(fun (v,t) -> Printf.sprintf "%s := %s" 
+						(fun (v,t) -> Printf.sprintf "%s %s %s" 
 							(Var.to_string v)
+							Symbols.s_assign
 							(Term.to_string Var.to_string t))
 						l
 					|> String.concat ", "
@@ -154,8 +173,9 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun l p ->
 				let next = Names.mk() in
-				Printf.sprintf "%s := %s in %s"
+				Printf.sprintf "%s %s %s in %s"
 					next 
+					Symbols.s_assign
 					(assign_to_string l)
 					p.name
 				|> Record.write;
@@ -171,16 +191,16 @@ module Interface (Coeff : Scalar.Type) = struct
 			let meet : t -> t -> string
 				= fun p1 p2 ->
 				let next = Names.mk() in
-				Printf.sprintf "%s := %s && %s"
-					next p1.name p2.name
+				Printf.sprintf "%s %s %s && %s"
+					next Symbols.s_assign p1.name p2.name
 				|> Record.write;
 				next
 			
 			let join : t -> t -> string
 				= fun p1 p2 ->
 				let next = Names.mk() in
-				Printf.sprintf "%s := %s || %s"
-					next p1.name p2.name
+				Printf.sprintf "%s %s %s %s %s"
+					next Symbols.s_assign p1.name Symbols.s_join p2.name
 				|> Record.write;
 				next
 			
@@ -192,39 +212,50 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun vars p ->
 				let next = Names.mk() in
-				Printf.sprintf "%s := %s |- %s"
-					next p.name (print_vars vars)
+				Printf.sprintf "%s %s %s %s %s"
+					next Symbols.s_assign p.name Symbols.s_project (print_vars vars)
 				|> Record.write;
 				next
 			
 			let widen : t -> t -> string
 				= fun p1 p2 ->
 				let next = Names.mk() in
-				Printf.sprintf "%s := %s widen %s"
-					next p1.name p2.name
+				Printf.sprintf "%s %s %s %s %s"
+					next Symbols.s_assign p1.name Symbols.s_widen p2.name
 				|> Record.write;
 				next
 			
 			let leq : t -> t -> unit
 				= fun p1 p2 ->
-				Printf.sprintf "%s ⊂ %s" p1.name p2.name
+				Printf.sprintf "%s %s %s" p1.name Symbols.s_includes p2.name
 				|> Record.write
 			
 			let getUpperBound : t -> Term.t -> unit
 				= fun p t ->
-				Printf.sprintf "upper_bound %s in %s" (Term.to_string Var.to_string t) p.name
+				Printf.sprintf "%s %s in %s" 
+					Symbols.s_upper_bound (Term.to_string Var.to_string t) p.name
 				|> Record.write
 			
 			let getLowerBound : t -> Term.t -> unit
 				= fun p t ->
-				Printf.sprintf "lower_bound %s in %s" (Term.to_string Var.to_string t) p.name
+				Printf.sprintf "%s %s in %s" 
+					Symbols.s_lower_bound (Term.to_string Var.to_string t) p.name
 				|> Record.write
 			
 			let itvize : t -> Term.t -> unit
 				= fun p t ->
-				Printf.sprintf "itv %s in %s" (Term.to_string Var.to_string t) p.name
+				Printf.sprintf "%s %s in %s" Symbols.s_itv (Term.to_string Var.to_string t) p.name
 				|> Record.write
-				
+			
+			let translate : t -> Pol.Cs.Vec.t -> string
+				= fun p vec ->
+				let next = Names.mk() in
+				Printf.sprintf "%s %s %s %s %s"
+					next Symbols.s_assign p.name Symbols.s_translate 
+					(Pol.Cs.Vec.to_string Pol.Cs.Vec.V.to_string vec)
+				|> Record.write;
+				next
+					
 		end
 		
 		let mk: string -> I.t -> t
@@ -410,7 +441,7 @@ module Interface (Coeff : Scalar.Type) = struct
 				Pervasives.raise ReportHandled
 			end
                           
-                type rep = I.rep  
+		type rep = I.rep  
                           
 		let backend_rep 
 			= let backend_rep' : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option
@@ -423,7 +454,21 @@ module Interface (Coeff : Scalar.Type) = struct
 				report e;
 				Pervasives.raise ReportHandled
 			end
+		
+		let translate : t -> Pol.Cs.Vec.t -> t
+			= let translate' : t -> Pol.Cs.Vec.t -> t
+				= fun p vec ->
+				let name = Track.translate p vec in
+				mk name (I.translate p.value vec)
+			in
+			fun p vec ->
+			try translate' p vec
+			with e -> begin
+				report e;
+				Pervasives.raise ReportHandled
+			end
 			
+		
 		module User = struct
 		
 			let assume: UserCond.t -> t -> t

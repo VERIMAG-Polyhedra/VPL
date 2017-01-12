@@ -95,7 +95,7 @@ module Interface (Coeff : Scalar.Type) = struct
 		val to_term: t -> Term.t
 	end
 	
-	(** If you want to use directly the VPL datatypes, instianciate the functor Interface with this module Expr.*)
+	(** If you want to use directly the VPL datatypes, instanciate the functor Interface with this module Expr.*)
 	module VPL_Expr = struct
 		module Ident = struct
 			include Var

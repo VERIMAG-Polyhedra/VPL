@@ -32,8 +32,8 @@ type cmpT = Cstr.cmpT_extended
 type binl = AND | OR
 
 let binl_to_string = function
-	| AND -> "∧"
-	| OR -> "∨"
+	| AND -> Symbols.s_and
+	| OR -> Symbols.s_or
 
 module CP = CstrPoly.Positive
 module Polynomial = CP.Poly
@@ -162,7 +162,7 @@ module Interface (Coeff: Scalar.Type) = struct
       	(Term.to_string varPr t1) (Cstr.cmpT_extended_to_string cmp) (Term.to_string varPr t2)
       | BinL (c1, bin, c2) -> Printf.sprintf "(%s %s %s)"
       	(to_string varPr c1) (binl_to_string bin) (to_string varPr c2)
-      | Not c -> Printf.sprintf "¬ (%s)" (to_string varPr c)
+      | Not c -> Printf.sprintf "%s (%s)" Symbols.s_not (to_string varPr c)
   end
 		
   (* je coupe "Type" en 2 (avec renommage en Domain) *)

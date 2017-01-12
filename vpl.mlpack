@@ -16,7 +16,7 @@ CoqPr PedraQ ASAtomicCond ConsSet DomainFunctors PedraQBackend PedraQOracles Ped
 ASCond ASTerm Itv NumC CstrC LinTerm CstrLCF LinearizeBackend ZNoneItv ProgVar
 Ascii BinInt BinNat BinNums BinPos BinPosDef CoqAddOn Datatypes Debugging DomainGCL DomainInterfaces Equalities FMapPositive Impure ImpureConfig List0 MSetPositive Nat0 PositiveMapAddOn PredTrans QArith_base Qcanon Qreduction Qround Ring_polynom Ring_polynom_AddOn Ring_polynom_AddOnQ FMapAVL FMapList Int Specif String0 ZArith_dec Zbool ZNone CertcheckerConfig PeanoNat CIndex Map_poly OrderedType OrdersTac Compare_dec
 Calculator
-UserInterface_debug
+UserInterface_debug Symbols
 ASTCert ASTDomain
 PoltoPLP
 Handelman HOracle_backend Lin Factory

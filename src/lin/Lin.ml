@@ -8,7 +8,7 @@ let addPolyM : 'a Pol.Cert.t -> 'a Pol.t -> CP.t list -> Factory.Unit.t Pol.t op
 		| Flags.Proj_PLP(Flags.Rat) -> (Handelman.Rat.Pb.run phPol pl).Handelman.Rat.Pb.ph#get_vpl_rep
 		| Flags.Proj_PLP(Flags.Symbolic)-> (Handelman.Symbolic.Pb.run phPol pl).Handelman.Symbolic.Pb.ph#get_vpl_rep
 		| Flags.Proj_PLP(Flags.Float) -> (Handelman.Float.Pb.run phPol pl).Handelman.Float.Pb.ph#get_vpl_rep
-		| Flags.FM -> (Handelman.Symbolic.Pb.run phPol pl).Handelman.Symbolic.Pb.ph#get_vpl_rep
+		| Flags.FM -> (Handelman.Rat.Pb.run phPol pl).Handelman.Rat.Pb.ph#get_vpl_rep
 	
 
 let addPoly : 'a Pol.Cert.t -> 'a Pol.t -> CP.t -> Factory.Unit.t Pol.t option
