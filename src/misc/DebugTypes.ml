@@ -179,6 +179,11 @@ module Debug (D : sig val name : string end) = struct
 		= fun e lvl s ->
 		log lvl s;
 		e
+	
+	let exec2 : 'a -> levelT -> ('a -> string Lazy.t) -> 'a
+		= fun e lvl s ->
+		log lvl (s e);
+		e
 		
 	module Check = struct
 		let enabled : bool Pervasives.ref = Pervasives.ref false
