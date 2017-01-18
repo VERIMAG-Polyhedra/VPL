@@ -146,6 +146,8 @@ module type Type = sig
 	(** Rename fromX toY c *)
 	val rename : Vec.V.t -> Vec.V.t -> t -> t
 	
+	val rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
+	
 	(** [change_variable x lin c cstr] proceeds to the change of variable [x = lin + c] in [cstr]. *)
 	val change_variable : Vec.V.t -> Vec.t -> Vec.Coeff.t -> t -> t
 end
@@ -371,6 +373,13 @@ module Cstr (Vec : Vector.Type) = struct
 		assert (Vec.Coeff.cmpz (Vec.get v toY) = 0);
 		{c with v = v2}
 	
+	let rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
+		= fun f cstr ->
+		List.fold_left
+    		(fun cstr' var -> rename var (f var) cstr')
+    		cstr 
+    		(getVars [cstr] |> Vec.V.Set.elements)
+		
 	(* TODO: vérifier la présence de x? *)
 	let change_variable : Vec.V.t -> Vec.t -> Coeff.t -> t -> t 
 		= fun x lin c cstr ->
@@ -440,6 +449,7 @@ module Rat = struct
 		val saturate : Vec.t -> t -> bool
 		val elim : t -> t -> Vec.V.t -> (t * Vec.Coeff.t * Vec.Coeff.t)
 		val rename : Vec.V.t -> Vec.V.t -> t -> t
+		val rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
 		val change_variable : Vec.V.t -> Vec.t -> Vec.Coeff.t -> t -> t
 		(**/**)
 		

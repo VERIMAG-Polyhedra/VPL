@@ -87,7 +87,11 @@ module type LowLevelDomain = sig
   type rep = PedraQOracles.t
   val backend_rep : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option
   
+  (** [translate pol dir] translates polyhedron [pol] in direction [dir]. *)
   val translate : t -> Pol.Cs.Vec.t -> t
+  
+  (** [map pol f] applies function [f] to each constraint of [pol]. *)
+  val map : (Pol.Cs.t -> Pol.Cs.t) -> t -> t
 end
 
 
@@ -400,8 +404,24 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     let vec' = Vector.Rat.Positive.toList vec
       |> List.map (fun (v,c) -> c, (ofVar' v))
       |> Vector.Rat.Positive.mk
-    in auto_lifting (fun p -> LHD.translate p vec') pol 
-    
+    in 
+    auto_lifting (fun p -> LHD.translate p vec') pol 
+  
+  
+  
+  let map f pol =
+  match backend_rep pol with
+  | None -> Pervasives.failwith "map"
+  | Some (p,(ofVar,toVar)) ->
+    let (_,ofVar',toVar') = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
+    let f' : Pol.Cs.t -> Pol.Cs.t
+    	= fun cstr ->
+    	Pol.Cs.rename_f toVar' cstr
+    	|> f
+    	|> Pol.Cs.rename_f ofVar' cstr
+    in 
+    auto_lifting (fun p -> LHD.map f' p) pol 
+  
   let is_bottom = isBottom
     
   let assume c p =
@@ -441,11 +461,11 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   let getUpperBound p t = 
     try Some (export_QbndT (getItvMode UP (import_QTerm t) p).QItv.upper)
-    with Failure "empty" -> None
+    with Failure s when String.compare s "empty" = 0 -> None
 
   let getLowerBound p t = 
     try Some (export_QbndT (getItvMode LOW (import_QTerm t) p).QItv.lower)
-	 with Failure "empty" -> None
+	 with Failure s when String.compare s "empty" = 0 -> None
   	
 end      
 
@@ -636,11 +656,13 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
 
   let getUpperBound p t = 
   	try Some (export_ZbndT (getItvMode UP (import_ZTerm t) p).ZItv.up)
-  	with Failure "empty" -> None
+  	with Failure s when String.compare s "empty" = 0 -> None
 
   let getLowerBound p t = 
   	try Some (export_ZbndT (getItvMode LOW (import_ZTerm t) p).ZItv.low)
-  	with Failure "empty" -> None
+  	with Failure s when String.compare s "empty" = 0 -> None
   
   let translate p vec = not_yet_implemented "translate"
+  
+  let map f p = not_yet_implemented "map"
 end

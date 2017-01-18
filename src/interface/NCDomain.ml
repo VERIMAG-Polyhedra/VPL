@@ -169,7 +169,18 @@ module Polyhedron (F : Factory.Type) = struct
   			let eqs = List.map (fun (v, (c,_)) -> (v, (c,()))) p.Pol.eqs
   			and ineqs = List.map (fun (c,_) -> (c,())) p.Pol.ineqs
   			in Some {Pol.eqs = eqs ; Pol.ineqs = ineqs}
-
+	
+	let map : (Pol.Cs.t -> Pol.Cs.t) -> t -> t
+		= fun f ->
+		function
+		| Bottom -> Bottom
+		| NonBot pol ->
+			let eqs = Pol.get_eqs pol
+			and ineqs = Pol.get_ineqs pol in
+			NonBot {
+				Pol.eqs = List.map (fun (v,(cstr,_)) -> (v, F.mk (f cstr))) eqs;
+				Pol.ineqs = List.map (fun (cstr,_) -> F.mk (f cstr)) ineqs
+			}
 end
 
 let translate_cstr : Cs.t -> Vec.t -> Cs.t

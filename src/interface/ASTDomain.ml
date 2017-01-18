@@ -200,6 +200,8 @@ module Polyhedron: NCInterface.Polyhedron_Type = struct
   	    | NonBot p -> Some (dump p)
   	
   	let translate p vec = failwith "not_yet_implemented : translate"
+  	
+  	let map _ _ = failwith "not_yet_implemented : map"
 end
 
 	

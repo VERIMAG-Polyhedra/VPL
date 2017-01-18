@@ -255,222 +255,246 @@ module Interface (Coeff : Scalar.Type) = struct
 					(Pol.Cs.Vec.to_string Pol.Cs.Vec.V.to_string vec)
 				|> Record.write;
 				next
+				
+			let map : (Pol.Cs.t -> Pol.Cs.t) -> t -> string
+				= fun f pol ->
+				let next = Names.mk() in
+				next 
 					
 		end
 		
-		let mk: string -> I.t -> t
-			= fun s p ->
-			{value=p ; name = s}
+		(** Defines operators in terms of VPL datastructures. *)
+		module BuiltIn = struct
+			let mk: string -> I.t -> t
+				= fun s p ->
+				{value=p ; name = s}
 			
-		let top : t
-			= mk "top" I.top 
+			let top : t
+				= mk "top" I.top 
 		
-		let bottom : t
-			= mk "bottom" I.bottom
+			let bottom : t
+				= mk "bottom" I.bottom
 		
-		let to_string : (Var.t -> string) -> t -> string
-			= fun varPr p -> 
-			I.to_string varPr p.value
+			let to_string : (Var.t -> string) -> t -> string
+				= fun varPr p -> 
+				I.to_string varPr p.value
 		
-		let is_bottom : t -> bool
-			= let is_bottom' : t -> bool
-				= fun p -> 
-				Track.is_bottom p;
-				I.is_bottom p.value
-			in
-			fun p ->
-			try is_bottom' p 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let is_bottom : t -> bool
+				= let is_bottom' : t -> bool
+					= fun p -> 
+					Track.is_bottom p;
+					I.is_bottom p.value
+				in
+				fun p ->
+				try is_bottom' p 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let assume :  Cond.t -> t -> t
-			= let assume':  Cond.t -> t -> t
-				= fun cond p ->
-				let name = Track.assume cond p in
-				mk name (I.assume cond p.value)
-			in
-			fun cond p ->
-			try assume' cond p 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let assume :  Cond.t -> t -> t
+				= let assume':  Cond.t -> t -> t
+					= fun cond p ->
+					let name = Track.assume cond p in
+					mk name (I.assume cond p.value)
+				in
+				fun cond p ->
+				try assume' cond p 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let asserts : Cond.t -> t -> bool	
-			= let asserts' : Cond.t -> t -> bool
-				= fun cond p ->
-				Track.asserts cond p;
-				I.asserts cond p.value
-			in
-			fun cond p ->
-			try asserts' cond p 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let asserts : Cond.t -> t -> bool	
+				= let asserts' : Cond.t -> t -> bool
+					= fun cond p ->
+					Track.asserts cond p;
+					I.asserts cond p.value
+				in
+				fun cond p ->
+				try asserts' cond p 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let assign : (Var.t * Term.t) list -> t -> t
-			= let assign' : (Var.t * Term.t) list -> t -> t
-				= fun l p ->
-				let name = Track.assign l p in
-				mk name (I.assign l p.value)
-			in
-			fun l p ->
-			try assign' l p 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let assign : (Var.t * Term.t) list -> t -> t
+				= let assign' : (Var.t * Term.t) list -> t -> t
+					= fun l p ->
+					let name = Track.assign l p in
+					mk name (I.assign l p.value)
+				in
+				fun l p ->
+				try assign' l p 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let guassign: (Var.t list) -> Cond.t -> t -> t
-			= let guassign': (Var.t list) -> Cond.t -> t -> t
-				= fun l cond p ->
-				let name = Track.guassign l cond p in
-				mk name (I.guassign l cond p.value)
-			in
-			fun l cond p ->
-			try guassign' l cond p 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let guassign: (Var.t list) -> Cond.t -> t -> t
+				= let guassign': (Var.t list) -> Cond.t -> t -> t
+					= fun l cond p ->
+					let name = Track.guassign l cond p in
+					mk name (I.guassign l cond p.value)
+				in
+				fun l cond p ->
+				try guassign' l cond p 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 			
-		let meet : t -> t -> t
-			= let meet' : t -> t -> t
-				= fun p1 p2 ->
-				let name = Track.meet p1 p2 in
-				mk name (I.meet p1.value p2.value)
-			in
-			fun p1 p2 ->
-			try meet' p1 p2 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let meet : t -> t -> t
+				= let meet' : t -> t -> t
+					= fun p1 p2 ->
+					let name = Track.meet p1 p2 in
+					mk name (I.meet p1.value p2.value)
+				in
+				fun p1 p2 ->
+				try meet' p1 p2 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let join : t -> t -> t
-			= let join' : t -> t -> t
-				= fun p1 p2 ->
-				let name = Track.join p1 p2 in
-				mk name (I.join p1.value p2.value)
-			in
-			fun p1 p2 ->
-			try join' p1 p2 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let join : t -> t -> t
+				= let join' : t -> t -> t
+					= fun p1 p2 ->
+					let name = Track.join p1 p2 in
+					mk name (I.join p1.value p2.value)
+				in
+				fun p1 p2 ->
+				try join' p1 p2 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let project: Var.t list -> t -> t
-			= let project': Var.t list -> t -> t
-				= fun vars p ->
-				let name = Track.project vars p in
-				mk name (I.project vars p.value)
-			in
-			fun vars p ->
-			try project' vars p 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let project: Var.t list -> t -> t
+				= let project': Var.t list -> t -> t
+					= fun vars p ->
+					let name = Track.project vars p in
+					mk name (I.project vars p.value)
+				in
+				fun vars p ->
+				try project' vars p 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let widen : t -> t -> t
-			= let widen' : t -> t -> t
-				= fun p1 p2 ->
-				let name = Track.widen p1 p2 in
-				mk name (I.widen p1.value p2.value)
-			in
-			fun p1 p2 ->
-			try widen' p1 p2 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let widen : t -> t -> t
+				= let widen' : t -> t -> t
+					= fun p1 p2 ->
+					let name = Track.widen p1 p2 in
+					mk name (I.widen p1.value p2.value)
+				in
+				fun p1 p2 ->
+				try widen' p1 p2 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let leq : t -> t -> bool
-			= let leq' : t -> t -> bool
-				= fun p1 p2 ->
-				Track.leq p1 p2;
-				I.leq p1.value p2.value
-			in
-			fun p1 p2 ->
-			try leq' p1 p2 
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let leq : t -> t -> bool
+				= let leq' : t -> t -> bool
+					= fun p1 p2 ->
+					Track.leq p1 p2;
+					I.leq p1.value p2.value
+				in
+				fun p1 p2 ->
+				try leq' p1 p2 
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let getUpperBound : t -> Term.t -> Pol.bndT option
-			= let getUpperBound' : t -> Term.t -> Pol.bndT option
-				= fun p t ->
-				Track.getUpperBound p t;
-				I.getUpperBound p.value t
-			in
-			fun p t ->
-			try getUpperBound' p t
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let getUpperBound : t -> Term.t -> Pol.bndT option
+				= let getUpperBound' : t -> Term.t -> Pol.bndT option
+					= fun p t ->
+					Track.getUpperBound p t;
+					I.getUpperBound p.value t
+				in
+				fun p t ->
+				try getUpperBound' p t
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let getLowerBound : t -> Term.t -> Pol.bndT option
-			= let getLowerBound' : t -> Term.t -> Pol.bndT option
-				= fun p t ->
-				Track.getLowerBound p t;
-				I.getLowerBound p.value t
-			in
-			fun p t ->
-			try getLowerBound' p t
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let getLowerBound : t -> Term.t -> Pol.bndT option
+				= let getLowerBound' : t -> Term.t -> Pol.bndT option
+					= fun p t ->
+					Track.getLowerBound p t;
+					I.getLowerBound p.value t
+				in
+				fun p t ->
+				try getLowerBound' p t
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let itvize : t -> Term.t -> Pol.itvT
-			= let itvize' : t -> Term.t -> Pol.itvT
-				= fun p t ->
-				Track.itvize p t;
-				I.itvize p.value t
-			in
-			fun p t ->
-			try itvize' p t
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
-                          
-		type rep = I.rep  
-                          
-		let backend_rep 
-			= let backend_rep' : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option
-				= fun p ->
-				I.backend_rep p.value
-			in
-			fun p ->
-			try backend_rep' p
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let itvize : t -> Term.t -> Pol.itvT
+				= let itvize' : t -> Term.t -> Pol.itvT
+					= fun p t ->
+					Track.itvize p t;
+					I.itvize p.value t
+				in
+				fun p t ->
+				try itvize' p t
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
+		                       
+			type rep = I.rep  
+		                       
+			let backend_rep 
+				= let backend_rep' : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option
+					= fun p ->
+					I.backend_rep p.value
+				in
+				fun p ->
+				try backend_rep' p
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 		
-		let translate : t -> Pol.Cs.Vec.t -> t
-			= let translate' : t -> Pol.Cs.Vec.t -> t
-				= fun p vec ->
-				let name = Track.translate p vec in
-				mk name (I.translate p.value vec)
-			in
-			fun p vec ->
-			try translate' p vec
-			with e -> begin
-				report e;
-				Pervasives.raise ReportHandled
-			end
+			let translate : t -> Pol.Cs.Vec.t -> t
+				= let translate' : t -> Pol.Cs.Vec.t -> t
+					= fun p vec ->
+					let name = Track.translate p vec in
+					mk name (I.translate p.value vec)
+				in
+				fun p vec ->
+				try translate' p vec
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
 			
+			let map : (Pol.Cs.t -> Pol.Cs.t) -> t -> t
+				= let map' : (Pol.Cs.t -> Pol.Cs.t) -> t -> t
+					= fun f p ->
+					let name = Track.map f p in
+					mk name (I.map f p.value)
+				in
+				fun f p ->
+				try map' f p
+				with e -> begin
+					report e;
+					Pervasives.raise ReportHandled
+				end
+		end
 		
+		include BuiltIn
+		
+		(** Defines operators in terms of the User datastructures. *)
 		module User = struct
-		
+			include BuiltIn
+			
 			let assume: UserCond.t -> t -> t
 				= fun c p ->
 				assume (UserCond.to_cond c) p

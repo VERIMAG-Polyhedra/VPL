@@ -66,7 +66,9 @@ module PedraQWrapper: QInterface.HighLevelDomain = struct
     	then None
     	else Some (export_QbndT itv.QItv.lower)
   	
-  	 let translate p vec = not_yet_implemented "translate"
+  	 let translate _ _ = not_yet_implemented "translate"
+  	 
+  	 let map _ _ = not_yet_implemented "map"
 end
 
 (* lifting de PedraZ.FullDom *)
@@ -127,12 +129,14 @@ module PedraZWrapper: ZInterface.HighLevelDomain = struct
 	 (* TODO: getItvMode va t'il lever l'exception?*)
     let getUpperBound p t = 
     	try Some (export_ZbndT (getItvMode UP (import_ZTerm t) p).ZItv.up)
-    	with Failure "empty" -> None
+    	with Failure s when String.compare s "empty" = 0 -> None
 
     let getLowerBound p t = 
     	try Some (export_ZbndT (getItvMode LOW (import_ZTerm t) p).ZItv.low)
-    	with Failure "empty" -> None
+    	with Failure s when String.compare s "empty" = 0 -> None
     
-    let translate p vec = not_yet_implemented "translate"
+    let translate _ _ = not_yet_implemented "translate"
+    
+    let map _ _ = not_yet_implemented "map"
 end
 
