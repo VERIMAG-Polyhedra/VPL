@@ -44,15 +44,6 @@ let report : exn -> unit
 		(Printexc.to_string e)
 		|> print_endline;
 	report e
-
-let handle : 'a Lazy.t -> 'a
-	= fun a ->
-	try Lazy.force a with 
-	| Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-	| e -> begin
-		report e;
-		Pervasives.raise ReportHandled
-	end
 	
 module Interface (Coeff : Scalar.Type) = struct
 	
@@ -101,6 +92,16 @@ module Interface (Coeff : Scalar.Type) = struct
 			}
 		
 		module Expr = Expr
+		
+		(** Handles exception report *)
+		let handle : 'a Lazy.t -> 'a
+			= fun a ->
+			try Lazy.force a with 
+			| Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+			| e -> begin
+				report e;
+				Pervasives.raise ReportHandled
+			end
 	
 		module UserCond = struct
 
@@ -293,13 +294,9 @@ module Interface (Coeff : Scalar.Type) = struct
 					I.is_bottom p.value
 				in
 				fun p ->
-				try is_bottom' p 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
-		
+				lazy (is_bottom' p)
+				|> handle
+	
 			let assume :  Cond.t -> t -> t
 				= let assume':  Cond.t -> t -> t
 					= fun cond p ->
@@ -307,12 +304,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					mk name (I.assume cond p.value)
 				in
 				fun cond p ->
-				try assume' cond p 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (assume' cond p)
+				|> handle
 		
 			let asserts : Cond.t -> t -> bool	
 				= let asserts' : Cond.t -> t -> bool
@@ -321,12 +314,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					I.asserts cond p.value
 				in
 				fun cond p ->
-				try asserts' cond p 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (asserts' cond p)
+				|> handle 
 		
 			let assign : (Var.t * Term.t) list -> t -> t
 				= let assign' : (Var.t * Term.t) list -> t -> t
@@ -335,12 +324,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					mk name (I.assign l p.value)
 				in
 				fun l p ->
-				try assign' l p 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (assign' l p) 
+				|> handle 
 		
 			let guassign: (Var.t list) -> Cond.t -> t -> t
 				= let guassign': (Var.t list) -> Cond.t -> t -> t
@@ -349,12 +334,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					mk name (I.guassign l cond p.value)
 				in
 				fun l cond p ->
-				try guassign' l cond p 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (guassign' l cond p)
+				|> handle 
 			
 			let meet : t -> t -> t
 				= let meet' : t -> t -> t
@@ -363,12 +344,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					mk name (I.meet p1.value p2.value)
 				in
 				fun p1 p2 ->
-				try meet' p1 p2 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (meet' p1 p2) 
+				|> handle 
 		
 			let join : t -> t -> t
 				= let join' : t -> t -> t
@@ -377,12 +354,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					mk name (I.join p1.value p2.value)
 				in
 				fun p1 p2 ->
-				try join' p1 p2 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (join' p1 p2) 
+				|> handle 
 		
 			let project: Var.t list -> t -> t
 				= let project': Var.t list -> t -> t
@@ -391,12 +364,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					mk name (I.project vars p.value)
 				in
 				fun vars p ->
-				try project' vars p 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (project' vars p) 
+				|> handle 
 		
 			let widen : t -> t -> t
 				= let widen' : t -> t -> t
@@ -405,12 +374,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					mk name (I.widen p1.value p2.value)
 				in
 				fun p1 p2 ->
-				try widen' p1 p2 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (widen' p1 p2) 
+				|> handle 
 		
 			let leq : t -> t -> bool
 				= let leq' : t -> t -> bool
@@ -419,12 +384,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					I.leq p1.value p2.value
 				in
 				fun p1 p2 ->
-				try leq' p1 p2 
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (leq' p1 p2) 
+				|> handle 
 		
 			let getUpperBound : t -> Term.t -> Pol.bndT option
 				= let getUpperBound' : t -> Term.t -> Pol.bndT option
@@ -433,12 +394,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					I.getUpperBound p.value t
 				in
 				fun p t ->
-				try getUpperBound' p t
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (getUpperBound' p t)
+				|> handle 
 		
 			let getLowerBound : t -> Term.t -> Pol.bndT option
 				= let getLowerBound' : t -> Term.t -> Pol.bndT option
@@ -447,12 +404,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					I.getLowerBound p.value t
 				in
 				fun p t ->
-				try getLowerBound' p t
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (getLowerBound' p t)
+				|> handle 
 		
 			let itvize : t -> Term.t -> Pol.itvT
 				= let itvize' : t -> Term.t -> Pol.itvT
@@ -461,12 +414,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					I.itvize p.value t
 				in
 				fun p t ->
-				try itvize' p t
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (itvize' p t)
+				|> handle 
 		                       
 			type rep = I.rep  
 		                       
@@ -476,12 +425,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					I.backend_rep p.value
 				in
 				fun p ->
-				try backend_rep' p
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (backend_rep' p)
+				|> handle 
 		
 			let translate : t -> Pol.Cs.Vec.t -> t
 				= let translate' : t -> Pol.Cs.Vec.t -> t
@@ -490,12 +435,8 @@ module Interface (Coeff : Scalar.Type) = struct
 					mk name (I.translate p.value vec)
 				in
 				fun p vec ->
-				try translate' p vec
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (translate' p vec)
+				|> handle 
 			
 			let mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 				= let map' : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
@@ -504,35 +445,36 @@ module Interface (Coeff : Scalar.Type) = struct
 					mk name (I.mapi f1 f2 p.value)
 				in
 				fun f1 f2 p ->
-				try map' f1 f2 p
-				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
-					| e -> begin
-					report e;
-					Pervasives.raise ReportHandled
-				end
+				lazy (map' f1 f2 p)
+				|> handle 
 			
 			(** [diff p1 p2] returns a couple of list of polyhedra [(l1,l2)] such that [l1] (resp. [l2]) is a list of polyhedra whose union is [p1 \ p2] (resp. [p2 \ p1]). *)
 			let diff : t -> t -> t list * t list
-				= fun p1 p2 ->
-				let swap i j cstr =
-					if i = j 
-					then Pol.Cs.compl cstr
-					else cstr
-				in
-				let (rep1,rep2) = match backend_rep p1, backend_rep p2 with
-					| Some (p1',_), Some (p2',_) -> (p1',p2')
-					| _, _ -> Pervasives.failwith "diff"
-				in
-				let id _ c = c in
-				let p1_compls = List.mapi
-					(fun i _ -> mapi id (swap i) p1)
-					(Pol.get_ineqs rep1)
-				and p2_compls = List.mapi
-					(fun i _ -> mapi id (swap i) p2)
-					(Pol.get_ineqs rep2)
-				in
-				List.map (meet p1) p2_compls,
-				List.map (meet p2) p1_compls 
+				= let diff' = 
+					fun p1 p2 ->
+					let swap i j cstr =
+						if i = j 
+						then Pol.Cs.compl cstr
+						else cstr
+					in
+					let (rep1,rep2) = match backend_rep p1, backend_rep p2 with
+						| Some (p1',_), Some (p2',_) -> (p1',p2')
+						| _, _ -> Pervasives.failwith "diff"
+					in
+					let id _ c = c in
+					let p1_compls = List.mapi
+						(fun i _ -> mapi id (swap i) p1)
+						(Pol.get_ineqs rep1)
+					and p2_compls = List.mapi
+						(fun i _ -> mapi id (swap i) p2)
+						(Pol.get_ineqs rep2)
+					in
+					List.map (meet p1) p2_compls,
+					List.map (meet p2) p1_compls 
+				in 
+				fun p1 p2 ->
+				lazy (diff' p1 p2)
+				|> handle 
 		end
 		
 		include BuiltIn
