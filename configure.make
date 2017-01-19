@@ -26,7 +26,7 @@ build_meta:
 		(echo "name=\"vpl\""; \
 		echo "description=\"verified polyhedra library\""; \
 		echo "version=\"2.0\""; \
-		echo "requires=\"unix,zarith,netstring,glpk\""; \
+		echo "requires=\"unix,zarith,glpk\""; \
 		echo "archive(byte)=\"vpl.cma\""; \
 		echo "archive(native)=\"vpl.cmxa\"") > META; \
 	else \
@@ -34,7 +34,7 @@ build_meta:
 		(echo "name=\"vpl\""; \
 		echo "description=\"verified polyhedra library\""; \
 		echo "version=\"2.0\""; \
-		echo "requires=\"unix,zarith,netstring\""; \
+		echo "requires=\"unix,zarith\""; \
 		echo "archive(byte)=\"vpl.cma\""; \
 		echo "archive(native)=\"vpl.cmxa\"") > META; \
 	fi \

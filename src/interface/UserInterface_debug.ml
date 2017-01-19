@@ -6,13 +6,10 @@ module Var = Vec.V
 module CP = CstrPoly.Positive
 module Polynomial = CP.Poly
 
-(* TODO:
-	makefile : META à maj wrt glpk
-*)
 exception ReportHandled
 
 let send : unit -> unit
-	= fun () ->
+	= fun () -> () (*
 	print_endline "Sending crash log";
 	let attach = Netsendmail.wrap_attachment 
 		~content_disposition:("attachment", ["filename", Netmime_string.mk_param "log_file"])
@@ -26,7 +23,8 @@ let send : unit -> unit
 		(Printf.sprintf "Report sent") 
 	in
 	Netsendmail.sendmail ~mailer:"/usr/sbin/sendmail" email
-
+	*)
+					
 let report : exn -> unit
 	= let rec report : exn -> unit
 		= let read_char : char -> bool option
@@ -47,6 +45,15 @@ let report : exn -> unit
 		|> print_endline;
 	report e
 
+let handle : 'a Lazy.t -> 'a
+	= fun a ->
+	try Lazy.force a with 
+	| Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+	| e -> begin
+		report e;
+		Pervasives.raise ReportHandled
+	end
+	
 module Interface (Coeff : Scalar.Type) = struct
 	
 	include Interface(Coeff)
@@ -64,7 +71,7 @@ module Interface (Coeff : Scalar.Type) = struct
 		module Ident : Ident_t
 
 		type t 
-
+		
 		(** {!val:to_term} may raise this exception. *)
 		exception Out_of_Scope
 
@@ -256,8 +263,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				|> Record.write;
 				next
 				
-			let map : (Pol.Cs.t -> Pol.Cs.t) -> t -> string
-				= fun f pol ->
+			let mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> string
+				= fun f1 f2 pol ->
 				let next = Names.mk() in
 				next 
 					
@@ -278,7 +285,7 @@ module Interface (Coeff : Scalar.Type) = struct
 			let to_string : (Var.t -> string) -> t -> string
 				= fun varPr p -> 
 				I.to_string varPr p.value
-		
+			
 			let is_bottom : t -> bool
 				= let is_bottom' : t -> bool
 					= fun p -> 
@@ -287,7 +294,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p ->
 				try is_bottom' p 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -300,7 +308,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun cond p ->
 				try assume' cond p 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -313,7 +322,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun cond p ->
 				try asserts' cond p 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -326,7 +336,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun l p ->
 				try assign' l p 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -339,7 +350,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun l cond p ->
 				try guassign' l cond p 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -352,7 +364,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p1 p2 ->
 				try meet' p1 p2 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -365,7 +378,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p1 p2 ->
 				try join' p1 p2 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -378,7 +392,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun vars p ->
 				try project' vars p 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -391,7 +406,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p1 p2 ->
 				try widen' p1 p2 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -404,7 +420,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p1 p2 ->
 				try leq' p1 p2 
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -417,7 +434,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p t ->
 				try getUpperBound' p t
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -430,7 +448,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p t ->
 				try getLowerBound' p t
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -443,7 +462,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p t ->
 				try itvize' p t
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -457,7 +477,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p ->
 				try backend_rep' p
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
@@ -470,23 +491,48 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p vec ->
 				try translate' p vec
-				with e -> begin
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
 			
-			let map : (Pol.Cs.t -> Pol.Cs.t) -> t -> t
-				= let map' : (Pol.Cs.t -> Pol.Cs.t) -> t -> t
-					= fun f p ->
-					let name = Track.map f p in
-					mk name (I.map f p.value)
+			let mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
+				= let map' : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
+					= fun f1 f2 p ->
+					let name = Track.mapi f1 f2 p in
+					mk name (I.mapi f1 f2 p.value)
 				in
-				fun f p ->
-				try map' f p
-				with e -> begin
+				fun f1 f2 p ->
+				try map' f1 f2 p
+				with Expr.Out_of_Scope -> Pervasives.raise Expr.Out_of_Scope
+					| e -> begin
 					report e;
 					Pervasives.raise ReportHandled
 				end
+			
+			(** [diff p1 p2] returns a couple of list of polyhedra [(l1,l2)] such that [l1] (resp. [l2]) is a list of polyhedra whose union is [p1 \ p2] (resp. [p2 \ p1]). *)
+			let diff : t -> t -> t list * t list
+				= fun p1 p2 ->
+				let swap i j cstr =
+					if i = j 
+					then Pol.Cs.compl cstr
+					else cstr
+				in
+				let (rep1,rep2) = match backend_rep p1, backend_rep p2 with
+					| Some (p1',_), Some (p2',_) -> (p1',p2')
+					| _, _ -> Pervasives.failwith "diff"
+				in
+				let id _ c = c in
+				let p1_compls = List.mapi
+					(fun i _ -> mapi id (swap i) p1)
+					(Pol.get_ineqs rep1)
+				and p2_compls = List.mapi
+					(fun i _ -> mapi id (swap i) p2)
+					(Pol.get_ineqs rep2)
+				in
+				List.map (meet p1) p2_compls,
+				List.map (meet p2) p1_compls 
 		end
 		
 		include BuiltIn

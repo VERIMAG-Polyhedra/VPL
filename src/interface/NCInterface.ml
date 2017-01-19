@@ -35,7 +35,7 @@ module type Polyhedron_Type = sig
 	
 	(* Non certifed functions: *)
 	val translate : t -> Vec.t -> t
-	val map : (Pol.Cs.t -> Pol.Cs.t) -> t -> t
+	val mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 end
 
 module Interface (P : Polyhedron_Type)  = struct

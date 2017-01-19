@@ -87,11 +87,12 @@ module type LowLevelDomain = sig
   type rep = PedraQOracles.t
   val backend_rep : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option
   
+  (** Uncertified functions : *)
   (** [translate pol dir] translates polyhedron [pol] in direction [dir]. *)
   val translate : t -> Pol.Cs.Vec.t -> t
   
-  (** [map pol f] applies function [f] to each constraint of [pol]. *)
-  val map : (Pol.Cs.t -> Pol.Cs.t) -> t -> t
+  (** [mapi f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol]. *)
+  val mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 end
 
 
@@ -407,21 +408,19 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     in 
     auto_lifting (fun p -> LHD.translate p vec') pol 
   
-  
-  
-  let map f pol =
+  let mapi f1 f2 pol =
   match backend_rep pol with
   | None -> Pervasives.failwith "map"
   | Some (p,(ofVar,toVar)) ->
     let (_,ofVar',toVar') = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
-    let f' : Pol.Cs.t -> Pol.Cs.t
-    	= fun cstr ->
+    let f' : (int -> Pol.Cs.t -> Pol.Cs.t) -> int -> Pol.Cs.t -> Pol.Cs.t
+    	= fun f i cstr ->
     	Pol.Cs.rename_f toVar' cstr
-    	|> f
-    	|> Pol.Cs.rename_f ofVar' cstr
+    	|> f i
+    	|> Pol.Cs.rename_f ofVar'
     in 
-    auto_lifting (fun p -> LHD.map f' p) pol 
-  
+    auto_lifting (fun p -> LHD.mapi (f' f1) (f' f2) p) pol 
+    
   let is_bottom = isBottom
     
   let assume c p =
@@ -662,7 +661,8 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
   	try Some (export_ZbndT (getItvMode LOW (import_ZTerm t) p).ZItv.low)
   	with Failure s when String.compare s "empty" = 0 -> None
   
-  let translate p vec = not_yet_implemented "translate"
+  let translate _ _ = not_yet_implemented "translate"
   
-  let map f p = not_yet_implemented "map"
+  let mapi _ _ _ = not_yet_implemented "mapi"
+
 end
