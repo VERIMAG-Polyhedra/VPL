@@ -1,3 +1,6 @@
+(** This is the entry point of the VPL.
+It provides the Interface module (explained by module type Type).*)
+
 open CWrappers
 
 module Cs = Cstr.Rat.Positive
@@ -8,12 +11,244 @@ module Polynomial = CP.Poly
 
 exception ReportHandled
 
+(** The module type of (not necesarily linear) terms used in the VPL. *)
+module type Term_T = sig
+	module Coeff : Scalar.Type
+	
+	(** Type [t] allows to define expressions in a tree shape (e.g. with [Add] or [Mul]), or with list of terms (e.g. with [Sum] or [Prod]).*)
+
+	type t =
+	| Var of Var.t
+	| Cte of Coeff.t
+	| Add of t * t
+	| Sum of t list
+	| Opp of t
+	| Mul of t * t
+	| Prod of t list
+	| Annot of Annot.t * t
+	
+	(** Conversion from terms to VPL polynomials. *)
+	val to_poly : t -> Polynomial.t
+	
+	(** Conversion from a term and a comparison sign to a polynomial constraint. *)
+	val to_cp : cmpT * t -> CP.t
+
+	(** Conversion into string. *)
+	val to_string : (Var.t -> string) -> t -> string
+end
+
+(** Conditions used in the VPL. *)
+module type Cond_T = sig
+        
+   module Term : Term_T
+   
+	type t = 
+	| Basic of bool (** either true or false *)
+	| Atom of Term.t * cmpT * Term.t (** a comparison between two terms *)
+	| BinL of t * binl * t (** binary relation (either OR or AND) between two conditions *)
+	| Not of t (** negation of a condition *)
+	
+	(** Conversion into string. *)
+	val to_string : (Var.t -> string) -> t -> string
+end
+
+(** Type for user-defined variables. *)
+module type Ident_T = sig
+	type t
+	
+	(** [compare v1 v2] returns [0] if [v1 = v2], a negative integer if [v1 > v2] and a positive one otherwise. *)
+	val compare: t -> t -> int
+	
+	(** Conversion into variables of type {!val:Var.Positive.t}. *)
+	val toVar: t -> Var.t
+	
+	(** Conversion into string. *)
+	val to_string: t -> string
+end
+
+(** Type for user-defined expressions. *)
+module type Expr_T = sig
+	module Coeff : Scalar.Type
+	module Ident : Ident_T
+	
+	(** VPL terms *)
+	module Term : Term_T with module Coeff = Coeff
+	
+	type t 
+
+	(** {!val:to_term} may raise this exception. *)
+	exception Out_of_Scope
+	
+	(** Conversion into VPL terms.*)
+	val to_term: t -> Term.t
+end
+
+(** Module containing a high level implementation of the polyhedra domain.
+Several of them are available: 
+{ul
+	{- {!module:CDomain.PedraQWrapper}: Certified domain with rational coefficients.}
+	{- {!module:CDomain.PedraZWrapper}: Certified domain with integer coefficients.}
+	{- {!module:NCVPL_Unit.Q}: Uncertified domain with rational coefficients.}
+	{- {!module:NCVPL_Unit.Z}: Uncertified domain with integer coefficients.}
+}*)
+module type HighLevelDomain_T = sig
+	
+	module Coeff : Scalar.Type
+	module Expr : Expr_T with module Coeff = Coeff
+	module Term = Expr.Term
+	module Cond : Cond_T with module Term = Term
+end
+
+(** Polyhedra domain *)
+module type Type = sig
+	
+	(** If you want to use directly the VPL datatypes instead of providing your own expressions, instanciate the functor Interface with this module.*)
+	module VPL_Expr : sig
+	end
+	
+	(** The module is a functor taking a High Level Domain (of type {!module:HighLevelDomain_T}) and a user-defined expression module (of type {!module:Expr_T}. 
+	If you have no user-defined expressions, use {!module:VPL_Expr}. *)
+	module Interface : functor (I : HighLevelDomain_T)(Expr : Expr_T) -> sig
+		
+		(** Type of polyhedron *)
+		type t
+		
+		(** Defines conditions using the user-defined expressions. *)
+		module UserCond : sig
+			type t = 
+				| Basic of bool
+				| Atom of Expr.t * cmpT * Expr.t
+				| BinL of t * binl * t
+				| Not of t
+			
+			val to_cond : t -> I.Cond.t
+		end
+		
+		(** This module contains polyhedral operators using VPL terms and conditions. 
+		If you have a user-defined expression module, use {!module:User}.*)
+		module BuiltIn : sig
+			
+			(** Unbounded polyhedron. *)
+			val top: t
+			
+			(** Empty polyhedron. *)
+			val bottom: t
+			
+			(** Checks if the given polyhedron is empty. *)
+			val is_bottom: t -> bool
+			
+			(** Computes the intersection of two polyhedra. *)
+			val meet : t -> t -> t
+			
+			(** Computes the convex hull of two polyhedra. *)
+			val join: t -> t -> t
+			
+			(** Eliminates the given list of variables from a polyhedron, by orthogonal projection. *)
+			val project: Var.t list -> t -> t
+			
+			val widen: t -> t -> t
+			
+			(** Renames a variable into another one. (Not tested) *)
+			val rename: Var.t -> Var.t -> t -> t
+
+			(** Tests the inclusion of two polyhedra. *)
+			val leq: t -> t -> bool
+			
+			(** Returns a string representing the given polyhedron.
+				Requires a function to convert variables into strings. *)
+			val to_string: (Var.t -> string) -> t -> string
+			
+			(** Returns the upper bound of an expression in a polyhedron. *)
+			val getUpperBound : t -> I.Term.t -> Pol.bndT option
+			
+			(** Returns the lower bound of an expression in a polyhedron. *)
+			val getLowerBound : t -> I.Term.t -> Pol.bndT option
+
+			(** Returns both the upper and lower bounds of an expression in a polyhedron. *)
+			val itvize : t -> I.Term.t -> Pol.itvT
+			
+			(** VPL inner type for a polyhedron. *)
+			type rep = PedraQOracles.t
+			
+			(** Returns the inner representation of a polyhedron, and two functions [(f1,f2)]: 
+				{ul
+					{- [f1] translates ??}}*)
+			val backend_rep : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option
+
+			(** Uncertified functions : *)
+			(** [translate pol dir] translates polyhedron [pol] in direction [dir]. *)
+			val translate : t -> Pol.Cs.Vec.t -> t
+
+			(** [mapi f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol]. *)
+			val mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
+			
+			val assume: I.Cond.t -> t -> t
+
+			val asserts: I.Cond.t -> t -> bool
+
+			val assign: (Var.t * I.Term.t) list -> t -> t
+
+			val guassign: (Var.t list) -> I.Cond.t -> t -> t
+     
+		end
+		
+		(** Defines operators in terms of the User datastructures. *)
+		module User : sig
+			val top: t
+
+			val bottom: t
+
+			val is_bottom: t -> bool
+			
+			val assume: UserCond.t -> t -> t
+			
+			val meet : t -> t -> t
+			 
+			val join: t -> t -> t
+			
+			val project: Expr.Ident.t list -> t -> t
+			
+			val widen: t -> t -> t
+			
+			val rename: Var.t -> Var.t -> t -> t
+
+			(** Test the inclusion of two polyhedra. *)
+			val leq: t -> t -> bool
+
+			val to_string: (Var.t -> string) -> t -> string
+			
+			val getUpperBound : t -> Expr.t -> Pol.bndT option
+			
+			val getLowerBound : t -> Expr.t -> Pol.bndT option
+			
+	  		val itvize : t -> Expr.t -> Pol.itvT
+	  		
+	  		type rep = PedraQOracles.t
+			
+			val backend_rep : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option
+
+			val asserts: UserCond.t -> t -> bool
+
+			val assign: (Expr.Ident.t * Expr.t) list -> t -> t
+				
+			val guassign: (Expr.Ident.t list) -> UserCond.t -> t -> t
+	  		
+	  		(** Uncertified functions : *)
+			(** [translate pol dir] translates polyhedron [pol] in direction [dir]. *)
+			val translate : t -> Pol.Cs.Vec.t -> t
+
+			(** [mapi f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol]. *)
+			val mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
+		end
+	end	
+end
+
 let send : unit -> unit
 	= fun () -> () (*
 	print_endline "Sending crash log";
 	let attach = Netsendmail.wrap_attachment 
 		~content_disposition:("attachment", ["filename", Netmime_string.mk_param "log_file"])
-		~content_type:("text/plain", [])
+		~content_Type:("text/plain", [])
 		(new Netmime.file_mime_body Config.log_file)
 	in
 	let email = Netsendmail.compose 
@@ -49,7 +284,7 @@ module Interface (Coeff : Scalar.Type) = struct
 	
 	include Interface(Coeff)
 	
-	module type Ident_t = sig
+	module type Ident_T = sig
 		type t
 
 		val compare: t -> t -> int
@@ -57,9 +292,9 @@ module Interface (Coeff : Scalar.Type) = struct
 		val to_string: t -> string
 	end
 
-	module type Expr_t = sig
+	module type Expr_T = sig
 
-		module Ident : Ident_t
+		module Ident : Ident_T
 
 		type t 
 		
@@ -84,14 +319,12 @@ module Interface (Coeff : Scalar.Type) = struct
 		let to_term x = x
 	end
 	
-	module Interface (I : HighLevelDomain)(Expr : Expr_t) = struct
+	module Interface (I : HighLevelDomain)(Expr : Expr_T) = struct
 		
 		type t = {
 			value: I.t;
 			name: string;
 			}
-		
-		module Expr = Expr
 		
 		(** Handles exception report *)
 		let handle : 'a Lazy.t -> 'a
@@ -168,7 +401,7 @@ module Interface (Coeff : Scalar.Type) = struct
 				|> Record.write
 			
 			let assign: (Var.t * Term.t) list -> t -> string
-				= let assign_to_string : (Var.t * Term.t) list -> string
+				= let assign_To_string : (Var.t * Term.t) list -> string
 					= fun l ->
 					List.map 
 						(fun (v,t) -> Printf.sprintf "%s %s %s" 
@@ -184,7 +417,7 @@ module Interface (Coeff : Scalar.Type) = struct
 				Printf.sprintf "%s %s %s in %s"
 					next 
 					Symbols.s_assign
-					(assign_to_string l)
+					(assign_To_string l)
 					p.name
 				|> Record.write;
 				next
