@@ -206,7 +206,8 @@ module type Type = sig
 			(** [mapi f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol]. *)
 			val mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
      		
-     		(** [diff p1 p2] returns a list of polyhedra whose union is [p1 \ p2]. *)
+     		(** [diff p1 p2] returns a list of polyhedra whose union is [p1 \ p2]. 
+     		Careful: the comparison sign of the result may be wrong. *)
 			val diff : t -> t -> t list
 			
 		end
@@ -730,7 +731,12 @@ module Interface (Coeff : Scalar.Type) = struct
 				|> handle 
 			
 			let diff : t -> t -> t list
-				= let diff' = fun p1 p2 ->
+				= let compl : Pol.Cs.t -> Pol.Cs.t
+					= fun cstr ->
+					(* Complement that keeps the same comparison sign *)
+					{(Cs.compl cstr) with Cs.typ = Cs.get_typ cstr}
+					in
+					let diff' = fun p1 p2 ->
 					let (rep1,rep2, toVar2) = match backend_rep p1, backend_rep p2 with
 						| Some (p1',_), Some (p2', (ofVar2, toVar2)) -> 
 							let (_,_,toVar2') = PedraQOracles.export_backend_rep (p2',(ofVar2,toVar2))
@@ -738,23 +744,22 @@ module Interface (Coeff : Scalar.Type) = struct
 							(p1',p2', toVar2')
 						| _, _ -> Pervasives.failwith "diff"
 					in
-					let p2_conds = Pol.get_ineqs rep2 
+					let p2_ineqs = Pol.get_ineqs rep2 
 						|> List.map (fun (cstr,_) -> Pol.Cs.rename_f toVar2 cstr) 
-						|> List.map (fun cstr -> Cond.of_cstrs [cstr])
 					in
-					if p2_conds = []
+					if p2_ineqs = []
 					then [p1]
 					else
-						let hd = List.hd p2_conds in
-						let fst_res = assume (Cond.Not hd) p1
-						and fst_cont = assume hd p1
+						let hd = List.hd p2_ineqs in
+						let fst_res = assume (Cond.of_cstrs [compl hd]) p1
+						and fst_cont = assume (Cond.of_cstrs [hd]) p1
 						in
 						List.fold_left
-							(fun (res,cont) cond -> 
+							(fun (res,cont) ineq -> 
 								let pol_cont = List.hd cont in
-								(assume (Cond.Not cond) pol_cont :: res,
-								 assume cond pol_cont :: cont))
-							([fst_res],[fst_cont]) (List.tl p2_conds)
+								(assume (Cond.of_cstrs [compl ineq]) pol_cont :: res,
+								 assume (Cond.of_cstrs [ineq]) pol_cont :: cont))
+							([fst_res],[fst_cont]) (List.tl p2_ineqs)
 						|> Pervasives.fst 
 				in 
 				fun p1 p2 ->
