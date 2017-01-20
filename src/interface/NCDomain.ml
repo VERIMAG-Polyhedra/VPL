@@ -170,8 +170,8 @@ module Polyhedron (F : Factory.Type) = struct
   			and ineqs = List.map (fun (c,_) -> (c,())) p.Pol.ineqs
   			in Some {Pol.eqs = eqs ; Pol.ineqs = ineqs}
 	
-	let mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
-		= fun f1 f2 ->
+	let mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
+		= fun _ f1 f2 ->
 		function
 		| Bottom -> Bottom
 		| NonBot pol ->

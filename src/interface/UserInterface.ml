@@ -277,12 +277,14 @@ module type Type = sig
 			(* TODO: Should it be (Var.t * I.Cond.t) list -> t -> t *)	
 			val guassign: (Expr.Ident.t list) -> UserCond.t -> t -> t
 	  		
-	  		(** Uncertified functions : *)
+	  		(** The following are uncertified functions : *)
 			(** [translate pol dir] translates polyhedron [pol] in direction [dir]. *)
 			val translate : t -> Pol.Cs.Vec.t -> t
 
-			(** [mapi f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol]. *)
-			val mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
+			(** [mapi f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol]. 
+			Variables are translated from high-level to low-level before applying functions [f1] and [f2].
+			[b = true] means that variables must be translated from high-level to low-level.*)
+			val mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 			
 			(** [diff p1 p2] returns a list of polyhedra whose union is [p1 \ p2]. *)
 			val diff : t -> t -> t list
@@ -543,8 +545,8 @@ module Interface (Coeff : Scalar.Type) = struct
 				|> Record.write;
 				next
 				
-			let mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> string
-				= fun f1 f2 pol ->
+			let mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> string
+				= fun _ _ _ _ ->
 				let next = Names.mk() in
 				next 
 					
@@ -717,14 +719,14 @@ module Interface (Coeff : Scalar.Type) = struct
 				lazy (translate' p vec)
 				|> handle 
 			
-			let mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
-				= let map' : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
-					= fun f1 f2 p ->
-					let name = Track.mapi f1 f2 p in
-					mk name (I.mapi f1 f2 p.value)
+			let mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
+				= let mapi' : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
+					= fun b f1 f2 p ->
+					let name = Track.mapi b f1 f2 p in
+					mk name (I.mapi b f1 f2 p.value)
 				in
-				fun f1 f2 p ->
-				lazy (map' f1 f2 p)
+				fun b f1 f2 p ->
+				lazy (mapi' b f1 f2 p)
 				|> handle 
 			
 			let diff : t -> t -> t list
@@ -741,7 +743,7 @@ module Interface (Coeff : Scalar.Type) = struct
 					in
 					let id _ c = c in
 					let p2_compls = List.mapi
-						(fun i _ -> mapi id (swap i) p2)
+						(fun i _ -> mapi false id (swap i) p2)
 						(Pol.get_ineqs rep2)
 					in
 					List.map (meet p1) p2_compls

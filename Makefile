@@ -56,6 +56,4 @@ install:
 uninstall:
 	ocamlfind remove vpl
 
-
-
 .PHONY: all clean vpl cvpl sanity check doc coqsrc demo_vplcoq_debug demo_vplcoq coqclean allclean install uninstall configure check_glpk save_coq_extraction

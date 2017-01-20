@@ -91,8 +91,9 @@ module type LowLevelDomain = sig
   (** [translate pol dir] translates polyhedron [pol] in direction [dir]. *)
   val translate : t -> Pol.Cs.Vec.t -> t
   
-  (** [mapi f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol]. *)
-  val mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
+  (** [mapi b f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol].
+  Boolean [b] has no effect here. It is used in the high-level version of [mapi]. *)
+  val mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 end
 
 
@@ -408,19 +409,22 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     in 
     auto_lifting (fun p -> LHD.translate p vec') pol 
   
-  let mapi f1 f2 pol =
+  let mapi b f1 f2 pol =
   match backend_rep pol with
   | None -> Pervasives.failwith "map"
   | Some (p,(ofVar,toVar)) ->
-    let (_,ofVar',toVar') = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
-    let f' : (int -> Pol.Cs.t -> Pol.Cs.t) -> int -> Pol.Cs.t -> Pol.Cs.t
-    	= fun f i cstr ->
-    	Pol.Cs.rename_f toVar' cstr
-    	|> f i
-    	|> Pol.Cs.rename_f ofVar'
-    in 
-    auto_lifting (fun p -> LHD.mapi (f' f1) (f' f2) p) pol 
-    
+  	 if b
+  	 then let (_,ofVar',toVar') = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
+		 let f' : (int -> Pol.Cs.t -> Pol.Cs.t) -> int -> Pol.Cs.t -> Pol.Cs.t
+		 	= fun f i cstr ->
+		 	Pol.Cs.rename_f toVar' cstr
+		 	|> f i
+		 	|> Pol.Cs.rename_f ofVar'
+		 in 
+    	 auto_lifting (fun p -> LHD.mapi false (f' f1) (f' f2) p) pol 
+    else
+    	 auto_lifting (fun p -> LHD.mapi false f1 f2 p) pol
+    	 
   let is_bottom = isBottom
     
   let assume c p =
@@ -663,6 +667,6 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
   
   let translate _ _ = not_yet_implemented "translate"
   
-  let mapi _ _ _ = not_yet_implemented "mapi"
+  let mapi _ _ _ _ = not_yet_implemented "mapi"
 
 end
