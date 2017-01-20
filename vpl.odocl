@@ -1,5 +1,5 @@
 Flags
-UserInterface UserInterface_debug NCInterface NCDomain CDomain 
+UserInterface NCInterface NCDomain CDomain 
 Calculator
 Pol
 Cert Cons 

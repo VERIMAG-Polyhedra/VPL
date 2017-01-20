@@ -1,6 +1,7 @@
 (** This is the entry point of the VPL.
 It provides the Interface module (explained by module type Type).*)
 
+(**/**)
 open CWrappers
 
 module Cs = Cstr.Rat.Positive
@@ -8,7 +9,10 @@ module Vec = Cs.Vec
 module Var = Vec.V
 module CP = CstrPoly.Positive
 module Polynomial = CP.Poly
+(**/**)
 
+(** When an operator raises an exception, it is catched and handled by function {!val:report}.
+Exception ReportHandled is raised afterwards. *)
 exception ReportHandled
 
 (** The module type of (not necesarily linear) terms used in the VPL. *)
@@ -16,7 +20,6 @@ module type Term_T = sig
 	module Coeff : Scalar.Type
 	
 	(** Type [t] allows to define expressions in a tree shape (e.g. with [Add] or [Mul]), or with list of terms (e.g. with [Sum] or [Prod]).*)
-
 	type t =
 	| Var of Var.t
 	| Cte of Coeff.t
@@ -42,6 +45,7 @@ module type Cond_T = sig
         
    module Term : Term_T
    
+   (** Type for conditions. *)
 	type t = 
 	| Basic of bool (** either true or false *)
 	| Atom of Term.t * cmpT * Term.t (** a comparison between two terms *)
@@ -76,7 +80,7 @@ module type Expr_T = sig
 	
 	type t 
 
-	(** {!val:to_term} may raise this exception. *)
+	(** {!val:to_term} may raise this exception whenever it encounters something it cannot handle. *)
 	exception Out_of_Scope
 	
 	(** Conversion into VPL terms.*)
@@ -106,7 +110,7 @@ module type Type = sig
 	module VPL_Expr : sig
 	end
 	
-	(** The module is a functor taking a High Level Domain (of type {!module:HighLevelDomain_T}) and a user-defined expression module (of type {!module:Expr_T}. 
+	(** The module is a functor taking a High Level Domain (of type {!module:HighLevelDomain_T}) and a user-defined expression module (of type {!module:Expr_T}). 
 	If you have no user-defined expressions, use {!module:VPL_Expr}. *)
 	module Interface : functor (I : HighLevelDomain_T)(Expr : Expr_T) -> sig
 		
@@ -115,17 +119,20 @@ module type Type = sig
 		
 		(** Defines conditions using the user-defined expressions. *)
 		module UserCond : sig
-			type t = 
-				| Basic of bool
-				| Atom of Expr.t * cmpT * Expr.t
-				| BinL of t * binl * t
-				| Not of t
 			
+			(** Type for conditions based on user-defined expressions. *)
+			type t = 
+				| Basic of bool (** either true or false *)
+				| Atom of Expr.t * cmpT * Expr.t (** a comparison between two terms *)
+				| BinL of t * binl * t (** binary relation (either OR or AND) between two conditions *)
+				| Not of t (** negation of a condition *)
+			
+			(** Conversion into VPL conditions. *)
 			val to_cond : t -> I.Cond.t
 		end
 		
 		(** This module contains polyhedral operators using VPL terms and conditions. 
-		If you have a user-defined expression module, use {!module:User}.*)
+		If you have a user-defined expression module, use module {!module:User} instead.*)
 		module BuiltIn : sig
 			
 			(** Unbounded polyhedron. *)
@@ -283,6 +290,7 @@ module type Type = sig
 	end	
 end
 
+(**/**)
 let send : unit -> unit
 	= fun () -> () (*
 	print_endline "Sending crash log";
@@ -338,13 +346,11 @@ module Interface (Coeff : Scalar.Type) = struct
 
 		type t 
 		
-		(** {!val:to_term} may raise this exception. *)
 		exception Out_of_Scope
 
 		val to_term: t -> Term.t
 	end
 	
-	(** If you want to use directly the VPL datatypes, instanciate the functor Interface with this module Expr.*)
 	module VPL_Expr = struct
 		module Ident = struct
 			include Var
@@ -377,7 +383,7 @@ module Interface (Coeff : Scalar.Type) = struct
 			end
 	
 		module UserCond = struct
-
+		
 			type t = 
 				| Basic of bool
 				| Atom of Expr.t * cmpT * Expr.t

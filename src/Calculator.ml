@@ -2,7 +2,7 @@
 module CP = CstrPoly.Positive
 module Poly = CP.Poly
 
-include UserInterface_debug.Interface(Scalar.Rat)
+include UserInterface.Interface(Scalar.Rat)
 
 let folder = "/home/amarecha/verasco/vpl2/calculator"
 	
