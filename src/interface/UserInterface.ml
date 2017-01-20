@@ -730,23 +730,40 @@ module Interface (Coeff : Scalar.Type) = struct
 				|> handle 
 			
 			let diff : t -> t -> t list
-				= let swap i j cstr =
+				= (*let swap i j cstr =
 					if i = j 
 					then Pol.Cs.compl cstr
 					else cstr
-				in
+				in	*)
+				(* adds cstr to each polyhedron of l starting at index i *)
+				let add_cstr : t list -> Cond.t -> int -> t list
+					= fun l cond i ->
+					Misc.fold_right_i
+						(fun j pol res -> 
+							if j >= i
+							then assume cond pol :: res
+							else pol :: res)
+						l []
+				in	
 				let diff' = 
 					fun p1 p2 ->
-					let (rep1,rep2) = match backend_rep p1, backend_rep p2 with
-						| Some (p1',_), Some (p2',_) -> (p1',p2')
+					let (rep1,rep2, toVar2) = match backend_rep p1, backend_rep p2 with
+						| Some (p1',_), Some (p2', (ofVar2, toVar2)) -> 
+							let (_,_,toVar2') = PedraQOracles.export_backend_rep (p2',(ofVar2,toVar2))
+							in
+							(p1',p2', toVar2')
 						| _, _ -> Pervasives.failwith "diff"
 					in
-					let id _ c = c in
-					let p2_compls = List.mapi
-						(fun i _ -> mapi false id (swap i) p2)
-						(Pol.get_ineqs rep2)
+					let p2_conds = Pol.get_ineqs rep2 
+						|> List.map (fun (cstr,_) -> Pol.Cs.rename_f toVar2 cstr) 
+						|> List.map (fun cstr -> Cond.of_cstrs [cstr])
 					in
-					List.map (meet p1) p2_compls
+					let l = List.map (fun cond -> assume (Cond.Not cond) p1) p2_conds 
+					in
+					Misc.fold_left_i
+						(fun i res cond ->
+							add_cstr res cond (i+1))
+						l p2_conds
 				in 
 				fun p1 p2 ->
 				lazy (diff' p1 p2)

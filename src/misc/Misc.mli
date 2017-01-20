@@ -76,3 +76,5 @@ val string_repeat : string -> int -> string
 val add_tab : int -> string -> string
 
 val fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
+
+val fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a list -> 'b -> 'b

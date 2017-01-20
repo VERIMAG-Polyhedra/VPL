@@ -150,6 +150,15 @@ module Interface (Coeff: Scalar.Type) = struct
 			| Mul (t1,t2) ->  Printf.sprintf "(%s) * (%s)" (to_string varPr t1) (to_string varPr t2)
 			| Prod l -> String.concat " * " (List.map (fun t -> Printf.sprintf "(%s)" (to_string varPr t)) l)
 			| Annot (annot,t) -> Printf.sprintf "%s (%s)" (Annot.to_string annot) (to_string varPr t)
+			
+		let of_cstr : Pol.Cs.t -> t
+			= fun cstr ->
+			let l = Pol.Cs.get_v cstr
+				|> Pol.Cs.Vec.toList
+				|> List.map (fun (var,coeff) -> Mul (Var var, Cte (Coeff.ofQ coeff)))
+			and c = Pol.Cs.get_c cstr |> Pol.Cs.Vec.Coeff.neg |> fun c -> Cte (Coeff.ofQ c) 
+			in
+			Sum (c::l)
 	end
   
   module Cond =
@@ -169,6 +178,14 @@ module Interface (Coeff: Scalar.Type) = struct
       | BinL (c1, bin, c2) -> Printf.sprintf "(%s %s %s)"
       	(to_string varPr c1) (binl_to_string bin) (to_string varPr c2)
       | Not c -> Printf.sprintf "%s (%s)" Symbols.s_not (to_string varPr c)
+      
+    let of_cstrs : Pol.Cs.t list -> t
+		= fun cstrs ->
+		List.map Term.of_cstr cstrs
+		|> List.fold_left
+			(fun cond term -> let atom = Atom (term, Cstr.LE, Term.Cte Coeff.z) in
+				BinL (cond, AND, atom))
+			(Basic true)
   end
 		
   (* je coupe "Type" en 2 (avec renommage en Domain) *)

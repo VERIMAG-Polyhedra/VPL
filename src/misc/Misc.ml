@@ -163,3 +163,10 @@ let rec fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 		(fun a i -> f i a (List.nth bs i))
 		a0
 		(range 0 (List.length bs)) 
+
+let rec fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a list -> 'b -> 'b
+	= fun f a_s b0 ->
+	List.fold_right
+		(fun i b -> f i (List.nth a_s i) b)
+		(range 0 (List.length a_s)) 
+		b0
