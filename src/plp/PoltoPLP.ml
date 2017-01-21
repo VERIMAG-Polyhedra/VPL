@@ -6,8 +6,13 @@ module V = Cs.Vec.V
 
 module Debug = Join.Debug
 
+module type Type = sig
+
+	val join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
+end
+
 module MinFloat = Min.RatVec_Glpk2(Vec)
-module Join = struct
+module Join : Type = struct
 	include Join.Build(MinFloat)
 	
 	(*
@@ -226,18 +231,19 @@ module Join = struct
 		
 	end
 	
+	
+	(** [keep factory next cons conss] returns either a {!val:Cons.t} that proves that [conss] is included in [cons], or None. *)
+	let keep : 'a Cert.t -> Cs.Vec.V.t -> 'b Cons.t -> 'a Cons.t list -> 'a Cons.t option
+		= fun factory next cons conss ->
+		match IneqSet.incl factory next [] conss [cons] with
+		| IneqSet.NoIncl -> None
+		| IneqSet.Incl [cert] -> Some (Cons.get_c cons, cert)
+		| _ -> Pervasives.failwith "PoltoPLP:discard_constraints:keep"
+		
 	(* int list -> list of discarded regions indices *)
 	let discard_constraints : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 regionsT -> 'c2 regionsT 
 		-> ('c1 regionsT * 'c2 regionsT) * ('c1 Cons.t list * 'c2 Cons.t list) * PLP.ExplorationPoint.t list * int list
 		= fun factory1 factory2 regs1 regs2 ->
-		(** [keep factory next cons conss] returns either a {!val:Cons.t} that proves that [conss] is included in [cons], or None. *)
-		let keep : 'cc2 Cert.t -> Cs.Vec.V.t -> 'cc1 Cons.t -> 'cc2 Cons.t list -> 'cc2 Cons.t option
-			= fun factory next cons conss ->
-			match IneqSet.incl factory next [] conss [cons] with
-			| IneqSet.NoIncl -> None
-			| IneqSet.Incl [cert] -> Some (Cons.get_c cons, cert)
-			| _ -> Pervasives.failwith "PoltoPLP:discard_constraints:keep"
-		in
 		let conss1 = List.split regs1.mapping |> Pervasives.snd
 		and conss2 = List.split regs2.mapping |> Pervasives.snd
 		in
@@ -245,6 +251,7 @@ module Join = struct
 			|> Cs.Vec.V.Set.union (List.map Cons.get_c conss2 |> Cs.getVars) 
 			|> Cs.Vec.V.horizon 
 		in
+		
 		let (to_keep1, (to_keep_conss1_1,to_keep_conss1_2), to_throw1) = List.fold_left
 			(fun (to_keep1, (to_keep_conss1_1,to_keep_conss1_2), to_throw1) (reg,cons) ->
 				match keep factory2 next cons conss2 with
@@ -259,7 +266,7 @@ module Join = struct
 				| Some cons1 -> ((reg,cons) :: to_keep2, (cons1::to_keep_conss2_1, cons::to_keep_conss2_2), to_throw2))
 			([],([],[]),[])
 			regs2.mapping
-			in
+		in
 		let (explorationPoints, id_list) = List.map 
 			(fun reg -> (PLP.ExplorationPoint.Point reg.PLP.Region.point, reg.PLP.Region.id))
 			(to_throw1 @ to_throw2)
@@ -269,7 +276,7 @@ module Join = struct
 		 (to_keep_conss1_1 @ to_keep_conss2_1, to_keep_conss1_2 @ to_keep_conss2_2),
 		 explorationPoints,
 		 id_list)
-	
+		
 	(*
 	let explorationPointsFromCstrs : (Cs.t * Vec.t) list -> Cs.t list -> PLP.ExplorationPoint.t list
 		= fun l cstrs ->
@@ -403,29 +410,29 @@ module Join = struct
 					res reg.PLP.Region.r)
 			[] regs
 	
+	let update : int list -> 'c regionsT -> 'c regionsT 
+		= fun id_list regs ->
+		{regs with
+		 mapping = List.map
+			(fun (reg,cons) -> let reg' = 
+				{reg with 
+				PLP.Region.r = List.map
+					(fun (b,id_opt) -> match id_opt with 
+					| None -> (b,None)
+					| Some id -> 
+						if List.mem id id_list 
+						then (b,None)
+						else (b, id_opt))
+					reg.PLP.Region.r;
+				}
+				in
+				(reg', cons))
+			regs.mapping
+		}
+		
 	let update_frontiers : int list -> 'c1 regionsT -> 'c2 regionsT -> ('c1 regionsT * 'c2 regionsT)
 		= fun id_list regs1 regs2 ->
-		let update : 'c regionsT -> 'c regionsT 
-			= fun regs ->
-			{regs with
-			 mapping = List.map
-				(fun (reg,cons) -> let reg' = 
-					{reg with 
-					PLP.Region.r = List.map
-						(fun (b,id_opt) -> match id_opt with 
-						| None -> (b,None)
-						| Some id -> 
-							if List.mem id id_list 
-							then (b,None)
-							else (b, id_opt))
-						reg.PLP.Region.r;
-					}
-					in
-					(reg', cons))
-				regs.mapping
-			}
-		in
-		(update regs1, update regs2)
+		(update id_list regs1, update id_list regs2)
 	
 	(** Both polyhedra are assumed to be normalized on the same point *)
 	let join' : 'c1 Cert.t -> 'c2 Cert.t -> Vec.V.t option -> 'c1 regionsT -> 'c2 regionsT -> 'c1 Cons.t list * 'c2 Cons.t list
@@ -468,4 +475,34 @@ module Join = struct
 		end;
 		let (conss1', conss2') = make_certs factory1 factory2 regs1 regs2 p1 p2 map regs_filtered in
 		(conss1' @ certs1,  conss2' @ certs2)
+		
+	(** Returns the convex hull of the given inequalities (no equality should be given).
+		Computes the region partitioning of both polyhedra. *)
+	let join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
+		= fun factory1 factory2 epsilon_opt p1 p2 ->
+		Debug.log DebugTypes.Title 
+			(lazy "Convex hull by Region Partitioning");
+		Debug.log DebugTypes.MInput
+			(lazy (Printf.sprintf "First polyhedron : %s\nSecond Polyhedron : %s"
+				(Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p1 "\n")
+				(Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p2 "\n")));
+		let ineqs1 = List.map (fun (cstr,_) -> cstr) p1 
+		and ineqs2 = List.map (fun (cstr,_) -> cstr) p2 in
+		let init_point1 = match Opt.getAsg_raw ineqs1 with
+			| Some x -> Vector.Symbolic.Positive.toRat x
+			| None -> Pervasives.failwith "join: empty polyhedron p1"
+		and init_point2 = match Opt.getAsg_raw ineqs2 with
+			| Some x -> Vector.Symbolic.Positive.toRat x
+			| None -> Pervasives.failwith "join: empty polyhedron p2"
+		in
+		let regs1 = minimize_and_plp factory1 init_point1 p1
+		and regs2 = minimize_and_plp factory2 init_point2 p2 
+		in
+		let regs2 = ReNormalize.renormalize regs2 init_point1 in
+		let (conss1, conss2) = join' factory1 factory2 epsilon_opt regs1 regs2 in
+		Debug.log DebugTypes.MOutput
+			(lazy (Printf.sprintf "Polyhedron1 : %s\nPolyhedron2 : %s"
+				(Misc.list_to_string (Cons.to_string_ext factory1 Cs.Vec.V.to_string) conss1 "\n")
+				(Misc.list_to_string (Cons.to_string_ext factory2 Cs.Vec.V.to_string) conss2 "\n")));
+		(conss1, conss2)
 end

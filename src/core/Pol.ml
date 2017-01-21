@@ -758,9 +758,12 @@ module Join_PLP = struct
 			else (p1.ineqs, p2.ineqs)
 		in
 		let (p1',p2') =
-			if p1_eqs <> [] || p2_eqs <> []
-			then Join.join scalar_type factory1 factory2 (Some epsilon) p1_cons p2_cons
-			else Join.join scalar_type factory1 factory2 None p1_cons p2_cons 
+			let eps_opt = if p1_eqs <> [] || p2_eqs <> []
+				then Some epsilon
+				else None in
+			match !Flags.join with
+			| Flags.Join_PLP _ -> Join.join scalar_type factory1 factory2 eps_opt p1_cons p2_cons
+			| Flags.Join_fromRegions -> PoltoPLP.Join.join factory1 factory2 eps_opt p1_cons p2_cons 
 		in
 		let p1'_ineqs = remove_epsilon epsilon p1' |> filter_trivial
 		and p2'_ineqs = remove_epsilon epsilon p2' |> filter_trivial
@@ -775,9 +778,11 @@ let joinSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 
 	match !Flags.join with
 	| Flags.Baryc -> joinSub_classic factory1 factory2 nxtVar p1 p2
 	| Flags.Join_PLP scalar_type -> Join_PLP.joinSub_epsilon scalar_type factory1 factory2 nxtVar p1 p2
+	| Flags.Join_fromRegions -> Join_PLP.joinSub_epsilon Flags.Float factory1 factory2 nxtVar p1 p2
 	| Flags.JHeuristic -> match Heuristic.join (get_cstr p1) (get_cstr p2) with
 		| Flags.Baryc -> joinSub_classic factory1 factory2 nxtVar p1 p2
 		| Flags.Join_PLP scalar_type -> Join_PLP.joinSub_epsilon scalar_type factory1 factory2 nxtVar p1 p2
+		| Flags.Join_fromRegions -> Join_PLP.joinSub_epsilon Flags.Float factory1 factory2 nxtVar p1 p2
 		| Flags.JHeuristic -> Pervasives.invalid_arg "Pol.joinSub"
 
 type relVarT = OldSt of Var.t | NewSt of Var.t

@@ -247,3 +247,11 @@ let getAsg : V.t -> (int * Cs.t) list -> Vector.Symbolic.Positive.t option
 	| IsOk (Sup (sx,_,_)) | IsOk (Finite (sx,_,_)) -> 
 		let point = Vector.Symbolic.Positive.set (getAsg sx) horizon Scalar.Symbolic.z in
 		Some point
+
+let getAsg_raw : Cs.t list -> Vector.Symbolic.Positive.t option
+	= fun cstrs ->
+	let horizon = Cs.getVars cstrs
+		|> Cs.Vec.V.horizon
+	in
+	let cstrs_id = List.mapi (fun i cstr -> (i,cstr)) cstrs in
+	getAsg horizon cstrs_id

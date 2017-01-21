@@ -40,7 +40,7 @@ type proj_method = FM | Proj_PLP of scalar | PHeuristic
 	{- [Baryc]: algorithm based on convex combinations + projection }
 	{- [Join_PLP]: method based on Parametric Linear Programming}}
 *)
-type join_method = Baryc | Join_PLP of scalar | JHeuristic
+type join_method = Baryc | Join_PLP of scalar | JHeuristic | Join_fromRegions
 
 (** Default choice for minimization. *)
 let min : min_method ref = ref (Classic)
@@ -73,6 +73,7 @@ let join_to_string : unit -> string
 	| Baryc -> "Barycentric"
 	| Join_PLP (scalar) -> "Join_PLP(" ^ (scalar_to_string scalar) ^ ")"
 	| JHeuristic -> "Heuristic"
+	| Join_fromRegions -> "Join_fromRegions"
 	
 (** If set to true, the Handelman linearization will loop, meaning that it will iterate on the last result obtained.
 The linearization of polynomial [g] on the starting polyhedron [P] will give
