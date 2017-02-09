@@ -365,10 +365,10 @@ module Join : Type = struct
 	
 	let init_regions : 'c1 regionsT -> 'c2 regionsT -> PLP.Region.t list
 		= fun regs1 regs2 ->
-		Printf.sprintf "Regions of initialization : \n%s\n%s"
+		Debug.log DebugTypes.Normal
+			(lazy (Printf.sprintf "Regions of initialization : \n%s\n%s"
 			(regions_to_string regs1)
-			(regions_to_string regs2)
-			|> print_endline;
+			(regions_to_string regs2)));
 		let regs1' = List.split regs1.mapping |> Pervasives.fst
 		and regs2' = List.split regs2.mapping |> Pervasives.fst
 		in
