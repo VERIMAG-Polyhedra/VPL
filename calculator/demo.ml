@@ -53,7 +53,7 @@ Flags.join := Flags.Join_PLP (Flags.Float);;
 let p6 = p3 || p4;;
 
 (* We test that p5 = p6.
-VPL.leq is tests inclusion. *)
+VPL.leq tests polyhedral inclusion. *)
 VPL.leq p5 p6;;
 VPL.leq p6 p5;;
 (* Hopefully, the result should be true in both cases. *)
