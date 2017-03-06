@@ -1,0 +1,8 @@
+*~
+
+# coq files
+*.vo
+*.v.d
+*.glob
+*.dv
+*.aux
