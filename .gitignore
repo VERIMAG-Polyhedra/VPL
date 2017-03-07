@@ -1,3 +1,5 @@
+*~
+
 # coq files
 *.vo
 *.v.d
@@ -12,4 +14,3 @@ Makefile.config
 _build/*
 src/coq/extracted/*
 src/core/MinLP.ml
-

@@ -1,4 +1,5 @@
 SHELL := /bin/bash
+COQ_EXPECTED_VERSION := "8.6"
 
 include $(shell ocamlc -where)/Makefile.config
 
@@ -38,11 +39,11 @@ build_meta:
 		echo "archive(byte)=\"vpl.cma\""; \
 		echo "archive(native)=\"vpl.cmxa\"") > META; \
 	fi \
-	} 
-	
+	}
+
 Makefile.config:
-	@(if hash coqc 2>/dev/null; then \
-		echo "# This file was generated from configure.make"; \
+	@(if [ "$(shell coqc -v | head -1 | sed -e 's/.*version \([0-9].[0-9]\).*/\1/g' 2> /dev/null)" == "${COQ_EXPECTED_VERSION}" ] ; then \
+		echo "# This file was generated from configure.make for coqc-${COQ_EXPECTED_VERSION}"; \
 		echo ; \
 		echo "COQSRC = -I src/coq_ml -I src/coq_already_extracted"; \
 		echo ;\
@@ -70,13 +71,15 @@ Makefile.config:
 		echo "	OCAMLRUNPARAM=b ./demo_vplcoq.byte"; \
 		echo ; \
 		echo "save_coq_extraction: coqsrc"; \
-		echo "	cp ./src/coq/extracted/* ./src/coq_already_extracted"; \
+		echo "	rm -rf ./src/coq_already_extracted"; \
+		echo "	rsync -avz ./src/coq/extracted/ ./src/coq_already_extracted"; \
 		echo ; \
-		echo "demo_vplcoq: coqsrc"; \
+		echo "demo_vplcoq: save_coq_extraction"; \
 		echo "	\$$(OCB) demo_vplcoq.native"; \
 		echo "	./demo_vplcoq.native"; \
 	else \
 		echo "# This file was generated from configure.make"; \
+		echo "# WARNING coqc-${COQ_EXPECTED_VERSION} not found!"; \
 		echo ; \
 		echo "COQSRC = -I src/coq_ml -I src/coq_already_extracted"; \
 		echo ;\

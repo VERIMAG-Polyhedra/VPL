@@ -321,7 +321,7 @@ Module MapPoly.
   to_pos T (x::l) = to_pos1 T x :: to_pos T l.
   Proof. intuition. Qed.
 
-  Require Import Qcanon.
+  Import Qcanon.
   Open Scope nat_scope.
 
   Fixpoint compute_varBound (P : Cs.t) (vb : CIndex.QcIndex.t) (i : nat) : PExpr := 
@@ -601,7 +601,6 @@ Module Handelman_compute.
   Lemma OneEvalPos m s : QNum.Le QNum.z (QAffTerm.eval (failwith CERT s one) m).
   Proof.
     unfold QNum.Le.
-    Require Export Qcanon.
     apply Qclt_le_weak.
     apply OneEvalPos_strict.
   Qed.

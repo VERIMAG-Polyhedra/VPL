@@ -8,6 +8,13 @@ Require List.
 Require String.
 Require Import OptionMonad.
 
+(*
+Ltac qc := match goal with
+ | q:Qc |- _ => destruct q; qc
+ | _ => apply Qc_is_canon; simpl; rewrite ?Qred_correct
+end.
+*)
+
 (* Trivial cases in multiplication *)
 Inductive trivialMulDiscr :=
   IsZero | IsUnit | IsOppUnit | Other.
@@ -277,8 +284,8 @@ Module QBasicNum <: BasicNumSig.
 
   Lemma zero_unique (n:t): (Qnum (this n))=0%Z -> n=z.
   Proof.
-      intros; destruct n. qc. simpl in * |- *.
-      destruct this. simpl in * |- *. subst. vm_compute. auto.
+      intros; destruct n. destruct this; apply Qc_is_canon. simpl in * |- *.
+      subst. vm_compute. auto.
   Qed.
 
 
@@ -296,14 +303,14 @@ Module QBasicNum <: BasicNumSig.
 
   Lemma one_unique (n:t): Qnum (this n)=1%Z -> Qden (this n)=1%positive -> n=u.
   Proof.
-    intros. destruct n. qc. simpl in * |- *.
-      destruct this. simpl in * |- *. subst. vm_compute. auto.
+    intros. destruct n. destruct this; apply Qc_is_canon. simpl in * |- *.
+    subst. vm_compute. auto.
   Qed.
 
   Lemma opp_one_unique (n:t): Qnum (this n)=(-1)%Z -> Qden (this n)=1%positive -> n=(opp u).
   Proof.
-    intros. destruct n. qc. simpl in * |- *.
-      destruct this. simpl in * |- *. subst. vm_compute. auto.
+    intros. destruct n. destruct this. apply Qc_is_canon. simpl. simpl in * |- *.
+    subst. vm_compute. auto.
   Qed.
   
   Lemma Ltzu: Lt z u.
@@ -492,9 +499,10 @@ Module QBasicNum <: BasicNumSig.
 
   Lemma AddLeLt: forall n1 n2 n3 n4: t,
                    Le n1 n2 -> Lt n3 n4 -> Lt (add n1 n3) (add n2 n4).
-    intros n1 n2 n3 n4 h; unfold Le in h;
-    apply Qcle_lt_or_eq in h; destruct h as [h | h];
-    [ exact (AddLtLt _ _ _ _ h) | exact (AddEqLt _ _ _ _ (Qc_is_canon _ _ h))].
+  Proof.
+    intros n1 n2 n3 n4 h; unfold Le in h.
+    apply Qcle_lt_or_eq in h; destruct h; 
+    intros; [ apply AddLtLt | apply AddEqLt]; auto.
   Qed.
 
   Lemma AddLtLe: forall n1 n2 n3 n4: t,
@@ -935,13 +943,13 @@ Module ZtoQ.
       reflexivity.
   Qed.
 
-  Ltac solveOrder
-    := fun a b =>
-         split;
+  Ltac solveOrder a b
+    :=  let h := fresh "h" in
+        (split;
          unfold a, b;
          simpl;
-         intro h;
-         [do 2 rewrite Z.mul_1_r|do 2 rewrite Z.mul_1_r in h];
+         intro h);
+         [do 2 rewrite Z.mul_1_r | do 2 rewrite Z.mul_1_r in h];
          assumption.
 
   Lemma LeCommutes: forall z1 z2: ZNum.t,
@@ -991,7 +999,7 @@ Module ZtoQ.
 
   Lemma isInZ_test q: Qden(this(q))=1%positive -> q=ofZ(Qnum(this(q))).
   Proof.
-     intros H; qc. simpl in * |- *.
+     intros H; destruct q; apply Qc_is_canon; simpl in * |- *.
      generalize H; clear H canon.
      case this. simpl; intros; subst; simpl. reflexivity.
   Qed.

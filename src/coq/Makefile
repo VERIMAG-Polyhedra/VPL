@@ -1,4 +1,4 @@
-# requires: coq8.5pl2
+# requires: coq 8.6
 
 .PHONY: coq clean lscoqfiles
 

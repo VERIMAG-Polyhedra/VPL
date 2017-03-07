@@ -112,10 +112,15 @@ End FilterProp.
 
 
 (** Additional lemmas on Q *)
+Require NArith.
+Require ZArith.
+Require QArith.
+Require Qcanon.
+
 Module Q.
-  Require Import NArith.
-  Require Import ZArith.
-  Require Import QArith.
+  Import NArith.
+  Import ZArith.
+  Import QArith.
 
 (* XXX: The proofs in this module are ugly. *)
 
@@ -179,8 +184,8 @@ Module Q.
 End Q.
 
 Module Qc.
-  Require Import QArith.
-  Require Import Qcanon.
+  Import QArith.
+  Import Qcanon.
 
   Lemma Qcplus_lt_compat: forall n1 n2 n3 n4: Qc,
       Qclt n1 n2 -> Qclt n3 n4 -> Qclt (Qcplus n1 n3) (Qcplus n2 n4).

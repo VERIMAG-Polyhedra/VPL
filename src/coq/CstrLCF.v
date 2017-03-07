@@ -29,9 +29,9 @@ Inductive bndT (C:Type): Type
   | Open: QNum.t -> C -> bndT C
   | Closed: QNum.t -> C -> bndT C.
 
-Implicit Arguments Infty [C].
-Implicit Arguments Open [C].
-Implicit Arguments Closed [C].
+Arguments Infty [C].
+Arguments Open [C].
+Arguments Closed [C].
 
 Record itvT (C:Type): Type
 := mk {
@@ -39,5 +39,5 @@ Record itvT (C:Type): Type
        up: bndT C
 }.
 
-Implicit Arguments low [C].
-Implicit Arguments up [C].
+Arguments low [C].
+Arguments up [C].

@@ -1,10 +1,11 @@
 Require Import QArith.
 Require Import NumC.
 Require Import QArith_base.
+Require Datatypes.
 
 Module QOp.
   Open Scope Q_scope.
-  
+
   Lemma to_PExpr_compat_pos : forall q:Q,
   Qcanon.Qcle (Qcanon.Q2Qc 0%Q) (Qcanon.Q2Qc q) <-> 0 <= q.
   Proof.
@@ -26,8 +27,8 @@ Module QOp.
       rewrite cmp in NGt.
       assumption.
   Qed.
-  
-  Require Import Datatypes.
+
+  Import Datatypes.
   Lemma to_PExpr_compat_pos_strict : forall q:Q,
   Qcanon.Qclt (Qcanon.Q2Qc 0%Q) (Qcanon.Q2Qc q) <-> 0 < q.
   Proof.
@@ -58,20 +59,6 @@ Module QOp.
   QNum.Lt q1 q2 -> Qle (QNum.to_Q q1) (QNum.to_Q q2).
   Proof. intuition. Qed.
 
-  Lemma Qcanon_opp_compat : forall q:QNum.t, 
-  Qcanon.this (Qcanon.Qcopp q) = - Qcanon.this q.
-  Proof.
-    intro q.
-    unfold Qcanon.Qcopp.
-    destruct q as [x pf].
-    simpl (Qcanon.this {| Qcanon.this := x; Qcanon.canon := pf |}).
-    Lemma Qred_canon_compat : forall x:Q,
-    Qred (x) = x -> Qcanon.this (Qcanon.Q2Qc (x)) = x.
-    Proof.
-      intros x red.
-      simpl.
-      assumption.
-    Qed.
     Lemma Qred_opp_compat : forall x:Q,
     Qred x = x -> Qred (-x) = -x.
     Proof.
@@ -80,6 +67,22 @@ Module QOp.
       rewrite red.
       reflexivity.
     Qed.
+
+    Lemma Qred_canon_compat : forall x:Q,
+    Qred (x) = x -> Qcanon.this (Qcanon.Q2Qc (x)) = x.
+    Proof.
+      intros x red.
+      simpl.
+      assumption.
+    Qed.
+
+  Lemma Qcanon_opp_compat : forall q:QNum.t, 
+  Qcanon.this (Qcanon.Qcopp q) = - Qcanon.this q.
+  Proof.
+    intro q.
+    unfold Qcanon.Qcopp.
+    destruct q as [x pf].
+    simpl (Qcanon.this {| Qcanon.this := x; Qcanon.canon := pf |}).
     apply Qred_canon_compat.
     apply Qred_opp_compat.
     assumption.

@@ -83,9 +83,9 @@ Module Type HasSimplePrinting (N: NumSig) (Import D: BasicDomain N).
 
 End HasSimplePrinting.
 
-
+(* Require Program.Basics. *)
 Module Type HasRename (N: NumSig) (Import D: BasicDomain N).
-  Require Import Program.Basics.
+  (* Import Program.Basics. *)
 
   (** [rename x y a] renames variable [x] by [y] in [a].
 

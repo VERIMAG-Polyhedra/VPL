@@ -323,10 +323,10 @@ see xsimplify below
 Ltac xstep hint :=
  match goal with
  | |- (wte _ _ _) => wte_decompose
-                || apply_wte_hint ltac:hint
+                || apply_wte_hint hint
                 || (apply wte_decomp; [ intro | idtac]; intro_rewrite)
  | |- (ifprop _ _ _) => ifprop_decompose
-                || apply_ifprop_hint ltac:hint
+                || apply_ifprop_hint hint
                 || (apply ifprop_decomp; intro_rewrite)
  | |- _ => default_simplify
  end.
@@ -345,7 +345,7 @@ Example of use:
 Ltac xsimplify hint := 
  repeat (intros; xstep hint ; simpl; (tauto || hint)).
 
-(* main tactic *)                 
+(* main tactic *)
 (* DO NOT WORK ?
 Ltac simplify base :=
   xsimplify ltac:(eauto with base).
