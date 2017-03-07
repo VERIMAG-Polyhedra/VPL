@@ -27,7 +27,7 @@ Import PositiveMap.
 Hint Unfold E.eq.
 Hint Resolve f_equal f_equal2.
 
-Implicit Arguments Leaf [A].
+Arguments Leaf [A].
 
 (** A particular case of [add] *)
 Fixpoint single {A} (x:positive) (v:A) : t A :=

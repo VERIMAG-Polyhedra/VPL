@@ -407,7 +407,7 @@ Module ItvD <: HasGetItvMode QNum QTerm QItv BasicD.
         WHEN i <- getItvMode mo t a THEN forall m, gamma a m -> QItv.sat i (QTerm.eval t m).
      Proof.
         unfold getItvMode, failwith.
-        xasimplify ltac: (eauto with pedraQ vpl); simpl in * |- *.
+        xasimplify ltac:(eauto with pedraQ vpl); simpl in * |- *.
         intros H0 m X. generalize (QTerm.affineDecompose_correct t m).
         rewrite H. intros X0; ring_simplify in X0. rewrite <- X0.
         auto.
@@ -429,8 +429,7 @@ Module ItvD <: HasGetItvMode QNum QTerm QItv BasicD.
 End ItvD.
 
 
-Module CstrD <: (* TOREMOVE HasConcreteConditions QNum Cstr BasicD. *)
- HasAssume QNum Cstr BasicD.
+Module CstrD <: HasAssume QNum Cstr BasicD.
 
   Import BasicD.
 
@@ -484,13 +483,17 @@ Module Rename <: HasRename QNum BasicD.
     forall m, gamma a (Mem.assign x (m y) m) -> gamma p m.
   Proof.
     unfold Basics.impl, rename.
-    intros; xasimplify ltac:idtac.
+    intros; xasimplify idtac.
     intros; rewrite Cs.rename_correct.
     auto.
   Qed. 
   Global Hint Resolve rename_correct: vpl.
 
 End Rename.
+
+Require Map_poly.
+Require Ring_polynom_AddOnQ.
+Require Qop.
 
 Module QAtomicCondAssume <: HasAssume QNum QAtomicCond BasicD.
 
@@ -544,13 +547,14 @@ Module QAtomicCondAssume <: HasAssume QNum QAtomicCond BasicD.
   Local Hint Resolve affAssume_correct: vpl.
   Opaque affAssume.
 
-  Require Import Map_poly.
-  
+  Import Map_poly.
+  Import Qop.
+
   Definition applyHandelman_one (cmp : cmpG) (qt:QTerm.t) (pol : polT) (a : t) (cert : Handelman_compute.certif) :  imp t :=
     let aff := Handelman_compute.eq_witness pol.(cons) cert qt in
       affAssume cmp aff a.
   
-  Require Import Ring_polynom_AddOnQ.
+  Import Ring_polynom_AddOnQ.
   
   Lemma Handelman_pos_le (m : Mem.t QNum.t) (g : QTerm.t) (P : Cs.t) (cert : Handelman_compute.certif) :
     Cs.sat P m  ->
@@ -561,7 +565,6 @@ Module QAtomicCondAssume <: HasAssume QNum QAtomicCond BasicD.
     apply Handelman_compute.eq_witness_pos.
     assumption.
     rewrite Handelman_compute.QPom.toPExpr_correct in POS.
-    Require Import Qop.
     rewrite <- QOp.to_PExpr_compat_pos.
     assumption.
   Qed.
@@ -572,7 +575,6 @@ Module QAtomicCondAssume <: HasAssume QNum QAtomicCond BasicD.
   Proof.
     unfold applyHandelman_one, sat ; xasimplify ltac:(eauto with pedraQ vpl).
     intros X m ; intros ; apply X ; auto.
-    
     apply Handelman_pos_le; assumption.
   Qed. 
   Local Hint Resolve applyHandelman_one_correct_le: vpl.
@@ -587,7 +589,6 @@ Module QAtomicCondAssume <: HasAssume QNum QAtomicCond BasicD.
     apply Handelman_compute.eq_witness_pos_strict.
     assumption.
     rewrite Handelman_compute.QPom.toPExpr_correct in POS.
-    Require Import Qop.
     rewrite <- QOp.to_PExpr_compat_pos_strict.
     assumption.
   Qed.
@@ -605,7 +606,7 @@ Module QAtomicCondAssume <: HasAssume QNum QAtomicCond BasicD.
   Opaque applyHandelman_one_correct_lt.
 
   Open Scope list_scope.
-  Require Import Datatypes.
+  Import Datatypes.
   Import List.ListNotations.
 
   Definition f (cmp : cmpG) (qt:QTerm.t) (pol: polT) (cert : Handelman_compute.certif) (a: imp t) : imp t :=

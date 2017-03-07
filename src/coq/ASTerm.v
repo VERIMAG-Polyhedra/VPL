@@ -451,8 +451,8 @@ Module QTerm2Pomial (Import ATerm: AnnotatedTermSig QNum).
       | Mul tl tr => PEmul (toPExpr tl) (toPExpr tr)
       | Annot a te => toPExpr te
     end.
-    Require Import ConsSet.
-    Require Import QArith.
+    Import ConsSet.
+    Import QArith.
     Local Open Scope Q_scope.
     Lemma toPExpr_correct te m:
        eval te m = Qcanon.Q2Qc (Ring_polynom_AddOnQ.PEsem (toPExpr te) (Cs.mem_compat m)).

@@ -548,14 +548,14 @@ Qed.
 
   Lemma nop_effect_1 (x: PVar.t) (a:t): WHEN p <- nop x a THEN PositiveSet.mem x (renaming p) = negb (PositiveSet.mem x (renaming a)). 
   Proof.
-    unfold nop; xasimplify ltac:idtac.
+    unfold nop; xasimplify idtac.
     autorewrite with vpl.
     destruct (PositiveSet.mem x (renaming a)); simpl; intuition.
   Qed.
 
   Lemma nop_effect_2 (x y: PVar.t) (a:t): x <> y -> WHEN p <- nop x a THEN PositiveSet.mem y (renaming p) = (PositiveSet.mem y (renaming a)). 
   Proof.
-    unfold nop; xasimplify ltac:idtac.
+    unfold nop; xasimplify idtac.
     intros; rewrite switch_out; intuition.
   Qed.
 

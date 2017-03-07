@@ -77,7 +77,7 @@ Program Definition try {A B:Type} (o: option A) (mp1: A -> MPP B) (mp2: MPP B)
        apply := fun Q => wte o (fun x => (mp1 x) Q) (mp2 Q) 
       |}.
 Obligation 1.
-  xasimplify ltac:eauto.
+  xasimplify eauto.
 Qed.
 
 Program Definition UMeet A: MPP A

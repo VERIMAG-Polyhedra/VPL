@@ -212,6 +212,7 @@ End ZtoQCstr.
 
 Require Import ZNone.
 Require Import ZNoneItv.
+Require FMapPositive.
 
 (* A functor that lift conditions from "ZtoQCstr" to "ZCond" 
 
@@ -325,7 +326,7 @@ Module ZAtomicCondAssume (D: BasicDomain ZNum)
   (** Early Computation of the interval of all variables *) 
   Section EarlyVariableIntervals.
 
-  Require Import FMapPositive.
+  Import FMapPositive.
 
   Definition add_variable (a: D.t) (x: PVar.t) (mitv: PositiveMap.t ZNItv.t): imp (PositiveMap.t ZNItv.t) :=
     match PositiveMap.find x mitv with

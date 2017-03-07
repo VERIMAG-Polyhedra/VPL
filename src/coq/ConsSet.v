@@ -188,11 +188,10 @@ Module CsImpl(Cstr: CstrSig).
 
   Lemma unwrap_correct l m: mod m -> sat (unwrap l) m.
   Proof.
-    unfold unwrap. 
-    destruct 
-     (x_unwrap l
-        (exist (fun acc : t => forall m0 : Mem.t QNum.t, mod m0 -> sat acc m0) nil
-           (unwrap_obligation_1 l))); simpl.
+    unfold unwrap. intro s.
+    match goal with
+    | |- (sat (proj1_sig ?r) m) => destruct r; simpl
+    end.
     auto.
   Qed.
 

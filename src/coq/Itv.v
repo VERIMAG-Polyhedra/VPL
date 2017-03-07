@@ -356,7 +356,7 @@ Module ZItv <: ItvSig (ZNum).
 
   Local Hint Resolve ZtoQ.CeilLeZ ZtoQ.FloorLeZ QNum.LtLe.
 
-  Require Import ZArith.
+  Import ZArith.
 
   Lemma ZNumLtLeSucc z1 z2: ZNum.Lt z1 z2 -> ZNum.Le (z1+1)%Z z2.
   Proof. 

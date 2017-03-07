@@ -364,7 +364,7 @@ see xtsimplify below
   Ltac xtstep hint :=
     match goal with
       | |- (wlp _ _) => wlp_decompose
-        || apply_wlp_hint ltac:hint
+        || apply_wlp_hint hint
           || (apply wlp_unfold; 
             introcomp)
     end.
@@ -376,17 +376,17 @@ Example of use:
   xtsimplify ltac:(intuition eauto with base).
 *)
   Ltac xtsimplify hint := 
-    repeat (intros; xtstep ltac:hint ; simpl; (tauto || hint)).
+    repeat (intros; xtstep hint ; simpl; (tauto || hint)).
 
   Ltac xastep hint :=
     match goal with
       | |- (wlp _ _) => wlp_decompose
-        || apply_wlp_hint ltac:hint
+        || apply_wlp_hint hint
       | |- (wte _ _ _) => wte_decompose
-        || apply_wte_hint ltac:hint
+        || apply_wte_hint hint
           || (apply wte_decomp; [ intro | idtac]; intro_rewrite)
       | |- (ifprop _ _ _) => ifprop_decompose
-        || apply_ifprop_hint ltac:hint
+        || apply_ifprop_hint hint
           || (apply ifprop_decomp; intro_rewrite)
       | |- _ =>    default_simplify
         || (apply wlp_unfold; 
@@ -395,7 +395,7 @@ Example of use:
 
 
   Ltac xasimplify hint:=
-    repeat (intros; xastep ltac:hint; simpl; (tauto || hint)).
+    repeat (intros; xastep hint; simpl; (tauto || hint)).
 
 
 (* Notations *)
