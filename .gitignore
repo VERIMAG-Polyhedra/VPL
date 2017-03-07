@@ -1,0 +1,15 @@
+# coq files
+*.vo
+*.v.d
+*.glob
+*.dv
+*.aux
+
+src/core/MinLP.ml
+All_t.native
+META
+Makefile.config
+_build/*
+src/coq/extracted/*
+src/core/MinLP.ml
+
