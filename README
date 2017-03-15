@@ -30,11 +30,6 @@ If you find a bug or have any comment, feel free to contact us at <???>
 		<https://forge.ocamlcore.org/projects/zarith>
 		available in OPAM
 		tested with version 1.4.1
-
-        - ocamlnet
-                <http://projects.camlcity.org/projects/ocamlnet.html>
-                available in OPAM
-	        tested with version 4.1.2
 		
 	- glpk (optional)
 		<https://www.gnu.org/software/glpk/>

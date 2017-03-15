@@ -1,6 +1,5 @@
 true: package(zarith)
 true: package(unix)
-true: package(netstring)
 true: warn_error_a
 <src/coq/Tactic/*>:not_hygienic
 
