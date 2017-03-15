@@ -43,7 +43,7 @@ If you find a bug or have any comment, feel free to contact us at <???>
 	- coq (optional, if you want to use the certified part of the VPL)
 		<https://coq.inria.fr/>
 		available in OPAM
-		required version 8.5.1
+		required version 8.6
 		
 2. Compiling the VPL
 *********************
