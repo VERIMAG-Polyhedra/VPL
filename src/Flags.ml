@@ -10,9 +10,9 @@ type lp = Glpk | Splx
 (** Choice of the minimization method.
 {ul 
 	{- [Classic]: classical way that uses LP}
-	{- [New2]: New method based on constraint evaluation + LP}}
+	{- [Raytracing]: New method based on constraint evaluation + LP}}
 *)
-type min_method = Classic | New2 of lp | MHeuristic | Apron (* Apron for tests only *)
+type min_method = Classic | Raytracing of lp | MHeuristic | Apron (* Apron for tests only *)
 
 (** Choice of the point type.
 {ul 
@@ -49,8 +49,8 @@ let min_to_string : unit -> string
 	= fun () ->
 	match !min with
 	| Classic -> "Classic"
-	| New2 Glpk -> "New2:Glpk"
-	| New2 Splx -> "New2:Splx"
+	| Raytracing Glpk -> "Raytracing:Glpk"
+	| Raytracing Splx -> "Raytracing:Splx"
 	| MHeuristic -> "Heuristic"
 	| Apron -> "Apron"
 	

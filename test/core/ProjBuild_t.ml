@@ -107,7 +107,7 @@ module Test (Min : Min.Type) = struct
 	] |> T.suite Min.name
 end
 
-module New2 = struct
+module Raytracing = struct
 	module Glpk = struct
 		module Rat = struct
 			module Min = Min.RatVec_Glpk2(Vector.Rat.Positive)
@@ -144,11 +144,11 @@ end
 
 let ts : T.testT
 	= [
-	New2.Glpk.Rat.ts;
-	New2.Glpk.Float.ts;
-	New2.Glpk.Symbolic.ts;
-	New2.Splx.Rat.ts;
-	New2.Splx.Float.ts;
-	New2.Splx.Symbolic.ts;
+	Raytracing.Glpk.Rat.ts;
+	Raytracing.Glpk.Float.ts;
+	Raytracing.Glpk.Symbolic.ts;
+	Raytracing.Splx.Rat.ts;
+	Raytracing.Splx.Float.ts;
+	Raytracing.Splx.Symbolic.ts;
 	] 
 	|> T.suite "ProjBuild"

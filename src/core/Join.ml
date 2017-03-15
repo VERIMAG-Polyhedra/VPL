@@ -526,7 +526,7 @@ module Classic = struct
 	module Float = Build(Min.Classic(Vector.Float.Positive))
 end
 
-module New2 = struct
+module Raytracing = struct
 	module Glpk = struct
 		module Rat = Build(Min.RatVec_Glpk2(Vector.Rat.Positive))
 
@@ -556,17 +556,17 @@ let join : Flags.scalar -> 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t 
 	= fun scalar factory1 factory2 epsilon_opt p1 p2 ->
 	Debug.log DebugTypes.Title (lazy "Building Projection");
 	match !Flags.min with
-	| Flags.New2 Flags.Glpk ->	begin
+	| Flags.Raytracing Flags.Glpk ->	begin
 		match scalar with
-  		| Flags.Symbolic -> New2.Glpk.Symbolic.join factory1 factory2 epsilon_opt p1 p2 
-		| Flags.Float -> New2.Glpk.Float.join factory1 factory2 epsilon_opt p1 p2 
-		| Flags.Rat -> New2.Glpk.Rat.join factory1 factory2 epsilon_opt p1 p2 
+  		| Flags.Symbolic -> Raytracing.Glpk.Symbolic.join factory1 factory2 epsilon_opt p1 p2 
+		| Flags.Float -> Raytracing.Glpk.Float.join factory1 factory2 epsilon_opt p1 p2 
+		| Flags.Rat -> Raytracing.Glpk.Rat.join factory1 factory2 epsilon_opt p1 p2 
 		end
-	| Flags.New2 Flags.Splx -> begin
+	| Flags.Raytracing Flags.Splx -> begin
 		match scalar with
-  		| Flags.Symbolic -> New2.Splx.Symbolic.join factory1 factory2 epsilon_opt p1 p2 
-		| Flags.Float -> New2.Splx.Float.join factory1 factory2 epsilon_opt p1 p2 
-		| Flags.Rat -> New2.Splx.Rat.join factory1 factory2 epsilon_opt p1 p2 
+  		| Flags.Symbolic -> Raytracing.Splx.Symbolic.join factory1 factory2 epsilon_opt p1 p2 
+		| Flags.Float -> Raytracing.Splx.Float.join factory1 factory2 epsilon_opt p1 p2 
+		| Flags.Rat -> Raytracing.Splx.Rat.join factory1 factory2 epsilon_opt p1 p2 
 		end 
 	| Flags.Classic -> begin
 		match scalar with

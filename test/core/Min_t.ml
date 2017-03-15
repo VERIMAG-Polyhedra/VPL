@@ -242,7 +242,7 @@ module Classic = struct
 		= T.suite "Classic" [Rat.ts ; Float.ts ; Symbolic.ts]
 end
 
-module New2 = struct
+module Raytracing = struct
 	module Glpk = struct
 		module Rat = Test(Min.RatVec_Glpk2(Vector.Rat.Positive))
 		module Float = Test(Min.RatVec_Glpk2(Vector.Float.Positive))
@@ -259,8 +259,8 @@ module New2 = struct
 	end
 	
 	let ts : T.testT
-		= T.suite "New2" [Glpk.ts ; Splx.ts] 
+		= T.suite "Raytracing" [Glpk.ts ; Splx.ts] 
 end
 
 let ts: T.testT
-= T.suite "Min" [Classic.ts ; New2.ts]
+= T.suite "Min" [Classic.ts ; Raytracing.ts]

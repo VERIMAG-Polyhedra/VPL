@@ -472,9 +472,9 @@ let rmRedAux: 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
 		then s
 		else
 			match min with
-			| Flags.New2 (Flags.Splx)->
+			| Flags.Raytracing (Flags.Splx)->
 				RmRedAux.rat_splx2 s point
-			| Flags.New2 (Flags.Glpk)->
+			| Flags.Raytracing (Flags.Glpk)->
 				RmRedAux.rat_glpk2 s point
 			| Flags.Classic -> begin
 				Stat.base_n_cstr := List.length s;

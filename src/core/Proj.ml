@@ -267,7 +267,7 @@ module Classic = struct
 	module Float = Proj(Min.Classic(Vector.Float.Positive))
 end
 
-module New2 = struct
+module Raytracing = struct
 	module Glpk = struct
 		module Rat = struct
 			module Min = Min.RatVec_Glpk2(Vector.Rat.Positive)
@@ -314,17 +314,17 @@ let proj : 'c Cert.t -> Flags.scalar -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c 
   		= fun factory scalar xs ineqs ->
   		Debug.log DebugTypes.Title (lazy "Building Projection");
   		match !Flags.min with
-  		| Flags.New2 Flags.Glpk ->	begin
+  		| Flags.Raytracing Flags.Glpk ->	begin
   			match scalar with
-	  		| Flags.Symbolic -> New2.Glpk.Symbolic.projDefault factory xs ineqs
-  			| Flags.Float -> New2.Glpk.Float.projDefault factory xs ineqs
-  			| Flags.Rat -> New2.Glpk.Rat.projDefault factory xs ineqs 
+	  		| Flags.Symbolic -> Raytracing.Glpk.Symbolic.projDefault factory xs ineqs
+  			| Flags.Float -> Raytracing.Glpk.Float.projDefault factory xs ineqs
+  			| Flags.Rat -> Raytracing.Glpk.Rat.projDefault factory xs ineqs 
   			end
-  		| Flags.New2 Flags.Splx -> begin
+  		| Flags.Raytracing Flags.Splx -> begin
 			match scalar with
-	  		| Flags.Symbolic -> New2.Splx.Symbolic.projDefault factory xs ineqs
-  			| Flags.Float -> New2.Splx.Float.projDefault factory xs ineqs 
-  			| Flags.Rat -> New2.Splx.Rat.projDefault factory xs ineqs
+	  		| Flags.Symbolic -> Raytracing.Splx.Symbolic.projDefault factory xs ineqs
+  			| Flags.Float -> Raytracing.Splx.Float.projDefault factory xs ineqs 
+  			| Flags.Rat -> Raytracing.Splx.Rat.projDefault factory xs ineqs
   			end 
   		| Flags.Classic -> begin
   			match scalar with

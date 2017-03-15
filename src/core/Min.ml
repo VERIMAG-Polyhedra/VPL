@@ -797,7 +797,7 @@ module Min2 (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP 
 		
 	let minimize : conversion -> VecInput.t -> CsInput.t list -> (CsInput.t * VecInput.t) list	
 		= fun conversion point cstrs ->
-		Debug.log DebugTypes.Title (lazy ("Minimization : New2 with vector type = " ^ (VecInput.name)));
+		Debug.log DebugTypes.Title (lazy ("Minimization : Raytracing with vector type = " ^ (VecInput.name)));
 		Debug.log DebugTypes.MInput (lazy (Printf.sprintf "Interior Point : %s\nConstraints : %s"
 			(VecInput.to_string VecInput.V.to_string point)
 			(CsInput.list_to_string cstrs)));
@@ -811,7 +811,7 @@ module Min2 (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP 
 	
 	let minimize_cone : conversion -> VecInput.t -> CsInput.t list -> (CsInput.t * VecInput.t) list	
 		= fun conversion point cstrs ->
-		Debug.log DebugTypes.Title (lazy ("Minimization : New2 with vector type = " ^ (VecInput.name)));
+		Debug.log DebugTypes.Title (lazy ("Minimization : Raytracing with vector type = " ^ (VecInput.name)));
 		Debug.log DebugTypes.MInput (lazy (Printf.sprintf "Interior Point : %s\nConstraints : %s"
 			(VecInput.to_string VecInput.V.to_string point)
 			(CsInput.list_to_string cstrs)));
@@ -826,7 +826,7 @@ module Min2 (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP 
 end
 
 module RatVec_Glpk2(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
-	let name = "New2:Glpk:" ^ (Vec.Coeff.name)
+	let name = "Raytracing:Glpk:" ^ (Vec.Coeff.name)
 	module Vec = Vec
 	module LP = MinLP.Glpk(Cstr.Float.Positive)
 	include Min2(Vec)(Cstr.Float.Positive.Vec)(Cstr.Rat.Positive)(LP)
@@ -856,7 +856,7 @@ module RatVec_Glpk2(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) =
 end
 
 module RatVec_Splx2(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
-	let name = "New2:Splx:" ^ (Vec.Coeff.name)
+	let name = "Raytracing:Splx:" ^ (Vec.Coeff.name)
 	module Vec = Vec
 	module LP = MinLP.Splx(Cstr.Float.Positive)
 	include Min2(Vec)(Cstr.Float.Positive.Vec)(Cstr.Rat.Positive)(LP)
@@ -899,15 +899,15 @@ module Heuristic(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = st
 	
 	let minimize point constraints = 
 		match Heuristic.min constraints with
-		| Flags.New2 (Flags.Glpk) -> Glpk.minimize point constraints
-		| Flags.New2 (Flags.Splx) -> Splx.minimize point constraints
+		| Flags.Raytracing (Flags.Glpk) -> Glpk.minimize point constraints
+		| Flags.Raytracing (Flags.Splx) -> Splx.minimize point constraints
 		| Flags.Classic -> Classic.minimize point constraints
 		| _ -> Pervasives.invalid_arg "Min.Heuristic.minimize" 
 		
 	let minimize_cone point constraints = 
 		match Heuristic.min constraints with
-		| Flags.New2 (Flags.Glpk) -> Glpk.minimize_cone point constraints
-		| Flags.New2 (Flags.Splx) -> Splx.minimize_cone point constraints
+		| Flags.Raytracing (Flags.Glpk) -> Glpk.minimize_cone point constraints
+		| Flags.Raytracing (Flags.Splx) -> Splx.minimize_cone point constraints
 		| Flags.Classic -> Classic.minimize_cone point constraints
 		| _ -> Pervasives.invalid_arg "Min.Heuristic.minimize_cone" 
 end
