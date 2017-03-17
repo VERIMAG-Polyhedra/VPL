@@ -116,8 +116,8 @@ module PLP(Minimization : Min.Type) = struct
 				(Some (List.hd plp.todo), plp)
 	end
 	*)
-	let standard : Region.t -> ExplorationPoint.t -> t -> t
-			= fun reg point plp ->
+	let standard : Region.t option -> Region.t -> ExplorationPoint.t -> t -> t
+			= fun origin_reg reg point plp ->
 			Debug.log DebugTypes.Normal (lazy "Adding new region to plp");
 			let id = reg.Region.id in
 			let regs = MapV.add id reg plp.regs in
@@ -127,15 +127,17 @@ module PLP(Minimization : Min.Type) = struct
 				let todo = new_points @ (Add_Region.remove_point point plp.todo) in
 				{regs = regs ; todo = todo} 
 			| ExplorationPoint.Direction (id, (cstr, pointToExplore)) as point ->
-				let todo = 
-					if Add_Region.should_explore_again cstr reg
-					then new_points @ plp.todo
-					else new_points @ (Add_Region.remove_point point plp.todo)
+				let todo = match origin_reg with
+					| Some origin_reg -> 
+						if Add_Region.should_explore_again origin_reg cstr reg
+						then new_points @ plp.todo
+						else new_points @ (Add_Region.remove_point point plp.todo)
+					| None -> new_points @ plp.todo
 				in
 				{regs = regs ; todo = todo}
 		
-	let standard_test : Region.t -> ExplorationPoint.t -> t -> t
-			= fun reg point plp ->
+	let standard_test : Region.t option -> Region.t -> ExplorationPoint.t -> t -> t
+			= fun _ reg point plp ->
 			Debug.log DebugTypes.Normal (lazy "Adding new region to plp");
 			let regs = MapV.add reg.Region.id reg plp.regs in
 			let todo = Add_Region.remove_point point plp.todo in

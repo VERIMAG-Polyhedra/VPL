@@ -42,7 +42,7 @@ let level_selection : t -> levelT list
 	| Min -> []
 	| MinLP -> []
 	| Proj -> [] 
-	| PLPCore -> [Title ; MInput ; MOutput ; Normal]
+	| PLPCore -> [Title ; MInput ; MOutput ; Normal ; Detail]
 	| Pol -> [Title ; MInput ; MOutput]
 	| PSplx -> []
 	| Horacle -> [Title ; MInput ; MOutput ]

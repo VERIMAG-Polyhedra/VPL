@@ -16,6 +16,9 @@ module type Type = sig
 	(** Equality predicate for two parametric coefficients *)
 	val equal : t -> t -> bool
 
+	(** Tests if the given parametric coefficient is null. *)
+	val is_zero : t -> bool
+	
 	(** [pr paramPr c] pretty-prints parametric coefficient [c]
 	using [paramPr] to get a string representation of the parameters. *)
 	val pr : (int -> string) -> t -> string

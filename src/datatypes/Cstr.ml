@@ -150,6 +150,9 @@ module type Type = sig
 	
 	(** [change_variable x lin c cstr] proceeds to the change of variable [x = lin + c] in [cstr]. *)
 	val change_variable : Vec.V.t -> Vec.t -> Vec.Coeff.t -> t -> t
+	
+	(** Returns a point that saturates the hyperplane defined by the given constraint. *)
+	val get_saturating_point : t -> Vec.t
 end
 
 module Cstr (Vec : Vector.Type) = struct
@@ -390,7 +393,12 @@ module Cstr (Vec : Vector.Type) = struct
 			|> Vec.add v1 in
 		let c2 = Coeff.sub (get_c cstr) (Coeff.mul coeff c) in
 		{cstr with v = v2 ; c = c2}
-		
+	
+	let get_saturating_point : t -> Vec.t
+		= fun cstr ->
+		let (var,coeff) = Vec.toList cstr.v 
+			|> List.hd in
+		Vec.mk [Coeff.div cstr.c coeff, var]
 end
 
 module Rat = struct
@@ -451,6 +459,7 @@ module Rat = struct
 		val rename : Vec.V.t -> Vec.V.t -> t -> t
 		val rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
 		val change_variable : Vec.V.t -> Vec.t -> Vec.Coeff.t -> t -> t
+		val get_saturating_point : t -> Vec.t
 		(**/**)
 		
 		(** Put the constraint in canonic form. *)

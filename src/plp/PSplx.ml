@@ -42,7 +42,8 @@ module type Type = sig
 	val getParams : t -> Vec.V.t list
 	
 	val obj_value : t -> ParamCoeff.t
-
+	val obj_value' : t -> Cs.t
+	
 	(** [getCurVal sx] returns the current value of the basic variables in [sx].
 	The value of the other variables is implicitly zero.  Each basic variable
 	is given its value as a pair (column number, value) *)
@@ -69,6 +70,8 @@ module type Type = sig
 	val addSlacks : int -> t -> t
 
 	val get_row_pivot : Tableau.Matrix.t -> int -> int
+	
+	(** [pivot sx row col] performs a pivot between [row] and [col]. *)
 	val pivot : t -> int -> int -> t
 
 	module Diag : sig
@@ -173,7 +176,15 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 				
 		let obj_value : t -> ParamCoeff.t
 		  = fun sx -> Objective.value sx.obj
-
+		
+		let obj_value' : t -> Cs.t
+			= fun sx ->
+			let pCoeff = sx |> get_obj |> Objective.value in
+			ParamCoeff.to_cstr 
+			(fun i -> Naming.to_user sx.names Naming.Param i
+				|> Pervasives.fst) 
+			ParamCoeff.LE0 pCoeff  
+			
 		let equal : t -> t -> bool
 		  = fun sx sx' ->
 		  Objective.equal sx.obj sx'.obj
@@ -270,21 +281,21 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 		  = let bounds : Tableau.Matrix.t -> int -> Q.t option list
 				= fun m col ->
 				List.map2
-			(fun a b -> if Q.sign a > 0 then Some (Q.div b a) else None)
-			(List.map (fun r -> Tableau.Vector.get col r) m)
-			(List.map (fun r -> Tableau.Vector.get (Tableau.Matrix.nCols m - 1) r) m)
-			 in
+					(fun a b -> if Q.sign a > 0 then Some (Q.div b a) else None)
+					(List.map (fun r -> Tableau.Vector.get col r) m)
+					(List.map (fun r -> Tableau.Vector.get (Tableau.Matrix.nCols m - 1) r) m)
+			 	in
 			 let min : (Q.t * int) option * int -> Q.t option -> (Q.t * int) option * int
 				= fun (mcur, idx) ma ->
 				let mcur' =
-			match ma with
-			| None -> mcur
-			| Some a ->
-				match mcur with
-				| None -> Some (a, idx)
-				| Some cur -> if Q.lt a (Pervasives.fst cur) then Some (a, idx) else mcur
-				in
-				(mcur', idx + 1)
+				match ma with
+				| None -> mcur
+				| Some a ->
+					match mcur with
+					| None -> Some (a, idx)
+					| Some cur -> if Q.lt a (Pervasives.fst cur) then Some (a, idx) else mcur
+					in
+					(mcur', idx + 1)
 			 in
 			 fun m col ->
 			 bounds m col |> List.fold_left min (None, 0)

@@ -2,49 +2,12 @@ module Print = struct
 
 	let print_list : ('a -> string) -> 'a list -> string -> unit
 		= fun pr l sep-> Misc.list_to_string pr l sep|> Pervasives.print_endline
-  
-	(*(** get_width_poly p returns the length of the string polynomial_to_string p *)
-	let (get_width_poly : PolyQ.t -> int)
-		= fun p ->
-		String.length (PolyQ.to_string p);;*)
 
 	(** get_width c returns the length of the string to_string c *)
 	let (get_width : Scalar.Rat.t -> int)
 	= fun c ->
 	String.length (Scalar.Rat.to_string c);;
-(*
-	let rec(get_max_rec : int list -> int -> int)
-		= fun l max->
-		match l with
-		| [] -> max
-		| x :: tail -> if x > max then get_max_rec tail x else get_max_rec tail max;;
 
-	(** get_max l returns the maximum integer of the int list l *)
-	let (get_max : int list-> int)
-		= fun l ->
-		match l with
-		| [] -> 0
-		| x :: tail -> get_max_rec tail x;;
-
-	(** get_min compare l returns the minimum element of the list l according to the relation compare
-	l must be non-empty *)
-	let (get_min : ('a -> 'a -> int) -> 'a list-> 'a)
-		= fun compare l ->
-		List.nth (List.sort compare l) 0;;
-
-	(** get_max compare l returns the maximum element of the list l according to the relation compare
-	l must be non-empty *)
-	let (get_max : ('a -> 'a -> int) -> 'a list-> 'a)
-		= fun compare l ->
-		List.nth (List.sort compare l) ((List.length l)-1);;
-*)
-(*
-	(** spaces s i returns a string composed of i times s *)
-	let rec(string_repeat : string -> int -> string)
-		= fun s i ->
-		if i = 0 then "" else String.concat "" [s ; string_repeat s (i-1)];;
-end
-*)
 end
 
 module Vector
