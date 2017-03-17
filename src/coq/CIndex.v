@@ -5,6 +5,7 @@ Require Import OrderedType.
 Local Open Scope list_scope.
 Import List.ListNotations.
 Open Scope nat_scope.
+Require Qcanon.
 
 Module Type Num.
   Parameter t : Type.
@@ -551,7 +552,7 @@ End NatNum.
 
 Module QcNum <: Num.
   Local Open Scope Q_scope.
-  Require Import Qcanon.
+  Import Qcanon.
   Definition t := Qc.
  
   Definition le := Qcle.
