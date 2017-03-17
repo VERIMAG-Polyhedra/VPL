@@ -71,8 +71,7 @@ Makefile.config:
 		echo "	OCAMLRUNPARAM=b ./demo_vplcoq.byte"; \
 		echo ; \
 		echo "save_coq_extraction: coqsrc"; \
-		echo "	rm -rf ./src/coq_already_extracted"; \
-		echo "	rsync -avz ./src/coq/extracted/ ./src/coq_already_extracted"; \
+		echo "	rsync -av -del ./src/coq/extracted/ ./src/coq_already_extracted"; \
 		echo ; \
 		echo "demo_vplcoq: save_coq_extraction"; \
 		echo "	\$$(OCB) demo_vplcoq.native"; \
