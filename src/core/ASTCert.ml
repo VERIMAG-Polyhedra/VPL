@@ -133,7 +133,9 @@ let profiling_factory i = {
 
 let basic_mul n c = 
   if (Rat.equal Rat.u n) then c else make_dcstr(Mul(n,c))
-  
+
+let mu = Rat.neg (Rat.u)
+    
 let smart_mul n c =
   assert ((Rat.cmpz n) <> 0);
   if (Rat.equal Rat.u n) then
@@ -143,6 +145,7 @@ let smart_mul n c =
     | Top -> c
     | Triv(t, n') -> make_dcstr (Triv(t, Rat.mul n n'))
     | Mul(n', c') -> basic_mul (Rat.mul n n') c'
+    | Merge(c1, c2) when (Rat.equal mu n) -> make_dcstr (Merge(c2,c1))
     | _ -> make_dcstr (Mul(n, c))
   )
 
