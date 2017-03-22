@@ -423,7 +423,7 @@ let isRed: Splx.t -> int -> bool
 
 module RmRedAux = struct
 
-	let rat_glpk2: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c Cons.t list
+	let rat_glpk2: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 		= fun s point -> 
 		let point = Cstr.Rat.Positive.Vec.M.map Cstr.Rat.Positive.Vec.ofSymbolic point in
 		let cstrs = List.map Cons.get_c s in 
@@ -434,7 +434,7 @@ module RmRedAux = struct
 		in	
 		s'
 	
-	let rat_splx2: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c Cons.t list
+	let rat_splx2: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 		= fun s point -> 
 		let point = Cstr.Rat.Positive.Vec.M.map Cstr.Rat.Positive.Vec.ofSymbolic point in
 		let cstrs = List.map Cons.get_c s in 
@@ -458,6 +458,7 @@ module RmRedAux = struct
 		in
 		List.fold_left classic (sx, []) conss
 		|> Pervasives.snd
+			
 end
 
 (** [rmRed s sx] removes all the redundancy from [s]. The simplex object [sx] is

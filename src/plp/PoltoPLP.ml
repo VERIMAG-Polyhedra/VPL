@@ -11,8 +11,8 @@ module type Type = sig
 	val join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
 end
 
-module MinFloat = Min.RatVec_Glpk2(Vec)
-module Join : Type = struct
+module MinFloat = Min.RatVec_Splx2(Vec)
+module Join = struct
 	include Join.Build(MinFloat)
 	
 	(*
