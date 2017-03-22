@@ -580,7 +580,7 @@ Module Handelman_compute.
 
     destruct (QTerm.pseudoIsZero te).
     -- rewrite IS_ZERO in COMPAT.
-      Require Import Qcanon.
+      Import Qcanon.
       rewrite Qcplus_0_l in COMPAT. 
       rewrite COMPAT.
       
@@ -638,7 +638,7 @@ Module Handelman_compute.
 
     destruct (QTerm.pseudoIsZero te).
     -- rewrite IS_ZERO in COMPAT.
-      Require Import Qcanon.
+      Import Qcanon.
       rewrite Qcplus_0_l in COMPAT. 
       rewrite COMPAT.
       
