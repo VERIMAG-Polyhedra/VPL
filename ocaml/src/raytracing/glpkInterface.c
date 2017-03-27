@@ -6,6 +6,7 @@
 #define _GLPKINTER
 #include "glpkInterface.h"
 #endif
+#include <iostream>
 
 GlpkInterface::GlpkInterface () 
   : _epsilon(0.1) {

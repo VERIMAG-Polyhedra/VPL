@@ -33,16 +33,17 @@ extern "C" void minimize(Polyhedron* poly){
 	poly->Minimize();
 }
 
+/*
 extern "C" value get_true_constraints(Polyhedron* poly){
 	CAMLparam0();
 	CAMLlocal1(r);
-/*	
+
 	std::vector<int> ids = poly->GetActiveIdx();
 	int* ids_a = &ids[0];
 	r = caml_alloc_array(caml_copy_int32, ids_a);
-	CAMLreturn (r);*/
+	CAMLreturn (r);
 }
-
+*/
 
 extern "C" value is_empty(Polyhedron* poly){
 	return Val_bool(poly->IsEmpty());

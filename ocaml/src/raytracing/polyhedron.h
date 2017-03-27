@@ -30,7 +30,7 @@
 #define _POINT
 #include "point.h"
 #endif
-#include <flint/fmpq_matxx.h>
+
 
 #ifdef _OPENMP
 #define VERIMAG_POLYHEDRA_MINIMIZE_OPENMP
@@ -43,8 +43,7 @@
 typedef Eigen::MatrixXd Matrix ;
 typedef Eigen::VectorXd Vector ;
 typedef Eigen::VectorXi VectorZ ;
-typedef flint::fmpqxx RNumber ;
-typedef flint::fmpq_matxx RMatrix ;
+
 enum {REDUNDANT = 0, IRREDUNDANT = 1, DUPLICATED = 2} ;
 
 class Polyhedron {
@@ -97,8 +96,6 @@ public:
   void SetWitnessRay(int idx, const Vector& rayDirect) ;
   void SetWitnessRay(int consIdx, int rayIdx) ;
   std::vector<Point> GetWitness () ;
-  bool GetExactSolution (int objdir) ;
-  bool GetExactSolution (const VectorZ& obj, int objdir) ;
 
   // inline functions 
   const Matrix& get_coefficients () const {
@@ -143,6 +140,4 @@ private:
   Matrix _witness_ray2 ;
   std::vector<Point> _witness_point ;
 
-  //TODO just have a try
-  RNumber _exact_solution ; 
 } ;
