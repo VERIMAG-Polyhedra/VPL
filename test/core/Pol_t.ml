@@ -1,3 +1,5 @@
+open Vpl
+
 module EqSet = IneqSet.EqSet
 module Cons = EqSet.Cons
 module Cert = Cons.Cert

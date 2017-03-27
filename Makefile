@@ -1,59 +1,30 @@
-# this configuration file is generated from configure.make
-include Makefile.config
+all : vpl
 
-SRC = -I src -I src/datatypes -I src/core -I src/lin -I src/misc -I src/plp \
-	-I src/lin/handelman -I src/lin/handelman/oracle -I src/lin/intervalization -I src/smt -I src/lin/poly \
-	-I src/interface $(COQSRC)
+coqsrc:
+	$(MAKE) -C coq/ DemoExtractTests.vo
 
-TEST = -I test -I test/datatypes -I test/lin -I test/plp -I test/core -I test/lin/handelman -I test/lin/handelman/oracle
-INCLUDES = $(SRC) $(TEST)
+vpl: coqsrc
+	cd ocaml; oasis setup; $(MAKE)
+#	cd ocaml; oasis setup -setup-update dynamic; $(MAKE)
 
-OCAMLDOC_FLAGS = -hide-warnings
-OCB_FLAGS = -use-ocamlfind $(INCLUDES)
+clean_caml:
+	$(MAKE) -C ocaml/ clean
+	$(MAKE) -C test/ clean
+	rm ocaml/configure ocaml/Makefile ocaml/setup.* ocaml/_tags
 
-clean:
-	$(OCB) -clean
-	rm -f Makefile.config 
-	rm -f META
-	rm -f src/core/MinLP.ml
+clean_coq:
+	$(MAKE) -C coq clean
+	
+allclean: clean_caml clean_coq
 
-allclean: coqclean clean
+install: vpl
+	$(MAKE) -C ocaml/ install
+
+uninstall: vpl
+	$(MAKE) -C ocaml/ uninstall
 
 check:
-	$(OCB) All_t.native
-	./_build/test/All_t.native
+	$(MAKE) -C test/ check
 
-vpl: vpl.cmo 
-	$(OCB) vpl.cma
-	$(OCB) vpl.cmxa
-	$(OCB) vpl.cmxs
+.PHONY: all coqsrc vpl clean_caml clean_coq allclean install uninstall check
 
-# check that packages can be found
-sanity:
-	ocamlfind query zarith 
-	ocamlfind query unix
-
-#slave:
-#	$(OCB) PLPSlave.native
-
-doc:
-	$(OCB) -docflag $(OCAMLDOC_FLAGS) vpl.docdir/index.html
-
-java : 
-	ocamljava $(OCB) -o vpl.jar Pol.ml
-	
-configure: Makefile.config
-
-# proxy rule for rebuilding configuration files directly from the main Makefile
-Makefile.config:
-	$(MAKE) -f configure.make all
-
-TOINSTALL := _build/vpl.cmo _build/vpl.cmi _build/vpl.cma _build/vpl.cmxa _build/vpl.a _build/vpl.cmxs _build/vpl.cmx _build/vpl.mlpack
-
-install:
-	ocamlfind install vpl META $(TOINSTALL)
-
-uninstall:
-	ocamlfind remove vpl
-
-.PHONY: all clean vpl cvpl sanity check doc coqsrc demo_vplcoq_debug demo_vplcoq coqclean allclean install uninstall configure check_glpk save_coq_extraction

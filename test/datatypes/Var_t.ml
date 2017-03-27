@@ -1,3 +1,5 @@
+open Vpl
+
 module Positive = struct
 	module V = Var.Positive
 	(* V.next *)

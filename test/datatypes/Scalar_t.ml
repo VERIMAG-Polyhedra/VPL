@@ -1,3 +1,5 @@
+open Vpl
+
 module Test (Coeff : Scalar.Type) = struct
 	type sign_t = P | Z | N
 

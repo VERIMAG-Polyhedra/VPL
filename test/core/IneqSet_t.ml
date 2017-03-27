@@ -1,3 +1,5 @@
+open Vpl
+
 module Cs = Cstr.Rat.Positive
 module EqSet = IneqSet.EqSet
 module Cons = EqSet.Cons

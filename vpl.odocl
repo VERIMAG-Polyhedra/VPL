@@ -1,8 +1,0 @@
-Flags
-UserInterface NCInterface NCDomain CDomain 
-Calculator
-Pol
-Cert Cons 
-Scalar Var Vector Cstr
-Misc DebugTypes Debug 
-Poly CstrPoly

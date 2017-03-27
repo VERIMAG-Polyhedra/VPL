@@ -1,3 +1,5 @@
+open Vpl
+
 module Test(Cs : Cstr.Rat.Type) = struct
 
 	module ParamCoeff = ParamCoeff.ParamCoeff(Cs)

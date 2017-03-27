@@ -1,3 +1,5 @@
+open Vpl
+
 module Test (Cs : Cstr.Type) = struct
 	let x = Cs.Vec.V.fromInt 1
 	let y = Cs.Vec.V.fromInt 2

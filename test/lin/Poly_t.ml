@@ -1,3 +1,5 @@
+open Vpl
+
 module Test (Vec : Vector.Rat.Type) = struct
 
 	module Poly = Poly.Poly(Vec)	

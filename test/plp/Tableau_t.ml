@@ -1,3 +1,5 @@
+open Vpl
+
 module Vector_t
   = struct
 

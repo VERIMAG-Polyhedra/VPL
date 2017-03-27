@@ -1,4 +1,5 @@
 (* Test suite for Opt. *)
+open Vpl
 open Splx
 
 let x = V.fromInt 1

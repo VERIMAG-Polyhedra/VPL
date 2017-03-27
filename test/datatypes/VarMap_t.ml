@@ -1,3 +1,5 @@
+open Vpl
+
 module Test (M: VarMap.Type) = struct
 	module V = M.V
 

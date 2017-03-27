@@ -1,3 +1,5 @@
+open Vpl
+
 module VectorRtree = struct
 	
 	module Test(Coeff : Scalar.Type) = struct

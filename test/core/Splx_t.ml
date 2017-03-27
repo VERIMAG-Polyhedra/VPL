@@ -1,3 +1,5 @@
+open Vpl
+
 module Test (Cs : Cstr.Rat.Type) = struct
 	
 	module Cs = Cstr.Rat.Positive (* XXX: à retirer pour généraliser à Var.Int *)

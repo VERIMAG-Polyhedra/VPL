@@ -1,3 +1,5 @@
+open Vpl
+
 module Cs = Cstr.Rat.Positive
 
 module Test (Min : Min.Type) = struct
@@ -68,14 +70,9 @@ module Test (Min : Min.Type) = struct
 				(Misc.list_eq (fun cstr cstrs -> List.exists (fun c -> Cs.equal c cstr) cstrs))
 				ecstrs acstrs state
 		in
+		
 		let tcs : (string * (Cs.t * Vec.t) list * Cs.t list * bool) list
 			= [
-					"empty",
-					Vec.nil,
-					[],
-					[],
-					false
-				;
 					"singleton",
 					Vec.nil,
 					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u],
@@ -221,8 +218,8 @@ module Test (Min : Min.Type) = struct
 					 true*)
 			]
 		|> List.fold_left (fun res (name, point, cstrs, ecstrs, b) ->
-				try (name, Min.minimize point cstrs, ecstrs, b) :: res
-				with MinLP.Glpk_not_installed -> res) []
+			(name, Min.minimize point cstrs, ecstrs, b) :: res) 
+			[]
 		in
 		T.suite "minimize" [
 				T.suite "check_points" (List.map check_points tcs);
@@ -244,16 +241,16 @@ end
 
 module Raytracing = struct
 	module Glpk = struct
-		module Rat = Test(Min.RatVec_Glpk2(Vector.Rat.Positive))
-		module Float = Test(Min.RatVec_Glpk2(Vector.Float.Positive))
-		module Symbolic = Test(Min.RatVec_Glpk2(Vector.Symbolic.Positive))
+		module Rat = Test(Min.Glpk(Vector.Rat.Positive))
+		module Float = Test(Min.Glpk(Vector.Float.Positive))
+		module Symbolic = Test(Min.Glpk(Vector.Symbolic.Positive))
 		let ts : T.testT
-			= T.suite "Glpk" [Rat.ts ; Float.ts ; Symbolic.ts]
+			= T.suite "Glpk" [(*Rat.ts ; Float.ts ; Symbolic.ts*)]
 	end
 	module Splx = struct
-		module Rat = Test(Min.RatVec_Splx2(Vector.Rat.Positive))
-		module Float = Test(Min.RatVec_Splx2(Vector.Float.Positive))
-		module Symbolic = Test(Min.RatVec_Splx2(Vector.Symbolic.Positive))
+		module Rat = Test(Min.Splx(Vector.Rat.Positive))
+		module Float = Test(Min.Splx(Vector.Float.Positive))
+		module Symbolic = Test(Min.Splx(Vector.Symbolic.Positive))
 		let ts : T.testT
 			= T.suite "Splx" [Rat.ts ;  Float.ts ; Symbolic.ts]
 	end

@@ -1,3 +1,5 @@
+open Vpl
+
 module Cs = Cstr.Rat.Positive
 module Var = Var.Positive
 
@@ -110,33 +112,33 @@ end
 module Raytracing = struct
 	module Glpk = struct
 		module Rat = struct
-			module Min = Min.RatVec_Glpk2(Vector.Rat.Positive)
+			module Min = Min.Glpk(Vector.Rat.Positive)
 			include Test(Min)
 		end
 
 		module Float = struct
-			module Min = Min.RatVec_Glpk2(Vector.Float.Positive)
+			module Min = Min.Glpk(Vector.Float.Positive)
 			include Test(Min)
 		end
 
 		module Symbolic = struct
-			module Min = Min.RatVec_Glpk2(Vector.Symbolic.Positive)
+			module Min = Min.Glpk(Vector.Symbolic.Positive)
 			include Test(Min)
 		end
 	end
 	module Splx = struct
 		module Rat = struct
-			module Min = Min.RatVec_Splx2(Vector.Rat.Positive)
+			module Min = Min.Splx(Vector.Rat.Positive)
 			include Test(Min)
 		end
 
 		module Float = struct
-			module Min = Min.RatVec_Splx2(Vector.Float.Positive)
+			module Min = Min.Splx(Vector.Float.Positive)
 			include Test(Min)
 		end
 
 		module Symbolic = struct
-			module Min = Min.RatVec_Splx2(Vector.Symbolic.Positive)
+			module Min = Min.Splx(Vector.Symbolic.Positive)
 			include Test(Min)
 		end
 	end
