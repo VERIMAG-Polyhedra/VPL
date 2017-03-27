@@ -1,11 +1,11 @@
-Name: FooBar
-Version: 0.1
+Name: Verified Polyhedra Library
+Version: 0.2
 Synopsis: A library about Foo and Bar.
-Authors: Me <me@myhost.com>
-License: LGPL with OCaml linking exception
+Authors: Sylvain Boulmé <Sylvain.Boulme@univ-grenoble-alpes.fr>, Alexandre Maréchal <Alex.Marechal@univ-grenoble-alpes.fr>, David Monniaux <David.Monniaux@univ-grenoble-alpes.fr>, Michaël Périn <Michael.Perin@univ-grenoble-alpes.fr>, Hang Yu <Hang.Yu@univ-grenoble-alpes.fr>
+License: LGPL
 
-Description: FooBar allows to combine foo and bar efficiently. It also allows to interface with baz.
-Homepage: http://foobar.org
+Description: Coq certified abstract domain of convex polyhedra.
+Homepage: https://github.com/VERIMAG-Polyhedra/VPL
 
 OASISFormat: 0.4
 BuildTools: ocamlbuild
