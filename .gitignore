@@ -12,5 +12,6 @@ ocaml/configure
 ocaml/Makefile 
 ocaml/setup.* 
 ocaml/_tags
+ocaml/myocamlbuild.ml
 
 test/_build/*
