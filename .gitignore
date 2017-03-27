@@ -7,10 +7,10 @@
 *.dv
 *.aux
 
-src/core/MinLP.ml
-All_t.native
-META
-Makefile.config
-_build/*
-src/coq/extracted/*
-src/core/MinLP.ml
+ocaml/_build/*
+ocaml/configure 
+ocaml/Makefile 
+ocaml/setup.* 
+ocaml/_tags
+
+test/_build/*
