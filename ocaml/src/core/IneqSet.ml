@@ -517,10 +517,13 @@ let rmRedSyn: 'c t -> 'c Cons.t list -> 'c t
 let addM: V.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 	= fun nvar s conss point -> 
 	let s2 = rmRedSyn s conss in
-	let ilist = List.mapi (fun i c -> (i, Cons.get_c c)) s2 in
-	match Splx.checkFromAdd (Splx.mk nvar ilist) with
-	| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.addM: unexpected unsat set"
-	| Splx.IsOk sx -> rmRedAux s2 sx point
+	if List.length s2 <= 1
+	then s2
+	else 
+		let ilist = List.mapi (fun i c -> (i, Cons.get_c c)) s2 in
+		match Splx.checkFromAdd (Splx.mk nvar ilist) with
+		| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.addM: unexpected unsat set"
+		| Splx.IsOk sx -> rmRedAux s2 sx point
 
 (*
 (*TEST FOR EFFICIENCY : *)

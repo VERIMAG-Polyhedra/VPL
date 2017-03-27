@@ -2,7 +2,7 @@ let datatypes = T.prState "Datatypes"
 	(T.suite "Datatypes" [Var_t.ts ; VarMap_t.ts ; Scalar_t.ts ; Vector_t.ts ; Cstr_t.ts] T.stateZ)
 
 let plp = T.prState "PLP"
-	(T.suite "PLP" [Tableau_t.ts ; ParamCoeff_t.ts ; Objective_t.ts; PSplx_t.ts ; Min_t.ts] T.stateZ)
+	(T.suite "PLP" [Tableau_t.ts ; ParamCoeff_t.ts ; Objective_t.ts; PSplx_t.ts (*; Min_t.ts*)] T.stateZ)
 
 let misc = T.prState "MISC"
 	(T.suite "MISC" [Misc_t.ts ; IndexBuild_t.ts ; HOtypes_t.ts ; Poly_t.ts] T.stateZ)
