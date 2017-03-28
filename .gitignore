@@ -14,6 +14,7 @@ ocaml/setup.*
 ocaml/_tags
 ocaml/myocamlbuild.ml
 ocaml/src/META
-test/All_t.native
 
+test/*.native
 test/_build/*
+test/coq_extracted/*

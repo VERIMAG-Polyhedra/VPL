@@ -2,6 +2,7 @@
    the examples of DemoPLTests.v (in directory coq/)
 *)
 
+open Vpl;;
 open CertcheckerConfig;;
 open Debugging;;
 

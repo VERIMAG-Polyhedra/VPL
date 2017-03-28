@@ -1,7 +1,11 @@
 all : vpl
 
 coqsrc:
-	$(MAKE) -C coq/ DemoExtractTests.vo
+	$(MAKE) -C coq/ DemoExtract.vo
+
+cleancoqsrc:
+	$(MAKE) -C coq/ cleanextract
+	$(MAKE) -C coq/ DemoExtract.vo
 
 vpl: coqsrc
 	cd ocaml; oasis setup; $(MAKE)
@@ -14,7 +18,7 @@ clean_caml:
 
 clean_coq:
 	$(MAKE) -C coq clean
-	
+
 allclean: clean_caml clean_coq
 
 install: vpl
@@ -26,5 +30,5 @@ uninstall: vpl
 check:
 	$(MAKE) -C test/ check
 
-.PHONY: all coqsrc vpl clean_caml clean_coq allclean install uninstall check
+.PHONY: all coqsrc vpl clean_caml clean_coq allclean install uninstall check cleancoqsrc
 
