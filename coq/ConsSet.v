@@ -119,7 +119,7 @@ Module CsImpl(Cstr: CstrSig).
     rep:> Cstr.t;
     rep_sat: forall m, (mod m) -> (Cstr.sat rep m);
   }.
-  Implicit Arguments rep [mod]. 
+  Arguments rep [mod]. 
 
   Hint Resolve rep_sat: pedraQ.
 
@@ -197,8 +197,8 @@ Module CsImpl(Cstr: CstrSig).
 
   End CstrLCFImplem.
 
-  Implicit Arguments certCstrLCF [mod].
-  Implicit Arguments unwrap [mod].
+  Arguments certCstrLCF [mod].
+  Arguments unwrap [mod].
   Hint Resolve unwrap_correct: pedraQ.
 
   Definition join (l1 l2: t) (cert1: list (cstr (sat l1))) (cert2: list (cstr (sat l2))): t :=
