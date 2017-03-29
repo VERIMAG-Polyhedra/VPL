@@ -12,49 +12,80 @@ If you find a bug or have any comment, feel free to contact us at <???>
 
 # INSTALLATION
 
-1. Dependencies
+1. From OPAM
+	
+	First, add the following repository in your opam system:
 
-	The VPL requires the following packages:
-	
-	* [ocaml](http://caml.inria.fr/ocaml/index.en.html)
-	required version >= 4.02.3
-	
-	* [zarith](https://forge.ocamlcore.org/projects/zarith)
-	available in OPAM
-	tested with version 1.4.1
-		
-	- [glpk](https://www.gnu.org/software/glpk/)
-	required version >= 4.61
+    	opam repo add vpl http://www-verimag.imag.fr/~boulme/opam-vpl
 
-	- [coq](https://coq.inria.fr/)	
-	available in OPAM
-	required version 8.6
-		
-2. Compiling the VPL
+	Then, install only one of the following package (depending on your needs):
 
-	To compile the VPL, simply run from the root directory
+	* `vpl-core`: the ocaml library
+
+		```
+		opam install vpl-core
+		```
+		 
+	* `coq-vpl`: the coq library (also install `vpl-core`)
+
+		```
+		opam install coq-vpl
+		```
+
+	* `coq-vpltactic`: the coq plugin (also install `coq-vpl`)
+
+		```
+		opam install coq-vpltactic
+		```
+2. From sources
+
+	1. Dependencies
+
+		The VPL requires the following packages:
 	
-		make vpl
+		* [ocaml](http://caml.inria.fr/ocaml/index.en.html)
+		__required version >= 4.02.3__
 	
-	Tests can be run by typing
+		* [zarith](https://forge.ocamlcore.org/projects/zarith)
+		_available in OPAM_
+		__tested with version 1.4.1__
 		
-		make check
-		
-	Finally, to install the library with ocamlfind, type
-		
-		make install
+		* [glpk](https://www.gnu.org/software/glpk/)
+		__required version >= 4.61__
+
+		* [coq](https://coq.inria.fr/)	
+		_available in OPAM_
+		__required version 8.6__
 	
-	To uninstall the library from ocamlfind, run 
+		* [eigen](http://eigen.tuxfamily.org/)
+		_debian package libeigen3-dev_
+		__tested with version 3.3.3__
+	
+	2. Compiling the VPL
+
+		To compile the VPL, simply run from the root directory
+	
+			make vpl
+	
+		Tests can be run by typing
 		
-		make uninstall
+			make check
+		
+		Finally, to install the library with ocamlfind, type
+		
+			make install
+	
+		To uninstall the library from ocamlfind, run 
+		
+			make uninstall
 
 3. Using the VPL
 
 	There are several ways to use the library.
-	
-	* As an Ocaml library
-	The entry point is then the module UserInterface
-	
-	* From Coq
-	
-	* As a Coq tactic
+
+	* As an Ocaml library (opam package `vpl-core`),
+	the entry point is then the module UserInterface
+
+	* From Coq (opam package `coq-vpl`)
+
+	* As a Coq tactic (opam package `coq-vpltactic`)
