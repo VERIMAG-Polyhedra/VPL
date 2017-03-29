@@ -14,6 +14,8 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 
 1. __From OPAM__
 	
+	__Requires eigen (see Dependencies section below)__
+
 	First, add the following repository in your opam system:
 
     	opam repo add vpl http://www-verimag.imag.fr/~boulme/opam-vpl
@@ -54,6 +56,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 		__required version >= 4.61__
 
 		* [coq](https://coq.inria.fr/)	
+		(mandatory only if you need the vpl from Coq or for the Coq tactic) 
 		_available in OPAM_
 		__required version 8.6__
 	

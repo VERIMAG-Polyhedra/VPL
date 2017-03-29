@@ -28,7 +28,7 @@ install: vpl
 	$(MAKE) -C ocaml/ install
 
 uninstall: vpl
-	$(MAKE) -C ocaml/ uninstall
+	ocamlfind remove vpl
 
 check:
 	$(MAKE) -C test/ check
