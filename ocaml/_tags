@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 07997b145fca6b5e2ca5973f499fd683)
+# DO NOT EDIT (digest: fdd8767c0f1e94a5c88f593a9f7fa962)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -149,6 +149,7 @@ true: annot, bin_annot
 "src/extracted/OrdersTac.cmx": for-pack(Vpl)
 "src/extracted/Compare_dec.cmx": for-pack(Vpl)
 "src/extracted/DemoPLVerifier.cmx": for-pack(Vpl)
+"src/Wrapper.cmx": for-pack(Vpl)
 <src/*.ml{,i,y}>: oasis_library_vpl_ccopt
 <src/coq_ml/*.ml{,i,y}>: oasis_library_vpl_ccopt
 <src/core/*.ml{,i,y}>: oasis_library_vpl_ccopt
