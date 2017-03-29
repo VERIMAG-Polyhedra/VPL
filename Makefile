@@ -3,18 +3,25 @@ all : vpl
 coqsrc:
 	$(MAKE) -C coq/ DemoExtractTests.vo
 
+init:
+	cd ocaml
+	oasis setup
+
 vpl: coqsrc
-	cd ocaml; oasis setup; $(MAKE)
-#	cd ocaml; oasis setup -setup-update dynamic; $(MAKE)
+	cd ocaml; $(MAKE)
 
 clean_caml:
 	$(MAKE) -C ocaml/ clean
 	$(MAKE) -C test/ clean
-	rm ocaml/configure ocaml/Makefile ocaml/setup.* ocaml/_tags ocaml/myocamlbuild.ml 
+	rm ocaml/setup.data setup.log ocaml/_tags ocaml/myocamlbuild.ml 
 
 clean_coq:
 	$(MAKE) -C coq clean
-	
+
+to_opam:
+	cd ocaml
+	oasis2opam --local
+
 allclean: clean_caml clean_coq
 
 install: vpl

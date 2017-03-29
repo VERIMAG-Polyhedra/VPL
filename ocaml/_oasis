@@ -1,14 +1,13 @@
 Name: Verified Polyhedra Library
-Version: 0.2
-Synopsis: A library about Foo and Bar.
-Authors: Sylvain Boulmé <Sylvain.Boulme@univ-grenoble-alpes.fr>, Alexandre Maréchal <Alex.Marechal@univ-grenoble-alpes.fr>, David Monniaux <David.Monniaux@univ-grenoble-alpes.fr>, Michaël Périn <Michael.Perin@univ-grenoble-alpes.fr>, Hang Yu <Hang.Yu@univ-grenoble-alpes.fr>
+Version: 0.2.0
+Authors: Sylvain Boulmé <Sylvain.Boulme@univ-grenoble-alpes.fr>, Alexis Fouilhé <a@Alexis-Fouilhe.fr>, Alexandre Maréchal <Alex.Marechal@univ-grenoble-alpes.fr>, David Monniaux <David.Monniaux@univ-grenoble-alpes.fr>, Michaël Périn <Michael.Perin@univ-grenoble-alpes.fr>, Hang Yu <Hang.Yu@univ-grenoble-alpes.fr>
+Maintainers: Alexandre Maréchal <Alex.Marechal@univ-grenoble-alpes.fr>
 License: LGPL
-
+Synopsis: Coq certified abstract domain of convex polyhedra.
 Description: Coq certified abstract domain of convex polyhedra.
 Homepage: https://github.com/VERIMAG-Polyhedra/VPL
-
 OASISFormat: 0.4
-BuildTools: ocamlbuild
+BuildTools: ocamlbuild, gcc
 Plugins: META (0.4), DevFiles (0.4)
 
 Library vpl
@@ -20,3 +19,9 @@ Library vpl
   CSources: raytracing/vpl_stubs.c, raytracing/double.c, raytracing/glpkInterface.c, raytracing/ioInterface.c, raytracing/point.c, raytracing/polyhedron.c, raytracing/ray.c, raytracing/raytracing.c, raytracing/double.h, raytracing/glpkInterface.h, raytracing/ioInterface.h, raytracing/point.h, raytracing/polyhedron.h, raytracing/ray.h, raytracing/raytracing.h
   CClib:  -lstdc++ -lglpk -lm -lgmpxx -lgmp -lgomp
   CCopt:  -x c++ -std=c++11 -fopenmp -O3 -march=native -Wno-deprecated
+
+SourceRepository vpl
+  Type:  git
+  Location: https://github.com/VERIMAG-Polyhedra/VPL
+  Branch:  master
+  Subdir:  ocaml/

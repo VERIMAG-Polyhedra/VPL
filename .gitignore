@@ -8,12 +8,12 @@
 *.aux
 
 ocaml/_build/*
-ocaml/configure 
-ocaml/Makefile 
-ocaml/setup.* 
+ocaml/setup.data
+ocaml/setup.log
 ocaml/_tags
 ocaml/myocamlbuild.ml
 ocaml/src/META
+ocaml/opam/*
 test/All_t.native
 
 test/_build/*
