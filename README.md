@@ -14,8 +14,17 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 
 1. __From OPAM__
 	
-	__Requires eigen (see Dependencies section below)__
-
+	1. External Dependencies 
+	
+		* [glpk](https://www.gnu.org/software/glpk/)
+		__required version >= 4.61__
+		
+		* [eigen](http://eigen.tuxfamily.org/)
+		(automatically installed by depexts on debian or ubuntu)
+		_debian package libeigen3-dev_
+		__tested with version 3.3.3__
+		
+	
 	First, add the following repository in your opam system:
 
     	opam repo add vpl http://www-verimag.imag.fr/~boulme/opam-vpl
