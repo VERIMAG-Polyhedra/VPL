@@ -1,6 +1,6 @@
 # requires: coq 8.6
 
-.PHONY: coq clean lscoqfiles cleanextract
+.PHONY: coq clean lscoqfiles cleanextract build install uninstall
 
 COQOPT ?= -opt
 
@@ -13,7 +13,7 @@ COQ_FILES := CoqAddOn Debugging OptionMonad NumC \
 	PredTrans DomainGCL \
 	Ring_polynom_AddOn ASTerm Itv ZNone ZNoneItv LinearizeBackend  \
         ASAtomicCond ASCond AssignD DomainFunctors \
-   Ring_polynom_AddOnQ Qop CIndex Map_poly \
+	Ring_polynom_AddOnQ Qop CIndex Map_poly \
 	PedraQ PedraZ \
 	DemoPLVerifier DemoPLTests
 
@@ -43,6 +43,23 @@ DemoExtractTests.vo: DemoExtract.vo DemoPLTests.vo DemoExtractTests.v
 
 lscoqfiles:
 	@echo ${V}
+
+_CoqProject:
+	@echo "-R . $(COQLIB)" > $@
+	@echo "${V}" >> $@
+	@echo "_CoqProject done..."
+
+build.mk: _CoqProject
+	coq_makefile -f _CoqProject -o build.mk
+
+build: build.mk
+	$(MAKE) -j -f build.mk "OPT:=-opt" all
+
+install: build.mk
+	$(MAKE) -j -f build.mk "OPT:=-opt" install
+
+uninstall: build.mk
+	$(MAKE) -j -f build.mk "OPT:=-opt" uninstall || echo "skip last errors..."
 
 clean:
 	rm -rf *.vo *.dv *.glob *~ .*.aux

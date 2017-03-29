@@ -6,6 +6,9 @@
 *.glob
 *.dv
 *.aux
+coq/_CoqProject
+coq/build.mk
+coq/uninstall_me.sh
 
 ocaml/_build/*
 ocaml/setup.data

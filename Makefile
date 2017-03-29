@@ -30,8 +30,17 @@ install: vpl
 uninstall: vpl
 	ocamlfind remove vpl
 
+coq_build:
+	$(MAKE) -C coq/ build
+
+coq_install:
+	$(MAKE) -C coq/ install
+
+coq_uninstall:
+	$(MAKE) -C coq/ uninstall
+
 check:
 	$(MAKE) -C test/ check
 
-.PHONY: all coqsrc vpl clean_caml clean_coq allclean install uninstall check cleancoqsrc
+.PHONY: all coqsrc vpl clean_caml clean_coq allclean install uninstall check cleancoqsrc coq_build coq_install coq_uninstall
 
