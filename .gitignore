@@ -11,7 +11,6 @@ ocaml/_build/*
 ocaml/setup.data
 ocaml/setup.log
 ocaml/_tags
-ocaml/myocamlbuild.ml
 ocaml/src/META
 ocaml/opam/*
 test/All_t.native

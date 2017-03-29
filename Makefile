@@ -7,10 +7,6 @@ cleancoqsrc:
 	$(MAKE) -C coq/ cleanextract
 	$(MAKE) -C coq/ DemoExtract.vo
 
-init:
-	cd ocaml
-	oasis setup
-
 vpl: coqsrc
 	cd ocaml; $(MAKE)
 
