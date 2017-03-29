@@ -24,6 +24,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 		_debian package libeigen3-dev_
 		__tested with version 3.3.3__
 		
+	2. Installation
 	
 	First, add the following repository in your opam system:
 
