@@ -13,7 +13,7 @@ vpl: coqsrc
 clean_caml:
 	$(MAKE) -C ocaml/ clean
 	$(MAKE) -C test/ clean
-	rm ocaml/setup.data setup.log ocaml/_tags ocaml/myocamlbuild.ml 
+	rm ocaml/setup.data setup.log
 
 clean_coq:
 	$(MAKE) -C coq clean

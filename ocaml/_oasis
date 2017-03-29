@@ -7,7 +7,7 @@ Synopsis: Coq certified abstract domain of convex polyhedra.
 Description: Coq certified abstract domain of convex polyhedra.
 Homepage: https://github.com/VERIMAG-Polyhedra/VPL
 OASISFormat: 0.4
-BuildTools: ocamlbuild, gcc
+BuildTools: ocamlbuild, g++
 Plugins: META (0.4), DevFiles (0.4)
 
 Library vpl
