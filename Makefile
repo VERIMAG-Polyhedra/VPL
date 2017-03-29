@@ -7,13 +7,13 @@ cleancoqsrc:
 	$(MAKE) -C coq/ cleanextract
 	$(MAKE) -C coq/ DemoExtract.vo
 
-vpl: coqsrc
+vpl:
 	cd ocaml; $(MAKE)
 
 clean_caml:
 	$(MAKE) -C ocaml/ clean
 	$(MAKE) -C test/ clean
-	rm ocaml/setup.data setup.log
+	rm -f ocaml/setup.data ocaml/setup.log
 
 clean_coq:
 	$(MAKE) -C coq clean
