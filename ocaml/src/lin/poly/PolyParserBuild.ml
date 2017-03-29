@@ -24,7 +24,7 @@ let rec neg : poly -> poly
 let rec getC (s:string) (n:int):string =
 if n = String.length s
 then
-	try String.sub s 0 (n-1) with Invalid_argument "String.sub"-> "1" 
+	try String.sub s 0 (n-1) with Invalid_argument _ -> "1" 
 else begin
 	if s.[n] >= '0' && s.[n] <= '9'
 		then
@@ -32,7 +32,7 @@ else begin
 	else
 		if n = 0 
 		then "1"
-		else try String.sub s 0 n with Invalid_argument "String.sub" -> "1"  
+		else try String.sub s 0 n with Invalid_argument _ -> "1"  
 end
 
 (**

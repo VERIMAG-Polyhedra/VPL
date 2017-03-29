@@ -289,7 +289,7 @@ module Naming (Vec : Vector.Type) = struct
   		try 
   			let (v,t) = to_user m t i 
   			in user_to_string t v
-  		with Invalid_argument "Naming.to_user" -> "??"
+  		with Invalid_argument _ -> "??"
 
 	let to_index: t -> typT -> V.t -> int
   		= fun m t x ->

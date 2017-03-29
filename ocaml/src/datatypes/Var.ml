@@ -115,7 +115,7 @@ next of [XI (XI XH)] is [XO (XO (XO XH))]. *)
 	  = fun s ->
 	  let s' = String.sub s 1 (String.length s - 1) in
 	  try of_string s'
-	  with Failure "int_of_string" ->
+	  with Failure _ ->
 		 let e = Printf.sprintf "SxPoly.VariablesInt.of_prefixed_string: s = %s; s' = %s" s s' in
 		 Pervasives.invalid_arg e
 	
@@ -143,7 +143,7 @@ module Int = struct
 	  = fun s ->
 	  let s' = String.sub s 1 (String.length s - 1) in
 	  try of_string s'
-	  with Failure "int_of_string" ->
+	  with Failure _ ->
 		 let e = Printf.sprintf "SxPoly.VariablesInt.of_prefixed_string: s = %s; s' = %s" s s' in
 		 Pervasives.invalid_arg e
 		 
@@ -169,7 +169,7 @@ module Int = struct
 	  = fun s ->
 	  let s' = String.sub s 1 (String.length s - 1) in
 	  try Pervasives.int_of_string s'
-	  with Failure "int_of_string" ->
+	  with Failure _ ->
 		 let e = Printf.sprintf "SxPoly.VariablesInt.of_prefixed_string: s = %s; s' = %s" s s' in
 		 
 		 Pervasives.invalid_arg e

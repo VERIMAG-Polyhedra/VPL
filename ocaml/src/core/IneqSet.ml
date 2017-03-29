@@ -117,6 +117,8 @@ let equal s1 s2 =
 	in
 	incl s1 s2 && incl s2 s1
 
+exception CertSyn
+
 let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 	= fun factory (c1,cert1) c2 ->
 	let v1 = Cs.get_v c1 in
@@ -136,8 +138,8 @@ let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 		| Cstr.Lt, Cstr.Le -> factory.Cert.to_le cert
 		| _,_ -> cert
 		end
-	| None -> failwith "IneqSet.addM.certSyn"
-
+	| None -> Pervasives.raise CertSyn 
+	
 let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t 
 	= fun factory es s c ->
 	match Cs.tellProp c with
@@ -146,7 +148,7 @@ let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 	| Cs.Nothing ->
 		let (cstr1, cons1) = EqSet.filter2 factory es c in
 		let cert1 = try certSyn factory cons1 c
-			with Failure "IneqSet.addM.certSyn" -> Cons.get_cert cons1
+			with CertSyn -> Cons.get_cert cons1
 		in
 		match Cs.tellProp cstr1 with
 		| Cs.Trivial -> Implied cert1
@@ -465,13 +467,13 @@ assumed to be in a statisfied state (it has been returned by [Splx.check]) and
 to represent [s]. The returned simplex object is [sx] with all the redundant
 bounds [Splx.forgot]ten. The returned certificate list contains a certificate
 for all the removed constraints. *)
-let rmRedAux: 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
-	= let apply : Flags.min_method -> 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
-		= fun min s sx point ->
+let rmRedAux : 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
+	= let rmRedAux'
+		= fun s sx point ->
 		if List.length s <= 1
 		then s
 		else
-			match min with
+			match !Flags.min with
 			| Flags.Raytracing (Flags.Splx)->
 				RmRedAux.splx s point
 			| Flags.Raytracing (Flags.Glpk)->
@@ -483,10 +485,10 @@ let rmRedAux: 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
 				end
 			| _ -> Pervasives.invalid_arg "IneqSet.rmRedAux"
 	in
-	fun s sx point ->
-	match !Flags.min with
-	| Flags.MHeuristic -> apply (Heuristic.min (List.map Cons.get_c s)) s sx point
-	| m -> apply m s sx point
+	fun s sx ->
+	Heuristic.apply_min 
+		(List.map Cons.get_c s)
+		(rmRedAux' s sx)
 
 (** [isIncl s c] checks whether [c] is implied by [s] on syntactic grounds.*)
 let inclSyn: 'c t -> 'c Cons.t -> bool

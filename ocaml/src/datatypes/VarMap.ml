@@ -151,16 +151,13 @@ module VarMap (V : Var.Type) = struct
 	(* nap et map doivent comporter les mêmes bindings*)
 	let fold2_strict: ('a -> 'n -> 'm -> 'a) -> 'a -> 'n t -> 'm t -> 'a
 		= fun f base nap map ->
-		try
-			List.fold_left2
-				(fun res (v1,n) (v2,m) ->
-					if V.cmp v1 v2 <> 0
-					then Pervasives.failwith "M.fold2"
-					else f res n m)
-				base
-				(toList nap) (toList map)
-		with Invalid_argument _ ->
-		Pervasives.failwith "M.fold2"
+		List.fold_left2
+			(fun res (v1,n) (v2,m) ->
+				if V.cmp v1 v2 <> 0
+				then Pervasives.invalid_arg "M.fold2"
+				else f res n m)
+			base
+			(toList nap) (toList map)
 
 	let fold2: (V.t -> 'a -> 'm -> 'n -> 'a) -> 'a -> 'm t -> 'n t -> 'a
 		= fun f base map nap ->

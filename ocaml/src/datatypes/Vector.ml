@@ -444,8 +444,7 @@ module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
 				v1 v2
 			in
 			if b then res else None
-		with Failure "M.fold2" -> 
-			None
+		with Invalid_argument _ -> None
 		
 	let getVars: t list -> V.Set.t
 		= fun l -> M.mskBuild (fun n -> Coeff.cmpz n <> 0) l |> M.pathsGet

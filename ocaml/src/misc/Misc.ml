@@ -92,7 +92,7 @@ let (max : ('a -> 'a -> int) -> 'a list -> 'a)
 	(fun i j -> if cmp i j > 0 then i else j)
 	(List.hd l)
 	(sublist l 1 (List.length l))
-	with | Failure "hd" -> Pervasives.invalid_arg "Misc.max : empty input list"
+	with Failure _ -> Pervasives.invalid_arg "Misc.max : empty input list"
 
 let (maxi :  ('a -> 'a -> int) -> 'a list -> int)
 	= let rec (maxi_rec : ('a -> 'a -> int) -> 'a list -> 'a -> int -> int -> int)
@@ -102,7 +102,7 @@ let (maxi :  ('a -> 'a -> int) -> 'a list -> int)
 		| x::tl -> if cmp x max > 0 then maxi_rec cmp tl x i (i+1) else maxi_rec cmp tl max maxi (i+1) in
 	fun cmp l ->
 	try maxi_rec cmp (List.tl l) (List.hd l) 0 1
-	with | Failure "hd" | Failure "tl" -> Pervasives.invalid_arg "Misc.maxi : empty input list"
+	with Failure _ -> Pervasives.invalid_arg "Misc.maxi : empty input list"
 	
 let (min : ('a -> 'a -> int) -> 'a list -> 'a)
 	= fun cmp l ->
@@ -110,7 +110,7 @@ let (min : ('a -> 'a -> int) -> 'a list -> 'a)
 	(fun i j -> if cmp i j < 0 then i else j)
 	(List.hd l)
 	(sublist l 1 (List.length l))
-	with | Failure "hd" -> Pervasives.invalid_arg "Misc.min : empty input list"
+	with Failure _ -> Pervasives.invalid_arg "Misc.min : empty input list"
 		
 let rec(rem_dupl : ('a -> 'a -> bool) -> 'a list -> 'a list)
 	= fun eq l ->

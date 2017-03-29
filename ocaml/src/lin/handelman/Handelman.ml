@@ -352,9 +352,11 @@ module Handelman (Minimization : Min.Type) = struct
 			in 
 			Some l*)
 	
+	exception Timeout
+	
 	let timeout : int -> unit 
 	= fun i -> match i with 
-	| j when j = Sys.sigalrm -> Pervasives.failwith "Timeout"
+	| j when j = Sys.sigalrm -> Pervasives.raise Timeout
 	| _ -> Pervasives.failwith (Printf.sprintf "Signal %s received" (string_of_int i))
 	
 	module type Type = sig
@@ -445,7 +447,7 @@ module Handelman (Minimization : Min.Type) = struct
 				run_loop_rec pb pl pl None;
 				!current_result
 			with 
-			| Failure "Timeout" -> !current_result
+			| Timeout -> !current_result
 			
 		let rewrite_polynomials : 'c Pol.t -> CP.t list -> CP.t list
 			(* returns the polynomial equal to v in Cons *)
@@ -494,7 +496,7 @@ module Handelman (Minimization : Min.Type) = struct
 		
 		let timeout : int -> unit 
 			= fun i -> match i with 
-			| j when j = Sys.sigalrm -> Pervasives.failwith "Timeout"
+			| j when j = Sys.sigalrm -> Pervasives.raise Timeout
 			| _ -> Pervasives.failwith (Printf.sprintf "Signal %s received" (string_of_int i))
 		
 		let mkHPol : 'c Pol.t -> unit HPol.t
