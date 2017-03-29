@@ -8,11 +8,11 @@ It provides standard operators -- certified in Coq -- to use this library as an 
 Contributors: Alexis Fouilhé, Alexandre Maréchal, Sylvain Boulmé, Michaël Périn, David Monniaux.
 Developed at Verimag and supported by ANR Verasco and ERC Stator.
 
-If you find a bug or have any comment, feel free to contact us at <???>
+If you find a bug or have any comment, feel free to contact us at verimag-polyhedra-developers@univ-grenoble-alpes.fr
 
 # INSTALLATION
 
-1. From OPAM
+1. __From OPAM__
 	
 	First, add the following repository in your opam system:
 
@@ -37,7 +37,7 @@ If you find a bug or have any comment, feel free to contact us at <???>
 		```
 		opam install coq-vpltactic
 		```
-2. From sources
+2. __From sources__
 
 	1. Dependencies
 
@@ -79,7 +79,7 @@ If you find a bug or have any comment, feel free to contact us at <???>
 		
 			make uninstall
 
-3. Using the VPL
+# Using the VPL
 
 	There are several ways to use the library.
 
