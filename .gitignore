@@ -16,4 +16,6 @@ ocaml/src/META
 ocaml/opam/*
 test/All_t.native
 
+test/*.native
 test/_build/*
+test/coq_extracted/*

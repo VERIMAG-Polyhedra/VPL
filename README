@@ -40,7 +40,7 @@ If you find a bug or have any comment, feel free to contact us at <???>
 		required version >= 0.1.6
 		If you compile manually from sources, make sure to install both glpk.cma and glpk.cmxa (using make opt and make byte)
 	
-	- coq (optional, if you want to use the certified part of the VPL)
+	- coq (optional, if you want to use *in coq* the certified part of the VPL)
 		<https://coq.inria.fr/>
 		available in OPAM
 		required version 8.6

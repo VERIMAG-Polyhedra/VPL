@@ -10,7 +10,7 @@ Record MPP (A: Type):=
     apply:> (A -> Prop) -> Prop ;
     apply_monotone (P Q: A -> Prop): apply P -> (forall m, P m -> Q m) -> apply Q
   }.
-Implicit Arguments apply [A].
+Arguments apply [A].
 
 Bind Scope MPP_scope with MPP.
 Delimit Scope MPP_scope with MPP.

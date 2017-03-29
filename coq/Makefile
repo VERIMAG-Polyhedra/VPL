@@ -1,6 +1,6 @@
 # requires: coq 8.6
 
-.PHONY: coq clean lscoqfiles
+.PHONY: coq clean lscoqfiles cleanextract
 
 COQOPT ?= -opt
 
@@ -23,15 +23,17 @@ GLOB := $(addsuffix .glob, $(COQ_FILES))
 DV := $(addsuffix .dv, $(COQ_FILES))
 
 EXTRACT_FOLDER = ../ocaml/src/extracted
+EXTRACT_TEST_FOLDER = ../test/coq_extracted
 
 coq: $(VO)
 
 DemoExtract.vo: $(VO) DemoExtract.v
 	mkdir -p $(EXTRACT_FOLDER)
-	cd $(EXTRACT_FOLDER); (coqc $(COQOPT) -R ../../../coq/ $(COQLIB) ../../../coq/DemoExtract.v && rm -f ImpureConfig.mli)
+	cd $(EXTRACT_FOLDER) && (coqc $(COQOPT) -R ../../../coq/ $(COQLIB) ../../../coq/DemoExtract.v && rm -f ImpureConfig.mli)
 
 DemoExtractTests.vo: DemoExtract.vo DemoPLTests.vo DemoExtractTests.v
-	cd $(EXTRACT_FOLDER); coqc $(COQOPT) -R ../../../coq/ $(COQLIB) ../../../coq/DemoExtractTests.v
+	mkdir -p $(EXTRACT_TEST_FOLDER)
+	cd $(EXTRACT_TEST_FOLDER) && coqc $(COQOPT) -R ../../coq/ $(COQLIB) ../../coq/DemoExtractTests.v && rm -f *.mli
 
 %.vo: %.v
 	coqc $(COQOPT)  -R . $(COQLIB) $<
@@ -44,5 +46,8 @@ lscoqfiles:
 
 clean:
 	rm -rf *.vo *.dv *.glob *~ .*.aux
+
+cleanextract:
+	rm -rf DemoExtract.vo DemoExtractTests.vo $(EXTRACT_FOLDER) $(EXTRACT_TEST_FOLDER)
 
 include $(DV)
