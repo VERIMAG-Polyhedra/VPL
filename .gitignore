@@ -10,7 +10,6 @@
 ocaml/_build/*
 ocaml/setup.data
 ocaml/setup.log
-ocaml/src/META
 ocaml/opam/*
 test/All_t.native
 
