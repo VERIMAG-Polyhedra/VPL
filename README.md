@@ -1,6 +1,6 @@
-_VPL (Verified Polyhedra Library) version 0.2_
+# VPL (Verified Polyhedra Library) version 0.2
 
-# GENERAL INFORMATIONS
+## GENERAL INFORMATIONS
 
 The VPL is an Ocaml library allowing to compute with convex polyhedra. 
 It provides standard operators -- certified in Coq -- to use this library as an abstract domain of polyhedra.
@@ -10,9 +10,9 @@ Developed at Verimag and supported by ANR Verasco and ERC Stator.
 
 If you find a bug or have any comment, feel free to contact us at verimag-polyhedra-developers@univ-grenoble-alpes.fr
 
-# INSTALLATION
+## INSTALLATION
 
-1. __From OPAM__
+1. __From [opam](https://opam.ocaml.org/)__
 	
 	1. External Dependencies 
 	
@@ -30,7 +30,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 
 			opam repo add vpl http://www-verimag.imag.fr/~boulme/opam-vpl
 
-		Then, install only one of the following package (depending on your needs):
+		Then, install the following packages (depending on your needs):
 
 		* `vpl-core`: the ocaml library
 
@@ -38,13 +38,13 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 			opam install vpl-core
 			```
 			 
-		* `coq-vpl`: the coq library (also install `vpl-core`)
+		* `coq-vpl`: the coq library (for Coq proofs about VPL operators)
 
 			```
 			opam install coq-vpl
 			```
 
-		* `coq-vpltactic`: the coq plugin (also install `coq-vpl`)
+		* `coq-vpltactic`: the coq plugin (also install `coq-vpl` and `vpl-core`)
 
 			```
 			opam install coq-vpltactic
@@ -92,13 +92,13 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 		
 			make uninstall
 
-# Using the VPL
+## Using the VPL
 
-	There are several ways to use the library.
+There are several ways to use the library.
 
-	* As an Ocaml library (opam package `vpl-core`),
-	the entry point is then the module UserInterface
+* As an Ocaml library (opam package `vpl-core`),
+the entry point is then the module UserInterface
 
-	* From Coq (opam package `coq-vpl`)
+* From Coq (opam package `coq-vpl`)
 
-	* As a Coq tactic (opam package `coq-vpltactic`)
+* As a Coq tactic (opam package `coq-vpltactic`)
