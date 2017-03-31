@@ -63,6 +63,14 @@ extern "C" value get_witness_coeff(Polyhedron* poly, value id_, value var_){
 	int var = Int_val(var_);
 	Point p = poly->GetWitness()[id];
 	double coeff = p.get_coordinates()[var];
-	
+
 	return caml_copy_double(coeff);
+}
+
+extern "C" void set_central_point_coeff(Polyhedron* poly, value var_, value coeff_){
+	Point p = poly->get_central_point ();
+	int var = Int_val(var_);
+	double coeff = Double_val(coeff_);
+	p.set_coefficient(var, coeff);
+	poly->set_central_point (p);
 }

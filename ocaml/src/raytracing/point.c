@@ -7,8 +7,12 @@
 
 Point::Point () : _is_empty(true) {}
 
-Point::Point (const Vector& coordinates) 
+Point::Point (const Vector& coordinates)
   : _coordinates(coordinates), _is_empty(false) {}
+
+void Point::set_coefficient(int var_id, double coeff) {
+    _coordinates[var_id] = coeff;
+}
 
 void Point::set_coordinates (const Vector& coordinates) {
   _coordinates = coordinates ;
@@ -24,12 +28,12 @@ bool Point::IsEmpty () const {
 }
 
 void Point::Clear () {
-  _is_empty = true ; 
+  _is_empty = true ;
 }
 
 std::ostream& operator<< (std::ostream& out, const Point& point)
 {
-  out << point._coordinates ; 
+  out << point._coordinates ;
   return out;
 }
 

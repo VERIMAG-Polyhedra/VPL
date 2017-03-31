@@ -18,6 +18,7 @@ public:
   Point () ;
   Point (const Vector& coordinates) ;
   void set_coordinates (const Vector& coordinates) ;
+  void set_coefficient (int var_id, double coeff) ;
   Vector get_coordinates (void) const ;
   // void SetCoord (int idx, double val) ;
   bool IsEmpty () const ;

@@ -1,5 +1,5 @@
 (** {!module:Pol} treats equalities and inequalities differently.
-This module is the data structure that hosts the inequalities of a polyhedron. 
+This module is the data structure that hosts the inequalities of a polyhedron.
 It represents only sets of inequalities with {b nonempty interior}, meaning that these sets must be feasible and they should not contain any implicit equality.
 
 {e Remarks.} It can be used only with variables of {!module:Var.Positive} (because of {!module:Splx}).
@@ -31,7 +31,7 @@ type 'c rel_t =
 
 type 'c simpl_t =
 | SimplMin of 'c t
-| SimplBot of 'c 
+| SimplBot of 'c
 
 module Stats
   = struct
@@ -80,27 +80,27 @@ module Stats
 end
 
 module Stat = struct
-		
+
 	let n_lp : int ref = ref 0
-	
+
 	let size_lp : int ref = ref 0
-	
+
 	let reset : unit -> unit
 		= fun () ->
 		n_lp := 0;
 		size_lp := 0
-	
+
 	let incr_size : int -> unit
 		= fun size ->
-		size_lp := !size_lp + size 
-	
+		size_lp := !size_lp + size
+
 	let incr : unit -> unit
 		= fun () ->
 		n_lp := !n_lp + 1
-		
+
 	let base_n_cstr : int ref = ref 0
 end
-	
+
 let nil : 'c t = []
 
 let to_string: (V.t -> string) -> 'c t -> string
@@ -111,7 +111,7 @@ let to_string_ext: 'c Cert.t -> (V.t -> string) -> 'c t -> string
 	List.fold_left (fun str c -> str ^ (Cons.to_string_ext factory varPr c) ^ "\n") "" s
 
 let equal s1 s2 =
-	let incl l1 = List.for_all 
+	let incl l1 = List.for_all
 		(fun (c2,_) ->
 		List.exists (fun (c1,_) -> Cs.inclSyn c1 c2) l1)
 	in
@@ -126,21 +126,21 @@ let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 	match Vec.isomorph v2 v1 with
 	| Some r -> (* v2 = r.v1 *)
 		begin
-		let cste = 
+		let cste =
 			Scalar.Rat.sub
 				(Cs.get_c c2)
 				(Scalar.Rat.mul r (Cs.get_c c1))
 			|>	factory.Cert.triv (Cs.get_typ c2)
-		in 
+		in
 		let cert = factory.Cert.mul r cert1
 			|> factory.Cert.add cste in
 		match Cs.get_typ c1, Cs.get_typ c2 with
 		| Cstr.Lt, Cstr.Le -> factory.Cert.to_le cert
 		| _,_ -> cert
 		end
-	| None -> Pervasives.raise CertSyn 
-	
-let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t 
+	| None -> Pervasives.raise CertSyn
+
+let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 	= fun factory es s c ->
 	match Cs.tellProp c with
 	| Cs.Trivial -> Trivial
@@ -159,9 +159,9 @@ let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 			Implied (factory.Cert.add cert1 (certSyn factory consI cstr1))
 		with Not_found ->
 			Check (cstr1,cert1)
-	
+
 (* the coefficient whose id is -1 is the constraint to compute*)
-let mkCert : 'c Cert.t -> 'c Cons.t list -> Cs.t -> (int * Scalar.Rat.t) list -> 'c 
+let mkCert : 'c Cert.t -> 'c Cons.t list -> Cs.t -> (int * Scalar.Rat.t) list -> 'c
 	= fun factory conss cstr combination ->
 	try
 		let a0 = List.assoc (-1) combination in
@@ -189,7 +189,7 @@ let incl: 'c1 Cert.t -> V.t -> 'c1 EqSet.t -> 'c1 t ->  'c2 t -> 'c1 rel_t
 			| Empty _ -> NoIncl
 			| Trivial -> failwith "IneqSet.incl"
 			| Implied c -> _isIncl (c::certs) optSx t
-			| Check c1 -> 
+			| Check c1 ->
 				let sx =
 					match optSx with
 					| Some sx -> sx
@@ -198,14 +198,14 @@ let incl: 'c1 Cert.t -> V.t -> 'c1 EqSet.t -> 'c1 t ->  'c2 t -> 'c1 rel_t
 				let c1' = Cs.compl (Cons.get_c c1) in
 				match Splx.checkFromAdd (Splx.addAcc sx (-1, c1')) with
 				| Splx.IsOk _ -> NoIncl
-				| Splx.IsUnsat w -> 
+				| Splx.IsUnsat w ->
 					let cert = mkCert factory s1 (Cons.get_c c1) w
-						|> factory.Cert.add (Cons.get_cert c1) 
+						|> factory.Cert.add (Cons.get_cert c1)
 					in
 					_isIncl (cert::certs) (Some sx) t
 	in
 	_isIncl [] None s2
-		
+
 type 'c satChkT = Sat of Splx.t | Unsat of 'c
 
 (** [chkFeasibility nvar s] checks whether [s] is satisfiable and returns a
@@ -217,11 +217,11 @@ let chkFeasibility: 'c Cert.t -> V.t -> 'c t -> 'c satChkT
 	let cs = List.mapi (fun i c -> (i, Cons.get_c c)) s in
 	match Splx.checkFromAdd (Splx.mk nvar cs) with
 	| Splx.IsOk sx -> Sat sx
-	| Splx.IsUnsat w -> Unsat (Cons.linear_combination_cert factory s w) 
+	| Splx.IsUnsat w -> Unsat (Cons.linear_combination_cert factory s w)
 
 let rename factory s fromX toY = List.map (Cons.rename factory fromX toY) s
 
-let pick : V.t option Rtree.t -> 'c t -> V.t option 
+let pick : V.t option Rtree.t -> 'c t -> V.t option
 	= fun msk s ->
 	let update v n p m =
 		match Scalar.Rat.cmpz n with
@@ -288,7 +288,7 @@ let trim : 'c t -> Splx.t -> 'c t * Splx.t
 	in
 	(* XXX: Why is this fold_right? *)
 	List.fold_right2 check (Misc.range 0 (List.length s0)) s0 ([], sx0)
-	
+
 let trimSet : V.t -> 'c t -> 'c t
 	= fun nxt s ->
 	let cl = List.mapi (fun i c -> i, Cons.get_c c) s in
@@ -298,7 +298,7 @@ let trimSet : V.t -> 'c t -> 'c t
 
 let simpl: 'c Cert.t -> V.t -> 'c EqSet.t -> 'c t -> 'c simpl_t
 	= fun factory nxt es s ->
-	let rec filter s1 
+	let rec filter s1
 		= function
 		| [] ->
 			let cl = List.mapi (fun i c -> i, Cons.get_c c) s1 in
@@ -322,14 +322,14 @@ let synAdd : 'c Cert.t -> 'c EqSet.t -> 'c t -> 'c Cons.t -> 'c t
 	match synIncl factory es s (Cons.get_c cons) with
 	| Trivial | Implied _ -> s
 	| Empty _ -> failwith "IneqSet.synAdd"
-	| Check _ -> 
+	| Check _ ->
 		cons::(List.filter (fun c2 -> not (Cons.implies cons c2)) s)
-		
+
 let subst: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t -> 'c Cons.t -> 'c t -> 'c t
 	= fun factory nxt es x e s ->
 	let gen s c =
 		let c1 =
-			if Scalar.Rat.cmpz (Vec.get (Cs.get_v (Cons.get_c c)) x) = 0 
+			if Scalar.Rat.cmpz (Vec.get (Cs.get_v (Cons.get_c c)) x) = 0
 			then c
 			else Cons.elimc factory x e c
 		in
@@ -343,7 +343,7 @@ let subst: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t -> 'c Cons.t -> 'c t -> 'c t
 let pProj : 'c Cert.t -> V.t -> 'c t -> Flags.scalar -> 'c t
 	= fun factory x s scalar_type ->
 	Proj.proj factory scalar_type [x] s
-		|> Pervasives.fst 
+		|> Pervasives.fst
 
 let fmElim: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t ->  'c t -> 'c t
 	= fun factory nxt es x s ->
@@ -390,7 +390,7 @@ let fmElimM: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t option Rtree.t -> 'c t -> 'c 
 	in
 	elim s
 
-let joinSetup_1: 'c2 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c1 t 
+let joinSetup_1: 'c2 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c1 t
 	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory2 nxt relocTbl alpha s ->
 	let apply (nxt1, relocTbl1, s1) c =
@@ -398,8 +398,8 @@ let joinSetup_1: 'c2 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c1 t
 		(nxt2, relocTbl2, c1::s1)
 	in
 	List.fold_left apply (nxt, relocTbl, nil) s
-	
-let joinSetup_2: 'c1 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c2 t 
+
+let joinSetup_2: 'c1 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c2 t
 	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory1 nxt relocTbl alpha s ->
 	let apply (nxt1, relocTbl1, s1) c =
@@ -424,42 +424,43 @@ let isRed: Splx.t -> int -> bool
 	| Splx.IsUnsat w -> true
 
 module RmRedAux = struct
-	
-	let glpk: 'c Cons.t list -> 'c t
-		= fun s -> 
-		let cstrs = List.map Cons.get_c s in 
-		let l = Min.Rat_Glpk.minimize () cstrs in
+
+	let glpk: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
+   = fun s point ->
+    let point = Cstr.Rat.Positive.Vec.M.map Cstr.Rat.Positive.Vec.ofSymbolic point in
+		let cstrs = List.map Cons.get_c s in
+		let l = Min.Rat_Glpk.minimize point cstrs in
 		let s' = List.filter
 			(fun (cstr,_) -> List.exists (fun (cstr',_) -> Cstr.Rat.Positive.equalSyn cstr cstr') l)
 			s
-		in	
+		in
 		s'
-		
+
 	let splx: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
-		= fun s point -> 
+		= fun s point ->
 		let point = Cstr.Rat.Positive.Vec.M.map Cstr.Rat.Positive.Vec.ofSymbolic point in
-		let cstrs = List.map Cons.get_c s in 
+		let cstrs = List.map Cons.get_c s in
 		let l = Min.Rat_Splx.minimize point cstrs in
 		let s' = List.filter
 			(fun (cstr,_) -> List.exists (fun (cstr',_) -> Cstr.Rat.Positive.equalSyn cstr cstr') l)
 			s
-		in	
+		in
 		s'
-			
-	let classic : Splx.t -> (int * 'c Cons.t) list -> 'c t 
+
+	let classic : Splx.t -> (int * 'c Cons.t) list -> 'c t
 		= fun sx conss ->
-		let classic: Splx.t * 'c t -> (int * 'c Cons.t) -> Splx.t * 'c t 
+		let classic: Splx.t * 'c t -> (int * 'c Cons.t) -> Splx.t * 'c t
 			= fun (sx, s) (i,cons) ->
 			if isRed sx i
 			then begin
 				Stat.base_n_cstr := !Stat.base_n_cstr - 1;
 				(Splx.forget sx i, s)
 			end
-			else (sx, cons::s) 
+			else (sx, cons::s)
 		in
 		List.fold_left classic (sx, []) conss
 		|> Pervasives.snd
-			
+
 end
 
 (** [rmRed s sx] removes all the redundancy from [s]. The simplex object [sx] is
@@ -477,7 +478,7 @@ let rmRedAux : 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
 			| Flags.Raytracing (Flags.Splx)->
 				RmRedAux.splx s point
 			| Flags.Raytracing (Flags.Glpk)->
-				RmRedAux.glpk s
+				RmRedAux.glpk s point
 			| Flags.Classic -> begin
 				Stat.base_n_cstr := List.length s;
 				let conss = List.mapi (fun i c -> (i,c)) s in
@@ -486,7 +487,7 @@ let rmRedAux : 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
 			| _ -> Pervasives.invalid_arg "IneqSet.rmRedAux"
 	in
 	fun s sx ->
-	Heuristic.apply_min 
+	Heuristic.apply_min
 		(List.map Cons.get_c s)
 		(rmRedAux' s sx)
 
@@ -497,31 +498,31 @@ let inclSyn: 'c t -> 'c Cons.t -> bool
 	| [] -> false
 	| [c'] -> true
 	| _ -> failwith "IneqSet.addM"
-	
+
 (** [rmSynRed2 s l] removes syntactically redundant constraints from the union
 of [s] and [l].*)
-let rmRedSyn: 'c t -> 'c Cons.t list -> 'c t 
+let rmRedSyn: 'c t -> 'c Cons.t list -> 'c t
 	= let rm1: 'c t -> 'c Cons.t -> ' t
 		= fun s c ->
-		if inclSyn s c 
+		if inclSyn s c
 		then s
-		else 
+		else
 			let (s1, s2) = List.partition (fun c' -> Cons.implies c c') s in
 			c::s2
 	in
 	fun s l -> List.fold_left rm1 [] (s @ l)
-	
-(* precondition : 
+
+(* precondition :
 	- s @ l has non empty interior
 	- l contains no trivial constraints
-*)	
+*)
 
 let addM: V.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
-	= fun nvar s conss point -> 
+	= fun nvar s conss point ->
 	let s2 = rmRedSyn s conss in
 	if List.length s2 <= 1
 	then s2
-	else 
+	else
 		let ilist = List.mapi (fun i c -> (i, Cons.get_c c)) s2 in
 		match Splx.checkFromAdd (Splx.mk nvar ilist) with
 		| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.addM: unexpected unsat set"
@@ -557,5 +558,5 @@ let addM: V.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 	in
 	match !Flags.min with
 	| Flags.MHeuristic -> apply (Heuristic.min (List.map Cons.get_c (s @ conss)))
-	| m -> apply m 
+	| m -> apply m
 *)
