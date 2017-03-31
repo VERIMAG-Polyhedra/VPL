@@ -71,6 +71,13 @@ extern "C" void set_central_point_coeff(Polyhedron* poly, value var_, value coef
 	Point p = poly->get_central_point ();
 	int var = Int_val(var_);
 	double coeff = Double_val(coeff_);
-	p.set_coefficient(var, coeff);
+	if (p.IsEmpty()){
+		int variNum = poly->get_variable_num() ;
+		Vector coord(variNum) ;
+		coord(var) = coeff;
+		p.set_coordinates(coord);
+	}
+	else
+		p.set_coefficient(var, coeff);
 	poly->set_central_point (p);
 }
