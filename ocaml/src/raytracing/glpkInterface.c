@@ -2,11 +2,8 @@
  * Copyright (c) 2016 Dec. Verimag. All rights reserved.
  * @author Hang YU
 *******************************************************************************/
-#ifndef _GLPKINTER
-#define _GLPKINTER
+
 #include "glpkInterface.h"
-#endif
-#include <iostream>
 
 GlpkInterface::GlpkInterface () 
   : _epsilon(0.1) {
@@ -16,46 +13,6 @@ GlpkInterface::GlpkInterface ()
 GlpkInterface::~GlpkInterface () { 
   glp_delete_prob(_glp) ;
 }
-
-/*******************************************************************************
- * Loads a file in CPLEX LP format, and create a Polyhedron object
- * Note that the index of row and column of GLPK starts from 1
- * @para filepath the path of text file in CPLEX LP format
- * @return a Polyhedron object which contains all information of the polyhdedron 
- * Note: abandoned
-*******************************************************************************/
-/*
-Polyhedron GlpkInterface::LoadLP (char* filepath) {
-  GlpkInterface glpkinter ;
-  glp_read_lp(glpkinter._glp, NULL, filepath) ; 
-  int consNum = glp_get_num_rows(glpkinter._glp) ;
-  int variNum = glp_get_num_cols(glpkinter._glp) ;
-  Polyhedron poly = Polyhedron(consNum, variNum) ;
-  int* tempIdx = new int[consNum+1] ;
-  double* tempVal = new double[variNum+1] ;
-  for (int i = 0; i < consNum; ++ i) {
-    // tempVal should be initialized as 0, otherwise glpk bug
-    std::fill_n(tempIdx, consNum+1, 0) ;
-    std::fill_n(tempVal, variNum+1, 0) ;
-    poly.SetConstant( i, glp_get_row_ub(glpkinter._glp, i+1) ) ;
-    // the row index is i+1 because in GLPK the index starts from 1
-    glp_get_mat_row(glpkinter._glp, i+1, tempIdx, tempVal) ;
-    for (int j = 0, k = 1; j < variNum; ++ j) {
-      // the col index is j+1 because in GLPK the index starts from 1
-      if (j+1 == tempIdx[k]) {
-        poly.SetCoef(i, j, tempVal[k]) ;
-        ++ k ;
-      }      
-      else {
-        poly.SetCoef(i, j, 0.0) ;
-      }
-    }
-  }
-  delete[] tempIdx ;
-  delete[] tempVal ;
-  return poly ;
-}
-*/
 
 /*******************************************************************************
  * Call simplex method in GLPK and compute the central point of the polyhedron
@@ -306,8 +263,6 @@ bool GlpkInterface::Simplex (const Polyhedron& poly, const VectorZ& obj, int obj
     result = false ;
   } 
   if (state == GLP_OPT) {
-    std::cout << "GLPK gets the optimal solution: " 
-      << glp_get_obj_val(_glp) << std::endl ;
     result = true ;
   }
   delete[] idxi ;

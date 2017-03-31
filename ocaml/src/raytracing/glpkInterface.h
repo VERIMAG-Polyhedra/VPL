@@ -6,21 +6,18 @@
  * the next process of solving simplex. Currently it is just used 
  * in GetSatPoint(), as GetSatPoint() add the constraints incrementally.
 *******************************************************************************/
+
+#ifndef _RAYTRACING_GLPKINTER
+#define _RAYTRACING_GLPKINTER
+
 #include <glpk.h>
-#ifndef _EIGEN
-#define _EIGEN
 #include <eigen3/Eigen/Dense>
-#endif
-#ifndef _POLYH
-#define _POLYH
 #include "polyhedron.h"
-#endif
 
 class GlpkInterface {
 public:
   GlpkInterface () ;
   ~GlpkInterface () ;
-  //static Polyhedron LoadLP (char* filepath) ;
   static Point GetCentralPoint (const Polyhedron& poly) ;
   Point GetSatPoint (const std::vector<int>& headIdx, const Polyhedron& poly) ;
   static bool Sat (const Polyhedron& poly, int idx) ;
@@ -34,3 +31,5 @@ private:
   glp_prob* _glp ;
   std::vector<int> _basic_idx ;
 } ;
+
+#endif

@@ -5,14 +5,8 @@
 
 #include <iostream>
 #include "raytracing.h"
-#ifndef _GLPKINTER
-#define _GLPKINTER
 #include "glpkInterface.h"
-#endif
-#ifndef _DOUBLE
-#define _DOUBLE
 #include "double.h"
-#endif
 
 Raytracing::Raytracing (Polyhedron& poly, const Point& point) { 
   if ( poly.IsEmpty() ) {
@@ -120,11 +114,6 @@ std::vector<int> Raytracing::GetIntersections (const Ray& ray) {
  * @para ray the ray which provides the direction
  * @return the multiplicative inverse of the distance 
 *******************************************************************************/
-double Raytracing::GetDistance (const int currIdx, const Ray& ray) {
-  double temp2 = _polyptr->get_coefficients().row(currIdx).dot( ray.get_direction() ) ;
-  return  GetDistance(currIdx, temp2) ;
-}
-
 double Raytracing::GetDistance (const int currIdx, const double consDirect) {
   double temp1 = _evaluate(currIdx) ; 
   double res = consDirect / temp1 ;
@@ -145,7 +134,7 @@ bool Raytracing::CheckRedundant (const int currIdx, const std::vector<int>& head
   // the loop has an upper bound which is the number of the constraints
   int consNum = _polyptr->get_constraint_num() ;
   for (int i = 0; i < consNum; ++ i) {
-    Point newPoint = glpkinter.GetSatPoint(currHeadIdx, *_polyptr) ;     
+    Point newPoint = glpkinter.GetSatPoint(currHeadIdx, *_polyptr) ;    
     if (newPoint.IsEmpty()) {
       return true ;
     }
@@ -167,155 +156,6 @@ bool Raytracing::CheckRedundant (const int currIdx, const std::vector<int>& head
   std::cerr << "Error: cannot determine the current constraint" << std::endl ;
   std::terminate() ;
 }
-
-/*******************************************************************************
- * RayHitting() is the first step of examining the redundancy of constraints.
- * It creates an orthogonal ray for each constraint. In the direction of each 
- * ray, it compute the distance between the start point to each constraint. 
- * If a constraint is the single nearest one, then it is irredundant.
-*******************************************************************************/
-void Raytracing::RayHitting () {
-  int consNum = _polyptr->get_constraint_num() ;
-  for (int i = 0; i < consNum; ++ i) {
-    Ray currRay( _polyptr->GetConstraint(i) ) ;
-    _intersectHead[i] = GetIntersections(currRay) ;
-    if (_intersectHead[i].size() == 1) {
-      int headIdx = _intersectHead[i].at(0) ;
-      _polyptr->Activate(headIdx) ;   
-    }
-  }  
-
-  for (int i = 0; i < consNum; ++ i) {
-    if ( _polyptr->GetConstraintState(i) == REDUNDANT) {
-      _undetermined.push_back(i) ;
-    }
-  }
-}
-
-/***************************method 2*******************************************/
-
-/*******************************************************************************
- * This function is used for two-direction ray
-*******************************************************************************/
-void Raytracing::RayHittingTwoDirect () {
-  int consNum = _polyptr->get_constraint_num() ;
-  for (int i = 0; i < consNum; ++ i) {
-    Ray currRay( _polyptr->GetConstraint(i) ) ;
-    _intersectHead[i] = GetInterTwoDirect(currRay) ; 
-  }  
-
-  for (int i = 0; i < consNum; ++ i) {
-    if ( _polyptr->GetConstraintState(i) == REDUNDANT) {
-      _undetermined.push_back(i) ;
-    }
-  }
-}
-
-std::vector<int> Raytracing::GetInterTwoDirect (const Ray& ray) {
-  std::vector<int> head ;
-  double maxVal = 0 ;
-  double minVal = 0 ;
-  int minIdx = -1 ;
-  int consNum = _polyptr->get_constraint_num() ;
-  for (int i = 0; i < consNum; ++ i) {
-    double currDistance = GetDistance(i, ray) ;
-    if ( Double::IsLessThan(currDistance, 0.0) ) {
-      if ( Double::IsLessThan(currDistance, minVal) ) {
-        minIdx = i ;
-        minVal = currDistance ;
-      }
-      else if ( Double::AreEqual(currDistance, minVal) ) {
-        minIdx = -1 ;
-      }
-    }
-    else if ( ! Double::AreEqual(currDistance, 0.0) ) {
-      if ( Double::AreEqual(currDistance, maxVal) ) {
-        head.push_back(i) ;
-      }
-      else if ( Double::IsLessThan(maxVal, currDistance) ) {
-        head.clear() ;
-        head.push_back(i) ;
-        maxVal = currDistance ;
-      }
-    } 
-  }
-
-  if (head.size() == 1) {
-    int headIdx = head.at(0) ;
-    _polyptr->Activate(headIdx) ;   
-  }
-  if (minIdx != -1) {
-    _polyptr->Activate(minIdx) ;
-  }
-
-  return head ;
-}
-
-/***************************method 3*******************************************/
-
-/*******************************************************************************
- * The same with RayHitting(), but computes the intersections with matrix 
- * instead of loops.
-********************************************************************************/
-void Raytracing::RayHittingMatrix () {
-  const int consNum = _polyptr->get_constraint_num() ;
-  Matrix rayMatrix = _polyptr->get_coefficients().transpose() ;
-  for (int i = 0 ; i < consNum; ++ i) {
-    rayMatrix.col(i).normalize() ; 
-  } 
-  Matrix normMatrix = _polyptr->get_coefficients() * rayMatrix ;
-  Matrix evaMatrix = _evaluate.rowwise().replicate(consNum) ; 
-  Matrix distanceMatrix = normMatrix.cwiseQuotient(evaMatrix) ;  
-  // the result in the form of 
-  //      r1     r2   ....   rn
-  // c1  res11  res12       res1n
-  // ...
-  // cn  resn1              resnn                 
-  // we need to find the minimum positive value of each column 
-  // To simplify the computation, we store 1/distance, which means
-  // we will find the maximum value in each column
-  std::vector< std::vector<int> > idxList =  GetMaxCoefIdx(distanceMatrix) ;
-  for (int i = 0; i < (int)idxList.size(); ++ i) {
-    _intersectHead[i] = idxList[i] ;
-    if (idxList[i].size() == 1) {
-      _polyptr->Activate( idxList[i][0] ) ;
-    }   
-  }
-  for (int i = 0; i < consNum; ++ i) {
-    if ( _polyptr->GetConstraintState(i) == REDUNDANT) {
-      _undetermined.push_back(i) ;
-    }
-  }
-}
-
-/*******************************************************************************
- * Gets the maximum value of each column
- * para matrix the distance matrix getten from RayHittingMatrix() 
- * return the index of the nearest constraint if it is the single nearest one
-********************************************************************************/
-std::vector< std::vector<int> > Raytracing::GetMaxCoefIdx (const Matrix& matrix) {
-  std::vector< std::vector<int> > idxList ;
-  for (int j = 0; j < matrix.cols(); ++ j) {
-    double maxVal = 0 ;
-    std::vector<int> idx ;
-    for (int i = 0; i < matrix.rows(); ++ i) {
-      double currVal = matrix(i, j) ;
-      if ( Double::IsLessThan(maxVal, currVal) ) {
-        idx.clear() ;
-        idx.push_back(i) ;
-        maxVal = currVal ;
-      }
-      else if ( Double::AreEqual(currVal, maxVal) ) {
-        idx.push_back(i) ;
-      }
-    }
-    idxList.push_back(idx) ;
-  } 
-  
-  return idxList ;  
-}
-
-/***************************method 4*******************************************/
 
 /*******************************************************************************
  * The same with RayHitting(), but computes the intersections with matrix 

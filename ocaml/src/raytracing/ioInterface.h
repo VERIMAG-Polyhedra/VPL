@@ -4,13 +4,12 @@
  * This class provides some static functions for reading or writing data.
 *******************************************************************************/
 
+#ifndef _RAYTRACING_IOINTER
+#define _RAYTRACING_IOINTER
+
 #include <vector>
 #include <string>
-#ifndef _POLYH
-#define _POLYH
 #include "polyhedron.h"
-#endif
-
 
 class IoInterface {
 public:
@@ -29,3 +28,5 @@ private:
   int _vari_num ;
   int _zero_num ;
 } ;
+
+#endif

@@ -7,14 +7,8 @@
 #include <utility>
 #include <random>
 #include "raytracing.h"
-#ifndef _DOUBLE
-#define _DOUBLE
 #include "double.h"
-#endif
-#ifndef _GLPKINTER
-#define _GLPKINTER
 #include "glpkInterface.h"
-#endif
 
 Polyhedron::Polyhedron (int consNum, int variNum) 
   : _constraint_num(consNum), _variable_num(variNum), _is_minimized(false) {
@@ -43,7 +37,7 @@ void Polyhedron::Init () {
  * the corresponding value in _active_table as false
  * @return true if minimize successful
 *******************************************************************************/
-bool Polyhedron::Minimize (int method) {
+bool Polyhedron::Minimize () {
   GetDuplicateIdx() ; 
   if ( IsEmpty() ) {
     std::cerr << "Minimization failed. The polyhedron is empty." << std::endl ;
@@ -61,19 +55,7 @@ bool Polyhedron::Minimize (int method) {
     }
   }
   Raytracing raytrace(*this, _central_point) ;
-  switch (method) { 
-    case 1: 
-      raytrace.RayHitting() ; break ;
-    case 2: 
-      raytrace.RayHittingTwoDirect() ; break ;
-    case 3: 
-      raytrace.RayHittingMatrix() ; break ;
-    case 4:
-      raytrace.RayHittingMatrixTwoDir() ; break ;
-    default:
-      std::cerr << "Illegal parameter of Minimize()" << std::endl ;
-      std::terminate() ;
-  }  
+  raytrace.RayHittingMatrixTwoDir() ; 
   raytrace.Determine() ;
   _is_minimized = true ;
   return true ;
@@ -550,4 +532,3 @@ std::vector<Point> Polyhedron::GetWitness () {
 
   return _witness_point ;
 }
-
