@@ -25,12 +25,12 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
          __tested with version 3.3.3__
 
   2. Installation
-	
-    First, add the following repository in your opam system:
+  
+  First, add the following repository in your opam system:
 
            opam repo add vpl http://www-verimag.imag.fr/~boulme/opam-vpl
 
-    Then, install the following packages (depending on your needs):
+  Then, install the following packages (depending on your needs):
 
     * `vpl-core`: the ocaml library
 
@@ -47,7 +47,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
     * `coq-vpltactic`: the coq plugin (also install `coq-vpl` and `vpl-core`)
 
        ```
-	       opam install coq-vpltactic
+ 	       opam install coq-vpltactic
        ```
 
 2. __From sources__
