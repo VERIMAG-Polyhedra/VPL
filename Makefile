@@ -24,10 +24,10 @@ to_opam:
 
 allclean: clean_caml clean_coq
 
-install: vpl
+install:
 	$(MAKE) -C ocaml/ install
 
-uninstall: vpl
+uninstall:
 	ocamlfind remove vpl
 
 coq_build:

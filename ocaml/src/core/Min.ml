@@ -900,9 +900,9 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
 				(coeff,var)) 
 			vars
 		|> Vec.mk
-	
+		
 	(* XXX: must check polyhedron emptiness?*)
-	let minimize_witness: Cs.t list -> (Cs.t * Vec.t) list
+	let minimize_witness': Cs.t list -> (Cs.t * Vec.t) list
 		= fun cstrs -> 
 		let vars = Cs.getVars cstrs 
 			|> Cs.Vec.V.Set.elements 
@@ -927,7 +927,20 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
 			Wrapper.rm poly;
 			cstrs'
 		end
-		
+	
+	let minimize_witness : Cs.t list -> (Cs.t * Vec.t) list
+		= fun cstrs ->
+		Debug.log DebugTypes.Title (lazy ("Minimization : Raytracing with vector type = " ^ (Vec.name)));
+		Debug.log DebugTypes.MInput (lazy (Printf.sprintf "Constraints : %s"
+			(Cs.list_to_string cstrs)));
+		let res = minimize_witness' cstrs in
+		Debug.log DebugTypes.MOutput (lazy (Misc.list_to_string 
+			(fun (c,v) -> Printf.sprintf "(%s, %s)"
+				(Cs.to_string Cs.Vec.V.to_string c)
+				(Vec.to_string Vec.V.to_string v))
+			res " ; "));
+		res 
+			
 	let minimize _ constraints = minimize_witness constraints
 	
 	let minimize_cone _ constraints = minimize_witness constraints

@@ -764,6 +764,7 @@ module Join_PLP = struct
 			match !Flags.join with
 			| Flags.Join_PLP _ -> Join.join scalar_type factory1 factory2 eps_opt p1_cons p2_cons
 			| Flags.Join_fromRegions -> PoltoPLP.Join.join factory1 factory2 eps_opt p1_cons p2_cons 
+			| _ -> Pervasives.failwith "Pol.joinSub_epsilon"
 		in
 		let p1'_ineqs = remove_epsilon epsilon p1' |> filter_trivial
 		and p2'_ineqs = remove_epsilon epsilon p2' |> filter_trivial
