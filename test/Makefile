@@ -19,16 +19,16 @@ check:
 	$(OCB) All_t.native
 	./_build/All_t.native
 
-coqsrc:
+coq_update:
 	$(MAKE) -C ../coq DemoExtractTests.vo
 	./fix_extract.sh
 
-demo_vplcoq_debug: coqsrc
+demo_vplcoq_debug: coq_update
 	$(OCB) -cflag -g -lflag -g demo_vplcoq.byte
         OCAMLRUNPARAM=b ./demo_vplcoq.byte
 
-demo_vplcoq: coqsrc
+demo_vplcoq: coq_update
 	$(OCB) demo_vplcoq.native
 	./demo_vplcoq.native
 
-.PHONY: clean check coqsrc demo_vplcoq_debug demo_vplcoq
+.PHONY: clean check coq_update demo_vplcoq_debug demo_vplcoq

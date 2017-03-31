@@ -1,8 +1,8 @@
-_VPL (Verified Polyhedra Library) version 0.2_
+# VPL (Verified Polyhedra Library) version 0.2
 
-# GENERAL INFORMATIONS
+## GENERAL INFORMATIONS
 
-The VPL is an Ocaml library allowing to compute with convex polyhedra. 
+The VPL is an Ocaml library allowing to compute with convex polyhedra.
 It provides standard operators -- certified in Coq -- to use this library as an abstract domain of polyhedra.
 
 Contributors: Alexis Fouilhé, Alexandre Maréchal, Sylvain Boulmé, Michaël Périn, David Monniaux.
@@ -10,95 +10,103 @@ Developed at Verimag and supported by ANR Verasco and ERC Stator.
 
 If you find a bug or have any comment, feel free to contact us at verimag-polyhedra-developers@univ-grenoble-alpes.fr
 
-# INSTALLATION
+## INSTALLATION
 
-1. __From OPAM__
+1. __From [opam](https://opam.ocaml.org/)__
 	
-	1. External Dependencies 
+    1. External Dependencies
 	
-		* [glpk](https://www.gnu.org/software/glpk/)
-		__required version >= 4.61__
-		
-		* [eigen](http://eigen.tuxfamily.org/)
-		(automatically installed by depexts on debian or ubuntu)
-		_debian package libeigen3-dev_
-		__tested with version 3.3.3__
-		
-	2. Installation
-	
-		First, add the following repository in your opam system:
+        * [glpk](https://www.gnu.org/software/glpk/)
+            __required version >= 4.61__
 
-			opam repo add vpl http://www-verimag.imag.fr/~boulme/opam-vpl
+        * [eigen](http://eigen.tuxfamily.org/)
+           (automatically installed by depexts on debian or ubuntu)
+           _debian package libeigen3-dev_
+           __tested with version 3.3.3__
 
-		Then, install only one of the following package (depending on your needs):
+    2. Installation
+  
+        First, add the following repository in your opam system:
 
-		* `vpl-core`: the ocaml library
+            opam repo add vpl http://www-verimag.imag.fr/~boulme/opam-vpl
 
-			```
-			opam install vpl-core
-			```
-			 
-		* `coq-vpl`: the coq library (also install `vpl-core`)
+        Then, install the following packages (depending on your needs):
 
-			```
-			opam install coq-vpl
-			```
+        * `vpl-core`: the ocaml library
 
-		* `coq-vpltactic`: the coq plugin (also install `coq-vpl`)
+          ```
+                opam install vpl-core
+          ```
 
-			```
-			opam install coq-vpltactic
-			```
+        * `coq-vpl`: the coq library (only needed to get Coq proofs about VPL operators)
+
+          ```
+	       opam install coq-vpl
+          ```
+
+        * `coq-vpltactic`: the coq plugin (also install `coq-vpl` and `vpl-core`)
+
+          ```
+ 	       opam install coq-vpltactic
+          ```
+
 2. __From sources__
 
-	1. Dependencies
+    1. Dependencies
 
-		The VPL requires the following packages:
+       The VPL requires the following packages:
 	
-		* [ocaml](http://caml.inria.fr/ocaml/index.en.html)
-		__required version >= 4.02.3__
+       * [ocaml](http://caml.inria.fr/ocaml/index.en.html)
+          __required version >= 4.02.3__
 	
-		* [zarith](https://forge.ocamlcore.org/projects/zarith)
-		_available in OPAM_
-		__tested with version 1.4.1__
-		
-		* [glpk](https://www.gnu.org/software/glpk/)
-		__required version >= 4.61__
+       * [zarith](https://forge.ocamlcore.org/projects/zarith)
+          _available in OPAM_
+          __tested with version 1.4.1__
 
-		* [coq](https://coq.inria.fr/)	
-		(mandatory only if you need the vpl from Coq or for the Coq tactic) 
-		_available in OPAM_
-		__required version 8.6__
+       * [glpk](https://www.gnu.org/software/glpk/)
+          __required version >= 4.61__
+
+       * [eigen](http://eigen.tuxfamily.org/)
+          _debian package libeigen3-dev_
+          __tested with version 3.3.3__
 	
-		* [eigen](http://eigen.tuxfamily.org/)
-		_debian package libeigen3-dev_
-		__tested with version 3.3.3__
+       * [coq](https://coq.inria.fr/)
+          (mandatory only if you want to re-extract files from Coq)
+          _available in OPAM_
+          __required version 8.6__
+
+          __NB__ the `ocaml/src/extracted/` directory already contains extracted files from Coq.
+
+    2. Compiling the VPL
+
+       (Optional) To re-extract from the coq files, simply run at the root directory
+
+            make coq-extract
+
+       To compile the VPL, simply run from the root directory
 	
-	2. Compiling the VPL
-
-		To compile the VPL, simply run from the root directory
+            make vpl
 	
-			make vpl
+       Tests can be run by typing
+
+            make check
+
+       Finally, to install the library with ocamlfind, type
+
+            make install
 	
-		Tests can be run by typing
-		
-			make check
-		
-		Finally, to install the library with ocamlfind, type
-		
-			make install
-	
-		To uninstall the library from ocamlfind, run 
-		
-			make uninstall
+       To uninstall the library from ocamlfind, run
 
-# Using the VPL
+            make uninstall
 
-	There are several ways to use the library.
 
-	* As an Ocaml library (opam package `vpl-core`),
-	the entry point is then the module UserInterface
+## Using the VPL
 
-	* From Coq (opam package `coq-vpl`)
+There are several ways to use the library.
 
-	* As a Coq tactic (opam package `coq-vpltactic`)
+* As an Ocaml library (opam package `vpl-core`),
+the entry point is then the module UserInterface
+
+* From Coq (opam package `coq-vpl`)
+
+* As a Coq tactic (opam package `coq-vpltactic`)

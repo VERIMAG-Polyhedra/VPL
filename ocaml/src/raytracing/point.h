@@ -5,11 +5,10 @@
  * if the point is empty.
 *******************************************************************************/
 
-#ifndef _EIGEN
-#define _EIGEN
-#include <eigen3/Eigen/Dense>
-#endif
+#ifndef _RAYTRACING_POINT
+#define _RAYTRACING_POINT
 
+#include <eigen3/Eigen/Dense>
 #include <ostream>
 
 typedef Eigen::VectorXd Vector ;
@@ -29,3 +28,5 @@ private:
   Vector _coordinates ;
   bool _is_empty ;
 } ;
+
+#endif

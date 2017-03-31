@@ -10,34 +10,23 @@
  * check inclusions.
 *******************************************************************************/
 
-#ifndef _EIGEN
-#define _EIGEN
+#ifndef _RAYTRACING_RAYTRACING
+#define _RAYTRACING_RAYTRACING
+
 #include <eigen3/Eigen/Dense>
-#endif
 #include <vector>
 #include <map>
-#ifndef _POLYH
-#define _POLYH
 #include "polyhedron.h"
-#endif
 #include "ray.h"
 
 class Raytracing {
 public:
   Raytracing (Polyhedron& poly, const Point& point) ;  
-  void RayHitting () ;
+  //void RayHitting () ;
   void Determine (const bool checkInclusion = false, const int startIdx = 0) ;
   std::vector<int> GetIntersections (const Ray& ray) ;
   bool CheckRedundant (const int currIdx, const std::vector<int>& headIdx) ;
-  double GetDistance (const int currIdx, const Ray& ray) ; 
   double GetDistance (const int currIdx, const double consDirect) ;
-  // method 2: raytracing with two-direction ray
-  void RayHittingTwoDirect() ;
-  std::vector<int> GetInterTwoDirect (const Ray& ray) ;
-  // method 3: raytracing with matrix
-  void RayHittingMatrix () ;
-  std::vector< std::vector<int> > GetMaxCoefIdx (const Matrix& matrix) ;
-  // method 4: raytracing with matrix
   void RayHittingMatrixTwoDir (const bool checkInclusion = false, const int startIdx = 0) ;
   std::vector< std::vector<int> > GetMaxMinCoefIdx (const Matrix& matrix, const bool checkInclusion, const int startIdx) ;
   bool HasInclusion () const ;
@@ -51,3 +40,5 @@ private:
   std::map< int, std::vector<int> > _intersectHead ;
   bool _hasInclusion ;
 } ;
+
+#endif

@@ -20,17 +20,13 @@
  * witness points). 
 *******************************************************************************/
 
+#ifndef _RAYTRACING_POLYHEDRON
+#define _RAYTRACING_POLYHEDRON
+
 #include <vector>
 #include <map>
-#ifndef _EIGEN
-#define _EIGEN
 #include <eigen3/Eigen/Dense>
-#endif
-#ifndef _POINT
-#define _POINT
 #include "point.h"
-#endif
-
 
 #ifdef _OPENMP
 #define VERIMAG_POLYHEDRA_MINIMIZE_OPENMP
@@ -43,7 +39,6 @@
 typedef Eigen::MatrixXd Matrix ;
 typedef Eigen::VectorXd Vector ;
 typedef Eigen::VectorXi VectorZ ;
-
 enum {REDUNDANT = 0, IRREDUNDANT = 1, DUPLICATED = 2} ;
 
 class Polyhedron {
@@ -53,7 +48,7 @@ public:
   Polyhedron& operator= (const Polyhedron& from) = delete ;
   Polyhedron& operator= (Polyhedron&& from) = default ;
   void Init() ;
-  bool Minimize (int method = 4) ;
+  bool Minimize () ;
   void MinimizeSimple () ;
   Polyhedron GetMinimizedPoly () ;
   Polyhedron GetSubPoly (const std::vector<int>& indexVec) ;
@@ -139,5 +134,6 @@ private:
   // the ray
   Matrix _witness_ray2 ;
   std::vector<Point> _witness_point ;
-
 } ;
+
+#endif

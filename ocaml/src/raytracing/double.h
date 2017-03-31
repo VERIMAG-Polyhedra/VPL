@@ -5,6 +5,9 @@
  * of float point numbers
 *******************************************************************************/
 
+#ifndef _RAYTRACING_DOUBLE
+#define _RAYTRACING_DOUBLE
+
 class Double {
 public:
   static bool IsLessThan(double d1, double d2) ;
@@ -16,3 +19,4 @@ private:
   const static double _epsilon ;
 } ;
 
+#endif

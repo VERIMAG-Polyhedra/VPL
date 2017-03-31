@@ -1,28 +1,18 @@
 all : vpl
 
-coqsrc:
-	$(MAKE) -C coq/ DemoExtract.vo
-
-cleancoqsrc:
-	$(MAKE) -C coq/ cleanextract
-	$(MAKE) -C coq/ DemoExtract.vo
-
 vpl:
 	cd ocaml; $(MAKE)
 
-clean_caml:
+clean:
 	$(MAKE) -C ocaml/ clean
 	$(MAKE) -C test/ clean
 	rm -f ocaml/setup.data ocaml/setup.log
-
-clean_coq:
-	$(MAKE) -C coq clean
 
 to_opam:
 	cd ocaml
 	oasis2opam --local
 
-allclean: clean_caml clean_coq
+allclean: clean coq_clean test_clean
 
 install:
 	$(MAKE) -C ocaml/ install
@@ -30,8 +20,23 @@ install:
 uninstall:
 	ocamlfind remove vpl
 
+check:
+	$(MAKE) -C test/ check
+
+test_clean:
+	$(MAKE) -C test/ clean
+
+# extract Coq files into the expected  ocaml/ subdir.
+coq_update:
+	$(MAKE) -j -C coq/ OPT:="-opt" DemoExtract.vo
+
+coq_extract:
+	$(MAKE) -C coq/ cleanextract
+	$(MAKE) -j -C coq/ OPT:="-opt" DemoExtract.vo
+
+# targets for opam installation.
 coq_build:
-	$(MAKE) -C coq/ build
+	$(MAKE) -j -C coq/ OPT:="-opt" build
 
 coq_install:
 	$(MAKE) -C coq/ install
@@ -39,8 +44,7 @@ coq_install:
 coq_uninstall:
 	$(MAKE) -C coq/ uninstall
 
-check:
-	$(MAKE) -C test/ check
+coq_clean:
+	$(MAKE) -C coq clean
 
-.PHONY: all coqsrc vpl clean_caml clean_coq allclean install uninstall check cleancoqsrc coq_build coq_install coq_uninstall
-
+.PHONY: all vpl clean allclean install uninstall check coq_update coq_extract coq_build coq_install coq_uninstall coq_clean test_clean

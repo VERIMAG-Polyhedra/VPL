@@ -6,10 +6,11 @@
  * stored in Raytracing class, a Ray object only contains the direction.
 *******************************************************************************/
 
-#ifndef _POINT
-#define _POINT
+#ifndef _RAYTRACING_RAY
+#define _RAYTRACING_RAY
+
 #include "point.h"
-#endif
+#include "polyhedron.h"
 
 class Ray {
 public:
@@ -22,3 +23,5 @@ public:
 private:
   Vector _direction ;
 } ;
+
+#endif
