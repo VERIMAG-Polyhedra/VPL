@@ -32,19 +32,19 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 
   Then, install the following packages (depending on your needs):
 
-    * `vpl-core`: the ocaml library
+  * `vpl-core`: the ocaml library
 
        ```
                opam install vpl-core
        ```
 
-    * `coq-vpl`: the coq library (only needed to get Coq proofs about VPL operators)
+  * `coq-vpl`: the coq library (only needed to get Coq proofs about VPL operators)
 
        ```
 	       opam install coq-vpl
        ```
 
-    * `coq-vpltactic`: the coq plugin (also install `coq-vpl` and `vpl-core`)
+  * `coq-vpltactic`: the coq plugin (also install `coq-vpl` and `vpl-core`)
 
        ```
  	       opam install coq-vpltactic
