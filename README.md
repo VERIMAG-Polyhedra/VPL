@@ -38,13 +38,13 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
                 opam install vpl-core
           ```
 
-        * `coq-vpl`: the coq library (only needed to get Coq proofs about VPL operators)
+        * `coq-vpl`: the Coq library (only needed to get Coq proofs about VPL operators)
 
           ```
 	       opam install coq-vpl
           ```
 
-        * `coq-vpltactic`: the coq plugin (also install `coq-vpl` and `vpl-core`)
+        * `coq-vpltactic`: the [VplTactic](https://github.com/VERIMAG-Polyhedra/VplTactic) plugin for Coq (also install `coq-vpl` and `vpl-core`)
 
           ```
  	       opam install coq-vpltactic
@@ -109,4 +109,4 @@ the entry point is then the module UserInterface
 
 * From Coq (opam package `coq-vpl`)
 
-* As a Coq tactic (opam package `coq-vpltactic`)
+* As a Coq tactic (see [VplTactic](https://github.com/VERIMAG-Polyhedra/VplTactic))
