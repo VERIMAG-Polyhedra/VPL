@@ -37,8 +37,8 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 			```
 			opam install vpl-core
 			```
-			 
-		* `coq-vpl`: the coq library (for Coq proofs about VPL operators)
+                
+		* `coq-vpl`: the coq library (only needed to get Coq proofs about VPL operators)
 
 			```
 			opam install coq-vpl
@@ -65,16 +65,22 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 		* [glpk](https://www.gnu.org/software/glpk/)
 		__required version >= 4.61__
 
-		* [coq](https://coq.inria.fr/)	
-		(mandatory only if you need the vpl from Coq or for the Coq tactic) 
-		_available in OPAM_
-		__required version 8.6__
-	
 		* [eigen](http://eigen.tuxfamily.org/)
 		_debian package libeigen3-dev_
 		__tested with version 3.3.3__
 	
+		* [coq](https://coq.inria.fr/)	
+		(mandatory only if you want to re-extract files from Coq) 
+		_available in OPAM_
+		__required version 8.6__
+                
+                __NB__ the `ocaml/src/extracted/` directory already contains extracted files from Coq.
+
 	2. Compiling the VPL
+
+                (Optional) To re-extract from the coq files, simply run at the root directory
+
+                        make coq-extract
 
 		To compile the VPL, simply run from the root directory
 	
@@ -91,6 +97,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 		To uninstall the library from ocamlfind, run 
 		
 			make uninstall
+
 
 ## Using the VPL
 
