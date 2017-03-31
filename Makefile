@@ -28,15 +28,15 @@ test_clean:
 
 # extract Coq files into the expected  ocaml/ subdir.
 coq_update:
-	$(MAKE) -C coq/ DemoExtract.vo
+	$(MAKE) -j -C coq/ OPT:="-opt" DemoExtract.vo
 
 coq_extract:
 	$(MAKE) -C coq/ cleanextract
-	$(MAKE) -C coq/ DemoExtract.vo
+	$(MAKE) -j -C coq/ OPT:="-opt" DemoExtract.vo
 
 # targets for opam installation.
 coq_build:
-	$(MAKE) -C coq/ build
+	$(MAKE) -j -C coq/ OPT:="-opt" build
 
 coq_install:
 	$(MAKE) -C coq/ install
