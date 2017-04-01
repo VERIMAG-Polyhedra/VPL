@@ -81,7 +81,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 
        (Optional) To re-extract from the coq files, simply run at the root directory
 
-            make coq-extract
+            make coq_extract
 
        To compile the VPL, simply run from the root directory
 	
