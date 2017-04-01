@@ -5,7 +5,7 @@
 The VPL is an Ocaml library allowing to compute with convex polyhedra.
 It provides standard operators -- certified in Coq -- to use this library as an abstract domain of polyhedra.
 
-Contributors: Alexis Fouilhé, Alexandre Maréchal, Sylvain Boulmé, Michaël Périn, David Monniaux.
+Contributors: Alexis Fouilhé, Alexandre Maréchal, Sylvain Boulmé, Hang Yu, Michaël Périn, David Monniaux.
 Developed at Verimag and supported by ANR Verasco and ERC Stator.
 
 If you find a bug or have any comment, feel free to contact us at verimag-polyhedra-developers@univ-grenoble-alpes.fr
