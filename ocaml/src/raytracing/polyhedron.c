@@ -12,8 +12,8 @@
 
 Polyhedron::Polyhedron (int consNum, int variNum) 
   : _constraint_num(consNum), _variable_num(variNum), _is_minimized(false) {
-  _coefficients.resize(consNum, variNum) ;
-  _constants.resize(consNum) ;
+  _coefficients = Matrix::Zero(consNum, variNum) ;
+  _constants = Vector::Zero(consNum) ;
   _active_table.resize(consNum, REDUNDANT) ;
   _operators.resize(consNum) ;
   _witness_ray2.resize(variNum, consNum) ;

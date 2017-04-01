@@ -168,7 +168,7 @@ extern "C" value set_central_point_coeff(Polyhedron* poly, value var_, value coe
 	double coeff = Double_val(coeff_);
 	if (p.IsEmpty()){
 		int variNum = poly->get_variable_num() ;
-		Vector coord(variNum) ;
+		Vector coord = Vector::Zero(variNum) ;
 		coord(var) = coeff;
 		p.set_coordinates(coord);
 	}
