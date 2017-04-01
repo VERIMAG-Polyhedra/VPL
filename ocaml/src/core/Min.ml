@@ -862,33 +862,13 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
 	module Vec = Vec
 
 	let set_coeffs : Wrapper.polyhedron -> Cs.Vec.V.t list -> int -> Cs.t -> unit
-		= fun poly vars i_cstr cstr ->
-		List.iter
-			(fun (var,coeff) ->
-				let i_var = Misc.findi (Cs.Vec.V.equal var) vars in
-				Wrapper.set_coeff poly i_cstr i_var (Cs.Vec.Coeff.to_float coeff))
-			(Cs.Vec.toList cstr.Cs.v)
-
-	(* XXX: must check polyhedron emptiness?*)
-	(*let minimize_cons: 'c Cons.t list -> 'c Cons.t list
-		= fun s -> []
-		let cstrs = List.map Cons.get_c s in
-		let vars = Cs.getVars cstrs
-			|> V.Set.elements
-		in
-		let poly = Wrapper.mk (List.length cstrs) (List.length vars) in
-		List.iteri (set_coeffs poly vars) cstrs;
-		Wrapper.minimize poly;
-		let s' = Misc.fold_left_i
-			(fun i res cons ->
-				if Wrapper.is_true poly i
-				then cons :: res
-				else res)
-			[] s
-		in
-		Wrapper.rm poly;
-		s'*)
-
+  		= fun poly vars i_cstr cstr ->
+		let vec = Cs.get_v cstr in
+			List.iteri
+			(fun i_var var ->
+				Wrapper.set_coeff poly i_cstr i_var (Cs.Vec.get vec var |> Cs.Vec.Coeff.to_float) 
+    	    )
+    		vars    
 
 	let get_witness : Wrapper.polyhedron -> Vec.V.t list -> int -> Vec.t
 		= fun poly vars id_cstr ->
@@ -910,6 +890,7 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
             Wrapper.set_central_point_coeff poly i coeff
           )
           vars
+          
 	(* XXX: must check polyhedron emptiness?*)
 	let minimize_witness': Vec.t -> Cs.t list -> (Cs.t * Vec.t) list
 		= fun point cstrs ->
