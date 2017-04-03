@@ -299,4 +299,28 @@ module EqSet(Cs : Cstr.Rat.Type) = struct
 	(* List.fold_right is necessary because order needs to be preserved (echelon form) *)
 		List.fold_right apply s (nxt, relocTbl, nil)
 		
+	let minkowskiSetup_1: 'c2 Cert.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c1 t 
+		-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+		= fun factory2 nxt relocTbl s ->
+		let apply (x, c) (nxt1, relocTbl1, s1) =
+			let (nxt2, relocTbl2, c1) = Cons.minkowskiSetup_1 factory2 nxt1 relocTbl1 c in
+			let x1 =	match Cs.Vec.M.get None relocTbl2 x with
+					| None -> failwith "EqSet.minkowskiSetup_1"
+					| Some x1 -> x1
+			in
+			(nxt2, relocTbl2, (x1, c1)::s1)
+		in
+	(* List.fold_right is necessary because order needs to be preserved (echelon form) *)
+		List.fold_right apply s (nxt, relocTbl, nil)
+	
+	let minkowskiSetup_2: 'c1 Cert.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c2 t 
+		-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+		= fun factory1 nxt relocTbl s ->
+		let apply (x, c) (nxt1, relocTbl1, s1) =
+			let (nxt2, relocTbl2, c1) = Cons.minkowskiSetup_2 factory1 nxt1 relocTbl1 c in
+			let x1 = x in
+			(nxt2, relocTbl2, (x1, c1)::s1)
+		in
+	(* List.fold_right is necessary because order needs to be preserved (echelon form) *)
+		List.fold_right apply s (nxt, relocTbl, nil)
 end

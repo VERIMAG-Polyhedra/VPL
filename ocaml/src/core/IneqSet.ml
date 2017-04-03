@@ -407,10 +407,25 @@ let joinSetup_2: 'c1 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c2 t
 		(nxt2, relocTbl2, c1::s1)
 	in
 	List.fold_left apply (nxt, relocTbl, nil) s
-(*
-let isTop : t -> bool = fun s -> (s = [])
-let list : t -> Cons.t list = fun s -> s
-*)
+
+let minkowskiSetup_1: 'c2 Cert.t -> V.t -> V.t option Rtree.t -> 'c1 t
+	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
+	= fun factory2 nxt relocTbl s ->
+	let apply (nxt1, relocTbl1, s1) c =
+		let (nxt2, relocTbl2, c1) = Cons.minkowskiSetup_1 factory2 nxt1 relocTbl1 c in
+		(nxt2, relocTbl2, c1::s1)
+	in
+	List.fold_left apply (nxt, relocTbl, nil) s
+
+let minkowskiSetup_2: 'c1 Cert.t -> V.t -> V.t option Rtree.t -> 'c2 t
+	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
+	= fun factory1 nxt relocTbl s ->
+	let apply (nxt1, relocTbl1, s1) c =
+		let (nxt2, relocTbl2, c1) = Cons.minkowskiSetup_2 factory1 nxt1 relocTbl1 c in
+		(nxt2, relocTbl2, c1::s1)
+	in
+	List.fold_left apply (nxt, relocTbl, nil) s
+	
 
 (** [isRed sx conss i] checks whether the constraint identified by [i] is redundant in
 the constraint set represented by [sx]. *)

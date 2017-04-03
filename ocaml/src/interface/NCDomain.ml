@@ -75,7 +75,20 @@ module Polyhedron (F : Factory.Type) = struct
 				|> Pervasives.fst
 			in 
 			check (NonBot p')
-		
+	
+	(* TODO: need Factory.equal! *)
+	let minkowski : t -> t -> t
+		= fun p1 p2 ->
+		match p1, p2 with
+		| Bottom, Bottom -> Bottom
+		| Bottom, NonBot _ -> p2
+		| NonBot _, Bottom -> p1
+		| NonBot p1', NonBot p2' ->
+			let p' = Pol.minkowski F.factory F.factory p1' p2'
+				|> Pervasives.fst
+			in 
+			check (NonBot p')
+			
 	let project : t -> Var.t list -> t
 		= fun p vars ->
 		match p with
@@ -181,7 +194,7 @@ module Polyhedron (F : Factory.Type) = struct
 				Pol.eqs = List.mapi (fun i (v,(cstr,_)) -> (v, F.mk (f1 i cstr))) eqs;
 				Pol.ineqs = List.mapi (fun i (cstr,_) -> F.mk (f2 i cstr)) ineqs
 			}
-			
+	
 end
 
 let translate_cstr : Cs.t -> Vec.t -> Cs.t

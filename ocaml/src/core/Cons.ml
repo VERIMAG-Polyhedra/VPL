@@ -175,6 +175,22 @@ module Cons (Cs : Cstr.Rat.Type) = struct
 		let c' = {c with Cs.v = Cs.Vec.set vec2 alpha alphaCoef; Cs.c = cst} in
 		let cert' = (factory1.Cert.top, cert) in
 		(nxt1, relocTbl1, (c',cert'))
-
+	
+	let minkowskiSetup_1 : 'c2 Cert.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c1 t 
+		-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (('c1,'c2) discr_t) t
+		= fun factory2 nxt relocTbl (c,cert) ->
+		let (nxt1, vec1, relocTbl1) = Cs.Vec.shift nxt (Cs.get_v c) relocTbl in
+		let c' = {c with Cs.v = vec1} in
+		let cert' = (cert, factory2.Cert.top) in
+		(nxt1, relocTbl1, (c',cert'))
+	
+	let minkowskiSetup_2 : 'c1 Cert.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c2 t 
+		-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (('c1,'c2) discr_t) t
+		= fun factory1 nxt relocTbl (c,cert) ->
+		let (nxt1, vec1, relocTbl1) = Cs.Vec.shift nxt (Cs.get_v c) relocTbl in
+		let vec2 = Cs.Vec.add (Cs.get_v c) (Cs.Vec.neg vec1) in
+		let c' = {c with Cs.v = vec2} in
+		let cert' = (factory1.Cert.top, cert) in
+		(nxt1, relocTbl1, (c',cert'))
 end	
 

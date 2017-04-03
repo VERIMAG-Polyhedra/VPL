@@ -21,6 +21,7 @@ module type Polyhedron_Type = sig
 	val addNLM : t -> CP.t list -> t
 	val meet : t -> t -> t
 	val join : t -> t -> t
+	val minkowski : t -> t -> t
 	val project : t -> Var.t list -> t
 	val widen : t -> t -> t
 	val incl : t -> t -> bool

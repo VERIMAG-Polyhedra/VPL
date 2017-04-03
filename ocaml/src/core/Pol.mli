@@ -115,6 +115,10 @@ The certificate provides the necessary arguments to show inclusion of [p1] and [
 val join: 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 val joinSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 
+(** [minkowski p1 p2] computes the minkowski sum [p] of [p1] and [p2]. *)
+val minkowski: 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+val minkowskiSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+
 (** Widening operator.
 The result includes the two operands, although no certificate is created.
 Note that [widen p1 p2] relies on [p1] being included in [p2]. *)

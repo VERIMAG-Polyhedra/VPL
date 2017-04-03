@@ -615,6 +615,21 @@ let correct_cmp: 'c Cert.t -> 'c Cons.t -> 'c Cons.t
 	then (c, fac.Cert.to_le cert)
 	else (c,cert)
 
+let split_certificates : 'c1 Cert.t -> 'c2 Cert.t -> (('c1,'c2) Cons.discr_t) t -> 'c1 t * 'c2 t 
+	= fun factory1 factory2 p ->
+	let (ineqs1,ineqs2) = 
+	List.fold_left
+		(fun (ineqs1,ineqs2) (c, (cert1,cert2)) -> 
+			((correct_cmp factory1 (c, cert1))::ineqs1),
+			((correct_cmp factory2 (c, cert2))::ineqs2))
+		([],[]) p.ineqs
+	and (eqs1,eqs2) = 
+	List.fold_left
+		(fun (eqs1,eqs2) (v, (c, (cert1,cert2))) -> (v, (c, cert1))::eqs1, (v, (c, cert2))::eqs2)
+		([],[]) p.eqs
+	in
+	{eqs = eqs1 ; ineqs = ineqs1}, {eqs = eqs2 ; ineqs = ineqs2}
+		
 let joinSub_classic: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 nxtVar p1 p2 ->
 	(*
@@ -659,27 +674,9 @@ See notClosed0 in the join test suite. *)
 		(promote p (List.map Cert.getId (List.filter elect cert)), cert)
 	in
 	*)
-	let (nxtVar1, p0, vars, factory) = joinSetup factory1 factory2 nxtVar p1 p2 in
-	let split : (('c1,'c2) Cons.discr_t) t -> 'c1 t * 'c2 t 
-		= fun p ->
-		let (ineqs1,ineqs2) = 
-		List.fold_left
-			(fun (ineqs1,ineqs2) (c, (cert1,cert2)) -> 
-				((correct_cmp factory1 (c, cert1))::ineqs1),
-				((correct_cmp factory2 (c, cert2))::ineqs2))
-		(*	(fun (ineqs1,ineqs2) (c, (cert1,cert2)) -> 
-				(c, cert1)::ineqs1,
-				(c, cert2)::ineqs2)*)
-			([],[]) p.ineqs
-		and (eqs1,eqs2) = 
-		List.fold_left
-			(fun (eqs1,eqs2) (v, (c, (cert1,cert2))) -> (v, (c, cert1))::eqs1, (v, (c, cert2))::eqs2)
-			([],[]) p.eqs
-		in
-		{eqs = eqs1 ; ineqs = ineqs1}, {eqs = eqs2 ; ineqs = ineqs2}
-	in 
+	let (nxtVar1, p0, vars, factory) = joinSetup factory1 factory2 nxtVar p1 p2 in 
 	let p = projectMSub factory nxtVar1 p0 vars in
-	split p
+	split_certificates factory1 factory2 p
 	(*match cert with
 	| Cert.Empty _ | Cert.Bind _ -> failwith "Pol.join"
 	| Cert.Implies l ->
@@ -1048,3 +1045,42 @@ let to_unit : 'c t -> unit t
 			(get_ineqs ph);
 	}
 
+
+let minkowskiSetup : 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
+-> Var.t * (('c1,'c2) Cons.discr_t) t * Var.t list * ('c1,'c2) Cons.discr_cert 
+	= fun factory1 factory2 nxt p1 p2 -> 
+	let factory = Cons.discr_factory factory1 factory2 in
+	(*let trySubst : 'c2 IneqSet.t -> Var.t -> 'c2 IneqSet.t
+		= fun iset v ->
+		let (opte,eqs) = EqSet.trySubst factory1 v p1.eqs in
+		match opte with
+		| Some e -> IneqSet.subst factory2 nxt eqs v e iset
+		| None -> iset
+	in
+	let vars = List.map Pervasives.fst p2
+		|> Cs.getVars 
+		|> Var.Set.elements in
+	let p2' = List.fold_left trySubst p2 vars in*)
+	let (varNxt1, r, eqs1) = EqSet.minkowskiSetup_1 factory2 (Var.next nxt) Rtree.Nil p1.eqs in
+	let (varNxt2, r, eqs2) = EqSet.minkowskiSetup_2 factory1 (Var.next nxt) Rtree.Nil p2.eqs in
+	let (varNxt3, r, ineqs1) = IneqSet.minkowskiSetup_1 factory2 varNxt2 r p1.ineqs in
+	let (varNxt4, r, ineqs2) = IneqSet.minkowskiSetup_2 factory1 varNxt3 r p2.ineqs in
+	let eqs = List.append eqs1 eqs2 in
+	let ineqs = List.concat [ineqs1; ineqs2] in
+	let vars =
+		Rtree.fold (fun _ a -> function None -> a | Some x -> x::a) [] r
+	in
+	(varNxt4, {ineqs = ineqs; eqs = eqs}, vars, factory)
+
+let minkowskiSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+	= fun factory1 factory2 nxtVar p1 p2 ->
+	let (nxtVar1, p0, vars, factory) = minkowskiSetup factory1 factory2 nxtVar p1 p2 in 
+	let p = projectMSub factory nxtVar1 p0 vars in
+	split_certificates factory1 factory2 p
+
+let minkowski : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+	= fun factory1 factory2 p1 p2 -> 
+	let nxt = Var.Set.union (varSet p1) (varSet p2)
+		|> Var.horizon 
+	in
+	minkowskiSub factory1 factory2 nxt p1 p2

@@ -69,6 +69,8 @@ module PedraQWrapper: QInterface.HighLevelDomain = struct
   	 let translate _ _ = not_yet_implemented "translate"
   	 
   	 let mapi _ _ _ _ = not_yet_implemented "mapi"
+  	 
+  	 let minkowski _ _ = not_yet_implemented "minkowski"
 end
 
 (* lifting de PedraZ.FullDom *)
@@ -138,5 +140,7 @@ module PedraZWrapper: ZInterface.HighLevelDomain = struct
     let translate _ _ = not_yet_implemented "translate"
     
     let mapi _ _ _ _ = not_yet_implemented "mapi"
+    
+    let minkowski _ _ = not_yet_implemented "minkowski"
 end
 

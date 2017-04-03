@@ -64,9 +64,11 @@ module type LowLevelDomain = sig
   val assume: (cmpT * Term.t) list -> t -> t
     
   val meet : t -> t -> t
-    
+  
   val join: t -> t -> t
-
+  
+  val minkowski : t -> t -> t
+  
   val project: Var.t list -> t -> t
     
   val widen: t -> t -> t
@@ -95,8 +97,6 @@ module type LowLevelDomain = sig
   Boolean [b] has no effect here. It is used in the high-level version of [mapi]. *)
   val mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 end
-
-
 
 module Interface (Coeff: Scalar.Type) = struct
 
@@ -415,6 +415,9 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     = fun f poly ->
     {poly with pol = f poly.pol}
   
+  let minkowski p1 p2 =
+  {p1 with pol = LHD.minkowski p1.pol p2.pol}
+  
   let translate pol vec = 
   match backend_rep pol with
   | None -> Pervasives.failwith "translate"
@@ -685,5 +688,7 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
   let translate _ _ = not_yet_implemented "translate"
   
   let mapi _ _ _ _ = not_yet_implemented "mapi"
+  
+  let minkowski _ _ = not_yet_implemented "minkowski"
 
 end
