@@ -150,6 +150,9 @@ module type Type = sig
 			(** Computes the convex hull of two polyhedra. *)
 			val join: t -> t -> t
 			
+			(** Computes the minkowski sum of two polyhedra. *)
+			val minkowski: t -> t -> t
+			
 			(** Eliminates the given list of variables from a polyhedron, by orthogonal projection. *)
 			val project: Var.t list -> t -> t
 			
@@ -226,6 +229,9 @@ module type Type = sig
 			
 			(** Computes the intersection of two polyhedra. *)
 			val meet : t -> t -> t
+			
+			(** Computes the minkowski sum of two polyhedra. *)
+			val minkowski: t -> t -> t
 			
 			(** Computes the convex hull of two polyhedra. *)
 			val join: t -> t -> t
@@ -494,6 +500,14 @@ module Interface (Coeff : Scalar.Type) = struct
 				|> Record.write;
 				next
 			
+			let minkowski : t -> t -> string
+				= fun p1 p2 ->
+				let next = Names.mk() in
+				Printf.sprintf "%s %s %s %s %s"
+					next Symbols.s_assign p1.name Symbols.s_minkowski p2.name
+				|> Record.write;
+				next
+				
 			let project : Var.t list -> t -> string
 				= let print_vars : Var.t list -> string
 					= fun vars ->
@@ -638,7 +652,17 @@ module Interface (Coeff : Scalar.Type) = struct
 				fun p1 p2 ->
 				lazy (join' p1 p2) 
 				|> handle 
-		
+			
+			let minkowski : t -> t -> t
+				= let minkowski' : t -> t -> t
+					= fun p1 p2 ->
+					let name = Track.join p1 p2 in
+					mk name (I.minkowski p1.value p2.value)
+				in
+				fun p1 p2 ->
+				lazy (minkowski' p1 p2) 
+				|> handle 
+				
 			let project: Var.t list -> t -> t
 				= let project': Var.t list -> t -> t
 					= fun vars p ->
