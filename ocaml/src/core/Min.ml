@@ -863,12 +863,18 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
 
 	let set_coeffs : Wrapper.polyhedron -> Cs.Vec.V.t list -> int -> Cs.t -> unit
   		= fun poly vars i_cstr cstr ->
+		List.iter
+			(fun (var,coeff) ->
+				let i_var = Misc.findi (Cs.Vec.V.equal var) vars in
+				Wrapper.set_coeff poly i_cstr i_var (Cs.Vec.Coeff.to_float coeff))
+			(Cs.Vec.toList cstr.Cs.v)
+		(*= fun poly vars i_cstr cstr ->
 		let vec = Cs.get_v cstr in
 			List.iteri
 			(fun i_var var ->
 				Wrapper.set_coeff poly i_cstr i_var (Cs.Vec.get vec var |> Cs.Vec.Coeff.to_float) 
     	    )
-    		vars    
+    		vars *)   
 
 	let get_witness : Wrapper.polyhedron -> Vec.V.t list -> int -> Vec.t
 		= fun poly vars id_cstr ->
