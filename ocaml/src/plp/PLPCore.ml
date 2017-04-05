@@ -3,6 +3,7 @@ module EqSet = EqSet.EqSet(Cs)
 module Cons = EqSet.Cons
 
 module Debug = DebugTypes.Debug(struct let name = "PLPCore" end)
+module Profile = Profile.Profile(struct let name = "PLPCore" end)
 
 module Stat = struct
 	let nb_regions : int ref = ref 0
@@ -323,7 +324,11 @@ module PLP(Minimization : Min.Type) = struct
 		(* VERSION TEST *)
 
 		let extract : PSplx.t -> Cs.t list
-			= Extract.extract
+			= fun sx ->
+			Profile.start "Extract.region";
+			let res = Extract.extract sx in
+			Profile.stop "Extract.region";
+			res
 
 
 		(** Returns a point in the regions' interior. The chosen point is a 1 from each boundary if possible. *)
@@ -461,7 +466,67 @@ module PLP(Minimization : Min.Type) = struct
 			= fun plp ->
 			MapV.iter (fun _ -> check_region) plp.regs
 	end
+	
+	module Adjacency = struct
+		
+		(** Returns true if [reg1] and [reg2] are adjacent through [cstr1] and [cstr2].
+		@param cstr1 must belong to [reg1]
+		@param cstr2 must belong to [reg2] *)
+		let adjacent_cstr_lp : Region.t -> Region.t -> Cs.t -> Cs.t -> bool
+			= fun reg1 reg2 cstr1 cstr2->
 
+				let cstrs_reg1 = {cstr1 with Cs.typ = Cstr.Le}
+					:: (Misc.popAll Cs.equalSyn (Region.get_cstrs reg1) cstr1)
+				and cstrs_reg2 = {cstr2 with Cs.typ = Cstr.Le}
+					:: (Misc.popAll Cs.equal (Region.get_cstrs reg2) cstr2)
+				in
+				let cstrs = cstrs_reg1 @ cstrs_reg2 in
+				let horizon = Cs.getVars cstrs
+					|> Vec.V.horizon
+				in
+				let cstrs = List.mapi (fun i c -> (i,c)) cstrs in
+				match Splx.mk horizon cstrs |> Splx.checkFromAdd with
+				| Splx.IsUnsat _ -> false
+				| Splx.IsOk _ -> true
+
+		(** Returns true if [reg1] and [reg2] are adjacent through [cstr1] and [cstr2].
+		@param cstr1 must belong to [reg1]
+		@param cstr2 must belong to [reg2] *)
+		let adjacent_cstr : Region.t -> Region.t -> Cs.t -> Cs.t -> bool
+			= fun reg1 reg2 cstr1 cstr2 ->
+				match reg1.Region.sx, reg2.Region.sx with
+				| Some sx1, Some sx2 ->
+					let p = Cs.get_saturating_point cstr1 in
+					let obj1 = PSplx.obj_value' sx1
+					and obj2 = PSplx.obj_value' sx2
+					in
+					Cs.Vec.Coeff.equal (Cs.eval' obj1 p) (Cs.eval' obj2 p)
+				| _,_ -> adjacent_cstr_lp reg1 reg2 cstr1 cstr2
+		
+		let adjacent' : int -> Cs.t -> ((int * Cs.t) * 'a) list -> mapRegs_t -> int option
+			= fun id_init cstr l regMap ->
+			let reg = MapV.find id_init regMap in
+			try
+				let ((id',_),_) = List.find
+					(fun ((id', cstr'), _) ->
+						id_init <> id'
+					  &&
+					  	(adjacent_cstr reg (MapV.find id' regMap) cstr cstr'))
+					l
+				in
+				Some id'
+			with Not_found -> None
+		
+		(** returns [Some i] with [i] the index of the adjacent region if it exists, [None] otherwise. *)
+		let adjacent : int -> Cs.t -> ((int * Cs.t) * 'a) list -> mapRegs_t -> int option
+			= fun id_init cstr l regMap ->
+			Profile.start "adjacent";
+			let res = adjacent' id_init cstr l regMap in
+			Profile.stop "adjacent";
+			res
+	end
+	
+	
 	(** Module that chooses the next point to explore by raytracing. *)
 	module RayTracing = struct
 
@@ -510,56 +575,7 @@ module PLP(Minimization : Min.Type) = struct
 					else (id',reg) :: res )
 				regMap
 				[]
-
-		(** Returns true if [reg1] and [reg2] are adjacent through [cstr1] and [cstr2].
-		@param cstr1 must belong to [reg1]
-		@param cstr2 must belong to [reg2] *)
-		let adjacent_cstr_lp : Region.t -> Region.t -> Cs.t -> Cs.t -> bool
-			= fun reg1 reg2 cstr1 cstr2->
-
-				let cstrs_reg1 = {cstr1 with Cs.typ = Cstr.Le}
-					:: (Misc.popAll Cs.equalSyn (Region.get_cstrs reg1) cstr1)
-				and cstrs_reg2 = {cstr2 with Cs.typ = Cstr.Le}
-					:: (Misc.popAll Cs.equal (Region.get_cstrs reg2) cstr2)
-				in
-				let cstrs = cstrs_reg1 @ cstrs_reg2 in
-				let horizon = Cs.getVars cstrs
-					|> Vec.V.horizon
-				in
-				let cstrs = List.mapi (fun i c -> (i,c)) cstrs in
-				match Splx.mk horizon cstrs |> Splx.checkFromAdd with
-				| Splx.IsUnsat _ -> false
-				| Splx.IsOk _ -> true
-
-		(** Returns true if [reg1] and [reg2] are adjacent through [cstr1] and [cstr2].
-		@param cstr1 must belong to [reg1]
-		@param cstr2 must belong to [reg2] *)
-		let adjacent_cstr : Region.t -> Region.t -> Cs.t -> Cs.t -> bool
-			= fun reg1 reg2 cstr1 cstr2 ->
-				match reg1.Region.sx, reg2.Region.sx with
-				| Some sx1, Some sx2 ->
-					let p = Cs.get_saturating_point cstr1 in
-					let obj1 = PSplx.obj_value' sx1
-					and obj2 = PSplx.obj_value' sx2
-					in
-					Cs.Vec.Coeff.equal (Cs.eval' obj1 p) (Cs.eval' obj2 p)
-				| _,_ -> adjacent_cstr_lp reg1 reg2 cstr1 cstr2
-
-		(** returns [Some i] with [i] the index of the adjacent region if it exists, [None] otherwise. *)
-		let adjacent : int -> Cs.t -> ((int * Cs.t) * Min.direction) list -> mapRegs_t -> int option
-			= fun id_init cstr l regMap ->
-			let reg = MapV.find id_init regMap in
-			try
-				let ((id',_),_) = List.find
-					(fun ((id', cstr'), _) ->
-						id_init <> id'
-					  &&
-					  	(adjacent_cstr reg (MapV.find id' regMap) cstr cstr'))
-					l
-				in
-				Some id'
-			with Not_found -> None
-
+			
 		let debug_evals
 			= fun l ->
 			Debug.exec l DebugTypes.Detail
@@ -618,7 +634,7 @@ module PLP(Minimization : Min.Type) = struct
 				let evals =
 					if List.length (List.nth evals i) > 1
 					then (* On a trouvé des candidat adjacents, il faut vérifier qu'ils sont bien adjacents *)
-						match adjacent id cstr (List.nth evals i) regMap with
+						match Adjacency.adjacent id cstr (List.nth evals i) regMap with
 						| None -> begin match reg_t with
 							| Cone -> (Misc.sublist evals 0 i) @ [[(id,cstr), (dir_type, v1)]] @ (Misc.sublist evals (i+1) (List.length evals))
 							| NCone -> evals
@@ -696,7 +712,7 @@ module PLP(Minimization : Min.Type) = struct
 
 		(** The PLP state [t] is modified if an adjacency is found. *)
 		let rec get_next_point_rec : region_t -> t -> t
-    = fun reg_t plp ->
+    		= fun reg_t plp ->
 			match plp.todo with
 			| [] -> plp
 			| (ExplorationPoint.Direction (id,b)) :: tl -> begin
@@ -714,19 +730,16 @@ module PLP(Minimization : Min.Type) = struct
 						(Vec.to_string Vec.V.to_string vec)));
 					get_next_point_rec reg_t {plp with todo = tl})
 				else {plp with todo = (ExplorationPoint.Point vec) :: tl}
-
+		
 		(** Returns the next point to explore, or [None] if there is none.
-			The returned point is the first element of [plp.todo]. *)
+		The returned point is the first element of [plp.todo]. *)
 		let get_next_point : region_t -> t -> ExplorationPoint.t option * t
-    = fun reg_t plp ->
-      (* Test for glpk*)
-      MapV.iter
-        (fun _ reg -> Check.check_region reg)
-        plp.regs;
+			= fun reg_t plp ->
 			let plp = get_next_point_rec reg_t plp in
 			if plp.todo = []
 			then (None, plp)
 			else (Some (List.hd plp.todo),plp)
+			
 	end
 
 	(** Other algorithm to find new exploration points *)
@@ -753,7 +766,7 @@ module PLP(Minimization : Min.Type) = struct
 						((id, cstr'), (dir_type, v)) :: res)
 					res reg.Region.r)
 				[] regs
-
+(*
 		(** Returns true if [reg1] and [reg2] are adjacent through [cstr1] and [cstr2].
 		@param cstr1 must belong to [reg1]
 		@param cstr2 must belong to [reg2] *)
@@ -801,7 +814,7 @@ module PLP(Minimization : Min.Type) = struct
 					l
 				in
 				Some id'
-			with Not_found -> None
+			with Not_found -> None*)
 
 		let debug_evals
 			= fun l ->
@@ -902,7 +915,7 @@ module PLP(Minimization : Min.Type) = struct
 				let evals =
 					if List.length (List.nth evals i) > 1
 					then (* On a trouvé des candidat adjacents, il faut vérifier qu'ils sont bien adjacents *)
-						match adjacent id cstr (List.nth evals i) regMap with
+						match Adjacency.adjacent id cstr (List.nth evals i) regMap with
 						| None -> begin match reg_t with
 							| Cone -> (Misc.sublist evals 0 i) @ [[(id,cstr), (dir_type, v1)]] @ (Misc.sublist evals (i+1) (List.length evals))
 							| NCone -> evals
@@ -1069,9 +1082,7 @@ module PLP(Minimization : Min.Type) = struct
 			Stat.incr_redundancy (len - len_res) len_res;
 			res
 
-		(** [exec strat sx map exp] returns the region resulting from the exploration of [exp].
-			If this region has empty interior, it returns [None]. *)
-		let exec : region_t -> Objective.pivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
+		let exec' : region_t -> Objective.pivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
 		  	= fun reg_t st sx pointToExplore ->
 		  	Debug.log DebugTypes.Normal
 		  		(lazy("Exec on the point " ^ (Vec.to_string V.to_string pointToExplore)));
@@ -1087,13 +1098,22 @@ module PLP(Minimization : Min.Type) = struct
 		 		let reg = Region.mk id bounds point sx' in
 		 		Check.check_region reg;
 		 		Some reg
+		 
+		 (** [exec strat sx map exp] returns the region resulting from the exploration of [exp].
+			If this region has empty interior, it returns [None]. *)
+		let exec : region_t -> Objective.pivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
+		  	= fun reg_t st sx pointToExplore ->
+		  	Profile.start "exec";
+		  	let res = exec' reg_t st sx pointToExplore in
+		  	Profile.stop "exec";
+		  	res
 	end
 
 	let extract_points : Region.t -> int -> ExplorationPoint.t list
-			= fun reg reg_id->
-			List.map
-				(fun (b,_) -> ExplorationPoint.Direction (reg_id, b))
-				reg.Region.r
+		= fun reg reg_id->
+		List.map
+			(fun (b,_) -> ExplorationPoint.Direction (reg_id, b))
+			reg.Region.r
 
 	(** Initialized simplex tableau *)
 	let sx_glob : PSplx.t ref = ref PSplx.empty
@@ -1122,7 +1142,7 @@ module PLP(Minimization : Min.Type) = struct
 		let should_explore_again : Region.t -> Cs.t -> Region.t -> bool
 			= fun reg1 cstr reg2 ->
 			let cstr_comp = strict_comp cstr in
-			RayTracing.adjacent_cstr reg1 reg2 cstr cstr_comp
+			Adjacency.adjacent_cstr reg1 reg2 cstr cstr_comp
 			|> not
 
 		(* TODO: better equality test? *)
@@ -1190,7 +1210,12 @@ module PLP(Minimization : Min.Type) = struct
 		= fun init_point explored_point ->
 		Vec.middle init_point explored_point
 
-	let get_next_point = RayTracing.get_next_point
+	let get_next_point 
+		= fun reg_t plp ->
+		Profile.start "get_next_point";
+		let res = RayTracing.get_next_point reg_t plp in
+		Profile.stop "get_next_point";
+		res
 
 	let rec exec : config -> t -> t
 		= fun config plp ->
@@ -1350,8 +1375,12 @@ module PLP(Minimization : Min.Type) = struct
 			(lazy (Printf.sprintf "Exploration points provided : %s\n%s"
 				(Misc.list_to_string ExplorationPoint.to_string config.points " ; ")
 				(PSplx.to_string sx)));
-		match init_and_exec config sx get_cert with
+		Profile.start "run";
+		let res = match init_and_exec config sx get_cert with
 		| None -> None
-		| Some plp -> get_results plp get_cert
+		| Some plp -> get_results plp get_cert 
+		in
+		Profile.stop "run";
+		res
 
 end

@@ -6,6 +6,7 @@ module Vec = Cs.Vec
 module Var = Vec.V
 
 module Debug = DebugTypes.Debug(struct let name = "Pol" end)
+module Profile = Profile.Profile(struct let name = "Pol" end)
 
 type 'c t = {
 	eqs: 'c EqSet.t;
@@ -340,7 +341,7 @@ let chkFeasibility: Var.t -> (int * Cs.t) list -> satChkT
 	| Splx.IsOk sx -> Sat sx
 	| Splx.IsUnsat w -> Unsat w
 
-let rec extract_implicit_eqs : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) mayBotT) * (Scalar.Symbolic.t Rtree.t) option
+let rec extract_implicit_eqs' : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) mayBotT) * (Scalar.Symbolic.t Rtree.t) option
 	= fun factory nvar lp -> 
 	(*let cert_from_eq : int -> 'c Cons.t list -> (int * Cs.Vec.Coeff.t) list -> 'c
 		= fun i conss wit -> 
@@ -454,7 +455,14 @@ let rec extract_implicit_eqs : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) m
 			| Ok lp ->
 				match logrewriteIneqs factory lp with
 				| Bot _ as b -> b, None
-				| Ok lp -> extract_implicit_eqs factory nvar lp
+				| Ok lp -> extract_implicit_eqs' factory nvar lp
+
+let extract_implicit_eqs : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) mayBotT) * (Scalar.Symbolic.t Rtree.t) option
+	= fun factory nvar lp -> 
+	Profile.start "extract_implicit_eqs";
+	let res = extract_implicit_eqs' factory nvar lp in
+	Profile.stop "extract_implicit_eqs";
+	res
 			
 let logInit: 'c t -> 'c Cons.t list -> ('c logT, 'c) mayBotT
 	= let split: 'c Cons.t list -> 'c Cons.t list * 'c Cons.t list
@@ -483,7 +491,7 @@ let (<*>) = logBind
 
 (* XXX: it is a bit awkward that [p.nxt] is supposed to take into account
 the identifiers used in [l]. *)
-let addAux: 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
+let addAux': 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 	= fun factory nvar p l -> 
 	logOut
 	(logInit p l
@@ -497,6 +505,13 @@ let addAux: 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 			| Ok _, None -> Pervasives.failwith "Pol.addAux"
 			| Ok lp, Some point -> logIneqSetAddM nvar point lp)
 
+let addAux: 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
+	= fun factory nvar p conss -> 
+	Profile.start "addAux" ;
+	let res = addAux' factory nvar p conss in
+	Profile.stop "addAux";
+	res
+	
 let addMSub: 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 	= fun factory nvar p conss -> addAux factory nvar p conss
 	

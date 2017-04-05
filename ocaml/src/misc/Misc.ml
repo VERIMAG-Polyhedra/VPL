@@ -170,3 +170,7 @@ let rec fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 		(fun i b -> f i (List.nth a_s i) b)
 		(range 0 (List.length a_s)) 
 		b0
+
+let string_equal : string -> string -> bool
+	= fun s1 s2 ->
+	String.compare s1 s2 = 0
