@@ -1,8 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: ca56ac776d97f9d55a77f403a8178cad)
+# DO NOT EDIT (digest: af2d2229a4fa1a7cb78cd8b0fa1b2165)
 version = "0.2.0"
 description = "Coq certified abstract domain of convex polyhedra."
-requires = "zarith unix"
+requires = "zarith unix oclock"
 archive(byte) = "vpl.cma"
 archive(byte, plugin) = "vpl.cma"
 archive(native) = "vpl.cmxa"

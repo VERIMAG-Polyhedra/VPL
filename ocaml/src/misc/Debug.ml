@@ -39,10 +39,10 @@ let print_disable : unit -> unit
   
 let level_selection : t -> levelT list
 	= function
-	| Min -> [Title ; MInput ; MOutput]
+	| Min -> []
 	| MinLP -> []
 	| Proj -> [] 
-	| PLPCore -> [Title ; MInput ; MOutput ; Normal ; Detail]
+	| PLPCore -> [Title ; MInput ; MOutput ; Normal]
 	| Pol -> [Title ; MInput ; MOutput]
 	| PSplx -> []
 	| Horacle -> [Title ; MInput ; MOutput ]

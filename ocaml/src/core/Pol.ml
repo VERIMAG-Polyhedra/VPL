@@ -1050,17 +1050,6 @@ let minkowskiSetup : 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
 -> Var.t * (('c1,'c2) Cons.discr_t) t * Var.t list * ('c1,'c2) Cons.discr_cert 
 	= fun factory1 factory2 nxt p1 p2 -> 
 	let factory = Cons.discr_factory factory1 factory2 in
-	(*let trySubst : 'c2 IneqSet.t -> Var.t -> 'c2 IneqSet.t
-		= fun iset v ->
-		let (opte,eqs) = EqSet.trySubst factory1 v p1.eqs in
-		match opte with
-		| Some e -> IneqSet.subst factory2 nxt eqs v e iset
-		| None -> iset
-	in
-	let vars = List.map Pervasives.fst p2
-		|> Cs.getVars 
-		|> Var.Set.elements in
-	let p2' = List.fold_left trySubst p2 vars in*)
 	let (varNxt1, r, eqs1) = EqSet.minkowskiSetup_1 factory2 (Var.next nxt) Rtree.Nil p1.eqs in
 	let (varNxt2, r, eqs2) = EqSet.minkowskiSetup_2 factory1 (Var.next nxt) Rtree.Nil p2.eqs in
 	let (varNxt3, r, ineqs1) = IneqSet.minkowskiSetup_1 factory2 varNxt2 r p1.ineqs in

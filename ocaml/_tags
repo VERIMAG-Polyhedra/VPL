@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: fdd8767c0f1e94a5c88f593a9f7fa962)
+# DO NOT EDIT (digest: a5df4ad54f41a91a8b778908da0bc40c)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -150,6 +150,7 @@ true: annot, bin_annot
 "src/extracted/Compare_dec.cmx": for-pack(Vpl)
 "src/extracted/DemoPLVerifier.cmx": for-pack(Vpl)
 "src/Wrapper.cmx": for-pack(Vpl)
+"src/misc/Profile.cmx": for-pack(Vpl)
 <src/*.ml{,i,y}>: oasis_library_vpl_ccopt
 <src/coq_ml/*.ml{,i,y}>: oasis_library_vpl_ccopt
 <src/core/*.ml{,i,y}>: oasis_library_vpl_ccopt
@@ -178,48 +179,70 @@ true: annot, bin_annot
 "src/libvpl_stubs.a": oasis_library_vpl_cclib
 "src/dllvpl_stubs.so": oasis_library_vpl_cclib
 <src/vpl.{cma,cmxa}>: use_libvpl_stubs
+<src/*.ml{,i,y}>: pkg_oclock
 <src/*.ml{,i,y}>: pkg_unix
 <src/*.ml{,i,y}>: pkg_zarith
+<src/coq_ml/*.ml{,i,y}>: pkg_oclock
 <src/coq_ml/*.ml{,i,y}>: pkg_unix
 <src/coq_ml/*.ml{,i,y}>: pkg_zarith
+<src/core/*.ml{,i,y}>: pkg_oclock
 <src/core/*.ml{,i,y}>: pkg_unix
 <src/core/*.ml{,i,y}>: pkg_zarith
+<src/datatypes/*.ml{,i,y}>: pkg_oclock
 <src/datatypes/*.ml{,i,y}>: pkg_unix
 <src/datatypes/*.ml{,i,y}>: pkg_zarith
+<src/extracted/*.ml{,i,y}>: pkg_oclock
 <src/extracted/*.ml{,i,y}>: pkg_unix
 <src/extracted/*.ml{,i,y}>: pkg_zarith
+<src/interface/*.ml{,i,y}>: pkg_oclock
 <src/interface/*.ml{,i,y}>: pkg_unix
 <src/interface/*.ml{,i,y}>: pkg_zarith
+<src/lin/*.ml{,i,y}>: pkg_oclock
 <src/lin/*.ml{,i,y}>: pkg_unix
 <src/lin/*.ml{,i,y}>: pkg_zarith
+<src/lin/handelman/*.ml{,i,y}>: pkg_oclock
 <src/lin/handelman/*.ml{,i,y}>: pkg_unix
 <src/lin/handelman/*.ml{,i,y}>: pkg_zarith
+<src/lin/handelman/oracle/*.ml{,i,y}>: pkg_oclock
 <src/lin/handelman/oracle/*.ml{,i,y}>: pkg_unix
 <src/lin/handelman/oracle/*.ml{,i,y}>: pkg_zarith
+<src/lin/intervalization/*.ml{,i,y}>: pkg_oclock
 <src/lin/intervalization/*.ml{,i,y}>: pkg_unix
 <src/lin/intervalization/*.ml{,i,y}>: pkg_zarith
+<src/lin/poly/*.ml{,i,y}>: pkg_oclock
 <src/lin/poly/*.ml{,i,y}>: pkg_unix
 <src/lin/poly/*.ml{,i,y}>: pkg_zarith
+<src/misc/*.ml{,i,y}>: pkg_oclock
 <src/misc/*.ml{,i,y}>: pkg_unix
 <src/misc/*.ml{,i,y}>: pkg_zarith
+<src/plp/*.ml{,i,y}>: pkg_oclock
 <src/plp/*.ml{,i,y}>: pkg_unix
 <src/plp/*.ml{,i,y}>: pkg_zarith
+<src/smt/*.ml{,i,y}>: pkg_oclock
 <src/smt/*.ml{,i,y}>: pkg_unix
 <src/smt/*.ml{,i,y}>: pkg_zarith
+"src/raytracing/vpl_stubs.c": pkg_oclock
 "src/raytracing/vpl_stubs.c": pkg_unix
 "src/raytracing/vpl_stubs.c": pkg_zarith
+"src/raytracing/double.c": pkg_oclock
 "src/raytracing/double.c": pkg_unix
 "src/raytracing/double.c": pkg_zarith
+"src/raytracing/glpkInterface.c": pkg_oclock
 "src/raytracing/glpkInterface.c": pkg_unix
 "src/raytracing/glpkInterface.c": pkg_zarith
+"src/raytracing/ioInterface.c": pkg_oclock
 "src/raytracing/ioInterface.c": pkg_unix
 "src/raytracing/ioInterface.c": pkg_zarith
+"src/raytracing/point.c": pkg_oclock
 "src/raytracing/point.c": pkg_unix
 "src/raytracing/point.c": pkg_zarith
+"src/raytracing/polyhedron.c": pkg_oclock
 "src/raytracing/polyhedron.c": pkg_unix
 "src/raytracing/polyhedron.c": pkg_zarith
+"src/raytracing/ray.c": pkg_oclock
 "src/raytracing/ray.c": pkg_unix
 "src/raytracing/ray.c": pkg_zarith
+"src/raytracing/raytracing.c": pkg_oclock
 "src/raytracing/raytracing.c": pkg_unix
 "src/raytracing/raytracing.c": pkg_zarith
 # OASIS_STOP
