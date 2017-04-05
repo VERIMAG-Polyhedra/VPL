@@ -1,3 +1,4 @@
 <**/*>: use_vpl
 true: package(zarith)
 true: package(unix)
+true: package(oclock)
