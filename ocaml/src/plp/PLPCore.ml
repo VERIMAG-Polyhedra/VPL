@@ -541,7 +541,7 @@ module PLP(Minimization : Min.Type) = struct
 				vec_VecInput = (fun x -> x)
 			})
 
-		let eval : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
+		let eval' : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
 			= fun regs dir_type ->
 			List.fold_left
 				(fun res (id,reg) ->
@@ -551,7 +551,14 @@ module PLP(Minimization : Min.Type) = struct
 						((id, cstr'), (dir_type, v)) :: res)
 					res reg.Region.r)
 				[] regs
-
+		
+		let eval : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
+			= fun regs dir_type ->
+			Profile.start "raytracing";
+			let res = eval' regs dir_type in
+			Profile.stop "raytracing";
+			res 
+				
 		(*
 		(** Removes the initial region [reg] (identified by [id]) and those that are on the same side of [cstr] that [reg]. *)
 		let filter_regions : int -> Cs.t -> mapRegs_t -> (int * Region.t) list
@@ -622,7 +629,6 @@ module PLP(Minimization : Min.Type) = struct
 			let v1 = Min.Sort.value dir_type cstr in
 			let evals = ((id,cstr), (dir_type, v1))
 				:: (eval regions_to_eval dir_type)
-				|> debug_evals
 				|> Min.Sort.sort
 				|> Min.Sort.stack
 			in
