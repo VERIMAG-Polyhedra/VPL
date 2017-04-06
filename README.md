@@ -49,6 +49,8 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
           ```
  	       opam install coq-vpltactic
           ```
+          
+      In case of trouble with this `opam` install, you should read [this](https://github.com/VERIMAG-Polyhedra/opam-vpl/blob/master/README.md#using-the-vpl-on-a-vagrantvirtualbox-virtual-machine).
 
 2. __From sources__
 
