@@ -154,8 +154,8 @@ module PLP(Minimization : Min.Type) = struct
 			r : (Boundary.t * int option) list;
 			point : Vec.t; (* Un point dans la région *)
 			sx : PSplx.t option (* Tableau de simplexe dont l'objectif a donné cette région *)
-		}
-
+		}	
+		
 		let mk : int -> Boundary.t list -> Vec.t -> PSplx.t -> t
 			= fun id bounds point sx ->
 			{id = id;
@@ -435,7 +435,7 @@ module PLP(Minimization : Min.Type) = struct
 		Printf.sprintf "Regions = %s\nTodo list : \n%s"
 			(Misc.list_to_string Region.to_string regs "\n")
 			(Misc.list_to_string ExplorationPoint.to_string plp.todo " ; ")
-
+	
 	(** Module that checks results on the fly.
 		It is based on {!module:Debug.Check}, thus these verifications cost almost nothing if checking is disabled. *)
 	module Check = struct
@@ -527,11 +527,11 @@ module PLP(Minimization : Min.Type) = struct
 	end
 	
 	
-	(** Module that chooses the next point to explore by raytracing. *)
-	module RayTracing = struct
-
+	(** Several methods to choose the next point to explore. *)
+	module Next_Point = struct
+		
 		module Min = Min.Min(Vec)(Vec)(Cs)(MinLP.Splx(Cs))
-
+		
 		let conv : Min.conversion
 			= Min.({vec_CsVec = (fun x -> Vec.toRat x);
 				csVec_Vec  = (fun x -> Vec.ofRat x) ;
@@ -540,485 +540,499 @@ module PLP(Minimization : Min.Type) = struct
 				vecInput_Vec = (fun x -> x) ;
 				vec_VecInput = (fun x -> x)
 			})
-
-		let eval' : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
-			= fun regs dir_type ->
-			List.fold_left
-				(fun res (id,reg) ->
-					List.fold_left
-					(fun res ((cstr',_),_) ->
-						let v = Min.Sort.value dir_type cstr' in
-						((id, cstr'), (dir_type, v)) :: res)
-					res reg.Region.r)
-				[] regs
-		
-		let eval : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
-			= fun regs dir_type ->
-			Profile.start "raytracing";
-			let res = eval' regs dir_type in
-			Profile.stop "raytracing";
-			res 
 				
-		(*
-		(** Removes the initial region [reg] (identified by [id]) and those that are on the same side of [cstr] that [reg]. *)
-		let filter_regions : int -> Cs.t -> mapRegs_t -> (int * Region.t) list
-			= fun id cstr regMap ->
-			MapV.fold
-				(fun id' reg res ->
-					if id = id' || (List.exists (fun ((cstr',_),_) -> Cs.equal cstr' cstr) reg.Region.r)
-					then res
-					else (id',reg) :: res )
-				regMap
-				[]
-		*)
-		(** Removes the initial region [reg] (identified by [id]) and those that are on the same side of [cstr] that [reg].
-			TODO: use LP.*)
-		let filter_regions : int -> Cs.t -> mapRegs_t -> (int * Region.t) list
-			= fun id cstr regMap ->
-			MapV.fold
-				(fun id' reg res ->
-					if id = id' || (List.exists (fun ((cstr',_),_) -> Cs.equal cstr' cstr) reg.Region.r)
-					then res
-					else (id',reg) :: res )
-				regMap
-				[]
-			
-		let debug_evals
-			= fun l ->
-			Debug.exec l DebugTypes.Detail
-				(lazy(Printf.sprintf "Evals before post-processing : \n%s"
-						(Misc.list_to_string
-							(fun ((id,c),(_,v)) -> Printf.sprintf "id %i, %s -> %s"
-								id
-								(Cs.to_string Cs.Vec.V.to_string c)
-								(Cs.Vec.Coeff.to_float v |> string_of_float))
-							l "\n")))
-
-		let compute_next_point : Cs.t -> ('a * Min.direction) list list ->  Cs.Vec.Coeff.t option
-			= fun cstr evals ->
-			let i = Misc.findi (List.exists (fun ((_,cstr'),_) -> Cs.equalSyn cstr cstr')) evals
-			in
-			let eval_i = List.filter
-				(fun ((_,cstr'),_) -> not (Cs.equal cstr cstr')
-					&& not (Cs.equal (strict_comp cstr) cstr'))
-				(List.nth evals i)
-			in
-			match eval_i with
-			| [] ->
-				if List.length evals = (i+1) (* il n'y a pas d'élément après cstr dans la liste*)
-				then None
-				else let (_,(_,v2)) = List.nth evals (i+1) |> List.hd in
-				Some v2
-			| (_,(_,v2))  :: _ -> Some v2
-
-		let eval_to_string : ('a * Min.direction) list list -> string
-			= fun l ->
-			Misc.list_to_string
-				(fun l -> Misc.list_to_string
-					(fun ((_,c),(_,v)) ->
-						(Cs.to_string Cs.Vec.V.to_string c) ^ ", " ^ (Cs.Vec.Coeff.to_float v|>string_of_float)) l " ; ")
-				l "\n"
-
-		exception Adjacent of int
-
-		let adjust'' : region_t -> (int * Boundary.t) -> mapRegs_t -> (int * Region.t) list -> ExplorationPoint.t
-			= fun reg_t (id, (cstr, pointOtherSide)) regMap regions_to_eval ->
-			Min.conv := conv;
-			let x0 = (MapV.find id regMap).Region.point in
-			let dir_type = Min.TwoPoints (x0,pointOtherSide) in
-			let v1 = Min.Sort.value dir_type cstr in
-			let evals = ((id,cstr), (dir_type, v1))
-				:: (eval regions_to_eval dir_type)
-				|> Min.Sort.sort
-				|> Min.Sort.stack
-			in
-			Debug.log DebugTypes.Detail (lazy(Printf.sprintf "evals = %s"
-				(eval_to_string evals)));
-			try
-				(* XXX: que se passe t-il si i n'est pas 0? *)
-				let i = Misc.findi (List.exists (fun ((_,cstr'),_) -> Cs.equal cstr cstr')) evals in
-				let evals =
-					if List.length (List.nth evals i) > 1
-					then (* On a trouvé des candidat adjacents, il faut vérifier qu'ils sont bien adjacents *)
-						match Adjacency.adjacent id cstr (List.nth evals i) regMap with
-						| None -> begin match reg_t with
-							| Cone -> (Misc.sublist evals 0 i) @ [[(id,cstr), (dir_type, v1)]] @ (Misc.sublist evals (i+1) (List.length evals))
-							| NCone -> evals
-						end
-						| Some id_adj -> Pervasives.raise (Adjacent id_adj) (* un des candidats était bien adjacent *)
-					else evals
-				in
-				match compute_next_point cstr evals with
-				| None -> ExplorationPoint.Direction(id, (cstr, pointOtherSide))
-				| Some v2 ->
-					let v' = Cs.Vec.Coeff.div
-						(Cs.Vec.Coeff.add v1 v2)
-						(Cs.Vec.Coeff.of_float 2.)
-					in
-					Debug.log DebugTypes.Detail
-						(lazy (Printf.sprintf "computing middle of %s and %s : %s"
-						(Cs.Vec.Coeff.to_string v1)
-						(Cs.Vec.Coeff.to_string v2)
-						(Cs.Vec.Coeff.to_string v')));
-					let x = Min.Sort.getPoint cstr (dir_type,v') in
-						Debug.log DebugTypes.Detail
-						(lazy (Printf.sprintf "The next exploration point will be %s"
-							(Vec.to_string Vec.V.to_string x)));
-					ExplorationPoint.Direction(id, (cstr, x))
-			with Not_found -> Pervasives.failwith "PLP.adjust"
-
-		let adjust' : region_t -> (int * Boundary.t) -> mapRegs_t -> ExplorationPoint.t
-			= fun reg_t (id, (cstr, pointOtherSide)) regMap ->
-			let regions_to_eval = filter_regions id cstr regMap in
-			adjust'' reg_t (id, (cstr, pointOtherSide)) regMap regions_to_eval
-
-		let adjust : region_t -> (int * Boundary.t) -> mapRegs_t -> ExplorationPoint.t
-			= fun reg_t (id, (cstr, pointOtherSide)) regMap ->
-			Debug.log DebugTypes.Detail
-				(lazy (Printf.sprintf "Adjusting exploration point (%s, %s, %s)"
-					(Vec.to_string Vec.V.to_string((MapV.find id regMap).Region.point))
-					(Cs.to_string Cs.Vec.V.to_string cstr)
-					(Vec.to_string Vec.V.to_string pointOtherSide)));
-			adjust' reg_t (id, (cstr, pointOtherSide)) regMap
-
-		let apply_adjacency : t -> int -> Boundary.t -> int -> t
-			= fun plp id_init boundary id_adj ->
-			(* Updating the region map*)
-			let (cstr,_) = boundary in
-			let cstr_adj =  strict_comp cstr in
-			let reg = MapV.find id_init plp.regs
-			and reg_adj = MapV.find id_adj plp.regs in
-			let reg = {reg with
-				Region.r = List.map (fun (b,i) ->
-					if Boundary.equal b boundary
-					then (b,Some id_adj)
-					else (b,i))
-				 	reg.Region.r
-			}
-			and reg_adj = {reg_adj with
-				Region.r = List.map (fun ((cstr',v),i) ->
-					if Cs.equal cstr' cstr_adj(* XXX: equal?*)
-					then ((cstr',v), Some id_init)
-					else ((cstr',v),i))
-				 	reg_adj.Region.r
-			} in
-			let map' = MapV.add id_init reg plp.regs
-				|> MapV.add id_adj reg_adj in
-			(* Updating the exploration point list*)
-			let todo' = List.fold_left
-				(fun res -> function
-					| ExplorationPoint.Point v as x -> x :: res
-					| ExplorationPoint.Direction (id,(cstr,b)) as x ->
-						if id = id_adj && (Cs.equal cstr cstr_adj)(* XXX: equal?*)
-						then res
-						else x :: res)
-				[] plp.todo in
-			{regs = map' ; todo = todo'}
-
-
-		(** The PLP state [t] is modified if an adjacency is found. *)
-		let rec get_next_point_rec : region_t -> t -> t
-    		= fun reg_t plp ->
-			match plp.todo with
-			| [] -> plp
-			| (ExplorationPoint.Direction (id,b)) :: tl -> begin
+		module Point_in_Region = struct
+			(** Returns the index of the region in which the given point is minimal w.r.t objective functions. *)
+			let eval_regions : ExplorationPoint.t -> t -> (int * Region.t) option
+				= fun p plp ->
 				try
-					let p = adjust reg_t (id,b) plp.regs in
-					{plp with todo = p :: tl}
-				with Adjacent id_adjacent ->
-					apply_adjacency {plp with todo = tl} id b id_adjacent
-					|> get_next_point_rec reg_t
-				end
-			| (ExplorationPoint.Point vec) :: tl ->
-				if MapV.exists (fun _ reg -> Region.contains reg vec) plp.regs
-				then (Debug.log DebugTypes.Detail
+					match p with
+					| ExplorationPoint.Point point -> begin
+						let point' = conv.Min.vec_CsVec point in
+						MapV.fold
+							(fun id reg value_opt ->
+								match Region.eval_obj reg point', value_opt with
+								| Some v, None -> Some ((id,reg),v)
+								| Some v, Some (_,v') -> if Cs.Vec.Coeff.lt v' v
+									then Some ((id,reg),v)
+									else value_opt
+								| None, _ -> value_opt)
+							plp.regs
+							None
+						|> function
+							| None -> None
+							| Some (i,_) -> Some i
+					end
+				
+					| ExplorationPoint.Direction (id, (_, point)) ->
+						let point' = conv.Min.vec_CsVec point in
+						MapV.fold
+							(fun id' reg value_opt ->
+								if id = id'
+								then value_opt
+								else match Region.eval_obj reg point', value_opt with
+									| Some v, None -> Some ((id,reg),v)
+									| Some v, Some (_, v') -> if Cs.Vec.Coeff.lt v' v
+										then Some ((id,reg),v)
+										else value_opt
+									| None, _ -> value_opt)
+							plp.regs
+							None
+						|> function
+							| None -> None
+							| Some (i,_) -> Some i
+				with Invalid_argument _ -> None
+		
+			let in_region' : ExplorationPoint.t -> t -> (int * Region.t) option
+				= fun p plp ->
+				match eval_regions p plp with
+				| Some (i,reg) ->
+					if Region.contains_large_ep reg p
+					then Some (i,reg)
+					else None
+				| None -> None	
+			(** Returns a region containing the given point, if it exists. *)
+			
+			let in_region : ExplorationPoint.t -> t -> (int * Region.t) option
+				= fun p plp ->
+				Profile.start "in_region";
+				let res = in_region' p plp in
+				Profile.stop "in_region";
+				res
+		end
+	
+		(** Module that chooses the next point to explore by raytracing. *)
+		module RayTracing = struct
+
+			let eval' : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
+				= fun regs dir_type ->
+				List.fold_left
+					(fun res (id,reg) ->
+						List.fold_left
+						(fun res ((cstr',_),_) ->
+							let v = Min.Sort.value dir_type cstr' in
+							((id, cstr'), (dir_type, v)) :: res)
+						res reg.Region.r)
+					[] regs
+		
+			let eval : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
+				= fun regs dir_type ->
+				Profile.start "raytracing";
+				let res = eval' regs dir_type in
+				Profile.stop "raytracing";
+				res 
+				
+			(*
+			(** Removes the initial region [reg] (identified by [id]) and those that are on the same side of [cstr] that [reg]. *)
+			let filter_regions : int -> Cs.t -> mapRegs_t -> (int * Region.t) list
+				= fun id cstr regMap ->
+				MapV.fold
+					(fun id' reg res ->
+						if id = id' || (List.exists (fun ((cstr',_),_) -> Cs.equal cstr' cstr) reg.Region.r)
+						then res
+						else (id',reg) :: res )
+					regMap
+					[]
+			*)
+			(** Removes the initial region [reg] (identified by [id]) and those that are on the same side of [cstr] that [reg].
+				TODO: use LP.*)
+			let filter_regions : int -> Cs.t -> mapRegs_t -> (int * Region.t) list
+				= fun id cstr regMap ->
+				MapV.fold
+					(fun id' reg res ->
+						if id = id' || (List.exists (fun ((cstr',_),_) -> Cs.equal cstr' cstr) reg.Region.r)
+						then res
+						else (id',reg) :: res )
+					regMap
+					[]
+			
+			let debug_evals
+				= fun l ->
+				Debug.exec l DebugTypes.Detail
+					(lazy(Printf.sprintf "Evals before post-processing : \n%s"
+							(Misc.list_to_string
+								(fun ((id,c),(_,v)) -> Printf.sprintf "id %i, %s -> %s"
+									id
+									(Cs.to_string Cs.Vec.V.to_string c)
+									(Cs.Vec.Coeff.to_float v |> string_of_float))
+								l "\n")))
+
+			let compute_next_point : Cs.t -> ('a * Min.direction) list list ->  Cs.Vec.Coeff.t option
+				= fun cstr evals ->
+				let i = Misc.findi (List.exists (fun ((_,cstr'),_) -> Cs.equalSyn cstr cstr')) evals
+				in
+				let eval_i = List.filter
+					(fun ((_,cstr'),_) -> not (Cs.equal cstr cstr')
+						&& not (Cs.equal (strict_comp cstr) cstr'))
+					(List.nth evals i)
+				in
+				match eval_i with
+				| [] ->
+					if List.length evals = (i+1) (* il n'y a pas d'élément après cstr dans la liste*)
+					then None
+					else let (_,(_,v2)) = List.nth evals (i+1) |> List.hd in
+					Some v2
+				| (_,(_,v2))  :: _ -> Some v2
+
+			let eval_to_string : ('a * Min.direction) list list -> string
+				= fun l ->
+				Misc.list_to_string
+					(fun l -> Misc.list_to_string
+						(fun ((_,c),(_,v)) ->
+							(Cs.to_string Cs.Vec.V.to_string c) ^ ", " ^ (Cs.Vec.Coeff.to_float v|>string_of_float)) l " ; ")
+					l "\n"
+
+			exception Adjacent of int
+
+			let adjust'' : region_t -> (int * Boundary.t) -> mapRegs_t -> (int * Region.t) list -> ExplorationPoint.t
+				= fun reg_t (id, (cstr, pointOtherSide)) regMap regions_to_eval ->
+				Min.conv := conv;
+				let x0 = (MapV.find id regMap).Region.point in
+				let dir_type = Min.TwoPoints (x0,pointOtherSide) in
+				let v1 = Min.Sort.value dir_type cstr in
+				let evals = ((id,cstr), (dir_type, v1))
+					:: (eval regions_to_eval dir_type)
+					|> Min.Sort.sort
+					|> Min.Sort.stack
+				in
+				Debug.log DebugTypes.Detail (lazy(Printf.sprintf "evals = %s"
+					(eval_to_string evals)));
+				try
+					(* XXX: que se passe t-il si i n'est pas 0? *)
+					let i = Misc.findi (List.exists (fun ((_,cstr'),_) -> Cs.equal cstr cstr')) evals in
+					let evals =
+						if List.length (List.nth evals i) > 1
+						then (* On a trouvé des candidat adjacents, il faut vérifier qu'ils sont bien adjacents *)
+							match Adjacency.adjacent id cstr (List.nth evals i) regMap with
+							| None -> begin match reg_t with
+								| Cone -> (Misc.sublist evals 0 i) @ [[(id,cstr), (dir_type, v1)]] @ (Misc.sublist evals (i+1) (List.length evals))
+								| NCone -> evals
+							end
+							| Some id_adj -> Pervasives.raise (Adjacent id_adj) (* un des candidats était bien adjacent *)
+						else evals
+					in
+					match compute_next_point cstr evals with
+					| None -> ExplorationPoint.Direction(id, (cstr, pointOtherSide))
+					| Some v2 ->
+						let v' = Cs.Vec.Coeff.div
+							(Cs.Vec.Coeff.add v1 v2)
+							(Cs.Vec.Coeff.of_float 2.)
+						in
+						Debug.log DebugTypes.Detail
+							(lazy (Printf.sprintf "computing middle of %s and %s : %s"
+							(Cs.Vec.Coeff.to_string v1)
+							(Cs.Vec.Coeff.to_string v2)
+							(Cs.Vec.Coeff.to_string v')));
+						let x = Min.Sort.getPoint cstr (dir_type,v') in
+							Debug.log DebugTypes.Detail
+							(lazy (Printf.sprintf "The next exploration point will be %s"
+								(Vec.to_string Vec.V.to_string x)));
+						ExplorationPoint.Direction(id, (cstr, x))
+				with Not_found -> Pervasives.failwith "PLP.adjust"
+
+			let adjust' : region_t -> (int * Boundary.t) -> mapRegs_t -> ExplorationPoint.t
+				= fun reg_t (id, (cstr, pointOtherSide)) regMap ->
+				let regions_to_eval = filter_regions id cstr regMap in
+				adjust'' reg_t (id, (cstr, pointOtherSide)) regMap regions_to_eval
+
+			let adjust : region_t -> (int * Boundary.t) -> mapRegs_t -> ExplorationPoint.t
+				= fun reg_t (id, (cstr, pointOtherSide)) regMap ->
+				Debug.log DebugTypes.Detail
+					(lazy (Printf.sprintf "Adjusting exploration point (%s, %s, %s)"
+						(Vec.to_string Vec.V.to_string((MapV.find id regMap).Region.point))
+						(Cs.to_string Cs.Vec.V.to_string cstr)
+						(Vec.to_string Vec.V.to_string pointOtherSide)));
+				adjust' reg_t (id, (cstr, pointOtherSide)) regMap
+
+			let apply_adjacency : t -> int -> Boundary.t -> int -> t
+				= fun plp id_init boundary id_adj ->
+				(* Updating the region map*)
+				let (cstr,_) = boundary in
+				let cstr_adj =  strict_comp cstr in
+				let reg = MapV.find id_init plp.regs
+				and reg_adj = MapV.find id_adj plp.regs in
+				let reg = {reg with
+					Region.r = List.map (fun (b,i) ->
+						if Boundary.equal b boundary
+						then (b,Some id_adj)
+						else (b,i))
+					 	reg.Region.r
+				}
+				and reg_adj = {reg_adj with
+					Region.r = List.map (fun ((cstr',v),i) ->
+						if Cs.equal cstr' cstr_adj(* XXX: equal?*)
+						then ((cstr',v), Some id_init)
+						else ((cstr',v),i))
+					 	reg_adj.Region.r
+				} in
+				let map' = MapV.add id_init reg plp.regs
+					|> MapV.add id_adj reg_adj in
+				(* Updating the exploration point list*)
+				let todo' = List.fold_left
+					(fun res -> function
+						| ExplorationPoint.Point v as x -> x :: res
+						| ExplorationPoint.Direction (id,(cstr,b)) as x ->
+							if id = id_adj && (Cs.equal cstr cstr_adj)(* XXX: equal?*)
+							then res
+							else x :: res)
+					[] plp.todo in
+				{regs = map' ; todo = todo'}
+
+
+			(** The PLP state [t] is modified if an adjacency is found. *)
+			let rec get_next_point_rec : region_t -> t -> t
+				= fun reg_t plp ->
+				match plp.todo with
+				| [] -> plp
+				| (ExplorationPoint.Direction (id,b)) :: tl -> begin
+					try
+						let p = adjust reg_t (id,b) plp.regs in
+						{plp with todo = p :: tl}
+					with Adjacent id_adjacent ->
+						apply_adjacency {plp with todo = tl} id b id_adjacent
+						|> get_next_point_rec reg_t
+					end
+				| (ExplorationPoint.Point vec) :: tl ->
+					if MapV.exists (fun _ reg -> Region.contains reg vec) plp.regs
+					then (Debug.log DebugTypes.Detail
+							(lazy (Printf.sprintf "Exploration point %s lies within an already discovered region"
+							(Vec.to_string Vec.V.to_string vec)));
+						get_next_point_rec reg_t {plp with todo = tl})
+					else {plp with todo = (ExplorationPoint.Point vec) :: tl}
+		
+			(** Returns the next point to explore, or [None] if there is none.
+			The returned point is the first element of [plp.todo]. *)
+			let get_next_point : region_t -> t -> ExplorationPoint.t option * t
+				= fun reg_t plp ->
+				let plp = get_next_point_rec reg_t plp in
+				if plp.todo = []
+				then (None, plp)
+				else (Some (List.hd plp.todo),plp)
+		end
+
+		(** Other algorithm to find new exploration points *)
+		module RayTracing_min = struct
+
+
+			let eval : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
+				= fun regs dir_type ->
+				List.fold_left
+					(fun res (id,reg) ->
+						List.fold_left
+						(fun res ((cstr',_),_) ->
+							let v = Min.Sort.value dir_type cstr' in
+							((id, cstr'), (dir_type, v)) :: res)
+						res reg.Region.r)
+					[] regs
+
+			let debug_evals
+				= fun l ->
+				Debug.exec l DebugTypes.Detail
+					(lazy(Printf.sprintf "Evals before post-processing : \n%s"
+							(Misc.list_to_string
+								(fun ((id,c),(_,v)) -> Printf.sprintf "id %i, %s -> %s"
+									id
+									(Cs.to_string Cs.Vec.V.to_string c)
+									(Cs.Vec.Coeff.to_float v |> string_of_float))
+								l "\n")))
+
+			let compute_next_point : Cs.t -> ('a * Min.direction) list list ->  Cs.Vec.Coeff.t option
+				= fun cstr evals ->
+				let i = Misc.findi (List.exists (fun ((_,cstr'),_) -> Cs.equalSyn cstr cstr')) evals
+				in
+				let eval_i = List.filter
+					(fun ((_,cstr'),_) -> not (Cs.equal cstr cstr')
+						&& not (Cs.equal (strict_comp cstr) cstr'))
+					(List.nth evals i)
+				in
+				match eval_i with
+				| [] ->
+					if List.length evals = (i+1) (* il n'y a pas d'élément après cstr dans la liste*)
+					then None
+					else let (_,(_,v2)) = List.nth evals (i+1) |> List.hd in
+					Some v2
+				| (_,(_,v2))  :: _ -> Some v2
+
+			let eval_to_string : ('a * Min.direction) list list -> string
+				= fun l ->
+				Misc.list_to_string
+					(fun l -> Misc.list_to_string
+						(fun ((_,c),(_,v)) ->
+							(Cs.to_string Cs.Vec.V.to_string c) ^ ", " ^ (Cs.Vec.Coeff.to_float v|>string_of_float)) l " ; ")
+					l "\n"
+
+			exception Adjacent of int
+
+			let adjust : region_t -> mapRegs_t -> (int * Boundary.t) -> (int * Region.t) -> ExplorationPoint.t
+				= fun reg_t regMap (id, (cstr, pointOtherSide)) reg ->
+				Min.conv := conv;
+				let x0 = (MapV.find id regMap).Region.point in
+				let dir_type = Min.TwoPoints (x0,pointOtherSide) in
+				let v1 = Min.Sort.value dir_type cstr in
+				let evals = ((id,cstr), (dir_type, v1))
+					:: (eval [reg] dir_type)
+					|> debug_evals
+					|> Min.Sort.sort
+					|> Min.Sort.stack
+				in
+				Debug.log DebugTypes.Detail (lazy(Printf.sprintf "evals = %s"
+					(eval_to_string evals)));
+				try
+					(* XXX: que se passe t-il si i n'est pas 0? *)
+					let i = Misc.findi (List.exists (fun ((_,cstr'),_) -> Cs.equal cstr cstr')) evals in
+					let evals =
+						if List.length (List.nth evals i) > 1
+						then (* On a trouvé des candidat adjacents, il faut vérifier qu'ils sont bien adjacents *)
+							match Adjacency.adjacent id cstr (List.nth evals i) regMap with
+							| None -> begin match reg_t with
+								| Cone -> (Misc.sublist evals 0 i) @ [[(id,cstr), (dir_type, v1)]] @ (Misc.sublist evals (i+1) (List.length evals))
+								| NCone -> evals
+							end
+							| Some id_adj -> Pervasives.raise (Adjacent id_adj) (* un des candidats était bien adjacent *)
+						else evals
+					in
+					match compute_next_point cstr evals with
+					| None -> ExplorationPoint.Direction(id, (cstr, pointOtherSide))
+					| Some v2 ->
+						let v' = Cs.Vec.Coeff.div
+							(Cs.Vec.Coeff.add v1 v2)
+							(Cs.Vec.Coeff.of_float 2.)
+						in
+						Debug.log DebugTypes.Detail
+							(lazy (Printf.sprintf "computing middle of %s and %s : %s"
+							(Cs.Vec.Coeff.to_string v1)
+							(Cs.Vec.Coeff.to_string v2)
+							(Cs.Vec.Coeff.to_string v')));
+						let x = Min.Sort.getPoint cstr (dir_type,v') in
+							Debug.log DebugTypes.Detail
+							(lazy (Printf.sprintf "The next exploration point will be %s"
+								(Vec.to_string Vec.V.to_string x)));
+						ExplorationPoint.Direction(id, (cstr, x))
+				with Not_found -> Pervasives.failwith "PLP.adjust"
+
+			let apply_adjacency : t -> int -> Boundary.t -> int -> t
+				= fun plp id_init boundary id_adj ->
+				(* Updating the region map*)
+				let (cstr,_) = boundary in
+				let cstr_adj =  strict_comp cstr in
+				let reg = MapV.find id_init plp.regs
+				and reg_adj = MapV.find id_adj plp.regs in
+				let reg = {reg with
+					Region.r = List.map (fun (b,i) ->
+						if Boundary.equal b boundary
+						then (b,Some id_adj)
+						else (b,i))
+					 	reg.Region.r
+				}
+				and reg_adj = {reg_adj with
+					Region.r = List.map (fun ((cstr',v),i) ->
+						if Cs.equal cstr' cstr_adj(* XXX: equal?*)
+						then ((cstr',v), Some id_init)
+						else ((cstr',v),i))
+					 	reg_adj.Region.r
+				} in
+				let map' = MapV.add id_init reg plp.regs
+					|> MapV.add id_adj reg_adj in
+				(* Updating the exploration point list*)
+				let todo' = List.fold_left
+					(fun res -> function
+						| ExplorationPoint.Point v as x -> x :: res
+						| ExplorationPoint.Direction (id,(cstr,b)) as x ->
+							if id = id_adj && (Cs.equal cstr cstr_adj)(* XXX: equal?*)
+							then res
+							else x :: res)
+					[] plp.todo in
+				{regs = map' ; todo = todo'}
+
+			(** The PLP state [t] is modified if an adjacency is found. *)
+			let rec get_next_point_rec : region_t -> t -> t
+				= fun reg_t plp ->
+				match plp.todo with
+				| [] -> plp
+				| ((ExplorationPoint.Direction (id,b)) as ep):: tl -> begin
+					match Point_in_Region.in_region ep plp with
+					| None -> {plp with todo = ep :: tl}
+					| Some (i,reg) ->
+					try
+						let p = adjust reg_t plp.regs (id,b) (i,reg) in
+						 get_next_point_rec reg_t {plp with todo = p :: tl}
+					with Adjacent id_adjacent ->
+						apply_adjacency {plp with todo = tl} id b id_adjacent
+						|> get_next_point_rec reg_t
+					end
+				| ((ExplorationPoint.Point vec) as ep) :: tl ->
+					match Point_in_Region.in_region ep plp with
+					| None -> {plp with todo = ep :: tl}
+					| Some reg -> begin
+						(Debug.log DebugTypes.Detail
 						(lazy (Printf.sprintf "Exploration point %s lies within an already discovered region"
 						(Vec.to_string Vec.V.to_string vec)));
-					get_next_point_rec reg_t {plp with todo = tl})
-				else {plp with todo = (ExplorationPoint.Point vec) :: tl}
+						get_next_point_rec reg_t {plp with todo = tl})
+					end
+
+			(** Returns the next point to explore, or [None] if there is none.
+				The returned point is the first element of [plp.todo]. *)
+			let get_next_point : region_t -> t -> ExplorationPoint.t option * t
+				= fun reg_t plp ->
+				let plp = get_next_point_rec reg_t plp in
+				if plp.todo = []
+				then (None, plp)
+				else (Some (List.hd plp.todo),plp)
+		end
+	
+		module Greedy = struct
 		
-		(** Returns the next point to explore, or [None] if there is none.
-		The returned point is the first element of [plp.todo]. *)
-		let get_next_point : region_t -> t -> ExplorationPoint.t option * t
-			= fun reg_t plp ->
-			let plp = get_next_point_rec reg_t plp in
-			if plp.todo = []
-			then (None, plp)
-			else (Some (List.hd plp.todo),plp)
-			
+			let get_next : t -> int * Boundary.t -> ExplorationPoint.t option
+				= fun plp (reg_id, (cstr,point)) ->
+				let ipoint = (MapV.find reg_id plp.regs).Region.point in
+				let dir = Min.TwoPoints (ipoint, point) in
+				let t = Min.Sort.value dir cstr in
+				let vec = Min.Sort.getPoint' (dir, Cs.Vec.Coeff.add t (Cs.Vec.Coeff.of_float 0.1)) in
+				match Point_in_Region.in_region (ExplorationPoint.Point vec) plp with
+				| None -> Some (ExplorationPoint.Point vec)
+				| _ ->  None
+				
+				
+			let rec get_next_point_rec : region_t -> t -> t
+				= fun reg_t plp ->
+				match plp.todo with
+				| [] -> plp
+				| (ExplorationPoint.Direction (id,b)) :: tl -> begin
+					match get_next plp (id,b) with
+					| Some ep -> {plp with todo = ep :: tl}
+					| None -> get_next_point_rec reg_t {plp with todo = tl}
+					end
+				| (ExplorationPoint.Point vec) :: tl ->
+					if MapV.exists (fun _ reg -> Region.contains reg vec) plp.regs
+					then (Debug.log DebugTypes.Detail
+							(lazy (Printf.sprintf "Exploration point %s lies within an already discovered region"
+							(Vec.to_string Vec.V.to_string vec)));
+						get_next_point_rec reg_t {plp with todo = tl})
+					else {plp with todo = (ExplorationPoint.Point vec) :: tl}
+					
+			(** Returns the next point to explore, or [None] if there is none.
+				The returned point is the first element of [plp.todo]. *)
+			let get_next_point : region_t -> t -> ExplorationPoint.t option * t
+				= fun reg_t plp ->
+				Min.conv := conv;
+				let plp = get_next_point_rec reg_t plp in
+				if plp.todo = []
+				then (None, plp)
+				else (Some (List.hd plp.todo),plp)
+		end
 	end
-
-	(** Other algorithm to find new exploration points *)
-	module RayTracing2 = struct
-
-		module Min = Min.Min(Vec)(Vec)(Cs)(MinLP.Splx(Cs))
-
-		let conv : Min.conversion
-			= {Min.vec_CsVec = (fun x -> Vec.toRat x);
-				csVec_Vec  = (fun x -> Vec.ofRat x) ;
-				csCoeff_Coeff = (fun x -> Vec.Coeff.ofQ x) ;
-				csInput_Cs = (fun x -> x) ;
-				vecInput_Vec = (fun x -> x) ;
-				vec_VecInput = (fun x -> x)
-			}
-
-		let eval : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
-			= fun regs dir_type ->
-			List.fold_left
-				(fun res (id,reg) ->
-					List.fold_left
-					(fun res ((cstr',_),_) ->
-						let v = Min.Sort.value dir_type cstr' in
-						((id, cstr'), (dir_type, v)) :: res)
-					res reg.Region.r)
-				[] regs
-(*
-		(** Returns true if [reg1] and [reg2] are adjacent through [cstr1] and [cstr2].
-		@param cstr1 must belong to [reg1]
-		@param cstr2 must belong to [reg2] *)
-		let adjacent_cstr_lp : Region.t -> Region.t -> Cs.t -> Cs.t -> bool
-			= fun reg1 reg2 cstr1 cstr2->
-
-				let cstrs_reg1 = {cstr1 with Cs.typ = Cstr.Le}
-					:: (Misc.popAll Cs.equalSyn (Region.get_cstrs reg1) cstr1)
-				and cstrs_reg2 = {cstr2 with Cs.typ = Cstr.Le}
-					:: (Misc.popAll Cs.equal (Region.get_cstrs reg2) cstr2)
-				in
-				let cstrs = cstrs_reg1 @ cstrs_reg2 in
-				let horizon = Cs.getVars cstrs
-					|> Vec.V.horizon
-				in
-				let cstrs = List.mapi (fun i c -> (i,c)) cstrs in
-				match Splx.mk horizon cstrs |> Splx.checkFromAdd with
-				| Splx.IsUnsat _ -> false
-				| Splx.IsOk _ -> true
-
-		(** Returns true if [reg1] and [reg2] are adjacent through [cstr1] and [cstr2].
-		@param cstr1 must belong to [reg1]
-		@param cstr2 must belong to [reg2] *)
-		let adjacent_cstr : Region.t -> Region.t -> Cs.t -> Cs.t -> bool
-			= fun reg1 reg2 cstr1 cstr2 ->
-				match reg1.Region.sx, reg2.Region.sx with
-				| Some sx1, Some sx2 ->
-					let p = Cs.get_saturating_point cstr1 in
-					let obj1 = PSplx.obj_value' sx1
-					and obj2 = PSplx.obj_value' sx2
-					in
-					Cs.Vec.Coeff.equal (Cs.eval' obj1 p) (Cs.eval' obj2 p)
-				| _,_ -> adjacent_cstr_lp reg1 reg2 cstr1 cstr2
-
-		(** returns [Some i] with [i] the index of the adjacent region if it exists, [None] otherwise. *)
-		let adjacent : int -> Cs.t -> ((int * Cs.t) * Min.direction) list -> mapRegs_t -> int option
-			= fun id_init cstr l regMap ->
-			let reg = MapV.find id_init regMap in
-			try
-				let ((id',_),_) = List.find
-					(fun ((id', cstr'), _) ->
-						id_init <> id'
-					  &&
-					  	(adjacent_cstr reg (MapV.find id' regMap) cstr cstr'))
-					l
-				in
-				Some id'
-			with Not_found -> None*)
-
-		let debug_evals
-			= fun l ->
-			Debug.exec l DebugTypes.Detail
-				(lazy(Printf.sprintf "Evals before post-processing : \n%s"
-						(Misc.list_to_string
-							(fun ((id,c),(_,v)) -> Printf.sprintf "id %i, %s -> %s"
-								id
-								(Cs.to_string Cs.Vec.V.to_string c)
-								(Cs.Vec.Coeff.to_float v |> string_of_float))
-							l "\n")))
-
-		let compute_next_point : Cs.t -> ('a * Min.direction) list list ->  Cs.Vec.Coeff.t option
-			= fun cstr evals ->
-			let i = Misc.findi (List.exists (fun ((_,cstr'),_) -> Cs.equalSyn cstr cstr')) evals
-			in
-			let eval_i = List.filter
-				(fun ((_,cstr'),_) -> not (Cs.equal cstr cstr')
-					&& not (Cs.equal (strict_comp cstr) cstr'))
-				(List.nth evals i)
-			in
-			match eval_i with
-			| [] ->
-				if List.length evals = (i+1) (* il n'y a pas d'élément après cstr dans la liste*)
-				then None
-				else let (_,(_,v2)) = List.nth evals (i+1) |> List.hd in
-				Some v2
-			| (_,(_,v2))  :: _ -> Some v2
-
-		let eval_to_string : ('a * Min.direction) list list -> string
-			= fun l ->
-			Misc.list_to_string
-				(fun l -> Misc.list_to_string
-					(fun ((_,c),(_,v)) ->
-						(Cs.to_string Cs.Vec.V.to_string c) ^ ", " ^ (Cs.Vec.Coeff.to_float v|>string_of_float)) l " ; ")
-				l "\n"
-
-		(** Returns the index of the region in which the given point is minimal w.r.t objective functions. *)
-		let eval_regions : ExplorationPoint.t -> t -> (int * Region.t) option
-			= fun p plp ->
-			try
-				match p with
-				| ExplorationPoint.Point point ->
-					let point' = conv.Min.vec_CsVec point in
-					MapV.fold
-						(fun id reg res ->
-							match Region.eval_obj reg point' with
-							| Some v -> ((id,reg),v) :: res
-							| None -> res)
-						plp.regs
-						[]
-					|> Misc.min (fun (_,v1) (_,v2) -> Cs.Vec.Coeff.cmp v1 v2)
-					|> fun (i,_) -> Some i
-
-				| ExplorationPoint.Direction (id, (_, point)) ->
-					let point' = conv.Min.vec_CsVec point in
-					MapV.fold
-						(fun id' reg res ->
-							if id = id'
-							then res
-							else match Region.eval_obj reg point' with
-								| Some v -> ((id',reg),v) :: res
-								| None -> res)
-						plp.regs
-						[]
-					|> Misc.min (fun (_,v1) (_,v2) -> Cs.Vec.Coeff.cmp v1 v2)
-					|> fun (i,_) -> Some i
-			with Invalid_argument _ -> None
-
-		let in_region : ExplorationPoint.t -> t -> (int * Region.t) option
-			= fun p plp ->
-			match eval_regions p plp with
-			| Some (i,reg) ->
-				if Region.contains_large_ep reg p
-				then Some (i,reg)
-				else None
-			| None -> None
-
-		exception Adjacent of int
-
-		let adjust : region_t -> mapRegs_t -> (int * Boundary.t) -> (int * Region.t) -> ExplorationPoint.t
-			= fun reg_t regMap (id, (cstr, pointOtherSide)) reg ->
-			Min.conv := conv;
-			let x0 = (MapV.find id regMap).Region.point in
-			let dir_type = Min.TwoPoints (x0,pointOtherSide) in
-			let v1 = Min.Sort.value dir_type cstr in
-			let evals = ((id,cstr), (dir_type, v1))
-				:: (eval [reg] dir_type)
-				|> debug_evals
-				|> Min.Sort.sort
-				|> Min.Sort.stack
-			in
-			Debug.log DebugTypes.Detail (lazy(Printf.sprintf "evals = %s"
-				(eval_to_string evals)));
-			try
-				(* XXX: que se passe t-il si i n'est pas 0? *)
-				let i = Misc.findi (List.exists (fun ((_,cstr'),_) -> Cs.equal cstr cstr')) evals in
-				let evals =
-					if List.length (List.nth evals i) > 1
-					then (* On a trouvé des candidat adjacents, il faut vérifier qu'ils sont bien adjacents *)
-						match Adjacency.adjacent id cstr (List.nth evals i) regMap with
-						| None -> begin match reg_t with
-							| Cone -> (Misc.sublist evals 0 i) @ [[(id,cstr), (dir_type, v1)]] @ (Misc.sublist evals (i+1) (List.length evals))
-							| NCone -> evals
-						end
-						| Some id_adj -> Pervasives.raise (Adjacent id_adj) (* un des candidats était bien adjacent *)
-					else evals
-				in
-				match compute_next_point cstr evals with
-				| None -> ExplorationPoint.Direction(id, (cstr, pointOtherSide))
-				| Some v2 ->
-					let v' = Cs.Vec.Coeff.div
-						(Cs.Vec.Coeff.add v1 v2)
-						(Cs.Vec.Coeff.of_float 2.)
-					in
-					Debug.log DebugTypes.Detail
-						(lazy (Printf.sprintf "computing middle of %s and %s : %s"
-						(Cs.Vec.Coeff.to_string v1)
-						(Cs.Vec.Coeff.to_string v2)
-						(Cs.Vec.Coeff.to_string v')));
-					let x = Min.Sort.getPoint cstr (dir_type,v') in
-						Debug.log DebugTypes.Detail
-						(lazy (Printf.sprintf "The next exploration point will be %s"
-							(Vec.to_string Vec.V.to_string x)));
-					ExplorationPoint.Direction(id, (cstr, x))
-			with Not_found -> Pervasives.failwith "PLP.adjust"
-
-		let apply_adjacency : t -> int -> Boundary.t -> int -> t
-			= fun plp id_init boundary id_adj ->
-			(* Updating the region map*)
-			let (cstr,_) = boundary in
-			let cstr_adj =  strict_comp cstr in
-			let reg = MapV.find id_init plp.regs
-			and reg_adj = MapV.find id_adj plp.regs in
-			let reg = {reg with
-				Region.r = List.map (fun (b,i) ->
-					if Boundary.equal b boundary
-					then (b,Some id_adj)
-					else (b,i))
-				 	reg.Region.r
-			}
-			and reg_adj = {reg_adj with
-				Region.r = List.map (fun ((cstr',v),i) ->
-					if Cs.equal cstr' cstr_adj(* XXX: equal?*)
-					then ((cstr',v), Some id_init)
-					else ((cstr',v),i))
-				 	reg_adj.Region.r
-			} in
-			let map' = MapV.add id_init reg plp.regs
-				|> MapV.add id_adj reg_adj in
-			(* Updating the exploration point list*)
-			let todo' = List.fold_left
-				(fun res -> function
-					| ExplorationPoint.Point v as x -> x :: res
-					| ExplorationPoint.Direction (id,(cstr,b)) as x ->
-						if id = id_adj && (Cs.equal cstr cstr_adj)(* XXX: equal?*)
-						then res
-						else x :: res)
-				[] plp.todo in
-			{regs = map' ; todo = todo'}
-
-		(** The PLP state [t] is modified if an adjacency is found. *)
-		let rec get_next_point_rec : region_t -> t -> t
-			= fun reg_t plp ->
-			match plp.todo with
-			| [] -> plp
-			| ((ExplorationPoint.Direction (id,b)) as ep):: tl -> begin
-				match in_region ep plp with
-				| None -> {plp with todo = ep :: tl}
-				| Some (i,reg) ->
-				try
-					let p = adjust reg_t plp.regs (id,b) (i,reg) in
-					 get_next_point_rec reg_t {plp with todo = p :: tl}
-				with Adjacent id_adjacent ->
-					apply_adjacency {plp with todo = tl} id b id_adjacent
-					|> get_next_point_rec reg_t
-				end
-			| ((ExplorationPoint.Point vec) as ep) :: tl ->
-				match in_region ep plp with
-				| None -> {plp with todo = ep :: tl}
-				| Some reg -> begin
-					(Debug.log DebugTypes.Detail
-					(lazy (Printf.sprintf "Exploration point %s lies within an already discovered region"
-					(Vec.to_string Vec.V.to_string vec)));
-					get_next_point_rec reg_t {plp with todo = tl})
-				end
-
-		(** Returns the next point to explore, or [None] if there is none.
-			The returned point is the first element of [plp.todo]. *)
-		let get_next_point : region_t -> t -> ExplorationPoint.t option * t
-			= fun reg_t plp ->
-			let plp = get_next_point_rec reg_t plp in
-			if plp.todo = []
-			then (None, plp)
-			else (Some (List.hd plp.todo),plp)
-
-	end
-
+	
+	let get_next_point 
+		= fun reg_t plp ->
+		Profile.start "get_next_point";
+		let res = match !Flags.plp with
+			| Flags.Greedy -> Next_Point.Greedy.get_next_point reg_t plp 
+			| Flags.Adj_Raytracing -> Next_Point.RayTracing.get_next_point reg_t plp 
+			| Flags.Adj_Raytracing_min -> Next_Point.RayTracing_min.get_next_point reg_t plp 
+		in
+		Profile.stop "get_next_point";
+		res
+		
 	let reg_id : int ref = ref 0
 
 	(** Returns a fresh id for a new region. *)
@@ -1182,7 +1196,6 @@ module PLP(Minimization : Min.Type) = struct
 
 		let add : config -> Region.t option -> Region.t -> ExplorationPoint.t -> t -> t
 			= fun config reg_origin new_reg explorationPoint plp ->
-			(* We look for a constraint saturated by the point *)
 			if region_already_known new_reg plp
 			then do_not_add new_reg explorationPoint plp
 			else if has_interior new_reg
@@ -1220,13 +1233,6 @@ module PLP(Minimization : Min.Type) = struct
 	let find_new_point : Vec.t -> Vec.t -> Vec.t
 		= fun init_point explored_point ->
 		Vec.middle init_point explored_point
-
-	let get_next_point 
-		= fun reg_t plp ->
-		Profile.start "get_next_point";
-		let res = RayTracing.get_next_point reg_t plp in
-		Profile.stop "get_next_point";
-		res
 
 	let rec exec : config -> t -> t
 		= fun config plp ->

@@ -92,3 +92,8 @@ let distributed_plp : int option ref = ref None
 (** If set to [true], the system of equalities of a polyhedron will be in row echelon form. *)
 let row_echelon_equalities : bool ref = ref true
 
+(** *)
+type plp_method = Adj_Raytracing | Adj_Raytracing_min | Greedy
+
+let plp : plp_method ref = ref Greedy
+

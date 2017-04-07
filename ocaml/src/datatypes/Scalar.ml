@@ -106,7 +106,10 @@ module Float = struct
 	let name = "Float"
 	
 	let delta = 0.00000001
-	let to_string = string_of_float
+	let to_string x = 
+		if x < 0.001
+		then string_of_float x
+		else Printf.sprintf "%.3f" x
 	
 	let plp_print : t -> string
 		= fun v ->

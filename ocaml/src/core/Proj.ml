@@ -151,6 +151,8 @@ module Proj (Min : Min.Type) = struct
 	(* XXX: Is it necessary to add the trivial constraint at the end? *)
 	let projToTab : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> PSplx.t
 		= fun factory flags xs l ->
+		if flags.sum_lambda
+		then print_endline "Caution : sum_lambda = true in the projection by PLP";
 		let cstrs = List.map Pervasives.fst l in
 		let bndSet = Cs.getVars cstrs in
 		let projSet = Cs.Vec.V.Set.inter (Cs.Vec.V.Set.of_list xs) bndSet in
