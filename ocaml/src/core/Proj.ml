@@ -144,7 +144,7 @@ module Proj (Min : Min.Type) = struct
 		 withCst = true;
 		 withTrivial = true;
 		 nBasicStrat = PLP.Objective.Bland;
-		 sum_lambda = false;
+		 sum_lambda = true;
 		 scalar = Flags.Float;
 	  }
       

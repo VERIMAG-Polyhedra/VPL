@@ -272,21 +272,3 @@ module Report = struct
 end
 
 let report = Report.report
-		
-(*
-let l = [
-	"b", Z.of_int 2;
-	"a.b", Z.of_int 3;
-	"a.d", Z.of_int 1;
-	"a.b.c", Z.of_int 2;
-	"a", Z.of_int 5;
-];;
-
-Report.sort_name l
-	|> Report.build_tree
-	|> Report.sort_tree
-	|> Report.tree_to_string
-	|> print_endline
-	;;
-
-*)

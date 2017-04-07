@@ -786,17 +786,47 @@ module Join_PLP = struct
 	
 end
 
+let inclSub: 'c1 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
+	= fun factory nxtVar p1 p2 ->
+	match EqSet.incl factory p1.eqs p2.eqs with
+	| EqSet.NoIncl -> NoIncl
+	| EqSet.Incl certE ->
+		match IneqSet.incl factory nxtVar p1.eqs p1.ineqs p2.ineqs with
+		| IneqSet.NoIncl -> NoIncl
+		| IneqSet.Incl certI -> Incl (List.append certI certE)
+		
 let joinSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
-	= fun factory1 factory2 nxtVar p1 p2 ->
-	match !Flags.join with
-	| Flags.Baryc -> joinSub_classic factory1 factory2 nxtVar p1 p2
-	| Flags.Join_PLP scalar_type -> Join_PLP.joinSub_epsilon scalar_type factory1 factory2 nxtVar p1 p2
-	| Flags.Join_fromRegions -> Join_PLP.joinSub_epsilon Flags.Float factory1 factory2 nxtVar p1 p2
-	| Flags.JHeuristic -> match Heuristic.join (get_cstr p1) (get_cstr p2) with
-		| Flags.Baryc -> joinSub_classic factory1 factory2 nxtVar p1 p2
-		| Flags.Join_PLP scalar_type -> Join_PLP.joinSub_epsilon scalar_type factory1 factory2 nxtVar p1 p2
-		| Flags.Join_fromRegions -> Join_PLP.joinSub_epsilon Flags.Float factory1 factory2 nxtVar p1 p2
-		| Flags.JHeuristic -> Pervasives.invalid_arg "Pol.joinSub"
+	= let check_incl
+		= fun factory nxtVar p1 p2 ->
+		match inclSub factory nxtVar p1 p2 with
+		| Incl p2_from_p1 -> 
+			let ineqs = get_ineqs p2 |> List.rev
+			and eqs = get_eqs p2 in
+			let len_ineqs = List.length ineqs in
+			Some {
+				ineqs = List.map2 
+					(fun (cstr,_) cert -> (cstr,cert))
+					ineqs (Misc.sublist p2_from_p1 0 len_ineqs);
+				eqs = List.map2
+					(fun (v, (cstr,_)) cert -> (v, (cstr,cert))) 
+					eqs (Misc.sublist p2_from_p1 len_ineqs (List.length p2_from_p1));
+			}
+		| NoIncl -> None 
+	in
+	fun factory1 factory2 nxtVar p1 p2 ->
+	match check_incl factory1 nxtVar p1 p2 with
+	| Some p1' -> (p1',p2)
+	| None -> match check_incl factory2 nxtVar p2 p1 with
+	| Some p2' -> (p1,p2')
+	| None -> match !Flags.join with
+			| Flags.Baryc -> joinSub_classic factory1 factory2 nxtVar p1 p2
+			| Flags.Join_PLP scalar_type -> Join_PLP.joinSub_epsilon scalar_type factory1 factory2 nxtVar p1 p2
+			| Flags.Join_fromRegions -> Join_PLP.joinSub_epsilon Flags.Float factory1 factory2 nxtVar p1 p2
+			| Flags.JHeuristic -> match Heuristic.join (get_cstr p1) (get_cstr p2) with
+				| Flags.Baryc -> joinSub_classic factory1 factory2 nxtVar p1 p2
+				| Flags.Join_PLP scalar_type -> Join_PLP.joinSub_epsilon scalar_type factory1 factory2 nxtVar p1 p2
+				| Flags.Join_fromRegions -> Join_PLP.joinSub_epsilon Flags.Float factory1 factory2 nxtVar p1 p2
+				| Flags.JHeuristic -> Pervasives.invalid_arg "Pol.joinSub"
 
 type relVarT = OldSt of Var.t | NewSt of Var.t
 type relLinT = (Scalar.Rat.t * relVarT) list
@@ -817,15 +847,6 @@ let widen : 'c Cert.t -> 'c t -> 'c t -> 'c t
 		| Cs.Contrad -> failwith "Pol.widen"
 	in
 	{ p2 with ineqs = List.fold_left elect [] p2.ineqs }
-
-let inclSub: 'c1 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
-	= fun factory nxtVar p1 p2 ->
-	match EqSet.incl factory p1.eqs p2.eqs with
-	| EqSet.NoIncl -> NoIncl
-	| EqSet.Incl certE ->
-		match IneqSet.incl factory nxtVar p1.eqs p1.ineqs p2.ineqs with
-		| IneqSet.NoIncl -> NoIncl
-		| IneqSet.Incl certI -> Incl (List.append certI certE)
 		
 let mkplist p =
 	let e = EqSet.list p.eqs in

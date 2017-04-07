@@ -1206,7 +1206,12 @@ module PLP(Minimization : Min.Type) = struct
 			= fun point config sx ->
 			match init_sx config.stgy sx point with
 		  	| None -> false
-		  	| Some sx' -> (sx_glob := sx'; true)
+		  	| Some sx' -> begin
+		  		Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Initialized simplex tableau : \n%s"
+		  			(PSplx.to_string sx'))); 
+		  		sx_glob := sx'; 
+		  		true
+		  		end
 
 	end
 
