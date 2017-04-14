@@ -411,11 +411,12 @@ module Interface (Coeff : Scalar.Type) = struct
 		
 			let file = Config.log_file
 		
-			let out_channel : Pervasives.out_channel ref = ref (Pervasives.open_out file)
+			let out_channel : Pervasives.out_channel ref = ref (Pervasives.open_out !file)
 		
-			let write : string -> unit
+			let write : string Lazy.t -> unit
 				= fun s ->
-				Pervasives.output_string !out_channel (s ^ "\n")
+				if !Flags.log_trace
+				then Pervasives.output_string !out_channel ((Lazy.force s) ^ "\n")
 		end
 		
 		module Names = struct
@@ -432,27 +433,27 @@ module Interface (Coeff : Scalar.Type) = struct
 		module Track = struct
 			let is_bottom : t -> unit
 				= fun p ->
-				Printf.sprintf "%s %s" Symbols.s_is_bottom p.name
+				lazy (Printf.sprintf "%s %s" Symbols.s_is_bottom p.name)
 				|> Record.write
 			
 			let assume : Cond.t -> t -> string
 				= fun cond p ->
 				let next = Names.mk() in
-				Printf.sprintf "%s %s %s %s %s"
+				lazy (Printf.sprintf "%s %s %s %s %s"
 					next 
 					Symbols.s_assign
 					p.name
 					Symbols.s_meet
-					(Cond.to_string Pol.Var.to_string cond)
+					(Cond.to_string Pol.Var.to_string cond))
 				|> Record.write;
 				next
 			
 			let asserts : Cond.t -> t -> unit
 				= fun cond p ->
-				Printf.sprintf "%s %s in %s"
+				lazy (Printf.sprintf "%s %s in %s"
 					Symbols.s_assert
 					(Cond.to_string Pol.Var.to_string cond)
-					p.name
+					p.name)
 				|> Record.write
 			
 			let assign: (Var.t * Term.t) list -> t -> string
@@ -469,42 +470,42 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun l p ->
 				let next = Names.mk() in
-				Printf.sprintf "%s %s %s in %s"
+				lazy (Printf.sprintf "%s %s %s in %s"
 					next 
 					Symbols.s_assign
 					(assign_To_string l)
-					p.name
+					p.name)
 				|> Record.write;
 				next
 			
 			let guassign: (Var.t list) -> Cond.t -> t -> string
 				= fun l cond p ->
 				let next = Names.mk() in
-				Printf.sprintf "guassign not implemented"
+				lazy (Printf.sprintf "guassign not implemented")
 				|> Record.write;
 				next
 				
 			let meet : t -> t -> string
 				= fun p1 p2 ->
 				let next = Names.mk() in
-				Printf.sprintf "%s %s %s && %s"
-					next Symbols.s_assign p1.name p2.name
+				lazy (Printf.sprintf "%s %s %s && %s"
+					next Symbols.s_assign p1.name p2.name)
 				|> Record.write;
 				next
 			
 			let join : t -> t -> string
 				= fun p1 p2 ->
 				let next = Names.mk() in
-				Printf.sprintf "%s %s %s %s %s"
-					next Symbols.s_assign p1.name Symbols.s_join p2.name
+				lazy (Printf.sprintf "%s %s %s %s %s"
+					next Symbols.s_assign p1.name Symbols.s_join p2.name)
 				|> Record.write;
 				next
 			
 			let minkowski : t -> t -> string
 				= fun p1 p2 ->
 				let next = Names.mk() in
-				Printf.sprintf "%s %s %s %s %s"
-					next Symbols.s_assign p1.name Symbols.s_minkowski p2.name
+				lazy (Printf.sprintf "%s %s %s %s %s"
+					next Symbols.s_assign p1.name Symbols.s_minkowski p2.name)
 				|> Record.write;
 				next
 				
@@ -516,47 +517,47 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun vars p ->
 				let next = Names.mk() in
-				Printf.sprintf "%s %s %s %s %s"
-					next Symbols.s_assign p.name Symbols.s_project (print_vars vars)
+				lazy (Printf.sprintf "%s %s %s %s %s"
+					next Symbols.s_assign p.name Symbols.s_project (print_vars vars))
 				|> Record.write;
 				next
 			
 			let widen : t -> t -> string
 				= fun p1 p2 ->
 				let next = Names.mk() in
-				Printf.sprintf "%s %s %s %s %s"
-					next Symbols.s_assign p1.name Symbols.s_widen p2.name
+				lazy (Printf.sprintf "%s %s %s %s %s"
+					next Symbols.s_assign p1.name Symbols.s_widen p2.name)
 				|> Record.write;
 				next
 			
 			let leq : t -> t -> unit
 				= fun p1 p2 ->
-				Printf.sprintf "%s %s %s" p1.name Symbols.s_includes p2.name
+				lazy (Printf.sprintf "%s %s %s" p1.name Symbols.s_includes p2.name)
 				|> Record.write
 			
 			let getUpperBound : t -> Term.t -> unit
 				= fun p t ->
-				Printf.sprintf "%s %s in %s" 
-					Symbols.s_upper_bound (Term.to_string Var.to_string t) p.name
+				lazy (Printf.sprintf "%s %s in %s" 
+					Symbols.s_upper_bound (Term.to_string Var.to_string t) p.name)
 				|> Record.write
 			
 			let getLowerBound : t -> Term.t -> unit
 				= fun p t ->
-				Printf.sprintf "%s %s in %s" 
-					Symbols.s_lower_bound (Term.to_string Var.to_string t) p.name
+				lazy (Printf.sprintf "%s %s in %s" 
+					Symbols.s_lower_bound (Term.to_string Var.to_string t) p.name)
 				|> Record.write
 			
 			let itvize : t -> Term.t -> unit
 				= fun p t ->
-				Printf.sprintf "%s %s in %s" Symbols.s_itv (Term.to_string Var.to_string t) p.name
+				lazy (Printf.sprintf "%s %s in %s" Symbols.s_itv (Term.to_string Var.to_string t) p.name)
 				|> Record.write
 			
 			let translate : t -> Pol.Cs.Vec.t -> string
 				= fun p vec ->
 				let next = Names.mk() in
-				Printf.sprintf "%s %s %s %s %s"
+				lazy (Printf.sprintf "%s %s %s %s %s"
 					next Symbols.s_assign p.name Symbols.s_translate 
-					(Pol.Cs.Vec.to_string Pol.Cs.Vec.V.to_string vec)
+					(Pol.Cs.Vec.to_string Pol.Cs.Vec.V.to_string vec))
 				|> Record.write;
 				next
 				

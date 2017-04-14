@@ -25,7 +25,7 @@ let tracerunner_input = Filename.concat relative_record relative_tracerunner_inp
 
 *)
 
-let log_file = "/tmp/vpl.log"
+let log_file = ref "/tmp/vpl.log"
 
 let mail_sender = "/usr/sbin/sendmail"
 

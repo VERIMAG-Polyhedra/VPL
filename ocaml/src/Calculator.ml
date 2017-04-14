@@ -4,7 +4,7 @@ module Poly = CP.Poly
 
 include UserInterface.Interface(Scalar.Rat)
 
-let folder = "/home/amarecha/verasco/vpl2/calculator"
+let folder = "/home/amarecha/VPL/calculator"
 	
 (** Donne le nombre d'occurence d'une string dans une string list **)
 let nbOcc (s:string) (sl:string list):int

@@ -98,3 +98,6 @@ type plp_method = Adj_Raytracing | Adj_Raytracing_min | Greedy
 
 let plp : plp_method ref = ref Greedy
 
+(** Enabling of lgo traces. *)
+let log_trace : bool ref = ref false
+
