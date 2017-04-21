@@ -154,8 +154,8 @@ module PLP(Minimization : Min.Type) = struct
 			r : (Boundary.t * int option) list;
 			point : Vec.t; (* Un point dans la région *)
 			sx : PSplx.t option (* Tableau de simplexe dont l'objectif a donné cette région *)
-		}	
-		
+		}
+
 		let mk : int -> Boundary.t list -> Vec.t -> PSplx.t -> t
 			= fun id bounds point sx ->
 			{id = id;
@@ -306,7 +306,7 @@ module PLP(Minimization : Min.Type) = struct
 		  		Debug.exec frontiers DebugTypes.Detail (lazy("Extraction done"));
 		end
 		(* VERSION ORIGINALE *)
-		(*
+
 		let extract : PSplx.t -> Cs.t list
 		  	= fun sx ->
 		  	Objective.foldi
@@ -320,16 +320,16 @@ module PLP(Minimization : Min.Type) = struct
 			(* XXX: ça serait bien d'avoir une forme canonique des contraintes pour pourvoir remplacer equal par equalSyn*)
 		  	|> Misc.rem_dupl (fun c c' -> Cs.equal c c')
 		  	|> List.filter (fun c -> is_trivial c |> not)
-		*)
-		(* VERSION TEST *)
 
+		(* VERSION TEST *)
+		(*
 		let extract : PSplx.t -> Cs.t list
 			= fun sx ->
 			Profile.start "Extract.region";
 			let res = Extract.extract sx in
 			Profile.stop "Extract.region";
 			res
-
+		*)
 
 		(** Returns a point in the regions' interior. The chosen point is a 1 from each boundary if possible. *)
 		let getPointInside : region_t -> Cs.Vec.V.t -> Cs.t list -> Vec.t option
@@ -435,7 +435,7 @@ module PLP(Minimization : Min.Type) = struct
 		Printf.sprintf "Regions = %s\nTodo list : \n%s"
 			(Misc.list_to_string Region.to_string regs "\n")
 			(Misc.list_to_string ExplorationPoint.to_string plp.todo " ; ")
-	
+
 	(** Module that checks results on the fly.
 		It is based on {!module:Debug.Check}, thus these verifications cost almost nothing if checking is disabled. *)
 	module Check = struct
@@ -466,9 +466,9 @@ module PLP(Minimization : Min.Type) = struct
 			= fun plp ->
 			MapV.iter (fun _ -> check_region) plp.regs
 	end
-	
+
 	module Adjacency = struct
-		
+
 		(** Returns true if [reg1] and [reg2] are adjacent through [cstr1] and [cstr2].
 		@param cstr1 must belong to [reg1]
 		@param cstr2 must belong to [reg2] *)
@@ -502,7 +502,7 @@ module PLP(Minimization : Min.Type) = struct
 					in
 					Cs.Vec.Coeff.equal (Cs.eval' obj1 p) (Cs.eval' obj2 p)
 				| _,_ -> adjacent_cstr_lp reg1 reg2 cstr1 cstr2
-		
+
 		let adjacent' : int -> Cs.t -> ((int * Cs.t) * 'a) list -> mapRegs_t -> int option
 			= fun id_init cstr l regMap ->
 			let reg = MapV.find id_init regMap in
@@ -516,7 +516,7 @@ module PLP(Minimization : Min.Type) = struct
 				in
 				Some id'
 			with Not_found -> None
-		
+
 		(** returns [Some i] with [i] the index of the adjacent region if it exists, [None] otherwise. *)
 		let adjacent : int -> Cs.t -> ((int * Cs.t) * 'a) list -> mapRegs_t -> int option
 			= fun id_init cstr l regMap ->
@@ -525,13 +525,13 @@ module PLP(Minimization : Min.Type) = struct
 			Profile.stop "adjacent";
 			res
 	end
-	
-	
+
+
 	(** Several methods to choose the next point to explore. *)
 	module Next_Point = struct
-		
+
 		module Min = Min.Min(Vec)(Vec)(Cs)(MinLP.Splx(Cs))
-		
+
 		let conv : Min.conversion
 			= Min.({vec_CsVec = (fun x -> Vec.toRat x);
 				csVec_Vec  = (fun x -> Vec.ofRat x) ;
@@ -540,7 +540,7 @@ module PLP(Minimization : Min.Type) = struct
 				vecInput_Vec = (fun x -> x) ;
 				vec_VecInput = (fun x -> x)
 			})
-				
+
 		module Point_in_Region = struct
 			(** Returns the index of the region in which the given point is minimal w.r.t objective functions. *)
 			let eval_regions : ExplorationPoint.t -> t -> (int * Region.t) option
@@ -563,7 +563,7 @@ module PLP(Minimization : Min.Type) = struct
 							| None -> None
 							| Some (i,_) -> Some i
 					end
-				
+
 					| ExplorationPoint.Direction (id, (_, point)) ->
 						let point' = conv.Min.vec_CsVec point in
 						MapV.fold
@@ -582,7 +582,7 @@ module PLP(Minimization : Min.Type) = struct
 							| None -> None
 							| Some (i,_) -> Some i
 				with Invalid_argument _ -> None
-		
+
 			let in_region' : ExplorationPoint.t -> t -> (int * Region.t) option
 				= fun p plp ->
 				match eval_regions p plp with
@@ -590,9 +590,9 @@ module PLP(Minimization : Min.Type) = struct
 					if Region.contains_large_ep reg p
 					then Some (i,reg)
 					else None
-				| None -> None	
+				| None -> None
 			(** Returns a region containing the given point, if it exists. *)
-			
+
 			let in_region : ExplorationPoint.t -> t -> (int * Region.t) option
 				= fun p plp ->
 				Profile.start "in_region";
@@ -600,7 +600,7 @@ module PLP(Minimization : Min.Type) = struct
 				Profile.stop "in_region";
 				res
 		end
-	
+
 		(** Module that chooses the next point to explore by raytracing. *)
 		module RayTracing = struct
 
@@ -614,14 +614,14 @@ module PLP(Minimization : Min.Type) = struct
 							((id, cstr'), (dir_type, v)) :: res)
 						res reg.Region.r)
 					[] regs
-		
+
 			let eval : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
 				= fun regs dir_type ->
 				Profile.start "raytracing";
 				let res = eval' regs dir_type in
 				Profile.stop "raytracing";
-				res 
-				
+				res
+
 			(*
 			(** Removes the initial region [reg] (identified by [id]) and those that are on the same side of [cstr] that [reg]. *)
 			let filter_regions : int -> Cs.t -> mapRegs_t -> (int * Region.t) list
@@ -645,7 +645,7 @@ module PLP(Minimization : Min.Type) = struct
 						else (id',reg) :: res )
 					regMap
 					[]
-			
+
 			let debug_evals
 				= fun l ->
 				Debug.exec l DebugTypes.Detail
@@ -799,7 +799,7 @@ module PLP(Minimization : Min.Type) = struct
 							(Vec.to_string Vec.V.to_string vec)));
 						get_next_point_rec reg_t {plp with todo = tl})
 					else {plp with todo = (ExplorationPoint.Point vec) :: tl}
-		
+
 			(** Returns the next point to explore, or [None] if there is none.
 			The returned point is the first element of [plp.todo]. *)
 			let get_next_point : region_t -> t -> ExplorationPoint.t option * t
@@ -979,9 +979,9 @@ module PLP(Minimization : Min.Type) = struct
 				then (None, plp)
 				else (Some (List.hd plp.todo),plp)
 		end
-	
+
 		module Greedy = struct
-		
+
 			let get_next : t -> int * Boundary.t -> ExplorationPoint.t option
 				= fun plp (reg_id, (cstr,point)) ->
 				let ipoint = (MapV.find reg_id plp.regs).Region.point in
@@ -991,8 +991,8 @@ module PLP(Minimization : Min.Type) = struct
 				match Point_in_Region.in_region (ExplorationPoint.Point vec) plp with
 				| None -> Some (ExplorationPoint.Point vec)
 				| _ ->  None
-				
-				
+
+
 			let rec get_next_point_rec : region_t -> t -> t
 				= fun reg_t plp ->
 				match plp.todo with
@@ -1009,7 +1009,7 @@ module PLP(Minimization : Min.Type) = struct
 							(Vec.to_string Vec.V.to_string vec)));
 						get_next_point_rec reg_t {plp with todo = tl})
 					else {plp with todo = (ExplorationPoint.Point vec) :: tl}
-					
+
 			(** Returns the next point to explore, or [None] if there is none.
 				The returned point is the first element of [plp.todo]. *)
 			let get_next_point : region_t -> t -> ExplorationPoint.t option * t
@@ -1021,18 +1021,18 @@ module PLP(Minimization : Min.Type) = struct
 				else (Some (List.hd plp.todo),plp)
 		end
 	end
-	
-	let get_next_point 
+
+	let get_next_point
 		= fun reg_t plp ->
 		Profile.start "get_next_point";
 		let res = match !Flags.plp with
-			| Flags.Greedy -> Next_Point.Greedy.get_next_point reg_t plp 
-			| Flags.Adj_Raytracing -> Next_Point.RayTracing.get_next_point reg_t plp 
-			| Flags.Adj_Raytracing_min -> Next_Point.RayTracing_min.get_next_point reg_t plp 
+			| Flags.Greedy -> Next_Point.Greedy.get_next_point reg_t plp
+			| Flags.Adj_Raytracing -> Next_Point.RayTracing.get_next_point reg_t plp
+			| Flags.Adj_Raytracing_min -> Next_Point.RayTracing_min.get_next_point reg_t plp
 		in
 		Profile.stop "get_next_point";
 		res
-		
+
 	let reg_id : int ref = ref 0
 
 	(** Returns a fresh id for a new region. *)
@@ -1106,9 +1106,9 @@ module PLP(Minimization : Min.Type) = struct
 		  	= fun reg_t st sx pointToExplore ->
 		  	Debug.log DebugTypes.Normal
 		  		(lazy("Exec on the point " ^ (Vec.to_string V.to_string pointToExplore)));
-		  	Profile.start "LP" ; 
+		  	Profile.start "LP" ;
 		 	let sx' = Explore.push st pointToExplore sx in
-		 	Profile.stop "LP" ; 
+		 	Profile.stop "LP" ;
 		 	Debug.log DebugTypes.Normal
 		  		(lazy("Found solution " ^ (PSplx.obj_value sx' |> PSplx.ParamCoeff.to_string)));
 		 	let cstrs = Region.extract sx' in
@@ -1120,7 +1120,7 @@ module PLP(Minimization : Min.Type) = struct
 		 		let reg = Region.mk id bounds point sx' in
 		 		Check.check_region reg;
 		 		Some reg
-		 
+
 		 (** [exec strat sx map exp] returns the region resulting from the exploration of [exp].
 			If this region has empty interior, it returns [None]. *)
 		let exec : region_t -> Objective.pivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
@@ -1223,8 +1223,8 @@ module PLP(Minimization : Min.Type) = struct
 		  	| None -> false
 		  	| Some sx' -> begin
 		  		Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Initialized simplex tableau : \n%s"
-		  			(PSplx.to_string sx'))); 
-		  		sx_glob := sx'; 
+		  			(PSplx.to_string sx')));
+		  		sx_glob := sx';
 		  		true
 		  		end
 
@@ -1397,7 +1397,7 @@ module PLP(Minimization : Min.Type) = struct
 		Profile.start "run";
 		let res = match init_and_exec config sx get_cert with
 		| None -> None
-		| Some plp -> get_results plp get_cert 
+		| Some plp -> get_results plp get_cert
 		in
 		Profile.stop "run";
 		res
