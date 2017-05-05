@@ -12,9 +12,9 @@ let varEncode : int -> Cs.Vec.V.t
 module Proj (Min : Min.Type) = struct
 
 	module PLP = PLP.PLP(Min)
-	
+
 	module Build = struct
-	
+
 		let getCoeffs : V.t option -> Cstr.Rat.Positive.t list -> Scalar.Rat.t list
 		  = let get : V.t option -> Cstr.Rat.Positive.t -> Scalar.Rat.t
 				= function
@@ -76,7 +76,7 @@ module Proj (Min : Min.Type) = struct
 			findNormCoeffs l
 			|> translateAlphas xs l
 			|> fun v -> v @ [Q.minus_one]
-	
+
 		end
 
 		(** [buildProjCons xs l] builds a list a constraints to be inserted in the
@@ -100,7 +100,7 @@ module Proj (Min : Min.Type) = struct
 			 PLP.Objective.mk
 				(List.map (buildCoeff withConst params) cs)
 				(PLP.ParamCoeff.mkSparse (List.length params) [] Q.zero)
-			
+
 		let buildLambdaSum : 'a list -> Tableau.Vector.t
 			= fun cstrs -> List.map (fun _ -> Q.one) cstrs @ [Q.one]
 	end
@@ -134,7 +134,7 @@ module Proj (Min : Min.Type) = struct
 	  Printf.sprintf
 			"{withCst = %B; withTrivial = %B; sum_lambda = %B; scalar = %s}"
 			 flags.withCst flags.withTrivial flags.sum_lambda
-			 (match flags.scalar with 
+			 (match flags.scalar with
 			 | Flags.Symbolic -> "Symbolic"
 			 | Flags.Float -> "Float"
 			 | Flags.Rat -> "Rat")
@@ -147,7 +147,7 @@ module Proj (Min : Min.Type) = struct
 		 sum_lambda = false;
 		 scalar = Flags.Float;
 	  }
-      
+
 	(* XXX: Is it necessary to add the trivial constraint at the end? *)
 	let projToTab : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> PSplx.t
 		= fun factory flags xs l ->
@@ -158,15 +158,15 @@ module Proj (Min : Min.Type) = struct
 		let projSet = Cs.Vec.V.Set.inter (Cs.Vec.V.Set.of_list xs) bndSet in
 		let params = Cs.Vec.V.Set.diff bndSet projSet |> Cs.Vec.V.Set.elements in
 		if flags.withTrivial
-		then 
+		then
 			let l' = l @ [(Cs.le [] Scalar.Rat.u, factory.Cert.triv Cstr.Le Scalar.Rat.u)] in
 			let cstrs' = cstrs @ [Cs.le [] Scalar.Rat.u] in
 			 {
 				PSplx.obj = Build.buildObj flags.withCst params cstrs';
-				PSplx.mat = (if flags.sum_lambda 
+				PSplx.mat = (if flags.sum_lambda
 					then Build.buildLambdaSum cstrs'
 					else Build.Norm.build projSet cstrs')
-					:: 
+					::
 					Build.buildProjCons (Cs.Vec.V.Set.elements projSet) cstrs';
 				PSplx.basis = [];
 				PSplx.names =
@@ -176,10 +176,10 @@ module Proj (Min : Min.Type) = struct
 		else
 			{
 				PSplx.obj = Build.buildObj flags.withCst params cstrs;
-				PSplx.mat = (if flags.sum_lambda 
+				PSplx.mat = (if flags.sum_lambda
 					then Build.buildLambdaSum cstrs
-					else Build.Norm.build projSet cstrs) 
-					:: 
+					else Build.Norm.build projSet cstrs)
+					::
 					Build.buildProjCons (Cs.Vec.V.Set.elements projSet) cstrs;
 				PSplx.basis = [];
 				PSplx.names =
@@ -206,9 +206,9 @@ module Proj (Min : Min.Type) = struct
 		 in
 		 let regsToCs : (PLP.Region.t * 'c Cons.t) list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
 			= fun regs ->
-			Debug.log DebugTypes.MOutput 
+			Debug.log DebugTypes.MOutput
 				(lazy (Printf.sprintf "Regions: \n%s\n"
-					(Misc.list_to_string 
+					(Misc.list_to_string
 						(fun (reg,sol) -> Printf.sprintf "%s --> %s"
 							(Cons.to_string Cs.V.to_string sol)
 							(PLP.Region.to_string reg)) regs "\n")));
@@ -222,7 +222,7 @@ module Proj (Min : Min.Type) = struct
 		in
 		let explore : 'c Cert.t -> projFlagsT -> PLP.Objective.pivotStrgyT -> PSplx.t -> 'c PLP.mapVar_t -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
 			= fun factory flags strgy tab map ->
-			let config = {PLP.std_config with 
+			let config = {PLP.std_config with
 				PLP.reg_t = (if flags.sum_lambda then PLP.NCone else PLP.Cone);
 				stgy = strgy;}
 			in
@@ -232,7 +232,7 @@ module Proj (Min : Min.Type) = struct
 		in
 		let init_map : 'c Cons.t list -> PSplx.t -> 'c PLP.mapVar_t
 			= fun conss sx ->
-			Debug.log DebugTypes.Normal (lazy "Init map"); 
+			Debug.log DebugTypes.Normal (lazy "Init map");
 			let nm = sx.PSplx.names in
 			Misc.fold_left_i
 				(fun i map cons ->
@@ -243,18 +243,18 @@ module Proj (Min : Min.Type) = struct
 		 fun factory flags xs cs ->
 		 if not flags.withCst then Pervasives.failwith "Sxproj.projectDicho: !withCst is unsupported"
 		 else
-		 	Debug.log DebugTypes.Title (lazy "Building Simplex Tableau"); 
+		 	Debug.log DebugTypes.Title (lazy "Building Simplex Tableau");
 			let tab = projToTab factory flags xs cs in
-			Debug.log DebugTypes.Title (lazy "Reporting Projection"); 
+			Debug.log DebugTypes.Title (lazy "Reporting Projection");
 			let (l,regs) = explore factory flags flags.nBasicStrat tab (init_map cs tab) in
   			(*check cs l (tab.PSplx.names);*)
   			(l,regs)
-	
+
 	let proj : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
   		= fun factory flags xs ineqs ->
-  		Debug.log DebugTypes.Title (lazy "Building Projection"); 
+  		Debug.log DebugTypes.Title (lazy "Building Projection");
   		exec factory flags xs ineqs
-  		
+
   	let projDefault : 'c Cert.t -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
   		= fun factory xs ineqs ->
   		Debug.log DebugTypes.Title (lazy "Building Default Projection");
@@ -263,9 +263,9 @@ end
 
 module Classic = struct
 	module Rat = Proj(Min.Classic(Vector.Rat.Positive))
-	
+
 	module Symbolic = Proj(Min.Classic(Vector.Symbolic.Positive))
-	
+
 	module Float = Proj(Min.Classic(Vector.Float.Positive))
 end
 
@@ -306,9 +306,9 @@ end
 
 module Heuristic = struct
 	module Rat = Proj(Min.Heuristic(Vector.Rat.Positive))
-	
+
 	module Symbolic = Proj(Min.Heuristic(Vector.Symbolic.Positive))
-	
+
 	module Float = Proj(Min.Heuristic(Vector.Float.Positive))
 end
 
@@ -320,23 +320,23 @@ let proj : 'c Cert.t -> Flags.scalar -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c 
   			match scalar with
 	  		| Flags.Symbolic -> Raytracing.Glpk.Symbolic.projDefault factory xs ineqs
   			| Flags.Float -> Raytracing.Glpk.Float.projDefault factory xs ineqs
-  			| Flags.Rat -> Raytracing.Glpk.Rat.projDefault factory xs ineqs 
+  			| Flags.Rat -> Raytracing.Glpk.Rat.projDefault factory xs ineqs
   			end
   		| Flags.Raytracing Flags.Splx -> begin
 			match scalar with
 	  		| Flags.Symbolic -> Raytracing.Splx.Symbolic.projDefault factory xs ineqs
-  			| Flags.Float -> Raytracing.Splx.Float.projDefault factory xs ineqs 
+  			| Flags.Float -> Raytracing.Splx.Float.projDefault factory xs ineqs
   			| Flags.Rat -> Raytracing.Splx.Rat.projDefault factory xs ineqs
-  			end 
+  			end
   		| Flags.Classic -> begin
   			match scalar with
-	  		| Flags.Symbolic -> Classic.Symbolic.projDefault factory xs ineqs 
+	  		| Flags.Symbolic -> Classic.Symbolic.projDefault factory xs ineqs
   			| Flags.Float -> Classic.Float.projDefault factory xs ineqs
   			| Flags.Rat -> Classic.Rat.projDefault factory xs ineqs
   			end
   		| Flags.MHeuristic -> begin
   			match scalar with
-	  		| Flags.Symbolic -> Heuristic.Symbolic.projDefault factory xs ineqs 
+	  		| Flags.Symbolic -> Heuristic.Symbolic.projDefault factory xs ineqs
   			| Flags.Float -> Heuristic.Float.projDefault factory xs ineqs
   			| Flags.Rat -> Heuristic.Rat.projDefault factory xs ineqs
   			end
