@@ -106,7 +106,7 @@ let join_to_string : unit -> string
 let join_to_xml : unit -> string
 	= fun () ->
 	match !join with
-	| Baryc -> "baryc"
+	| Baryc -> "barycentric"
 	| Join_PLP _ -> "plp"
 	| JHeuristic -> "heuristic"
 	| Join_fromRegions -> "plp_regions"
