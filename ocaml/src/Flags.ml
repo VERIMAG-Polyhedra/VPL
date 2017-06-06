@@ -148,4 +148,4 @@ let plp_to_xml : unit -> string
 	| Greedy -> "greedy"
 
 (** Enabling of lgo traces. *)
-let log_trace : bool ref = ref false
+let log_trace : bool ref = ref true

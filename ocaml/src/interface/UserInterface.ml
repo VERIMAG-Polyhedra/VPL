@@ -415,7 +415,7 @@ module Interface (Coeff : Scalar.Type) = struct
 				= fun s ->
 				if !Flags.log_trace
 				then begin
-					let out_channel = Pervasives.open_out_gen [Open_append] 777 !file in
+					let out_channel = Pervasives.open_out_gen [Open_creat ; Open_wronly ; Open_append] 0o640 !file in
 					Pervasives.output_string out_channel ((Lazy.force s) ^ "\n");
 					Pervasives.close_out(out_channel)
 				end
