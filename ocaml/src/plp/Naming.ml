@@ -282,7 +282,7 @@ module Naming (Vec : Vector.Type) = struct
      		
 	let user_to_string: typT -> V.t -> string
   		= fun t u ->
-  		(match t with Param -> "p" | Var -> "v" | Slack -> "s") ^ V.to_string u
+  		(match t with Param -> "p" | Var -> "d" | Slack -> "s") ^ V.to_string u
 
 	let to_string: t -> typT -> int -> string
   		= fun m t i ->

@@ -4,7 +4,7 @@ module Poly = CP.Poly
 
 include UserInterface.Interface(Scalar.Rat)
 
-let folder = "/home/amarecha/VPL/calculator"
+let folder = "/tmp/"
 	
 (** Donne le nombre d'occurence d'une string dans une string list **)
 let nbOcc (s:string) (sl:string list):int
@@ -231,7 +231,7 @@ module Print = struct
 	let sage_ending_string : int -> string
 		= fun nbdim -> if nbdim <= 2
 		then
-			"\nto_plot.save(\"" ^ folder ^ "/temp/pol.png\")\nimport time\ntime.sleep(2)"
+			"\nto_plot.save(\"" ^ folder ^ "/pol.png\")\nimport time\ntime.sleep(2)"
 		else "\nto_plot.show()\nimport time\ntime.sleep(10)"
 
 	(** Translates a list of constraints into Sage constraints strings. *)
@@ -288,9 +288,9 @@ end
 affiche le polyhedre avec comme argument optionnel les variables à regarder **)
 let show ?vars:(vars = "") (po:VPL.t) : unit = 
 	let (body_string,nb_dim) = (Print.to_plot_for_show ~vars:vars po) in
-	let u = Print.write_file (folder ^ "/temp/pol.sage") (Print.sage_beginning_string^body_string) in
-	let _ = Print.write_file (folder ^ "/launch_command") ("runfile " ^ folder ^ "/temp/pol.sage") in
-	let _ = Sys.command ("sage < " ^ folder ^ "/launch_command"^(if nb_dim <= 2 then "\neog " ^ folder ^ "/temp/pol.png" else "")) in u
+	let u = Print.write_file (folder ^ "/pol.sage") (Print.sage_beginning_string^body_string) in
+	let _ = Print.write_file (folder ^ "/launch_command") ("runfile " ^ folder ^ "/pol.sage") in
+	let _ = Sys.command ("sage < " ^ folder ^ "/launch_command"^(if nb_dim <= 2 then "\neog " ^ folder ^ "/pol.png" else "")) in u
 
 let show_regions : unit -> unit 
 	= fun () ->
