@@ -155,6 +155,7 @@ module type Type = sig
 
 			(** Eliminates the given list of variables from a polyhedron, by orthogonal projection. *)
 			val project: Var.t list -> t -> t
+			val projectM: Var.t list -> t -> t
 
 			val widen: t -> t -> t
 
@@ -238,6 +239,7 @@ module type Type = sig
 
 			(** Eliminates the given list of variables from a polyhedron, by orthogonal projection. *)
 			val project: Expr.Ident.t list -> t -> t
+			val projectM: Expr.Ident.t list -> t -> t
 
 			val widen: t -> t -> t
 
@@ -676,6 +678,16 @@ module Interface (Coeff : Scalar.Type) = struct
 				lazy (project' vars p)
 				|> handle
 
+			let projectM: Var.t list -> t -> t
+				= let projectM': Var.t list -> t -> t
+					= fun vars p ->
+					let name = Track.project vars p in
+					mk name (I.projectM vars p.value)
+				in
+				fun vars p ->
+				lazy (projectM' vars p)
+				|> handle
+
 			let widen : t -> t -> t
 				= let widen' : t -> t -> t
 					= fun p1 p2 ->
@@ -818,6 +830,11 @@ module Interface (Coeff : Scalar.Type) = struct
 				= fun vars p ->
 				let vars' = List.map Expr.Ident.toVar vars in
 				project vars' p
+
+			let projectM: Expr.Ident.t list -> t -> t
+				= fun vars p ->
+				let vars' = List.map Expr.Ident.toVar vars in
+				projectM vars' p
 
 			let guassign: (Expr.Ident.t list) -> UserCond.t -> t -> t
 				= fun vl c p ->
