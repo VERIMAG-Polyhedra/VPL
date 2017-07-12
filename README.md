@@ -65,6 +65,10 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
           _available in OPAM_
           __tested with version 1.4.1__
 
+       * [oclock](https://github.com/polazarus/oclock)
+          _available in OPAM_
+          __tested with version 0.4.0__
+          
        * [glpk](https://www.gnu.org/software/glpk/)
           __required version >= 4.61__
 
