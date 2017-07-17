@@ -63,14 +63,14 @@ If the vector has size 0, then [Invalid_argument] is raised. *)
 
   let mul_scalar : t -> Q.t -> t
     = fun v a -> List.map (Q.mul a) v
-  
+
 	(** [pretty_print v l] returns a string corresponding to a row of a matrix. Each column has a fixed width *)
 	let rec (pretty_print : t -> int list -> string)
 		= fun v l ->
 		match (v,l) with
 		| ([],_) | (_,[]) -> ""
-		| (p :: tail1 , i :: tail2) -> let nb_spaces = i - (Print.get_width p) in 
-		if nb_spaces mod 2 = 1 
+		| (p :: tail1 , i :: tail2) -> let nb_spaces = i - (Print.get_width p) in
+		if nb_spaces mod 2 = 1
 			then String.concat "" [Misc.string_repeat " " (nb_spaces/2) ; Q.to_string p ; Misc.string_repeat " " (nb_spaces/2 + 1) ; " | " ; pretty_print tail1 tail2]
 			else String.concat "" [Misc.string_repeat " " (nb_spaces/2) ; Q.to_string p ; Misc.string_repeat " " (nb_spaces/2) ; " | " ; pretty_print tail1 tail2];;
 
@@ -115,40 +115,39 @@ module Matrix
     if nRows m <> nRows m' || nCols m <> nCols m' then false
     else List.for_all2 Vector.equal m m'
 
-  module Diag
-    = struct
+	module Diag = struct
 
-      let sparsity : (Z.t * Z.t) Pervasives.ref
-	= Pervasives.ref (Z.zero, Z.zero)
-      and sparsity_enabled : bool Pervasives.ref
-	= Pervasives.ref false
+	    let sparsity : (Z.t * Z.t) Pervasives.ref
+			= Pervasives.ref (Z.zero, Z.zero)
+	    and sparsity_enabled : bool Pervasives.ref
+			= Pervasives.ref false
 
-      let enable_sparsity : unit -> unit
-	= fun () ->
-	begin
-	  sparsity := (Z.zero, Z.zero);
-	  sparsity_enabled := true;
+	    let enable_sparsity : unit -> unit
+			= fun () ->
+			begin
+		  	sparsity := (Z.zero, Z.zero);
+		  	sparsity_enabled := true;
+			end
+
+	    let disable_sparsity : unit -> unit
+			= fun () -> sparsity_enabled := false;;
+
+    	let get_sparsity : unit -> Z.t * Z.t
+			= fun () -> !sparsity
+
+      	let update_sparsity : t -> unit
+			= fun m ->
+			if not !sparsity_enabled then ()
+			else
+				let (sn, sd) = !sparsity in
+			  	begin
+			    sparsity :=
+			      (List.fold_left
+				 (List.fold_left (fun n a -> if Q.equal Q.zero a then n else Z.add Z.one n))
+				 sn m,
+			       Z.of_int (nRows m * nCols m) |> Z.add sd);
+			  	end
 	end
-
-      let disable_sparsity : unit -> unit
-	= fun () -> sparsity_enabled := false;;
-
-      let get_sparsity : unit -> Z.t * Z.t
-	= fun () -> !sparsity
-
-      let update_sparsity : t -> unit
-	= fun m ->
-	if not !sparsity_enabled then ()
-	else
-	  let (sn, sd) = !sparsity in
-	  begin
-	    sparsity :=
-	      (List.fold_left
-		 (List.fold_left (fun n a -> if Q.equal Q.zero a then n else Z.add Z.one n))
-		 sn m,
-	       Z.of_int (nRows m * nCols m) |> Z.add sd);
-	  end
-    end
 
   let mapi : (int -> Vector.t -> Vector.t) -> t -> t
     = fun f m -> List.mapi f m
@@ -164,7 +163,7 @@ module Matrix
   (** get_col m i returns the ith column of the matrix m as a vector *)
 let rec(get_col : int -> t -> Vector.t)
 	= fun col m->
-	match m with 
+	match m with
 	| [] -> []
 	| v :: tail -> (Vector.get col v) :: (get_col col tail);;
 
@@ -184,7 +183,7 @@ let rec(get_col : int -> t -> Vector.t)
 	mapi norm m
       else Pervasives.invalid_arg "Matrix.Matrix.pivot"
     end
-  
+
 	(** add_row m v i adds the row vector v at the index i in m*)
 	let (add_row : t -> Vector.t -> int -> t)
 		= let rec(add_row_rec : t -> Vector.t -> int -> int -> t)
@@ -199,24 +198,24 @@ let rec(get_col : int -> t -> Vector.t)
 	(** add_col m v i adds the column vector v at the index i in m *)
 	let rec(add_col : t -> Vector.t -> int -> t)
 		= fun m v col ->
-		let len = List.length (List.nth m 0) in 
-		if len = 0 
+		let len = List.length (List.nth m 0) in
+		if len = 0
 		then List.map (fun coeff -> [coeff]) v
 		else List.map2 (fun vec coeff -> (Misc.sublist vec 0 col) @ [coeff] @ (Misc.sublist vec col len)) m v;;
-	
+
 	(** get_width_column m i returns the width (nb of char) of the ith column of the matrix m *)
 	let (get_width_column : t -> int -> int)
 		= fun m col->
-		let l = List.map (fun p -> Print.get_width p) (get_col col m) in 
+		let l = List.map (fun p -> Print.get_width p) (get_col col m) in
 		Misc.max compare l
-		
+
 	(** get_width_column_vector m returns the list [width of col 1 ; width of col 2 ; ...] *)
 	let (get_width_column_vector : t -> int list)
 		= fun m ->
 		List.map (fun i -> get_width_column m i) (Misc.range 0 (nCols m));;
-		
+
 	let rec (to_string : t -> int list -> string)
-		= fun m l -> 
+		= fun m l ->
 		match m with
 		| [] -> ""
 		| v :: tail -> String.concat "" [Vector.pretty_print v l ; "\n" ; to_string tail l];;
@@ -240,6 +239,6 @@ let rec(get_col : int -> t -> Vector.t)
 			| [] -> []
 			| vec :: tail -> if row = k then (Vector.add vec (Vector.mul_scalar v coeff)) :: tail
 			else vec :: (add_multiple_of_row_rec tail row v coeff (k+1))
-		in fun m row1 row2 coeff -> 
+		in fun m row1 row2 coeff ->
 		add_multiple_of_row_rec m row1 (getRow row2 m) coeff 0
 end
