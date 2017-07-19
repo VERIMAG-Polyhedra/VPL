@@ -176,20 +176,24 @@ module Report = struct
 		 	Misc.substring s (before_last_dot + 1)
 		 with Not_found -> s
 
-	let result_to_string : result -> string
-		= fun (name,time) ->
-		Printf.sprintf "%s -> %s" (remove_prefix name) (time_to_string time)
+	let result_to_string : result -> result -> string
+		= fun (father_name, father_time) (name,time) ->
+		Printf.sprintf "%s -> %s, %f %c"
+			(remove_prefix name)
+			(time_to_string time)
+			(time *. 100. /. father_time) '%'
 
-	let rec tree_to_string_rec : tree -> string
-		= function
-		| Node (res, t) -> Printf.sprintf "%s\n%s"
-			(result_to_string res)
-			(String.concat "\n" (List.map tree_to_string_rec t) |> Misc.add_tab 1 )
+	let rec tree_to_string_rec : result -> tree -> string
+		= fun father -> function
+		| Node (res, t) ->
+			Printf.sprintf "%s\n%s"
+			(result_to_string father res)
+			(String.concat "\n" (List.map (tree_to_string_rec res) t) |> Misc.add_tab 1 )
 
 	let tree_to_string : tree -> string
 		= function
 		| Node (res, t) -> Printf.sprintf "%s"
-			(String.concat "\n" (List.map tree_to_string_rec t))
+			(String.concat "\n" (List.map (tree_to_string_rec res) t))
 
 	let rec add : result -> tree -> tree * bool
 		= fun (s, time) -> function
