@@ -1,121 +1,127 @@
 open DebugTypes
 
-type t = Min | MinLP | Proj | PLPCore | Pol | PSplx | Horacle | Join
+type t = {
+	print_enable : unit -> unit;
+	print_disable : unit -> unit;
+	levels : levelT list;
+	color : color;
+	set_color : color -> unit;
+	enable : levelT list -> unit;
+	disable : unit -> unit;
+}
 
-let modules : t list = [Min ; MinLP ;Proj ; PLPCore ; Pol ; PSplx ; Horacle ; Join]
+let min = {
+	print_enable = Min.Debug.print_enable;
+	print_disable = Min.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = Cyan;
+	set_color = Min.Debug.set_color;
+	enable = Min.Debug.enable;
+	disable = Min.Debug.disable;
+}
+
+let join = {
+	print_enable = Join.Debug.print_enable;
+	print_disable = Join.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = Magenta;
+	set_color = Join.Debug.set_color;
+	enable = Join.Debug.enable;
+	disable = Join.Debug.disable;
+}
+
+let proj = {
+	print_enable = Proj.Debug.print_enable;
+	print_disable = Proj.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = Magenta;
+	set_color = Proj.Debug.set_color;
+	enable = Proj.Debug.enable;
+	disable = Proj.Debug.disable;
+}
+
+let plp = {
+	print_enable = PLPCore.Debug.print_enable;
+	print_disable = PLPCore.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = Red;
+	set_color = PLPCore.Debug.set_color;
+	enable = PLPCore.Debug.enable;
+	disable = PLPCore.Debug.disable;
+}
+
+let minLP = {
+	print_enable = MinLP.Debug.print_enable;
+	print_disable = MinLP.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = Green;
+	set_color = MinLP.Debug.set_color;
+	enable = MinLP.Debug.enable;
+	disable = MinLP.Debug.disable;
+}
+
+let handelman = {
+	print_enable = Handelman.Debug.print_enable;
+	print_disable = Handelman.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = Magenta;
+	set_color = Handelman.Debug.set_color;
+	enable = Handelman.Debug.enable;
+	disable = Handelman.Debug.disable;
+}
+
+let hOracles = {
+	print_enable = HOtypes.Debug.print_enable;
+	print_disable = HOtypes.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = White;
+	set_color = HOtypes.Debug.set_color;
+	enable = HOtypes.Debug.enable;
+	disable = HOtypes.Debug.disable;
+}
+
+let pol = {
+	print_enable = Pol.Debug.print_enable;
+	print_disable = Pol.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = Blue;
+	set_color = Pol.Debug.set_color;
+	enable = Pol.Debug.enable;
+	disable = Pol.Debug.disable;
+}
+
+let pSplx = {
+	print_enable = PSplx.Debug.print_enable;
+	print_disable = PSplx.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = Yellow;
+	set_color = PSplx.Debug.set_color;
+	enable = PSplx.Debug.enable;
+	disable = PSplx.Debug.disable;
+}
+
+let modules : t list = [min ; proj ; join ; handelman ; minLP ; hOracles ; plp ; pol ; pSplx]
 
 let print_enable : unit -> unit
 	= fun () ->
-	List.iter
-		(function 
-		| Min -> Min.Debug.print_enable()
-		| MinLP -> MinLP.Debug.print_enable()
-		| Proj -> Proj.Debug.print_enable()
-		| PLPCore -> PLPCore.Debug.print_enable()
-		| Pol -> Pol.Debug.print_enable()
-		| PSplx -> PSplx.Debug.print_enable()
-		| Horacle -> ()(*failwith "RESTAURE cas Horacle de Debug.ml"*)
-                  (* A RESTAURER: ligne ci-dessous *)
-                  (* HOtypes.Debug.print_enable() *)
-		| Join -> Join.Debug.print_enable())
-		modules
+	List.iter (fun m -> m.print_enable()) modules
 
 let print_disable : unit -> unit
- = fun () ->
-	List.iter
-		(function 
-		| Min -> Min.Debug.print_disable()
-		| MinLP -> MinLP.Debug.print_disable()
-		| Proj -> Proj.Debug.print_disable()
-		| PLPCore -> PLPCore.Debug.print_disable()
-		| Pol -> Pol.Debug.print_disable()
-		| PSplx -> PSplx.Debug.print_disable()
-		| Join -> Join.Debug.print_disable()
-		| Horacle -> ()(*failwith "RESTAURE cas Horacle de Debug.ml"*)
-                  (* A RESTAURER: ligne ci-dessous *)
-                  (* HOtypes.Debug.print_disable() *)
-                )
-		modules
-  
-let level_selection : t -> levelT list
-	= function
-	| Min -> [Title ; MInput ; MOutput]
-	| MinLP -> []
-	| Proj -> [] 
-	| PLPCore -> [Title ; MInput ; MOutput ; Normal]
-	| Pol -> [Title ; MInput ; MOutput]
-	| PSplx -> []
-	| Horacle -> [Title ; MInput ; MOutput ]
-	| Join -> [Title ; MInput ; MOutput]
-	
-let colors : t -> color 
-	= function
-	| Min -> Cyan
-	| MinLP -> Green
-	| Proj -> Magenta 
-	| PLPCore -> Red
-	| Pol -> Blue
-	| PSplx -> Yellow
-	| Horacle -> White
-	| Join -> Magenta
-	
+	= fun () ->
+	List.iter (fun m -> m.print_disable()) modules
+
 let set_colors : unit -> unit
 	= fun () ->
-	List.iter
-		(fun m -> let color = colors m in
-		match m with 
-		| Min -> Min.Debug.set_color color
-		| MinLP -> MinLP.Debug.set_color color
-		| Proj -> Proj.Debug.set_color color
-		| PLPCore -> PLPCore.Debug.set_color color
-		| Pol -> Pol.Debug.set_color color
-		| PSplx -> PSplx.Debug.set_color color
-		| Horacle -> 
-                  ()(*failwith "RESTAURE cas Horacle de Debug.ml"*)
-                  (* A RESTAURER: ligne ci-dessous *)
-                  (* HOtypes.Debug.set_color color *)
-		| Join -> Join.Debug.set_color color)
-	modules
-	
-let enable_one : t -> levelT list -> unit
-	= fun m lvls ->
-	match m with
-	| Min -> Min.Debug.enable lvls
-	| MinLP -> MinLP.Debug.enable lvls
-	| Proj -> Proj.Debug.enable lvls
-	| PLPCore -> PLPCore.Debug.enable lvls
-	| Pol -> Pol.Debug.enable lvls
-	| PSplx -> PSplx.Debug.enable lvls
-	| Horacle ->
-                  ()(*failwith "RESTAURE cas Horacle de Debug.ml"*)
-                  (* A RESTAURER: ligne ci-dessous *)
-                  (* HOtypes.Debug.enable lvls *)
-	| Join -> Join.Debug.enable lvls
-	
+	List.iter (fun m -> m.set_color m.color) modules
+
 let enable : unit -> unit
 	= fun () ->
-	List.iter
-		(fun m -> enable_one m (level_selection m))
-	modules 
-	  
-let disable : unit -> unit
- = fun () -> 
- 	List.iter
-		(function 
-		| Min -> Min.Debug.disable()
-		| MinLP -> MinLP.Debug.disable()
-		| Proj -> Proj.Debug.disable()
-		| PLPCore -> PLPCore.Debug.disable()
-		| Pol -> Pol.Debug.disable()
-		| PSplx -> PSplx.Debug.disable()
-		| Horacle ->
-                  ()(*failwith "RESTAURE cas Horacle de Debug.ml"*)
-                  (* A RESTAURER: ligne ci-dessous *)
-                  (* HOtypes.Debug.disable() *)
-		| Join -> Join.Debug.disable())
-	modules
+	List.iter (fun m -> m.enable m.levels) modules
 
-	
+let disable : unit -> unit
+ = fun () ->
+ 	List.iter (fun m -> m.disable()) modules
+
 let get_trace : unit -> string list
   = fun () -> List.rev !DebugTypes.trace
 
