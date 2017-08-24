@@ -27,23 +27,23 @@ module type Type = sig
 		typ : cmpT; (** the comparison operator *)
 		v: Vec.t; (** the linear term *)
 		c: Vec.Coeff.t (** the constant *) }
-	
+
 	val name : string
-	
-	val get_typ : t -> cmpT 
+
+	val get_typ : t -> cmpT
 	val get_v : t -> Vec.t
 	val get_c : t -> Vec.Coeff.t
 
-	
+
 	(** [pr b c] pretty-prints contraint [c] using the variables and their names from [b]. *)
 	val to_string : (Vec.V.t -> string) -> t -> string
-	
+
 	val list_to_string : t list -> string
-	
+
 	val plot : Vec.V.t list -> t -> string
-	
+
 	val list_plot : t list -> string
-	
+
 	(** The type of properties the can be told by examining a constraint on its own. *)
 	type prop_t =
 	| Trivial (** 0 = 0 or 0 < 1 are Trivial *)
@@ -75,7 +75,7 @@ module type Type = sig
 	val mk: cmpT -> (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
 
 	val mk2: cmpT -> Vec.t -> Vec.Coeff.t -> t
-		
+
 	(** [eq lin cst] builds the equality [lin = cst],
 	where each member of [lin] is the coefficient of a variable.
 	Zero coefficients can be left implicit. *)
@@ -111,11 +111,11 @@ module type Type = sig
 
 	(** Add two constraints. *)
 	val add: t -> t -> t
-	
+
 	(** Multiply a constraint by a constant.
 	If a negative constant is provided and the constraint is an inequality, then [BadMult] is raised. *)
 	val mulc: Vec.Coeff.t -> t -> t
-	
+
 	(** Tell what can be infered on a constraint on its own.  See [prop_t]. *)
 	val tellProp: t -> prop_t
 
@@ -130,39 +130,39 @@ module type Type = sig
 
 	(** Syntaxic comparison *)
 	val cmp : t -> t -> int
-	
+
 	(** [eval c x] checks that the given point [x] satisfies the constraint [c]. *)
 	val eval: t -> Vec.t -> bool
-	
+
 	(** [eval' c point] computes [a.point - b], where [c : ax cmp b]. *)
 	val eval': t -> Vec.t -> Vec.Coeff.t
-	
+
 	(** [satisfy vec cstr] returns true if point [vec] satisfies constraint [cstr]. *)
 	val satisfy : Vec.t -> t -> bool
-	
+
 	(** [saturate vec cstr] returns true if [vec] satisfies constraint [cstr] where [cstr.typ] has been replaced by {!const:cmpT.Eq}. *)
 	val saturate : Vec.t -> t -> bool
 
 	(** Rename fromX toY c *)
 	val rename : Vec.V.t -> Vec.V.t -> t -> t
-	
+
 	val rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
-	
+
 	(** [change_variable x lin c cstr] proceeds to the change of variable [x = lin + c] in [cstr]. *)
 	val change_variable : Vec.V.t -> Vec.t -> Vec.Coeff.t -> t -> t
-	
+
 	(** Returns a point that saturates the hyperplane defined by the given constraint. *)
 	val get_saturating_point : t -> Vec.t
 end
 
 module Cstr (Vec : Vector.Type) = struct
-	
+
 	module Coeff = Vec.Coeff
 	module M = Vec.M
 	module V = Vec.V
-	
+
 	let name = "Constraint with vector type : " ^ (Vec.name)
-	
+
 	type t = {
 		typ: cmpT;
 		v: Vec.t;
@@ -192,18 +192,18 @@ module Cstr (Vec : Vector.Type) = struct
 			match o2 with
 			| Eq | Le -> o
 			| Lt as o -> o
-	
+
 	let eval' : t -> Vec.t -> Coeff.t
 		= fun c pt ->
-		Coeff.sub (M.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t c.v pt)) c.c 
-		
+		Coeff.sub (M.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t c.v pt)) c.c
+
 	let eval : t -> Vec.t -> bool
 		= fun c pt ->
-		let r = Coeff.cmp (M.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t c.v pt)) c.c 
+		let r = Coeff.cmp (M.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t c.v pt)) c.c
 		in
 		match c.typ with Eq -> r = 0 | Le -> r <= 0 | Lt -> r < 0
-		
-	let add : t -> t -> t 	
+
+	let add : t -> t -> t
 		= fun c1 c2 ->
 		{typ = cmpAdd c1.typ c2.typ;
 		v = Vec.add c1.v c2.v;
@@ -212,8 +212,10 @@ module Cstr (Vec : Vector.Type) = struct
 	(* XXX: c'est vraiment ce qu'on veut?*)
 	let mulc : Coeff.t -> t -> t
 		= fun c cstr ->
-		 { cstr with v = Vec.mulc c cstr.v; c = Coeff.mul c cstr.c }
-			
+		if Coeff.le c Coeff.z
+		then Pervasives.raise BadMult
+		else { cstr with v = Vec.mulc c cstr.v; c = Coeff.mul c cstr.c }
+
 	let compl : t -> t
 		= fun c ->
 		match c.typ with
@@ -221,7 +223,7 @@ module Cstr (Vec : Vector.Type) = struct
 		| Le -> { typ = Lt; v = Vec.neg c.v; c = Coeff.neg c.c }
 		| Lt -> { typ = Le; v = Vec.neg c.v; c = Coeff.neg c.c }
 
-	let split : t -> t * t 
+	let split : t -> t * t
 		= fun c ->
 		match c.typ with
 		| Le | Lt -> invalid_arg "Cstr.split"
@@ -323,27 +325,27 @@ module Cstr (Vec : Vector.Type) = struct
 				| Lt -> " < "
 			in
 			(Vec.to_string varPr c.v) ^ sign ^ (Coeff.to_string c.c)
-	
+
 	let plot : V.t list -> t -> string
 		= fun vars c ->
 		let vec = get_v c in
 		let l = (get_c c) ::
 			(List.map
-				(fun v -> Coeff.mul Coeff.negU (Vec.get vec v)) 
+				(fun v -> Coeff.mul Coeff.negU (Vec.get vec v))
 				vars)
 		in
-		Misc.list_to_string Coeff.to_string l "," 		
-	
+		Misc.list_to_string Coeff.to_string l ","
+
 	let list_plot : t list -> string
 		= fun cstrs ->
 		let vars = getVars cstrs |> V.Set.elements in
 		Misc.list_to_string (plot vars) cstrs ", "
-	
+
 	let list_to_string : t list -> string
 		= fun l ->
 		Misc.list_to_string (to_string V.to_string) l " ; "
-	
-	
+
+
 	let rec cmp : t -> t -> int
 		= fun c1 c2 ->
 		match (c1.typ,c2.typ) with
@@ -354,37 +356,37 @@ module Cstr (Vec : Vector.Type) = struct
 			| 0 -> Coeff.cmp c1.c c2.c
 			| r -> r
 			end
-	
+
 	let satisfy : Vec.t -> t -> bool
 		= fun point c ->
 		let res = M.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t point c.v) in
 		let r = Coeff.cmp res c.c in
-		match c.typ with 
+		match c.typ with
 		| Eq -> r = 0
-		| Le -> r <= 0 
-		| Lt -> r < 0 
-	
+		| Le -> r <= 0
+		| Lt -> r < 0
+
 	let saturate : Vec.t -> t -> bool
 		= fun point c ->
 		satisfy point {c with typ = Eq}
-	
-	let rename : Vec.V.t -> Vec.V.t -> t -> t 
+
+	let rename : Vec.V.t -> Vec.V.t -> t -> t
 		= fun fromX toY c ->
 		let v = get_v c in
 		let v1 = Vec.set v fromX Vec.Coeff.z in
 		let v2 = Vec.set v1 toY (Vec.get v fromX) in
 		assert (Vec.Coeff.cmpz (Vec.get v toY) = 0);
 		{c with v = v2}
-	
+
 	let rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
 		= fun f cstr ->
 		List.fold_left
     		(fun cstr' var -> rename var (f var) cstr')
-    		cstr 
+    		cstr
     		(getVars [cstr] |> Vec.V.Set.elements)
-		
+
 	(* TODO: vérifier la présence de x? *)
-	let change_variable : Vec.V.t -> Vec.t -> Coeff.t -> t -> t 
+	let change_variable : Vec.V.t -> Vec.t -> Coeff.t -> t -> t
 		= fun x lin c cstr ->
 		let v = get_v cstr in
 		let coeff = Vec.get v x in
@@ -393,10 +395,10 @@ module Cstr (Vec : Vector.Type) = struct
 			|> Vec.add v1 in
 		let c2 = Coeff.sub (get_c cstr) (Coeff.mul coeff c) in
 		{cstr with v = v2 ; c = c2}
-	
+
 	let get_saturating_point : t -> Vec.t
 		= fun cstr ->
-		let (var,coeff) = Vec.toList cstr.v 
+		let (var,coeff) = Vec.toList cstr.v
 			|> List.hd in
 		Vec.mk [Coeff.div cstr.c coeff, var]
 end
@@ -409,11 +411,11 @@ module Rat = struct
 		module Vec : Vector.Rat.Type
 		(**/**)
 		type t = {
-			typ : cmpT; 
-			v: Vec.t; 
+			typ : cmpT;
+			v: Vec.t;
 			c: Vec.Coeff.t  }
 
-		val get_typ : t -> cmpT 
+		val get_typ : t -> cmpT
 		val get_v : t -> Vec.t
 		val get_c : t -> Vec.Coeff.t
 
@@ -421,16 +423,16 @@ module Rat = struct
 		val plot : Vec.V.t list -> t -> string
 		val list_to_string : t list -> string
 		val list_plot : t list -> string
-		
+
 		type prop_t =
 		| Trivial
-		| Contrad 
-		| Nothing 
+		| Contrad
+		| Nothing
 
 		exception BadMult
 		exception CannotElim
 		exception NoElim
-		
+
 		val name : string
 		val cmpAdd: cmpT -> cmpT -> cmpT
 		val compl: t -> t
@@ -461,16 +463,16 @@ module Rat = struct
 		val change_variable : Vec.V.t -> Vec.t -> Vec.Coeff.t -> t -> t
 		val get_saturating_point : t -> Vec.t
 		(**/**)
-		
+
 		(** Put the constraint in canonic form. *)
 		val canon : t -> t
-		
+
 	end
-	
+
 	module Rat (Vec : Vector.Rat.Type) = struct
 
 		include Cstr(Vec)
-		
+
 		(** [elim c1 c2 x] linearly combines [t1] and [t2] so as to eliminate [x] from the result.
 		The coefficients applied to [c1] and [c2] are returned, in order.
 		If [x] does not appear in any of the two, then exception [NoElim] is raised.
@@ -485,7 +487,7 @@ module Rat = struct
 			| (true, true) -> raise NoElim
 			| (true, false) | (false, true) -> raise CannotElim
 			| (false, false) ->
-				let (n1, n2) = 
+				let (n1, n2) =
 					match (c1.typ, c2.typ) with
 					| (Eq, Eq) -> (Vec.Coeff.neg a2, a1)
 					| (Le, Eq) | (Lt, Eq) ->
@@ -504,29 +506,29 @@ module Rat = struct
 				let c = add (mulc n1 c1) (mulc n2 c2) in
 				(c, n1, n2)
 				(*let gcd = Vec.gcd c.v in
-				(mulc gcd c, 
-				Vec.Coeff.mul gcd n1, 
+				(mulc gcd c,
+				Vec.Coeff.mul gcd n1,
 				Vec.Coeff.mul gcd n2)*)
-		
+
 		let canon : t -> t
 			= fun cstr ->
 			let g = Vec.gcd cstr.v in
 			if Vec.Coeff.isZ g
 			then cstr
 			else {cstr with v = Vec.divr cstr.v g ; c = Vec.Coeff.divr cstr.c g}
-		
+
 	end
-	
+
 	module Positive = struct
 		module Vec = Vector.Rat.Positive
 		include Rat(Vec)
 	end
-	
+
 	module Int = struct
 		module Vec = Vector.Rat.Int
 		include Rat(Vec)
 	end
-	
+
 	module String = struct
 		module Vec = Vector.Rat.String
 		include Rat(Vec)
@@ -538,10 +540,9 @@ module Float = struct
 		module Vec = Vector.Float.Positive
 		include Cstr(Vec)
 	end
-	
+
 	module Int = struct
 		module Vec = Vector.Float.Int
 		include Cstr(Vec)
 	end
 end
-
