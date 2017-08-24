@@ -435,15 +435,15 @@ module Raw =
       -> __ -> 'a2 -> 'a2) -> (key -> 'a1 -> 'a3 -> 'a3) -> 'a1 t -> 'a3 ->
       'a2 **)
 
-  let rec fold_rect f0 f f1 m acc =
-    let f2 = Obj.magic f0 __ f1 m acc in
-    let f3 = Obj.magic f __ f1 m acc in
+  let rec fold_rect f1 f0 f m acc =
+    let f2 = Obj.magic f1 __ f m acc in
+    let f3 = Obj.magic f0 __ f m acc in
     (match m with
      | [] -> f2 __
      | p::l ->
        let t0,e = p in
        let f4 = f3 t0 e l __ in
-       let hrec = fold_rect f0 f f1 l (f1 t0 e acc) in f4 hrec)
+       let hrec = fold_rect f1 f0 f l (f t0 e acc) in f4 hrec)
 
   (** val fold_rec :
       (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__ ->
