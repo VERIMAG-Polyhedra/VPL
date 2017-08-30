@@ -212,7 +212,7 @@ module Cstr (Vec : Vector.Type) = struct
 	(* XXX: c'est vraiment ce qu'on veut?*)
 	let mulc : Coeff.t -> t -> t
 		= fun c cstr ->
-		if Coeff.le c Coeff.z
+		if cstr.typ <> Eq && Coeff.le c Coeff.z
 		then Pervasives.raise BadMult
 		else { cstr with v = Vec.mulc c cstr.v; c = Coeff.mul c cstr.c }
 
