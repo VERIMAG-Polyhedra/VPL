@@ -271,10 +271,10 @@ module Handelman (Minimization : Min.Type) = struct
 
 		(** Returns the normalization constraint and a point (as a function) within the polyhedron to project.
 		If the answer is [None], it means that the polyhedron is empty!
-		TODO : adapt the normalization constant to the polnomial. *)
-		let get : 'c HPol.t -> Poly.t list -> Poly.t -> (Poly.t * (Poly.V.t -> Scalar.Rat.t option)) option
-			= fun ph his_p objective ->
-			let variables = List.map Poly.get_vars his_p
+		TODO : adapt the normalization constant to the polynomial. *)
+		let get : 'c HPol.t -> Poly.t list -> Poly.t -> Poly.t -> (Poly.t * (Poly.V.t -> Scalar.Rat.t option)) option
+			= fun ph his_p objective f ->
+			let variables = List.map Poly.get_vars (f :: his_p)
 				|> List.concat
 				|> Misc.rem_dupl Poly.V.equal
 			in
@@ -284,14 +284,14 @@ module Handelman (Minimization : Min.Type) = struct
 					|> Poly.data
 					|> List.map Poly.Monomial.data
 					|> List.map Pervasives.fst)
-				his_p
+				(f :: his_p)
 				|> List.concat
 				|> Misc.rem_dupl Poly.MonomialBasis.equal
 			in
 			Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Non linear monomials : %s"
 				(Misc.list_to_string Poly.MonomialBasis.to_string non_linear_monomials " ; ")))
 			;
-			let horizon = Poly.horizon his_p in
+			let horizon = Poly.horizon (f :: his_p) in
 			let change_of_vars = List.fold_left
 				(fun (f,horizon) m ->
 					let m_h = Poly.MonomialBasis.mk [horizon] in
@@ -301,7 +301,7 @@ module Handelman (Minimization : Min.Type) = struct
 				non_linear_monomials
 				|> Pervasives.fst
 			in
-			let his_p' = List.map (Poly.change_variable change_of_vars) his_p in
+			let his_p' = List.map (Poly.change_variable change_of_vars) (f :: his_p) in
 			Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Change_of_var : %s"
 				(Misc.list_to_string Poly.to_string his_p' " ; ")))
 			;
@@ -312,14 +312,31 @@ module Handelman (Minimization : Min.Type) = struct
 			in
 			Debug.log DebugTypes.Detail
 				(lazy (Printf.sprintf "get : ineqs = %s" (Cs.list_to_string ineqs)));
+			Debug.log DebugTypes.Detail
+				(lazy (Printf.sprintf "Projecting polyhedron of monomials : \n%s"
+					(let vars_to_project = List.filter
+						(fun v -> not (List.exists
+							(fun v' -> Cs.Vec.V.equal v v') variables))
+							(Cs.getVars ineqs |> Cs.Vec.V.Set.elements)
+					in
+					Proj.proj Factory.Unit.factory Flags.Float vars_to_project
+						(List.map Factory.Unit.mk ineqs)
+					|> Pervasives.fst
+					|> List.map Pervasives.fst
+					|> List.map Cs.canon
+					|> Cs.list_to_string)))
+			;
 			match getPointInside ineqs (ph#get_vars) with
 			| None -> None
 			| Some pointInside ->
-				let res = Poly.sub
-					(Poly.eval_partial objective pointInside)
-					(Poly.cste (Scalar.Rat.of_float 10.0)) (* This is the normalization constraint constant *)
-				in
-				Some (res, pointInside)
+				match !Flags.handelman_normalize with
+				| None -> None
+				| Some constant ->
+					let res = Poly.sub
+						(Poly.eval_partial objective pointInside)
+						(Poly.cste constant)
+					in
+					Some (res, pointInside)
 	end
 
 	let handelman : Obj.pivotStrgyT -> 'c HPol.t -> Poly.t list -> Poly.t
@@ -347,7 +364,7 @@ module Handelman (Minimization : Min.Type) = struct
 		let objective = Poly.get_affine_part flin variables in
 		Debug.log DebugTypes.Normal
 			(lazy("Objective = " ^ (Poly.to_string objective)));
-		let normalization = match Norm.get ph his_p objective with
+		let normalization = match Norm.get ph his_p objective f with
 		| Some (n, _) -> begin
 			Debug.log DebugTypes.Normal
 				(lazy ("Normalization : " ^ (Poly.to_string n)));
@@ -360,7 +377,7 @@ module Handelman (Minimization : Min.Type) = struct
 			let sx = Build.from_poly lpvars simplex_inequalities simplex_equalities objective normalization in
 			Debug.log DebugTypes.Detail (lazy("Simplex tableau : \n" ^ (PLP.PSplx.to_string sx)));
 (*			Debug.log DebugTypes.Detail (lazy("Basis : " ^ (Misc.list_to_string PLP.PSplx.to_string sx)));*)
-			try PLP_MODIF.run_plp ph st sx (normalization = None)
+			try PLP_MODIF.run_plp ph st sx (normalization <> None)
 			with Failure s ->
 				Debug.exec None DebugTypes.Detail (lazy("Handelman Exception: " ^ s))
 		end
@@ -430,10 +447,15 @@ module Handelman (Minimization : Min.Type) = struct
 		(* XXX: faut il ajuster les comparaisons avec -1* les contraintes? *)
 		match handelman Obj.Bland ph his_poly g with
 		| None -> None
-		| Some regs ->
+		| Some regs -> begin
 			let vars = ph#get_vars in
 			let n_cstrs = List.length ph#get_poly_rep in
-			Some (compute_certs his n_cstrs vars regs)
+			let res = compute_certs his n_cstrs vars regs in
+			Debug.log DebugTypes.MOutput
+				(lazy(Misc.list_to_string CP.to_string (List.map Pervasives.fst res) "\n "))
+			;
+			Some res
+			end
 			(*let adjustCmp_ins = adjustCmp (ph#get_cstr()) his in
 			let res = compute_certs his regs in
 			let l =
@@ -445,12 +467,7 @@ module Handelman (Minimization : Min.Type) = struct
 			Some l*)
 
 	exception Timeout
-	(*
-	let timeout : int -> unit
-		= fun i -> match i with
-		| j when j = Sys.sigalrm -> Pervasives.raise Timeout
-		| _ -> Pervasives.failwith (Printf.sprintf "Signal %s received" (string_of_int i))
-	*)
+
 	module type Type = sig
 		type t = {
 			ph : unit HPol.t ;
