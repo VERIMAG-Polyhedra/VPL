@@ -122,6 +122,9 @@ let handelman_loop : bool ref = ref true
 Combined to {!val:handelman_loop}, the linearization returns the last result found. *)
 let handelman_timeout : int option ref = ref (Some 10)
 
+(** Sets a normalization constant. If [None], there will be no normalization. *)
+let handelman_normalize : Scalar.Rat.t option ref = ref None
+
 (** If set to [Some n], the parametric simplex will be distributed over n processes. *)
 let distributed_plp : int option ref = ref None
 
@@ -147,5 +150,8 @@ let plp_to_xml : unit -> string
 	| Adj_Raytracing_min -> "raytracing_min"
 	| Greedy -> "greedy"
 
-(** Enabling of lgo traces. *)
+(** Enabling of log traces. *)
 let log_trace : bool ref = ref true
+
+(** If [true], put sum lambda = 1 as normalization constraint in the projection via PLP. *)
+let sum_lambda_1 : bool ref = ref false

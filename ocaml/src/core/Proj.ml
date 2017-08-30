@@ -125,7 +125,6 @@ module Proj (Min : Min.Type) = struct
 		 withCst : bool;
 		 withTrivial : bool;
 		 nBasicStrat : PLP.Objective.pivotStrgyT;
-		 sum_lambda : bool;
 		 scalar : Flags.scalar
 	  }
 
@@ -133,7 +132,7 @@ module Proj (Min : Min.Type) = struct
 	  = fun flags ->
 	  Printf.sprintf
 			"{withCst = %B; withTrivial = %B; sum_lambda = %B; scalar = %s}"
-			 flags.withCst flags.withTrivial flags.sum_lambda
+			 flags.withCst flags.withTrivial !Flags.sum_lambda_1
 			 (match flags.scalar with
 			 | Flags.Symbolic -> "Symbolic"
 			 | Flags.Float -> "Float"
@@ -144,14 +143,13 @@ module Proj (Min : Min.Type) = struct
 		 withCst = true;
 		 withTrivial = true;
 		 nBasicStrat = PLP.Objective.Bland;
-		 sum_lambda = false;
 		 scalar = Flags.Float;
 	  }
 
 	(* XXX: Is it necessary to add the trivial constraint at the end? *)
 	let projToTab : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> PSplx.t
 		= fun factory flags xs l ->
-		if flags.sum_lambda
+		if !Flags.sum_lambda_1 
 		then print_endline "Caution : sum_lambda = true in the projection by PLP";
 		let cstrs = List.map Pervasives.fst l in
 		let bndSet = Cs.getVars cstrs in
@@ -163,7 +161,7 @@ module Proj (Min : Min.Type) = struct
 			let cstrs' = cstrs @ [Cs.le [] Scalar.Rat.u] in
 			 {
 				PSplx.obj = Build.buildObj flags.withCst params cstrs';
-				PSplx.mat = (if flags.sum_lambda
+				PSplx.mat = (if !Flags.sum_lambda_1
 					then Build.buildLambdaSum cstrs'
 					else Build.Norm.build projSet cstrs')
 					::
@@ -176,7 +174,7 @@ module Proj (Min : Min.Type) = struct
 		else
 			{
 				PSplx.obj = Build.buildObj flags.withCst params cstrs;
-				PSplx.mat = (if flags.sum_lambda
+				PSplx.mat = (if !Flags.sum_lambda_1
 					then Build.buildLambdaSum cstrs
 					else Build.Norm.build projSet cstrs)
 					::
@@ -223,7 +221,7 @@ module Proj (Min : Min.Type) = struct
 		let explore : 'c Cert.t -> projFlagsT -> PLP.Objective.pivotStrgyT -> PSplx.t -> 'c PLP.mapVar_t -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
 			= fun factory flags strgy tab map ->
 			let config = {PLP.std_config with
-				PLP.reg_t = (if flags.sum_lambda then PLP.NCone else PLP.Cone);
+				PLP.reg_t = (if !Flags.sum_lambda_1 then PLP.NCone else PLP.Cone);
 				stgy = strgy;}
 			in
 			match PLP.run config tab (PLP.get_cert_default factory map) with
