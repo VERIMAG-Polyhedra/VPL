@@ -21,12 +21,12 @@ let varPr: Var.t -> string
 		= [x, "x"; y, "y"; z, "z"; a, "a"; c, "c"; d, "d"; e, "e"]
 		in
 		List.assoc _x vars
-		
-let factory : Cs.t Cert.t = { 
-	Cert.name = "Cstr"; 
+
+let factory : Cs.t Cert.t = {
+	Cert.name = "Cstr";
 	Cert.top = (Cs.mk Cstr.Eq [] Scalar.Rat.z);
 	Cert.triv = (fun cmp n -> Cs.mk cmp [] n);
-	Cert.add = Cs.add;    
+	Cert.add = Cs.add;
 	Cert.mul = Cs.mulc;
 	Cert.to_le = (fun c -> {c with Cs.typ = Cstr.Le});
 	Cert.merge = (fun c1 c2 ->
@@ -34,7 +34,7 @@ let factory : Cs.t Cert.t = {
 		and c2' = {c2 with Cs.typ = Cstr.Eq} in
 		if Cs.equal c1' c2'
 		then c1'
-		else failwith "merge"); 
+		else failwith "merge");
 	Cert.to_string = Cs.to_string varPr;
 	Cert.rename = Cs.rename;
 }
@@ -63,16 +63,16 @@ let check_certificates : Cs.t Pol.t -> bool
 	= fun p ->
 	List.for_all (fun (c,cert) -> Cs.equal c cert)
 	(EqSet.list p.Pol.eqs @ IneqSet.list p.Pol.ineqs)
-	
-	
-module Test (F : sig 
+
+
+module Test (F : sig
 	val set : unit -> unit
 	end) = struct
 
 	let set : unit = F.set()
-	
+
 	let contrad : Cs.t = Cs.eq [] Scalar.Rat.negU
-	
+
 	let eqBnd: Pol.bndT -> Pol.bndT -> bool = fun bnd1 bnd2 ->
 		match bnd1, bnd2 with
 		| Pol.Infty, Pol.Infty -> true
@@ -92,7 +92,7 @@ module Test (F : sig
 			[Pol.Added (p' [] [
 				le [1, y] 0;
 				le [1, x] 0])];
-		
+
 		"eqs0", false, le [1, x; 1, y] 0, p [
 			eq [1, x; -1, y] 0 ],
 			[Pol.Added (p' [
@@ -131,7 +131,7 @@ module Test (F : sig
 			[Pol.Added (p' [
 				x, eq [1, x] 0]
 				[le [1, y] 0])];
-		
+
 		(* substitutions in the building blocks of an implicit equality *)
 		"implicitEqs2", false, le [1, x; 1, y] 0, p [
 			eq [1, y] 0;
@@ -167,7 +167,7 @@ module Test (F : sig
 			le [1, z ; -1, x] 0;
 			],
 			[Pol.Contrad contrad];
-	
+
 		"trans_post4_other_side", true, le [-1, x ; 1, y] (-1), p [
 			le [-1, x] 0;
 			le [1, x ; -1, y] 0;
@@ -175,21 +175,21 @@ module Test (F : sig
 			le [1, z ; -1, x] 0;
 			],
 			[Pol.Contrad contrad];
-	
+
 		"trans_post4_other_side_2", true, le [-1, x ; 1, y] (-1), p [
 			eq [1, y] 0;
 			eq [1, z] 0;
 			eq [1, x ; -1, z] 0;
 			],
 			[Pol.Contrad contrad];
-			
+
 		"eqs4", false, eq [1, x] 0, p [
 		le [1, x; 1, y] 1;
 		le [1, y] 1],
 		[Pol.Added (p'
 			[x, eq [1, x] 0]
 			[le [1, y] 1])];
-			
+
 		"implicitEqs0", false, le [1, z; -1, x] 0, p [
 			le [1, y; -1, z] 0;
 			le [1, x; -1, y] 0 ],
@@ -199,7 +199,7 @@ module Test (F : sig
 			 Pol.Added (p' [
 				y, eq [1, y; -1, z] 0;
 				x, eq [1, x; -1, y] 0] [])];
-		
+
 		"implicitEqs1", false, le [1, z; -1, x] 0, p [
 			le [1, y; -1, z] 0;
 			le [1, x; -1, y] 0;
@@ -212,10 +212,10 @@ module Test (F : sig
 				[x, eq [1, x; -1, y] 0;
 				y, eq [1, y; -1, z] 0]
 				[le [1, z; 1, a] 1])]
-					
+
 	]
 	|> List.map (fun (a,b,c,d,e) -> a,b, mkCons c,d,e)
-	
+
 	let addTs: T.testT
 	=
 		let chkBot (t, empty, c, p, _) = fun state ->
@@ -260,7 +260,7 @@ module Test (F : sig
 		let chkCert : string * bool * Cs.t Cons.t * Cs.t Pol.t * Cs.t Pol.meetT list -> T.stateT -> T.stateT
 			= let handleContrad: Cs.t -> string option
 				= fun a_ce ->
-				if Cs.tellProp a_ce = Cs.Contrad 
+				if Cs.tellProp a_ce = Cs.Contrad
 				then None
 				else Some "bad certificate: contradiction expected"
 			in
@@ -268,16 +268,16 @@ module Test (F : sig
 				let e = EqSet.list p.Pol.eqs in
 				let i = IneqSet.list p.Pol.ineqs in
 				List.append e i
-			in	
+			in
 			(* TODO: remplacer ces tests par des tests d'inclusion*)
 			let handleAdded : Cs.t Cons.t list -> Cs.t Cons.t list -> string option
-				= fun a_conss e_conss ->	
-				if List.for_all 
-					(fun cons -> Cs.equalSyn (Cons.get_c cons) (Cons.get_cert cons)) 
+				= fun a_conss e_conss ->
+				if List.for_all
+					(fun cons -> Cs.equalSyn (Cons.get_c cons) (Cons.get_cert cons))
 					a_conss
-				  && 
-				  	Misc.list_eq2 
-				  	(fun cons1 cons2 -> Cs.equalSyn (Cons.get_c cons1) (Cons.get_c cons2)) 
+				  &&
+				  	Misc.list_eq2
+				  	(fun cons1 cons2 -> Cs.equalSyn (Cons.get_c cons1) (Cons.get_c cons2))
 				  	a_conss e_conss
 				then None
 				else let e = Printf.sprintf "bad certificate:\nExpected %s\ngot %s"
@@ -289,14 +289,14 @@ module Test (F : sig
 			let chk (c,p,r) =
 				(match Pol.add factory p c, r with
 				| Pol.Added p, Pol.Added q -> handleAdded (mkplist p) (mkplist q)
-				| Pol.Contrad ce, Pol.Contrad ce' -> handleContrad ce 
+				| Pol.Contrad ce, Pol.Contrad ce' -> handleContrad ce
 				| Pol.Added _, Pol.Contrad _
 				| Pol.Contrad _, Pol.Added _-> Some "wrong certificate type")
-			in 
+			in
 			fun (nm, _, c, p, certs) st ->
 			if List.exists (fun cert -> chk (c, p, cert) = None) certs
 			then T.succeed st
-			else 
+			else
 				match chk (c, p, List.hd certs) with
 				| None -> assert false
 				| Some e -> T.fail nm e st
@@ -547,7 +547,7 @@ module Test (F : sig
 			| Some p -> someExpected p res
 		in
 		T.suite "meet" (List.map chk meetTcs)
-	
+
 	(* Pol.incl *)
 	let inclTcs = [
 		"simple0", true, p [
@@ -610,7 +610,7 @@ module Test (F : sig
 		], p [
 			le [1, y] 3;
 			le [1, x] 2];
-			
+
 		"branch", true, {
 		Pol.eqs = [
 			(x, mkCons (eq [1, x] 3))];
@@ -620,6 +620,21 @@ module Test (F : sig
 		Pol.ineqs = [
 			mkCons (le [-1, x] 0);
 			mkCons (le [1, x] 3)]};
+
+		"unsat_eq", false, {
+		Pol.eqs = [
+			(x, mkCons (eq [1, x] 1))];
+		Pol.ineqs = [
+			mkCons (le [-1, z] (-1));
+			mkCons (le [1, y] 0);
+			]
+		}, {
+		Pol.eqs = [];
+		Pol.ineqs = [
+			mkCons (le [1, x] 0);
+			mkCons (le [-1, z] (-1));
+			mkCons (le [-1, x ; 1, y] (-1))
+			]};
 		(*
 		"sylvain_while2", true, {
 		Pol.eqs = [
@@ -752,14 +767,14 @@ module Test (F : sig
 			eq [1, y; -1, z] 0
 		], p [
 			le [-1, y] 0 ];
-	
+
 		"eq0_reversed_order", [z; x], p [
 			le [1, x; 2, y; -3, z] 0;
 			le [-2, x; -1, z] 0;
 			eq [1, y; -1, z] 0
 		], p [
 			le [-1, y] 0 ];
-		
+
 		"Kohler_failure", [a; c; e; d],
 		p [
 			 le [120150, a; 112894, c; 47, e; -122500, d] 0;
@@ -1122,7 +1137,7 @@ module Test (F : sig
 			eq [1, y] 2;
 			le [1, x; 1, y] 2 ]
 	]
-	
+
 	let chk_upper_bound : Var.t -> Pol.bndT -> Cs.t option -> bool
 		= fun x bnd cstr_opt ->
 		match bnd, cstr_opt with
@@ -1132,9 +1147,9 @@ module Test (F : sig
 			Cs.equal cstr cstr'
 		| Pol.Open r, Some cstr ->
 			let cstr' = Cs.lt [Scalar.Rat.u,x] r in
-			Cs.equal cstr cstr'	
+			Cs.equal cstr cstr'
 		| _,_ -> false
-	
+
 	let chk_lower_bound : Var.t -> Pol.bndT -> Cs.t option -> bool
 		= fun x bnd cstr_opt ->
 		match bnd, cstr_opt with
@@ -1144,18 +1159,18 @@ module Test (F : sig
 			Cs.equal cstr cstr'
 		| Pol.Open r, Some cstr ->
 			let cstr' = Cs.lt [Scalar.Rat.negU,x] (Scalar.Rat.neg r) in
-			Cs.equal cstr cstr'	
+			Cs.equal cstr cstr'
 		| _,_ -> false
-		
+
 	(* XXX: certificates should be syntactically checked *)
 	let itvizeTs: T.testT
 	=
 		let chk (name, v, itv, p) = fun state ->
 			let (itv1, lower_cert, upper_cert) = Pol.itvize factory p v in
 			let var = Cs.Vec.getVars [v] |> Cs.Vec.V.Set.elements |> List.hd in
-			if eqItv itv itv1 
-			 && 
-			 	chk_upper_bound var (Pol.get_up itv) upper_cert 
+			if eqItv itv itv1
+			 &&
+			 	chk_upper_bound var (Pol.get_up itv) upper_cert
 			 &&
 			 	chk_lower_bound var (Pol.get_low itv) lower_cert
 			then T.succeed state
@@ -1216,9 +1231,9 @@ module Test (F : sig
 			"ko1", x, y, p [eq [1, y] 0], None
 		] in
 		T.suite "rename" (List.map chk tcs)
-	
-	let ts : T.testT = 
-		T.suite (Printf.sprintf "%s:%s:%s" 
+
+	let ts : T.testT =
+		T.suite (Printf.sprintf "%s:%s:%s"
 		(Flags.min_to_string())
 		(Flags.proj_to_string())
 		(Flags.join_to_string())) [
@@ -1236,35 +1251,35 @@ module Test (F : sig
 		renameTs*)
 	]
 end
-	
+
 module Classic = Test
-	(struct 
-		let set : unit -> unit 
-			= fun() -> 
+	(struct
+		let set : unit -> unit
+			= fun() ->
 			Flags.min := Flags.Classic;
 			Flags.proj := Flags.FM;
 			Flags.join := Flags.Baryc;
 	end)
 
-let ts1 
+let ts1
 	= T.suite "Pol" [ Classic.ts] T.stateZ
-			
+
 module PLP_Rat = Test
-	(struct 
-		let set : unit -> unit 
-			= fun() -> 
+	(struct
+		let set : unit -> unit
+			= fun() ->
 			Flags.min := Flags.Classic;
 			Flags.proj := Flags.Proj_PLP Flags.Rat;
 			Flags.join := Flags.Join_PLP Flags.Rat;
 	end)
 
-let ts2 
-	= T.suite "Pol" [ PLP_Rat.ts] ts1 
-	
+let ts2
+	= T.suite "Pol" [ PLP_Rat.ts] ts1
+
 module PLP_Float = Test
-	(struct 
-		let set : unit -> unit 
-			= fun() -> 
+	(struct
+		let set : unit -> unit
+			= fun() ->
 			Flags.min := Flags.Classic;
 			Flags.proj := Flags.Proj_PLP Flags.Float;
 			Flags.join := Flags.Join_PLP Flags.Float;
@@ -1272,11 +1287,11 @@ module PLP_Float = Test
 
 let ts3
 	= T.suite "Pol" [ PLP_Rat.ts] ts2
-	
+
 module PLP_Sym = Test
-	(struct 
-		let set : unit -> unit 
-			= fun() -> 
+	(struct
+		let set : unit -> unit
+			= fun() ->
 			Flags.min := Flags.Classic;
 			Flags.proj := Flags.Proj_PLP Flags.Symbolic;
 			Flags.join := Flags.Join_PLP Flags.Symbolic;
@@ -1284,5 +1299,5 @@ module PLP_Sym = Test
 
 let ts4
 	= T.suite "Pol" [ PLP_Rat.ts] ts3
-	
-let ts = T.prState "Pol" ts4 
+
+let ts = T.prState "Pol" ts4
