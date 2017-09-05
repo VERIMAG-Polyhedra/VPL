@@ -116,7 +116,7 @@ The linearization of polynomial [g] on the starting polyhedron [P] will give
 H_0 = linearize(P,g)
 H_i = linearize(H_(i-1), g)
 *)
-let handelman_loop : bool ref = ref true
+let handelman_loop : bool ref = ref false
 
 (** Sets a timeout to the Handelman linearization.
 Combined to {!val:handelman_loop}, the linearization returns the last result found. *)

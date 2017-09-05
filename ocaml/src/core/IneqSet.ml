@@ -12,6 +12,8 @@ module Cert = Cons.Cert
 module Vec = Cs.Vec
 module V = Vec.V
 
+module Debug = DebugTypes.Debug(struct let name = "Pol" end)
+
 type 'c t = 'c Cons.t list
 
 let list x = x
@@ -126,14 +128,19 @@ let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 	match Vec.isomorph v2 v1 with
 	| Some r -> (* v2 = r.v1 *)
 		begin
-		let cste =
-			Scalar.Rat.sub
+		let cert =
+			let cste = Scalar.Rat.sub
 				(Cs.get_c c2)
 				(Scalar.Rat.mul r (Cs.get_c c1))
-			|>	factory.Cert.triv (Cs.get_typ c2)
+			in
+			if Scalar.Rat.lt cste Scalar.Rat.z
+			then factory.Cert.mul r cert1
+			else
+				let cste_cert = factory.Cert.triv (Cs.get_typ c2) cste
+				in
+				factory.Cert.mul r cert1
+					|> factory.Cert.add cste_cert
 		in
-		let cert = factory.Cert.mul r cert1
-			|> factory.Cert.add cste in
 		match Cs.get_typ c1, Cs.get_typ c2 with
 		| Cstr.Lt, Cstr.Le -> factory.Cert.to_le cert
 		| _,_ -> cert
@@ -145,7 +152,7 @@ let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 	match Cs.tellProp c with
 	| Cs.Trivial -> Trivial
 	| Cs.Contrad -> Empty (factory.Cert.top)
-	| Cs.Nothing ->
+	| Cs.Nothing -> begin
 		let (cstr1, cons1) = EqSet.filter2 factory es c in
 		let cert1 = try certSyn factory cons1 c
 			with CertSyn -> Cons.get_cert cons1
@@ -159,6 +166,7 @@ let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 			Implied (factory.Cert.add cert1 (certSyn factory consI cstr1))
 		with Not_found ->
 			Check (cstr1,cert1)
+		end
 
 (* the coefficient whose id is -1 is the constraint to compute*)
 let mkCert : 'c Cert.t -> 'c Cons.t list -> Cs.t -> (int * Scalar.Rat.t) list -> 'c
@@ -425,7 +433,7 @@ let minkowskiSetup_2: 'c1 Cert.t -> V.t -> V.t option Rtree.t -> 'c2 t
 		(nxt2, relocTbl2, c1::s1)
 	in
 	List.fold_left apply (nxt, relocTbl, nil) s
-	
+
 
 (** [isRed sx conss i] checks whether the constraint identified by [i] is redundant in
 the constraint set represented by [sx]. *)
