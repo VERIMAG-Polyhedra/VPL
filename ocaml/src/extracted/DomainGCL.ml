@@ -167,7 +167,7 @@ module FullAlarmGCL =
 
   (** val skip : cdac **)
 
-  let skip =
+  let skip : cdac =
     build_cdac CoreAlarm.Base.pure coq_Skip
 
   (** val fail : char list -> cdac **)

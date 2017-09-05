@@ -28,11 +28,16 @@ module Cstr = struct
 		Cert.top = (Cs.mk Cstr.Eq [] Scalar.Rat.z);
 		Cert.triv = (fun cmp n -> if
 			match cmp with
-			| Cstr.Le -> Scalar.Rat.le n Scalar.Rat.z
-			| Cstr.Lt -> Scalar.Rat.lt n Scalar.Rat.z
+			| Cstr.Le -> Scalar.Rat.le Scalar.Rat.z n
+			| Cstr.Lt -> Scalar.Rat.lt Scalar.Rat.z n
 			| Cstr.Eq -> Scalar.Rat.equal n Scalar.Rat.z
 			then ()
-			else Pervasives.failwith "Factory.Cstr.triv";
+			else (Printf.sprintf "triv %s %s 0"
+			 	(Cstr.(match cmp with | Le -> "<=" | Lt -> "<" | Eq -> "="))
+				(Scalar.Rat.to_string n)
+				|> print_endline;
+				Pervasives.failwith "Factory.Cstr.triv")
+			;
 			Cs.mk cmp [] n);
 		Cert.add = Cs.add;
 		Cert.mul = Cs.mulc;

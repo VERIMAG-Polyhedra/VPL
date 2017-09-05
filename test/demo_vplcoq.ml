@@ -7,11 +7,11 @@ open CertcheckerConfig;;
 open Debugging;;
 
 Printf.printf "*** run tests generated from Coq...\n";;
-
+(*
 Debug.enable();;
 Debug.print_enable();;
 Debug.set_colors();;
-
+*)
 (** options (fixées en dur !) *)
 let firstfail_mode = false;;
 
@@ -20,7 +20,7 @@ module Var = Var.Positive
 
 let nextVar = ref Var.XH;;
 
-let newvar _ = 
+let newvar _ =
   let x = !nextVar in
   nextVar := Var.next !nextVar;
     (PedraQOracles.varToProgVar x);;
@@ -69,10 +69,10 @@ let afficheko attendu =
 
 let firstfail_launch nom test attendu =
   Printf.printf "*** %s: " nom;
-  if (verifier test)=attendu 
+  if (verifier test)=attendu
   then (
      afficheok attendu
-  ) else (  
+  ) else (
      afficheko attendu
   )
 
@@ -83,7 +83,7 @@ try
 with CertCheckerFailure(st, mesg) ->
   if st = DEMO then (
     Printf.printf " failure %s !\n" mesg ;
-    if attendu 
+    if attendu
     then afficheko true
     else afficheok false
   ) else (
@@ -91,17 +91,17 @@ with CertCheckerFailure(st, mesg) ->
     incr failed;
   )
 
-let rec launch_list l attendu = 
+let rec launch_list l attendu =
     match l with
       | [] -> print_newline();
-      | (nom,test)::ll -> 
+      | (nom,test)::ll ->
 	incr tests;
-	if firstfail_mode then 
+	if firstfail_mode then
            firstfail_launch (CoqPr.charListTr nom) test attendu
         else
            launch (CoqPr.charListTr nom) test attendu;
 	launch_list ll attendu;;
- 
+
 module Ex = DemoPLTests.Examples(VB);;
 
 launch_list Ex.tests_ok true;;

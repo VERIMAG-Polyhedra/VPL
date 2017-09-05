@@ -22,22 +22,7 @@ let varPr: Var.t -> string
 		in
 		List.assoc _x vars
 
-let factory : Cs.t Cert.t = {
-	Cert.name = "Cstr";
-	Cert.top = (Cs.mk Cstr.Eq [] Scalar.Rat.z);
-	Cert.triv = (fun cmp n -> Cs.mk cmp [] n);
-	Cert.add = Cs.add;
-	Cert.mul = Cs.mulc;
-	Cert.to_le = (fun c -> {c with Cs.typ = Cstr.Le});
-	Cert.merge = (fun c1 c2 ->
-		let c1' = {c1 with Cs.typ = Cstr.Eq}
-		and c2' = {c2 with Cs.typ = Cstr.Eq} in
-		if Cs.equal c1' c2'
-		then c1'
-		else failwith "merge");
-	Cert.to_string = Cs.to_string varPr;
-	Cert.rename = Cs.rename;
-}
+let factory = Factory.Cstr.factory
 
 let mkc t v c =
 	Cs.mk t (List.map (function (i, x) -> (Scalar.Rat.mk1 i, x)) v) (Scalar.Rat.mk1 c)
@@ -652,16 +637,15 @@ module Test (F : sig
 			mkCons (le [1, x] 6)]};*)
 	]
 
-	(* XXX: add syntactic check on the certificates *)
 	let inclTs: T.testT
 	=
 		let chk_res (name, r, p1, p2) = fun state ->
 			let (ok1, e1) = Pol.invChk factory p1 in
-			if not ok1
+			if not ok1 || not (check_certificates p1)
 			then T.fail name ("bad p1:\n" ^ e1) state
 			else
 				let (ok2, e2) = Pol.invChk factory p2 in
-				if not ok2
+				if not ok2 || not (check_certificates p2)
 				then T.fail name ("bad p2:\n" ^ e2) state
 				else
 					let dump: Cs.t Pol.t -> Cs.t Pol.t -> string
@@ -1244,11 +1228,11 @@ module Test (F : sig
 		projectMTs;
 		(*joinSetupTs;*)
 		joinTs;
-		(*widenTs;
+		widenTs;
 		itvizeTs;
 		getUpperBoundTs;
 		getLowerBoundTs;
-		renameTs*)
+		renameTs
 	]
 end
 

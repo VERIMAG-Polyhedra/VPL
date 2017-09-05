@@ -2,12 +2,12 @@
 
 module type Type = sig
 	module Cs : Cstr.Rat.Type
-	
-	type 'c t = 
-	  { name : string; 
+
+	type 'c t =
+	  { name : string;
 		 top : 'c; (* NB: top = triv Cstr.Eq Nb.z *)
-		 triv: Cstr.cmpT -> Scalar.Rat.t -> 'c;  
-		 add : 'c -> 'c -> 'c;    
+		 triv: Cstr.cmpT -> Scalar.Rat.t -> 'c; (* 0 cmp n*)
+		 add : 'c -> 'c -> 'c;
 		 mul : Scalar.Rat.t -> 'c -> 'c;  (* in [mul n c], [n] must be non-negative except if [c] is an equality ! *)
 		 merge : 'c -> 'c -> 'c;  (* corresponds to ill-named "SplitEq" *)
 		 to_le : 'c -> 'c;
@@ -20,12 +20,12 @@ end
 
 module Cert (Cs : Cstr.Rat.Type) = struct
 	module Cs = Cs
-	
-	type 'c t = 
-	  { name : string; 
+
+	type 'c t =
+	  { name : string;
 		 top : 'c; (* NB: top = triv Cstr.Eq Nb.z *)
-		 triv: Cstr.cmpT -> Scalar.Rat.t -> 'c;  
-		 add : 'c -> 'c -> 'c;    
+		 triv: Cstr.cmpT -> Scalar.Rat.t -> 'c; (* 0 cmp n*)
+		 add : 'c -> 'c -> 'c;
 		 mul : Scalar.Rat.t -> 'c -> 'c;  (* in [mul n c], [n] must be non-negative except if [c] is an equality ! *)
 		 merge : 'c -> 'c -> 'c;  (* corresponds to ill-named "SplitEq" *)
 		 to_le : 'c -> 'c;
