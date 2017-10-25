@@ -8,6 +8,7 @@ Require Export Coq.setoid_ring.Ring_polynom.
 Require Export QArith.
 Require Import Equivalence.
 Open Scope Q_scope.
+Require Extraction.
 
 (* * First: We declare Q as commutative ring of Cring.Cring ! *)
 
@@ -261,5 +262,3 @@ Qed.
 
 Theorem PExpr_eq_dec (pe1 pe2: PExpr) : {PExpr_eq pe1 pe2 = true} + {PExpr_eq pe1 pe2 = false}.
 Proof. intuition. Qed.
-
-  

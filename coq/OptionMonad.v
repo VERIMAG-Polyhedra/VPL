@@ -11,6 +11,7 @@ Require Export Morphisms.
 Require Export Bool.
 Require Export Sumbool.
 Require Import Debugging.
+Require Export Extraction.
 
 Open Scope lazy_bool_scope.
 
