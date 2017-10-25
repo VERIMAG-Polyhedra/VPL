@@ -24,7 +24,6 @@ module OrderedTypeFacts =
 
   module IsTO =
    struct
-    
    end
 
   module OrderTac = MakeOrderTac(TO)(IsTO)

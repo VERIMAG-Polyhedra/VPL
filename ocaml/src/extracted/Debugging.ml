@@ -1,3 +1,4 @@
+
 type failureStatus =
 | CERT
 | DEMO
@@ -46,13 +47,11 @@ let traceStatus_rec f f0 f1 = function
 let traceCmp global local =
   match global with
   | OFF -> false
-  | INFO ->
-    (match local with
-     | INFO -> true
-     | _ -> false)
-  | DEBUG ->
-    (match local with
-     | OFF -> false
-     | _ -> true)
+  | INFO -> (match local with
+             | INFO -> true
+             | _ -> false)
+  | DEBUG -> (match local with
+              | OFF -> false
+              | _ -> true)
 
 

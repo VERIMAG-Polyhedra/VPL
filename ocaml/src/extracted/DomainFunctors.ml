@@ -425,7 +425,7 @@ module MakeFull =
   (** val switchAll : PositiveSet.t -> t -> t Core.Base.imp **)
 
   let switchAll r a =
-    PositiveSet.fold (fun x0 k -> nop x0 k) r a
+    PositiveSet.fold nop r a
 
   (** val isIncl : t -> t -> bool Core.Base.imp **)
 
@@ -557,8 +557,8 @@ module MakeZ =
 
     (** val isBottom : t -> bool Core.Base.imp **)
 
-    let isBottom p =
-      D.isBottom p
+    let isBottom =
+      D.isBottom
 
     (** val widen : D.t -> D.t -> D.t Core.Base.imp **)
 
@@ -572,18 +572,18 @@ module MakeZ =
 
     (** val project : t -> PVar.t -> t Core.Base.imp **)
 
-    let project a x =
-      D.project a x
+    let project =
+      D.project
 
     (** val rename : PVar.t -> PVar.t -> t -> t Core.Base.imp **)
 
-    let rename x y a =
-      R.rename x y a
+    let rename =
+      R.rename
 
     (** val pr : t -> char list **)
 
-    let pr ab =
-      DP.pr ab
+    let pr =
+      DP.pr
 
     (** val to_string : (PVar.t -> char list) -> D.t -> char list **)
 
@@ -631,8 +631,8 @@ module MakeZ =
    struct
     (** val assume : ZtoQCstr.t -> BasicD.t -> BasicD.t Core.Base.imp **)
 
-    let assume c a =
-      QCstrD.assume c a
+    let assume =
+      QCstrD.assume
    end
 
   module AtomicD =
@@ -656,8 +656,8 @@ module MakeZ =
 
     (** val isBottom : t -> bool Core.Base.imp **)
 
-    let isBottom p =
-      D.isBottom p
+    let isBottom =
+      D.isBottom
 
     (** val widen : D.t -> D.t -> D.t Core.Base.imp **)
 
@@ -671,18 +671,18 @@ module MakeZ =
 
     (** val project : t -> PVar.t -> t Core.Base.imp **)
 
-    let project a x =
-      D.project a x
+    let project =
+      D.project
 
     (** val rename : PVar.t -> PVar.t -> t -> t Core.Base.imp **)
 
-    let rename x y a =
-      R.rename x y a
+    let rename =
+      R.rename
 
     (** val pr : t -> char list **)
 
-    let pr ab =
-      DP.pr ab
+    let pr =
+      DP.pr
 
     (** val to_string : (PVar.t -> char list) -> D.t -> char list **)
 
@@ -1114,12 +1114,10 @@ module MakeZ =
                  gAffAssumeLe (ZAffTerm.opp (ZAffTerm.add l aft)))))
          | Le ->
            linearizeGX env0 sic UP te1 (fun i ->
-             G.coq_try i.NAItv.up (fun u ->
-               gAffAssumeLe (ZAffTerm.add u aft)))
+             G.coq_try i.NAItv.up (fun u -> gAffAssumeLe (ZAffTerm.add u aft)))
          | Lt ->
            linearizeGX env0 sic UP te1 (fun i ->
-             G.coq_try i.NAItv.up (fun u ->
-               gAffAssumeLt (ZAffTerm.add u aft)))
+             G.coq_try i.NAItv.up (fun u -> gAffAssumeLt (ZAffTerm.add u aft)))
          | Neq ->
            linearizeGX env0 sic BOTH te1 (fun i ->
              G.join
@@ -1133,8 +1131,7 @@ module MakeZ =
         -> G.cdac **)
 
     let assumeOpAnnot env0 sic cmp0 te aft =
-      G.cast (assumeOpCPS env0 sic cmp0 (ZTerm.annotAFFINE te) aft)
-        coq_Assume
+      G.cast (assumeOpCPS env0 sic cmp0 (ZTerm.annotAFFINE te) aft) coq_Assume
 
     module ZPeq = ZPomialEquality(ZTerm)(ZTerm)
 
@@ -1171,8 +1168,8 @@ module MakeZ =
         (G.bind (fun _ -> oracle lc) (fun te0 ->
           if skip_oracle te0
           then G.skip
-          else let te' = test_eq te te0 in
-               assumeOpAnnot env0 sic cmp0 te' aft) __) coq_Assume
+          else let te' = test_eq te te0 in assumeOpAnnot env0 sic cmp0 te' aft)
+          __) coq_Assume
 
     (** val assumeOp2 :
         (PVar.t -> ZNItv.t) -> bool -> linearizeContext -> cmpG -> ZTerm.term
@@ -1182,8 +1179,7 @@ module MakeZ =
       G.cast
         (G.seq
           (assumeOpCPS env0 true cmp0 (ZTerm.Annot (TopLevelAnnot.INTERV,
-            te)) aft) (assumeOpFromOracle env0 sic lc cmp0 te aft))
-        coq_Assume
+            te)) aft) (assumeOpFromOracle env0 sic lc cmp0 te aft)) coq_Assume
 
     (** val assumeOp :
         bool -> cmpG -> ZTerm.t -> ZAffTerm.t -> ZTerm.t -> BasicD.t ->
@@ -1448,7 +1444,7 @@ module MakeZ =
   (** val switchAll : PositiveSet.t -> t -> t Core.Base.imp **)
 
   let switchAll r a =
-    PositiveSet.fold (fun x0 k -> nop x0 k) r a
+    PositiveSet.fold nop r a
 
   (** val isIncl : t -> t -> bool Core.Base.imp **)
 

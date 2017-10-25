@@ -24,12 +24,10 @@ module OrderedTypeFacts :
 
   module IsTO :
    sig
-    
    end
 
   module OrderTac :
    sig
-    
    end
 
   val eq_dec : O.t -> O.t -> bool
@@ -51,12 +49,10 @@ module KeyOrderedType :
 
     module IsTO :
      sig
-      
      end
 
     module OrderTac :
      sig
-      
      end
 
     val eq_dec : O.t -> O.t -> bool

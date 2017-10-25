@@ -23,10 +23,9 @@ let coq_P1 cI =
 
 let rec coq_Peq ceqb p p' =
   match p with
-  | Pc c ->
-    (match p' with
-     | Pc c' -> ceqb c c'
-     | _ -> false)
+  | Pc c -> (match p' with
+             | Pc c' -> ceqb c c'
+             | _ -> false)
   | Pinj (j, q) ->
     (match p' with
      | Pinj (j', q') ->
@@ -301,8 +300,7 @@ let rec coq_Pmul cO cI cadd cmul ceqb p p'' = match p'' with
    | Pinj (j, q) ->
      let qQ' =
        match j with
-       | Coq_xI j0 ->
-         coq_Pmul cO cI cadd cmul ceqb (Pinj ((Coq_xO j0), q)) q'
+       | Coq_xI j0 -> coq_Pmul cO cI cadd cmul ceqb (Pinj ((Coq_xO j0), q)) q'
        | Coq_xO j0 ->
          coq_Pmul cO cI cadd cmul ceqb (Pinj ((Pos.pred_double j0), q)) q'
        | Coq_xH -> coq_Pmul cO cI cadd cmul ceqb q q'

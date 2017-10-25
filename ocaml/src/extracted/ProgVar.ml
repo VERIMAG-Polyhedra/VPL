@@ -12,20 +12,17 @@ module PVar =
 
   (** val eq_dec : t -> t -> bool **)
 
-  let rec eq_dec p y0 =
+  let rec eq_dec p x0 =
     match p with
-    | Coq_xI p0 ->
-      (match y0 with
-       | Coq_xI p1 -> eq_dec p0 p1
-       | _ -> false)
-    | Coq_xO p0 ->
-      (match y0 with
-       | Coq_xO p1 -> eq_dec p0 p1
-       | _ -> false)
-    | Coq_xH ->
-      (match y0 with
-       | Coq_xH -> true
-       | _ -> false)
+    | Coq_xI p0 -> (match x0 with
+                    | Coq_xI p1 -> eq_dec p0 p1
+                    | _ -> false)
+    | Coq_xO p0 -> (match x0 with
+                    | Coq_xO p1 -> eq_dec p0 p1
+                    | _ -> false)
+    | Coq_xH -> (match x0 with
+                 | Coq_xH -> true
+                 | _ -> false)
 
   (** val isLt : t -> t -> bool **)
 

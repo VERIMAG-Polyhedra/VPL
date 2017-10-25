@@ -25,10 +25,9 @@ module Cs =
 
   let rec isEq l1 l2 =
     match l1 with
-    | [] ->
-      (match l2 with
-       | [] -> true
-       | _::_ -> false)
+    | [] -> (match l2 with
+             | [] -> true
+             | _::_ -> false)
     | c1::l1' ->
       (match l2 with
        | [] -> false
@@ -79,8 +78,8 @@ module Cs =
 
   (** val m_triv : cmpT -> QNum.t -> cstr **)
 
-  let m_triv typ coeff =
-    Cstr.triv typ coeff
+  let m_triv =
+    Cstr.triv
 
   (** val m_add : cstr -> cstr -> cstr **)
 
@@ -106,7 +105,7 @@ module Cs =
 
   let certCstrLCF =
     { top = m_top; triv = m_triv; add = m_add; mul = m_mul; merge = m_merge;
-      to_le = m_to_le; export = (fun c -> rep c) }
+      to_le = m_to_le; export = rep }
 
   (** val x_unwrap : cstr list -> t -> t **)
 
@@ -150,8 +149,8 @@ module Cs =
 
   (** val geti : nat -> t -> Cstr.t -> Cstr.t **)
 
-  let geti i l d =
-    nth i l d
+  let geti =
+    nth
 
   (** val default : Cstr.t **)
 

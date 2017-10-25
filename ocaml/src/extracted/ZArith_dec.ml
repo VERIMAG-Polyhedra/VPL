@@ -19,8 +19,8 @@ let coq_Zcompare_rect n m h1 h2 h3 =
 (** val coq_Zcompare_rec :
     coq_Z -> coq_Z -> (__ -> 'a1) -> (__ -> 'a1) -> (__ -> 'a1) -> 'a1 **)
 
-let coq_Zcompare_rec n m =
-  coq_Zcompare_rect n m
+let coq_Zcompare_rec =
+  coq_Zcompare_rect
 
 (** val coq_Z_lt_dec : coq_Z -> coq_Z -> bool **)
 
@@ -31,13 +31,13 @@ let coq_Z_lt_dec x y =
 
 (** val coq_Z_lt_ge_dec : coq_Z -> coq_Z -> bool **)
 
-let coq_Z_lt_ge_dec x y =
-  coq_Z_lt_dec x y
+let coq_Z_lt_ge_dec =
+  coq_Z_lt_dec
 
 (** val coq_Z_lt_le_dec : coq_Z -> coq_Z -> bool **)
 
-let coq_Z_lt_le_dec x y =
-  coq_Z_lt_ge_dec x y
+let coq_Z_lt_le_dec =
+  coq_Z_lt_ge_dec
 
 (** val coq_Z_le_lt_eq_dec : coq_Z -> coq_Z -> bool **)
 

@@ -98,10 +98,9 @@ module ZNItv =
   (** val opp : itv -> itv **)
 
   let opp i =
-    { low =
-      (match i.up with
-       | Some z -> Some (Z.opp z)
-       | None -> None); up =
+    { low = (match i.up with
+             | Some z -> Some (Z.opp z)
+             | None -> None); up =
       (match i.low with
        | Some z -> Some (Z.opp z)
        | None -> None) }
@@ -811,8 +810,7 @@ module NAItv =
 
   let mulN mo i aft =
     match mo with
-    | BOTH ->
-      { low = (NA.mul i.ZNItv.up aft); up = (NA.mul i.ZNItv.low aft) }
+    | BOTH -> { low = (NA.mul i.ZNItv.up aft); up = (NA.mul i.ZNItv.low aft) }
     | UP -> { low = None; up = (NA.mul i.ZNItv.low aft) }
     | LOW -> { low = (NA.mul i.ZNItv.up aft); up = None }
 
@@ -820,8 +818,7 @@ module NAItv =
 
   let mulP1 mo i aft =
     match mo with
-    | BOTH ->
-      { low = (NA.mul i.ZNItv.low aft); up = (NA.mul i.ZNItv.up aft) }
+    | BOTH -> { low = (NA.mul i.ZNItv.low aft); up = (NA.mul i.ZNItv.up aft) }
     | UP -> { low = None; up = (NA.mul i.ZNItv.up aft) }
     | LOW -> { low = (NA.mul i.ZNItv.low aft); up = None }
  end

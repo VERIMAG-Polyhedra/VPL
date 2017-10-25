@@ -23,14 +23,12 @@ let rec equal cmp m1 m2 =
      | PositiveMap.Leaf -> false
      | PositiveMap.Node (l2, o2, r2) ->
        if if match o1 with
-             | Some v1 ->
-               (match o2 with
-                | Some v2 -> cmp v1 v2
-                | None -> false)
-             | None ->
-               (match o2 with
-                | Some _ -> false
-                | None -> true)
+             | Some v1 -> (match o2 with
+                           | Some v2 -> cmp v1 v2
+                           | None -> false)
+             | None -> (match o2 with
+                        | Some _ -> false
+                        | None -> true)
           then equal cmp l1 l2
           else false
        then equal cmp r1 r2
@@ -56,8 +54,7 @@ let node l o r =
 
 let nodeMerge f o1 o2 =
   match o1 with
-  | Some v1 ->
-    (match o2 with
-     | Some v2 -> f v1 v2
-     | None -> o1)
+  | Some v1 -> (match o2 with
+                | Some v2 -> f v1 v2
+                | None -> o1)
   | None -> o2

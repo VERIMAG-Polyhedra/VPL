@@ -172,10 +172,9 @@ module BasicD =
          Some { cons = (Cs.join pol1.cons pol2.cons cert1 cert2); ml =
          shadow }
        | None -> p1)
-    | None ->
-      (match p2 with
-       | Some _ -> p2
-       | None -> None)
+    | None -> (match p2 with
+               | Some _ -> p2
+               | None -> None)
 
   (** val meet : t -> t -> t Core.Base.imp **)
 
@@ -210,10 +209,9 @@ module BasicD =
          let cs,shadow = widen (pol1.ml,pol2.ml) in
          Some { cons = shadow; ml = cs }
        | None -> p1)
-    | None ->
-      (match p2 with
-       | Some _ -> p2
-       | None -> None)
+    | None -> (match p2 with
+               | Some _ -> p2
+               | None -> None)
 
   (** val project : t -> PVar.t -> t Core.Base.imp **)
 
@@ -399,8 +397,7 @@ module CstrD =
             (append (' '::('/'::('\\'::(' '::[])))) (Cstr.pr c)))) p1
     in
     let l = Cs.wrap2 p2.BasicD.cons (c::[]) in
-    let wp1 = { lcf = Cs.certCstrLCF; backend = p2.BasicD.ml; cert =
-      (fst l) }
+    let wp1 = { lcf = Cs.certCstrLCF; backend = p2.BasicD.ml; cert = (fst l) }
     in
     let opt,cert0 = add (wp1,(snd l)) in
     let res = Cs.unwrap cert0 in
@@ -658,10 +655,9 @@ module AtomicD =
          Some { cons = (Cs.join pol1.cons pol2.cons cert1 cert2); ml =
          shadow }
        | None -> p1)
-    | None ->
-      (match p2 with
-       | Some _ -> p2
-       | None -> None)
+    | None -> (match p2 with
+               | Some _ -> p2
+               | None -> None)
 
   (** val meet : t -> t -> t Core.Base.imp **)
 
@@ -696,10 +692,9 @@ module AtomicD =
          let cs,shadow = widen (pol1.ml,pol2.ml) in
          Some { cons = shadow; ml = cs }
        | None -> p1)
-    | None ->
-      (match p2 with
-       | Some _ -> p2
-       | None -> None)
+    | None -> (match p2 with
+               | Some _ -> p2
+               | None -> None)
 
   (** val project : t -> PVar.t -> t Core.Base.imp **)
 
