@@ -66,15 +66,26 @@ VPL.leq p6 p5;;
 They can be enabled separatly in several modules. 
 The level of details can also be tuned (chosen from [MOutput ; MInput ; Title ; Normal ; Detail].
 For instance, to enable the traces in module PLPCore, without details : *)
-Debug.enable_one Debug.PLPCore DebugTypes.([MOutput ; MInput ; Title]);;
+Join.Debug.enable DebugTypes.([MOutput ; MInput ; Title]);;
+PLPCore.Debug.enable DebugTypes.([MOutput ; MInput ; Title]);;
 
 (* By default, traces are stored in a file. To print them on the fly, type *)
 Debug.print_enable();;
+Debug.set_colors();;
 
 (* Let us do a convex hull, with traces enabled: *)
 p3 || p4;;
 (* It gives for instance the input PLP tableau, the partition in regions. *)
 
 (* Again, with more detailed traces: *)
-Debug.enable_one Debug.PLPCore DebugTypes.([MOutput ; MInput ; Title ; Normal]);;
+Join.Debug.enable DebugTypes.([MOutput ; MInput ; Title ; Normal]);;
+PLPCore.Debug.enable DebugTypes.([MOutput ; MInput ; Title ; Normal ; Detail]);;
 p3 || p4;;
+
+(* Traces for projection *)
+Pol.Debug.enable DebugTypes.([MOutput ; MInput ; Title ; Normal ; Detail]);;
+Proj.Debug.enable DebugTypes.([MOutput ; MInput ; Title ; Normal ; Detail]);;
+Flags.proj := Flags.Proj_PLP (Flags.Float);;
+
+let p3 = p2 |- "z" ;;
+

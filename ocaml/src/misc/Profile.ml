@@ -1,3 +1,30 @@
+(**
+	This module implements a simple hand-made profiling tool.
+	To use it, simply instantiate the fonctor Profile with a module D that contains a name. Example :
+	module MyProfile = Profile(struct let name = "MyModuleName" end)
+
+	The "name" variable is used to prefix the name of functions in the report.
+*)
+
+module type Type = sig
+	module D : sig val name : string end
+
+	(** Reset the whole map. *)
+	val reset : unit -> unit
+
+	(** Starts the timer for the given function name.
+		@raise Already_started if that timer was already launched. *)
+	val start : string -> unit
+
+	(** Stops the timer for the given function name.
+		@raise Not_started if that timer was not launched. *)
+	val stop : string -> unit
+
+	val enable : unit -> unit
+
+	val disable : unit -> unit
+end
+
 module MapPro = Map.Make(struct type t = string let compare = String.compare end)
 
 type element = {
@@ -40,25 +67,6 @@ let print_map : unit -> unit
 
 exception Already_started of string
 exception Not_started of string
-
-module type Type = sig
-	module D : sig val name : string end
-
-	(** Reset the whole map. *)
-	val reset : unit -> unit
-
-	(** Starts the timer for the given function name.
-		@raise Already_started if that timer was already launched. *)
-	val start : string -> unit
-
-	(** Stops the timer for the given function name.
-		@raise Not_started if that timer was not launched. *)
-	val stop : string -> unit
-
-	val enable : unit -> unit
-
-	val disable : unit -> unit
-end
 
 module Profile (D : sig val name : string end) = struct
 	module D = D
