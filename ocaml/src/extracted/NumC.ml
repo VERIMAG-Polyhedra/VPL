@@ -39,18 +39,15 @@ let cmpG2T = function
 
 let cmpT_eq cmp1 cmp2 =
   match cmp1 with
-  | EqT ->
-    (match cmp2 with
-     | EqT -> true
-     | _ -> false)
-  | LeT ->
-    (match cmp2 with
-     | LeT -> true
-     | _ -> false)
-  | LtT ->
-    (match cmp2 with
-     | LtT -> true
-     | _ -> false)
+  | EqT -> (match cmp2 with
+            | EqT -> true
+            | _ -> false)
+  | LeT -> (match cmp2 with
+            | LeT -> true
+            | _ -> false)
+  | LtT -> (match cmp2 with
+            | LtT -> true
+            | _ -> false)
 
 module type NumSig =
  sig
@@ -159,14 +156,12 @@ module QNum =
     | Coq_xH ->
       (match (this n).coq_Qnum with
        | Z0 -> IsZero
-       | Zpos p ->
-         (match p with
-          | Coq_xH -> IsUnit
-          | _ -> Other)
-       | Zneg p ->
-         (match p with
-          | Coq_xH -> IsOppUnit
-          | _ -> Other))
+       | Zpos p -> (match p with
+                    | Coq_xH -> IsUnit
+                    | _ -> Other)
+       | Zneg p -> (match p with
+                    | Coq_xH -> IsOppUnit
+                    | _ -> Other))
     | _ -> Other
 
   (** val pr : t -> char list **)
@@ -188,8 +183,8 @@ module QNum =
 
   (** val to_Q : t -> coq_Q **)
 
-  let to_Q qc =
-    this qc
+  let to_Q =
+    this
 
   (** val cmpDenote_dec : cmpG -> t -> t -> bool **)
 
@@ -232,28 +227,28 @@ module ZNum =
 
   (** val add : t -> t -> t **)
 
-  let add n1 n2 =
-    Z.add n1 n2
+  let add =
+    Z.add
 
   (** val mul : t -> t -> t **)
 
-  let mul n1 n2 =
-    Z.mul n1 n2
+  let mul =
+    Z.mul
 
   (** val opp : t -> t **)
 
-  let opp n1 =
-    Z.opp n1
+  let opp =
+    Z.opp
 
   (** val pr : t -> char list **)
 
-  let pr z0 =
-    CoqPr.zPr' z0
+  let pr =
+    CoqPr.zPr'
 
   (** val prRaw : t -> char list **)
 
-  let prRaw z0 =
-    CoqPr.zPrRaw' z0
+  let prRaw =
+    CoqPr.zPrRaw'
 
   (** val sub : t -> t -> t **)
 
@@ -270,14 +265,12 @@ module ZNum =
 
   let mulDiscr = function
   | Z0 -> IsZero
-  | Zpos p ->
-    (match p with
-     | Coq_xH -> IsUnit
-     | _ -> Other)
-  | Zneg p ->
-    (match p with
-     | Coq_xH -> IsOppUnit
-     | _ -> Other)
+  | Zpos p -> (match p with
+               | Coq_xH -> IsUnit
+               | _ -> Other)
+  | Zneg p -> (match p with
+               | Coq_xH -> IsOppUnit
+               | _ -> Other)
 
   (** val cmpDenote_dec : cmpG -> t -> t -> bool **)
 
@@ -293,8 +286,8 @@ module ZtoQ =
  struct
   (** val ofZ : ZNum.t -> QNum.t **)
 
-  let ofZ z0 =
-    inject_Z z0
+  let ofZ =
+    inject_Z
 
   (** val isInZ : QNum.t -> __ option **)
 

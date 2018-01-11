@@ -8,6 +8,7 @@ Require Coq.setoid_ring.Cring.
 Require Export Coq.setoid_ring.Ring_polynom.
 Require Export ZArith.
 Require Import Equivalence.
+Require Extraction.
 
 Open Scope Z_scope.
 

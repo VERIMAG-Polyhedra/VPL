@@ -91,10 +91,9 @@ module Cstr =
   let cmpAdd t1 t2 =
     match t1 with
     | EqT -> t2
-    | LeT ->
-      (match t2 with
-       | EqT -> LeT
-       | x -> x)
+    | LeT -> (match t2 with
+              | EqT -> LeT
+              | x -> x)
     | LtT -> LtT
 
   (** val add : t -> t -> t **)

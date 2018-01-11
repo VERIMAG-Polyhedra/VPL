@@ -87,8 +87,7 @@ module Raw =
      | p::l ->
        let t0,e = p in
        let f7 = f6 t0 e l __ in
-       let f8 = fun _ _ ->
-         let hrec = mem_rect k f2 f1 f0 f l in f7 __ __ hrec
+       let f8 = fun _ _ -> let hrec = mem_rect k f2 f1 f0 f l in f7 __ __ hrec
        in
        let f9 = f5 t0 e l __ in
        let f10 = f4 t0 e l __ in
@@ -103,17 +102,17 @@ module Raw =
       __ -> __ -> __ -> 'a2) -> ('a1 t -> X.t -> 'a1 -> (X.t*'a1) list -> __
       -> __ -> __ -> 'a2 -> 'a2) -> 'a1 t -> 'a2 **)
 
-  let mem_rec k =
-    mem_rect k
+  let mem_rec =
+    mem_rect
 
   (** val coq_R_mem_correct : key -> 'a1 t -> bool -> 'a1 coq_R_mem **)
 
   let coq_R_mem_correct k s _res =
-    let princ = fun x -> mem_rect x in
-    Obj.magic princ k (fun y _ _ _ -> R_mem_0 y) (fun y y0 y1 y2 _ _ _ _ _ ->
-      R_mem_1 (y, y0, y1, y2)) (fun y y0 y1 y2 _ _ _ _ _ -> R_mem_2 (y, y0,
-      y1, y2)) (fun y y0 y1 y2 _ _ _ y6 _ _ -> R_mem_3 (y, y0, y1, y2,
-      (mem k y2), (y6 (mem k y2) __))) s _res __
+    Obj.magic mem_rect k (fun y _ _ _ -> R_mem_0 y)
+      (fun y y0 y1 y2 _ _ _ _ _ -> R_mem_1 (y, y0, y1, y2))
+      (fun y y0 y1 y2 _ _ _ _ _ -> R_mem_2 (y, y0, y1, y2))
+      (fun y y0 y1 y2 _ _ _ y6 _ _ -> R_mem_3 (y, y0, y1, y2, (mem k y2),
+      (y6 (mem k y2) __))) s _res __
 
   (** val find : key -> 'a1 t -> 'a1 option **)
 
@@ -193,15 +192,14 @@ module Raw =
       __ -> __ -> __ -> 'a2) -> ('a1 t -> X.t -> 'a1 -> (X.t*'a1) list -> __
       -> __ -> __ -> 'a2 -> 'a2) -> 'a1 t -> 'a2 **)
 
-  let find_rec k =
-    find_rect k
+  let find_rec =
+    find_rect
 
   (** val coq_R_find_correct :
       key -> 'a1 t -> 'a1 option -> 'a1 coq_R_find **)
 
   let coq_R_find_correct k s _res =
-    let princ = fun x -> find_rect x in
-    Obj.magic princ k (fun y _ _ _ -> R_find_0 y)
+    Obj.magic find_rect k (fun y _ _ _ -> R_find_0 y)
       (fun y y0 y1 y2 _ _ _ _ _ -> R_find_1 (y, y0, y1, y2))
       (fun y y0 y1 y2 _ _ _ _ _ -> R_find_2 (y, y0, y1, y2))
       (fun y y0 y1 y2 _ _ _ y6 _ _ -> R_find_3 (y, y0, y1, y2, (find k y2),
@@ -222,8 +220,7 @@ module Raw =
   | R_add_0 of 'elt t
   | R_add_1 of 'elt t * X.t * 'elt * (X.t*'elt) list
   | R_add_2 of 'elt t * X.t * 'elt * (X.t*'elt) list
-  | R_add_3 of 'elt t * X.t * 'elt * (X.t*'elt) list * 'elt t
-     * 'elt coq_R_add
+  | R_add_3 of 'elt t * X.t * 'elt * (X.t*'elt) list * 'elt t * 'elt coq_R_add
 
   (** val coq_R_add_rect :
       key -> 'a1 -> ('a1 t -> __ -> 'a2) -> ('a1 t -> X.t -> 'a1 -> (X.t*'a1)
@@ -285,8 +282,8 @@ module Raw =
       list -> __ -> __ -> __ -> 'a2) -> ('a1 t -> X.t -> 'a1 -> (X.t*'a1)
       list -> __ -> __ -> __ -> 'a2 -> 'a2) -> 'a1 t -> 'a2 **)
 
-  let add_rec k x =
-    add_rect k x
+  let add_rec =
+    add_rect
 
   (** val coq_R_add_correct :
       key -> 'a1 -> 'a1 t -> 'a1 t -> 'a1 coq_R_add **)
@@ -375,14 +372,13 @@ module Raw =
       __ -> __ -> __ -> 'a2) -> ('a1 t -> X.t -> 'a1 -> (X.t*'a1) list -> __
       -> __ -> __ -> 'a2 -> 'a2) -> 'a1 t -> 'a2 **)
 
-  let remove_rec k =
-    remove_rect k
+  let remove_rec =
+    remove_rect
 
   (** val coq_R_remove_correct : key -> 'a1 t -> 'a1 t -> 'a1 coq_R_remove **)
 
   let coq_R_remove_correct k s _res =
-    let princ = fun x -> remove_rect x in
-    Obj.magic princ k (fun y _ _ _ -> R_remove_0 y)
+    Obj.magic remove_rect k (fun y _ _ _ -> R_remove_0 y)
       (fun y y0 y1 y2 _ _ _ _ _ -> R_remove_1 (y, y0, y1, y2))
       (fun y y0 y1 y2 _ _ _ _ _ -> R_remove_2 (y, y0, y1, y2))
       (fun y y0 y1 y2 _ _ _ y6 _ _ -> R_remove_3 (y, y0, y1, y2,
@@ -401,78 +397,73 @@ module Raw =
     | p::m' -> let k,e = p in fold f m' (f k e acc)
 
   type ('elt, 'a) coq_R_fold =
-  | R_fold_0 of (key -> 'elt -> 'a -> 'a) * 'elt t * 'a
-  | R_fold_1 of (key -> 'elt -> 'a -> 'a) * 'elt t * 'a * X.t * 'elt
-     * (X.t*'elt) list * 'a * ('elt, 'a) coq_R_fold
+  | R_fold_0 of 'elt t * 'a
+  | R_fold_1 of 'elt t * 'a * X.t * 'elt * (X.t*'elt) list * 'a
+     * ('elt, 'a) coq_R_fold
 
   (** val coq_R_fold_rect :
-      (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__ ->
-      (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> X.t -> 'a1 -> (X.t*'a1) list
-      -> __ -> __ -> ('a1, __) coq_R_fold -> 'a2 -> 'a2) -> (key -> 'a1 ->
-      'a3 -> 'a3) -> 'a1 t -> 'a3 -> 'a3 -> ('a1, 'a3) coq_R_fold -> 'a2 **)
+      (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t ->
+      'a2 -> X.t -> 'a1 -> (X.t*'a1) list -> __ -> 'a2 -> ('a1, 'a2)
+      coq_R_fold -> 'a3 -> 'a3) -> 'a1 t -> 'a2 -> 'a2 -> ('a1, 'a2)
+      coq_R_fold -> 'a3 **)
 
-  let rec coq_R_fold_rect f f0 _ _ _ _ = function
-  | R_fold_0 (f1, m, acc) -> Obj.magic f __ f1 m acc __
-  | R_fold_1 (f1, m, acc, k, e, m', _res, r0) ->
-    Obj.magic f0 __ f1 m acc k e m' __ _res r0
-      (coq_R_fold_rect f f0 f1 m' (f1 k e acc) _res r0)
+  let rec coq_R_fold_rect f f0 f1 _ _ _ = function
+  | R_fold_0 (m, acc) -> f0 m acc __
+  | R_fold_1 (m, acc, k, e, m', _res, r0) ->
+    f1 m acc k e m' __ _res r0
+      (coq_R_fold_rect f f0 f1 m' (f k e acc) _res r0)
 
   (** val coq_R_fold_rec :
-      (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__ ->
-      (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> X.t -> 'a1 -> (X.t*'a1) list
-      -> __ -> __ -> ('a1, __) coq_R_fold -> 'a2 -> 'a2) -> (key -> 'a1 ->
-      'a3 -> 'a3) -> 'a1 t -> 'a3 -> 'a3 -> ('a1, 'a3) coq_R_fold -> 'a2 **)
+      (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t ->
+      'a2 -> X.t -> 'a1 -> (X.t*'a1) list -> __ -> 'a2 -> ('a1, 'a2)
+      coq_R_fold -> 'a3 -> 'a3) -> 'a1 t -> 'a2 -> 'a2 -> ('a1, 'a2)
+      coq_R_fold -> 'a3 **)
 
-  let rec coq_R_fold_rec f f0 _ _ _ _ = function
-  | R_fold_0 (f1, m, acc) -> Obj.magic f __ f1 m acc __
-  | R_fold_1 (f1, m, acc, k, e, m', _res, r0) ->
-    Obj.magic f0 __ f1 m acc k e m' __ _res r0
-      (coq_R_fold_rec f f0 f1 m' (f1 k e acc) _res r0)
+  let rec coq_R_fold_rec f f0 f1 _ _ _ = function
+  | R_fold_0 (m, acc) -> f0 m acc __
+  | R_fold_1 (m, acc, k, e, m', _res, r0) ->
+    f1 m acc k e m' __ _res r0 (coq_R_fold_rec f f0 f1 m' (f k e acc) _res r0)
 
   (** val fold_rect :
-      (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__ ->
-      (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> X.t -> 'a1 -> (X.t*'a1) list
-      -> __ -> 'a2 -> 'a2) -> (key -> 'a1 -> 'a3 -> 'a3) -> 'a1 t -> 'a3 ->
-      'a2 **)
+      (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t ->
+      'a2 -> X.t -> 'a1 -> (X.t*'a1) list -> __ -> 'a3 -> 'a3) -> 'a1 t ->
+      'a2 -> 'a3 **)
 
-  let rec fold_rect f1 f0 f m acc =
-    let f2 = Obj.magic f1 __ f m acc in
-    let f3 = Obj.magic f0 __ f m acc in
+  let rec fold_rect f f1 f0 m acc =
+    let f2 = f1 m acc in
+    let f3 = f0 m acc in
     (match m with
      | [] -> f2 __
      | p::l ->
        let t0,e = p in
        let f4 = f3 t0 e l __ in
-       let hrec = fold_rect f1 f0 f l (f t0 e acc) in f4 hrec)
+       let hrec = fold_rect f f1 f0 l (f t0 e acc) in f4 hrec)
 
   (** val fold_rec :
-      (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__ ->
-      (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> X.t -> 'a1 -> (X.t*'a1) list
-      -> __ -> 'a2 -> 'a2) -> (key -> 'a1 -> 'a3 -> 'a3) -> 'a1 t -> 'a3 ->
-      'a2 **)
+      (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t ->
+      'a2 -> X.t -> 'a1 -> (X.t*'a1) list -> __ -> 'a3 -> 'a3) -> 'a1 t ->
+      'a2 -> 'a3 **)
 
-  let fold_rec f f0 f1 m acc =
-    fold_rect f f0 f1 m acc
+  let fold_rec =
+    fold_rect
 
   (** val coq_R_fold_correct :
       (key -> 'a1 -> 'a2 -> 'a2) -> 'a1 t -> 'a2 -> 'a2 -> ('a1, 'a2)
       coq_R_fold **)
 
   let coq_R_fold_correct f m acc _res =
-    let princ = fun x x0 -> fold_rect x x0 in
-    Obj.magic princ (fun _ y0 y1 y2 _ _ _ -> R_fold_0 (y0, y1, y2))
-      (fun _ y0 y1 y2 y3 y4 y5 _ y7 _ _ -> R_fold_1 (y0, y1, y2, y3, y4, y5,
-      (fold y0 y5 (y0 y3 y4 y2)), (y7 (fold y0 y5 (y0 y3 y4 y2)) __))) f m
-      acc _res __
+    fold_rect f (fun y y0 _ _ _ -> R_fold_0 (y, y0))
+      (fun y y0 y1 y2 y3 _ y5 _ _ -> R_fold_1 (y, y0, y1, y2, y3,
+      (fold f y3 (f y1 y2 y0)), (y5 (fold f y3 (f y1 y2 y0)) __))) m acc _res
+      __
 
   (** val equal : ('a1 -> 'a1 -> bool) -> 'a1 t -> 'a1 t -> bool **)
 
   let rec equal cmp m m' =
     match m with
-    | [] ->
-      (match m' with
-       | [] -> true
-       | _::_ -> false)
+    | [] -> (match m' with
+             | [] -> true
+             | _::_ -> false)
     | p::l ->
       let x,e = p in
       (match m' with
@@ -543,11 +534,9 @@ module Raw =
     let f7 = f6 m __ in
     let f8 = f7 m' __ in
     (match m with
-     | [] ->
-       let f9 = f3 __ in
-       (match m' with
-        | [] -> f9 __
-        | _::_ -> f8 __)
+     | [] -> let f9 = f3 __ in (match m' with
+                                | [] -> f9 __
+                                | _::_ -> f8 __)
      | p::l ->
        let t0,e = p in
        let f9 = f5 t0 e l __ in
@@ -574,8 +563,8 @@ module Raw =
       __ -> X.t OrderedType.coq_Compare -> __ -> __ -> 'a2) -> ('a1 t -> 'a1
       t -> 'a1 t -> __ -> 'a1 t -> __ -> __ -> 'a2) -> 'a1 t -> 'a1 t -> 'a2 **)
 
-  let equal_rec cmp =
-    equal_rect cmp
+  let equal_rec =
+    equal_rect
 
   (** val coq_R_equal_correct :
       ('a1 -> 'a1 -> bool) -> 'a1 t -> 'a1 t -> bool -> 'a1 coq_R_equal **)
@@ -676,10 +665,9 @@ module Raw =
   let at_least_one o o' =
     match o with
     | Some _ -> Some (o,o')
-    | None ->
-      (match o' with
-       | Some _ -> Some (o,o')
-       | None -> None)
+    | None -> (match o' with
+               | Some _ -> Some (o,o')
+               | None -> None)
 
   (** val at_least_one_then_f :
       ('a1 option -> 'a2 option -> 'a3 option) -> 'a1 option -> 'a2 option ->
@@ -688,8 +676,7 @@ module Raw =
   let at_least_one_then_f f o o' =
     match o with
     | Some _ -> f o o'
-    | None ->
-      (match o' with
-       | Some _ -> f o o'
-       | None -> None)
+    | None -> (match o' with
+               | Some _ -> f o o'
+               | None -> None)
  end

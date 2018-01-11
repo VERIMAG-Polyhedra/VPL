@@ -27,9 +27,8 @@ type squares = (coq_PExpr*coq_N) list
 
 let compute_squares s =
   fold_right (fun s0 res ->
-    let p,n = s0 in
-    PEmul (res, (PEpow (p, (N.mul (Npos (Coq_xO Coq_xH)) n))))) (PEc
-    { coq_Qnum = (Zpos Coq_xH); coq_Qden = Coq_xH }) s
+    let p,n = s0 in PEmul (res, (PEpow (p, (N.mul (Npos (Coq_xO Coq_xH)) n)))))
+    (PEc { coq_Qnum = (Zpos Coq_xH); coq_Qden = Coq_xH }) s
 
 module MapPoly =
  struct
@@ -102,7 +101,7 @@ module MapPoly =
   (** val to_pos : (coq_Q*'a1) list -> (coq_Q*'a1) list **)
 
   let to_pos l =
-    map (fun x -> to_pos1 x) l
+    map to_pos1 l
 
   (** val compute_varBound : Cs.t -> QcIndex.t -> nat -> coq_PExpr **)
 
@@ -112,8 +111,7 @@ module MapPoly =
     | qc::tl ->
       let cstr = Cstr.to_PExpr (Cs.geti i p Cs.default) in
       let qc' = to_posQ (this qc) in
-      PEadd ((PEmul ((PEc qc'), cstr)),
-      (compute_varBound p tl (add i (S O))))
+      PEadd ((PEmul ((PEc qc'), cstr)), (compute_varBound p tl (add i (S O))))
 
   (** val compute_varBounds : Cs.t -> QcIndex.t list -> coq_PExpr **)
 

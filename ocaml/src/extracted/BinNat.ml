@@ -9,10 +9,9 @@ module N =
   let mul n m =
     match n with
     | N0 -> N0
-    | Npos p ->
-      (match m with
-       | N0 -> N0
-       | Npos q -> Npos (Pos.mul p q))
+    | Npos p -> (match m with
+                 | N0 -> N0
+                 | Npos q -> Npos (Pos.mul p q))
 
   (** val of_nat : nat -> coq_N **)
 

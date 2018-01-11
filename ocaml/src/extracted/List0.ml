@@ -10,14 +10,12 @@ let tl = function
 
 let rec nth n l default =
   match n with
-  | O ->
-    (match l with
-     | [] -> default
-     | x::_ -> x)
-  | S m ->
-    (match l with
-     | [] -> default
-     | _::t -> nth m t default)
+  | O -> (match l with
+          | [] -> default
+          | x::_ -> x)
+  | S m -> (match l with
+            | [] -> default
+            | _::t -> nth m t default)
 
 (** val rev : 'a1 list -> 'a1 list **)
 
@@ -29,10 +27,9 @@ let rec rev = function
 
 let rec list_eq_dec eq_dec l l' =
   match l with
-  | [] ->
-    (match l' with
-     | [] -> true
-     | _::_ -> false)
+  | [] -> (match l' with
+           | [] -> true
+           | _::_ -> false)
   | y::l0 ->
     (match l' with
      | [] -> false

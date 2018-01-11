@@ -27,10 +27,9 @@ module ZN =
 
   let add zn1 zn2 =
     match zn1 with
-    | Some z1 ->
-      (match zn2 with
-       | Some z2 -> Some (Z.add z1 z2)
-       | None -> None)
+    | Some z1 -> (match zn2 with
+                  | Some z2 -> Some (Z.add z1 z2)
+                  | None -> None)
     | None -> None
 
   (** val mulZ1 : coq_Z -> t -> t **)
@@ -64,19 +63,17 @@ module ZN =
 
   let join zn1 zn2 =
     match zn1 with
-    | Some z1 ->
-      (match zn2 with
-       | Some z2 -> Some (Z.max z1 z2)
-       | None -> None)
+    | Some z1 -> (match zn2 with
+                  | Some z2 -> Some (Z.max z1 z2)
+                  | None -> None)
     | None -> None
 
   (** val meet : t -> t -> t **)
 
   let meet zn1 zn2 =
     match zn1 with
-    | Some z1 ->
-      (match zn2 with
-       | Some z2 -> Some (Z.min z1 z2)
-       | None -> None)
+    | Some z1 -> (match zn2 with
+                  | Some z2 -> Some (Z.min z1 z2)
+                  | None -> None)
     | None -> None
  end

@@ -629,8 +629,7 @@ module ZAffTerm =
   (** val addnx : PVar.t -> affTerm -> affTerm **)
 
   let addnx x aft =
-    { lin = (LinZ.add (LinZ.single x (Z.opp ZNum.u)) aft.lin); cte =
-      aft.cte }
+    { lin = (LinZ.add (LinZ.single x (Z.opp ZNum.u)) aft.lin); cte = aft.cte }
 
   (** val isZero : affTerm -> bool **)
 

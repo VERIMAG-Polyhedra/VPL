@@ -98,10 +98,9 @@ module Pos =
        | Coq_xI q -> succ_double_mask (sub_mask_carry p q)
        | Coq_xO q -> double_mask (sub_mask p q)
        | Coq_xH -> IsPos (pred_double p))
-    | Coq_xH ->
-      (match y with
-       | Coq_xH -> IsNul
-       | _ -> IsNeg)
+    | Coq_xH -> (match y with
+                 | Coq_xH -> IsNul
+                 | _ -> IsNeg)
 
   (** val sub_mask_carry : positive -> positive -> mask **)
 
@@ -155,10 +154,9 @@ module Pos =
        | Coq_xI q -> compare_cont Lt p q
        | Coq_xO q -> compare_cont r p q
        | Coq_xH -> Gt)
-    | Coq_xH ->
-      (match y with
-       | Coq_xH -> r
-       | _ -> Lt)
+    | Coq_xH -> (match y with
+                 | Coq_xH -> r
+                 | _ -> Lt)
 
   (** val compare : positive -> positive -> comparison **)
 
@@ -176,18 +174,15 @@ module Pos =
 
   let rec eqb p q =
     match p with
-    | Coq_xI p0 ->
-      (match q with
-       | Coq_xI q0 -> eqb p0 q0
-       | _ -> false)
-    | Coq_xO p0 ->
-      (match q with
-       | Coq_xO q0 -> eqb p0 q0
-       | _ -> false)
-    | Coq_xH ->
-      (match q with
-       | Coq_xH -> true
-       | _ -> false)
+    | Coq_xI p0 -> (match q with
+                    | Coq_xI q0 -> eqb p0 q0
+                    | _ -> false)
+    | Coq_xO p0 -> (match q with
+                    | Coq_xO q0 -> eqb p0 q0
+                    | _ -> false)
+    | Coq_xH -> (match q with
+                 | Coq_xH -> true
+                 | _ -> false)
 
   (** val leb : positive -> positive -> bool **)
 
@@ -246,18 +241,15 @@ module Pos =
 
   (** val eq_dec : positive -> positive -> bool **)
 
-  let rec eq_dec p y0 =
+  let rec eq_dec p x0 =
     match p with
-    | Coq_xI p0 ->
-      (match y0 with
-       | Coq_xI p1 -> eq_dec p0 p1
-       | _ -> false)
-    | Coq_xO p0 ->
-      (match y0 with
-       | Coq_xO p1 -> eq_dec p0 p1
-       | _ -> false)
-    | Coq_xH ->
-      (match y0 with
-       | Coq_xH -> true
-       | _ -> false)
+    | Coq_xI p0 -> (match x0 with
+                    | Coq_xI p1 -> eq_dec p0 p1
+                    | _ -> false)
+    | Coq_xO p0 -> (match x0 with
+                    | Coq_xO p1 -> eq_dec p0 p1
+                    | _ -> false)
+    | Coq_xH -> (match x0 with
+                 | Coq_xH -> true
+                 | _ -> false)
  end

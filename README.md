@@ -1,4 +1,4 @@
-# VPL (Verified Polyhedra Library) version 0.2
+# VPL (Verified Polyhedra Library) version 0.2.1
 
 ## GENERAL INFORMATIONS
 
@@ -75,7 +75,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
        * [coq](https://coq.inria.fr/)
           (mandatory only if you want to re-extract files from Coq)
           _available in OPAM_
-          __required version 8.6__
+          __required version 8.7__ (use coq-vpl.0.2 for coq 8.6)
 
           __NB__ the `ocaml/src/extracted/` directory already contains extracted files from Coq.
 

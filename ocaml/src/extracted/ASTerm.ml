@@ -424,10 +424,9 @@ module ModalTerm =
   let smartAdd te1 te2 =
     match te1 with
     | Cte c -> smartScalAdd c te2
-    | _ ->
-      (match te2 with
-       | Cte c -> smartScalAdd1 c te1
-       | _ -> Add (te1, te2))
+    | _ -> (match te2 with
+            | Cte c -> smartScalAdd1 c te1
+            | _ -> Add (te1, te2))
 
   (** val smartOpp : term -> term **)
 
@@ -455,10 +454,9 @@ module ModalTerm =
   let smartMul te1 te2 =
     match te1 with
     | Cte c -> smartScalMul c te2
-    | _ ->
-      (match te2 with
-       | Cte c -> smartScalMul1 c te1
-       | _ -> Mul (te1, te2))
+    | _ -> (match te2 with
+            | Cte c -> smartScalMul1 c te1
+            | _ -> Mul (te1, te2))
 
   (** val smartAnnot : Annot.topLevelAnnot -> term -> term **)
 
@@ -750,14 +748,12 @@ module QTerm =
     | Coq_xH ->
       (match (this c).coq_Qnum with
        | Z0 -> Cte QNum.z
-       | Zpos p ->
-         (match p with
-          | Coq_xH -> te
-          | _ -> Mul (te, (Cte c)))
-       | Zneg p ->
-         (match p with
-          | Coq_xH -> Opp te
-          | _ -> Mul (te, (Cte c))))
+       | Zpos p -> (match p with
+                    | Coq_xH -> te
+                    | _ -> Mul (te, (Cte c)))
+       | Zneg p -> (match p with
+                    | Coq_xH -> Opp te
+                    | _ -> Mul (te, (Cte c))))
     | _ -> Mul (te, (Cte c))
 
   (** val smartScalMul : QNum.t -> term -> term **)
@@ -774,10 +770,9 @@ module QTerm =
       (match te2 with
        | Cte c' -> Cte (coq_Qcmult c c')
        | _ -> smartScalMul1 c te2)
-    | _ ->
-      (match te2 with
-       | Cte c -> smartScalMul1 c te1
-       | _ -> Mul (te1, te2))
+    | _ -> (match te2 with
+            | Cte c -> smartScalMul1 c te1
+            | _ -> Mul (te1, te2))
 
   (** val smartAnnot : Annot.topLevelAnnot -> term -> term **)
 
@@ -1068,10 +1063,9 @@ module ZTerm =
   (** val pseudoIsZero : term -> bool **)
 
   let pseudoIsZero = function
-  | Cte c ->
-    (match c with
-     | Z0 -> true
-     | _ -> false)
+  | Cte c -> (match c with
+              | Z0 -> true
+              | _ -> false)
   | _ -> false
 
   (** val smartScalAdd1 : ZNum.t -> term -> term **)
@@ -1085,10 +1079,9 @@ module ZTerm =
 
   let smartScalAdd c te = match te with
   | Cte c' -> Cte (Z.add c c')
-  | _ ->
-    (match c with
-     | Z0 -> te
-     | _ -> Add ((Cte c), te))
+  | _ -> (match c with
+          | Z0 -> te
+          | _ -> Add ((Cte c), te))
 
   (** val smartAdd : term -> term -> term **)
 
@@ -1097,10 +1090,9 @@ module ZTerm =
     | Cte c -> smartScalAdd c te2
     | _ ->
       (match te2 with
-       | Cte c ->
-         (match c with
-          | Z0 -> te1
-          | _ -> Add ((Cte c), te1))
+       | Cte c -> (match c with
+                   | Z0 -> te1
+                   | _ -> Add ((Cte c), te1))
        | _ -> Add (te1, te2))
 
   (** val smartOpp : term -> term **)
@@ -1114,14 +1106,12 @@ module ZTerm =
   let smartScalMul1 c te =
     match c with
     | Z0 -> Cte ZNum.z
-    | Zpos p ->
-      (match p with
-       | Coq_xH -> te
-       | _ -> Mul (te, (Cte c)))
-    | Zneg p ->
-      (match p with
-       | Coq_xH -> Opp te
-       | _ -> Mul (te, (Cte c)))
+    | Zpos p -> (match p with
+                 | Coq_xH -> te
+                 | _ -> Mul (te, (Cte c)))
+    | Zneg p -> (match p with
+                 | Coq_xH -> Opp te
+                 | _ -> Mul (te, (Cte c)))
 
   (** val smartScalMul : ZNum.t -> term -> term **)
 
@@ -1137,10 +1127,9 @@ module ZTerm =
       (match te2 with
        | Cte c' -> Cte (Z.mul c c')
        | _ -> smartScalMul1 c te2)
-    | _ ->
-      (match te2 with
-       | Cte c -> smartScalMul1 c te1
-       | _ -> Mul (te1, te2))
+    | _ -> (match te2 with
+            | Cte c -> smartScalMul1 c te1
+            | _ -> Mul (te1, te2))
 
   (** val smartAnnot : Annot.topLevelAnnot -> term -> term **)
 

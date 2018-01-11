@@ -328,8 +328,7 @@ module Raw =
             join (map2_opt f mapl mapr l1 l2') x1 e
               (map2_opt f mapl mapr r1 r2')
           | None ->
-            concat (map2_opt f mapl mapr l1 l2')
-              (map2_opt f mapl mapr r1 r2')))
+            concat (map2_opt f mapl mapr l1 l2') (map2_opt f mapl mapr r1 r2')))
 
   (** val map2 :
       ('a1 option -> 'a2 option -> 'a3 option) -> 'a1 tree -> 'a2 tree -> 'a3

@@ -145,12 +145,10 @@ module M :
 
         module IsTO :
          sig
-          
          end
 
         module OrderTac :
          sig
-          
          end
 
         val eq_dec : NatNum.t list -> NatNum.t list -> bool
@@ -171,12 +169,10 @@ module M :
 
           module IsTO :
            sig
-            
            end
 
           module OrderTac :
            sig
-            
            end
 
           val eq_dec : NatNum.t list -> NatNum.t list -> bool
@@ -198,12 +194,10 @@ module M :
 
           module IsTO :
            sig
-            
            end
 
           module OrderTac :
            sig
-            
            end
 
           val eq_dec : NatNum.t list -> NatNum.t list -> bool
@@ -224,12 +218,10 @@ module M :
 
             module IsTO :
              sig
-              
              end
 
             module OrderTac :
              sig
-              
              end
 
             val eq_dec : NatNum.t list -> NatNum.t list -> bool
@@ -252,10 +244,8 @@ module M :
 
         type 'elt coq_R_mem =
         | R_mem_0 of 'elt t
-        | R_mem_1 of 'elt t * NatNum.t list * 'elt
-           * (NatNum.t list*'elt) list
-        | R_mem_2 of 'elt t * NatNum.t list * 'elt
-           * (NatNum.t list*'elt) list
+        | R_mem_1 of 'elt t * NatNum.t list * 'elt * (NatNum.t list*'elt) list
+        | R_mem_2 of 'elt t * NatNum.t list * 'elt * (NatNum.t list*'elt) list
         | R_mem_3 of 'elt t * NatNum.t list * 'elt
            * (NatNum.t list*'elt) list * bool * 'elt coq_R_mem
 
@@ -338,10 +328,8 @@ module M :
 
         type 'elt coq_R_add =
         | R_add_0 of 'elt t
-        | R_add_1 of 'elt t * NatNum.t list * 'elt
-           * (NatNum.t list*'elt) list
-        | R_add_2 of 'elt t * NatNum.t list * 'elt
-           * (NatNum.t list*'elt) list
+        | R_add_1 of 'elt t * NatNum.t list * 'elt * (NatNum.t list*'elt) list
+        | R_add_2 of 'elt t * NatNum.t list * 'elt * (NatNum.t list*'elt) list
         | R_add_3 of 'elt t * NatNum.t list * 'elt
            * (NatNum.t list*'elt) list * 'elt t * 'elt coq_R_add
 
@@ -425,35 +413,31 @@ module M :
         val fold : (key -> 'a1 -> 'a2 -> 'a2) -> 'a1 t -> 'a2 -> 'a2
 
         type ('elt, 'a) coq_R_fold =
-        | R_fold_0 of (key -> 'elt -> 'a -> 'a) * 'elt t * 'a
-        | R_fold_1 of (key -> 'elt -> 'a -> 'a) * 'elt t * 'a * NatNum.t list
-           * 'elt * (NatNum.t list*'elt) list * 'a * ('elt, 'a) coq_R_fold
+        | R_fold_0 of 'elt t * 'a
+        | R_fold_1 of 'elt t * 'a * NatNum.t list * 'elt
+           * (NatNum.t list*'elt) list * 'a * ('elt, 'a) coq_R_fold
 
         val coq_R_fold_rect :
-          (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__
-          -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> NatNum.t list -> 'a1
-          -> (NatNum.t list*'a1) list -> __ -> __ -> ('a1, __) coq_R_fold ->
-          'a2 -> 'a2) -> (key -> 'a1 -> 'a3 -> 'a3) -> 'a1 t -> 'a3 -> 'a3 ->
-          ('a1, 'a3) coq_R_fold -> 'a2
+          (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t
+          -> 'a2 -> NatNum.t list -> 'a1 -> (NatNum.t list*'a1) list -> __ ->
+          'a2 -> ('a1, 'a2) coq_R_fold -> 'a3 -> 'a3) -> 'a1 t -> 'a2 -> 'a2
+          -> ('a1, 'a2) coq_R_fold -> 'a3
 
         val coq_R_fold_rec :
-          (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__
-          -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> NatNum.t list -> 'a1
-          -> (NatNum.t list*'a1) list -> __ -> __ -> ('a1, __) coq_R_fold ->
-          'a2 -> 'a2) -> (key -> 'a1 -> 'a3 -> 'a3) -> 'a1 t -> 'a3 -> 'a3 ->
-          ('a1, 'a3) coq_R_fold -> 'a2
+          (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t
+          -> 'a2 -> NatNum.t list -> 'a1 -> (NatNum.t list*'a1) list -> __ ->
+          'a2 -> ('a1, 'a2) coq_R_fold -> 'a3 -> 'a3) -> 'a1 t -> 'a2 -> 'a2
+          -> ('a1, 'a2) coq_R_fold -> 'a3
 
         val fold_rect :
-          (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__
-          -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> NatNum.t list -> 'a1
-          -> (NatNum.t list*'a1) list -> __ -> 'a2 -> 'a2) -> (key -> 'a1 ->
-          'a3 -> 'a3) -> 'a1 t -> 'a3 -> 'a2
+          (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t
+          -> 'a2 -> NatNum.t list -> 'a1 -> (NatNum.t list*'a1) list -> __ ->
+          'a3 -> 'a3) -> 'a1 t -> 'a2 -> 'a3
 
         val fold_rec :
-          (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__
-          -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> NatNum.t list -> 'a1
-          -> (NatNum.t list*'a1) list -> __ -> 'a2 -> 'a2) -> (key -> 'a1 ->
-          'a3 -> 'a3) -> 'a1 t -> 'a3 -> 'a2
+          (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t
+          -> 'a2 -> NatNum.t list -> 'a1 -> (NatNum.t list*'a1) list -> __ ->
+          'a3 -> 'a3) -> 'a1 t -> 'a2 -> 'a3
 
         val coq_R_fold_correct :
           (key -> 'a1 -> 'a2 -> 'a2) -> 'a1 t -> 'a2 -> 'a2 -> ('a1, 'a2)
@@ -468,8 +452,7 @@ module M :
            * (NatNum.t list*'elt) list * bool * 'elt coq_R_equal
         | R_equal_2 of 'elt t * 'elt t * NatNum.t list * 'elt
            * (NatNum.t list*'elt) list * NatNum.t list * 'elt
-           * (NatNum.t list*'elt) list
-           * NatNum.t list OrderedType.coq_Compare
+           * (NatNum.t list*'elt) list * NatNum.t list OrderedType.coq_Compare
         | R_equal_3 of 'elt t * 'elt t * 'elt t * 'elt t
 
         val coq_R_equal_rect :

@@ -32,10 +32,9 @@ module Index =
 
   let rec compare x y =
     match x with
-    | [] ->
-      (match y with
-       | [] -> OrderedType.EQ
-       | _::_ -> OrderedType.LT)
+    | [] -> (match y with
+             | [] -> OrderedType.EQ
+             | _::_ -> OrderedType.LT)
     | a::x1 ->
       (match y with
        | [] -> OrderedType.GT
@@ -49,9 +48,7 @@ module Index =
          else let dEC = N.lt_eq_dec a b in
               (match dEC with
                | Coq_inleft x0 ->
-                 if x0
-                 then OrderedType.LT
-                 else assert false (* absurd case *)
+                 if x0 then OrderedType.LT else assert false (* absurd case *)
                | Coq_inright -> OrderedType.GT))
  end
 

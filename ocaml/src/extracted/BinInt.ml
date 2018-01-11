@@ -93,15 +93,13 @@ module Z =
 
   let compare x y =
     match x with
-    | Z0 ->
-      (match y with
-       | Z0 -> Eq
-       | Zpos _ -> Lt
-       | Zneg _ -> Gt)
-    | Zpos x' ->
-      (match y with
-       | Zpos y' -> Pos.compare x' y'
-       | _ -> Gt)
+    | Z0 -> (match y with
+             | Z0 -> Eq
+             | Zpos _ -> Lt
+             | Zneg _ -> Gt)
+    | Zpos x' -> (match y with
+                  | Zpos y' -> Pos.compare x' y'
+                  | _ -> Gt)
     | Zneg x' ->
       (match y with
        | Zneg y' -> coq_CompOpp (Pos.compare x' y')
@@ -132,18 +130,15 @@ module Z =
 
   let rec eqb x y =
     match x with
-    | Z0 ->
-      (match y with
-       | Z0 -> true
-       | _ -> false)
-    | Zpos p ->
-      (match y with
-       | Zpos q -> Pos.eqb p q
-       | _ -> false)
-    | Zneg p ->
-      (match y with
-       | Zneg q -> Pos.eqb p q
-       | _ -> false)
+    | Z0 -> (match y with
+             | Z0 -> true
+             | _ -> false)
+    | Zpos p -> (match y with
+                 | Zpos q -> Pos.eqb p q
+                 | _ -> false)
+    | Zneg p -> (match y with
+                 | Zneg q -> Pos.eqb p q
+                 | _ -> false)
 
   (** val max : coq_Z -> coq_Z -> coq_Z **)
 
@@ -249,46 +244,39 @@ module Z =
 
   let eq_dec x y =
     match x with
-    | Z0 ->
-      (match y with
-       | Z0 -> true
-       | _ -> false)
+    | Z0 -> (match y with
+             | Z0 -> true
+             | _ -> false)
     | Zpos x0 ->
       (match y with
        | Zpos p0 ->
-         let rec f p y0 =
+         let rec f p x1 =
            match p with
-           | Coq_xI p1 ->
-             (match y0 with
-              | Coq_xI p2 -> f p1 p2
-              | _ -> false)
-           | Coq_xO p1 ->
-             (match y0 with
-              | Coq_xO p2 -> f p1 p2
-              | _ -> false)
-           | Coq_xH ->
-             (match y0 with
-              | Coq_xH -> true
-              | _ -> false)
+           | Coq_xI p1 -> (match x1 with
+                           | Coq_xI p2 -> f p1 p2
+                           | _ -> false)
+           | Coq_xO p1 -> (match x1 with
+                           | Coq_xO p2 -> f p1 p2
+                           | _ -> false)
+           | Coq_xH -> (match x1 with
+                        | Coq_xH -> true
+                        | _ -> false)
          in f x0 p0
        | _ -> false)
     | Zneg x0 ->
       (match y with
        | Zneg p0 ->
-         let rec f p y0 =
+         let rec f p x1 =
            match p with
-           | Coq_xI p1 ->
-             (match y0 with
-              | Coq_xI p2 -> f p1 p2
-              | _ -> false)
-           | Coq_xO p1 ->
-             (match y0 with
-              | Coq_xO p2 -> f p1 p2
-              | _ -> false)
-           | Coq_xH ->
-             (match y0 with
-              | Coq_xH -> true
-              | _ -> false)
+           | Coq_xI p1 -> (match x1 with
+                           | Coq_xI p2 -> f p1 p2
+                           | _ -> false)
+           | Coq_xO p1 -> (match x1 with
+                           | Coq_xO p2 -> f p1 p2
+                           | _ -> false)
+           | Coq_xH -> (match x1 with
+                        | Coq_xH -> true
+                        | _ -> false)
          in f x0 p0
        | _ -> false)
  end

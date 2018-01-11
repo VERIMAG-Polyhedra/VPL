@@ -15,12 +15,10 @@ module Raw :
 
     module IsTO :
      sig
-      
      end
 
     module OrderTac :
      sig
-      
      end
 
     val eq_dec : X.t -> X.t -> bool
@@ -41,12 +39,10 @@ module Raw :
 
       module IsTO :
        sig
-        
        end
 
       module OrderTac :
        sig
-        
        end
 
       val eq_dec : X.t -> X.t -> bool
@@ -144,8 +140,7 @@ module Raw :
   | R_add_0 of 'elt t
   | R_add_1 of 'elt t * X.t * 'elt * (X.t*'elt) list
   | R_add_2 of 'elt t * X.t * 'elt * (X.t*'elt) list
-  | R_add_3 of 'elt t * X.t * 'elt * (X.t*'elt) list * 'elt t
-     * 'elt coq_R_add
+  | R_add_3 of 'elt t * X.t * 'elt * (X.t*'elt) list * 'elt t * 'elt coq_R_add
 
   val coq_R_add_rect :
     key -> 'a1 -> ('a1 t -> __ -> 'a2) -> ('a1 t -> X.t -> 'a1 -> (X.t*'a1)
@@ -217,31 +212,29 @@ module Raw :
   val fold : (key -> 'a1 -> 'a2 -> 'a2) -> 'a1 t -> 'a2 -> 'a2
 
   type ('elt, 'a) coq_R_fold =
-  | R_fold_0 of (key -> 'elt -> 'a -> 'a) * 'elt t * 'a
-  | R_fold_1 of (key -> 'elt -> 'a -> 'a) * 'elt t * 'a * X.t * 'elt
-     * (X.t*'elt) list * 'a * ('elt, 'a) coq_R_fold
+  | R_fold_0 of 'elt t * 'a
+  | R_fold_1 of 'elt t * 'a * X.t * 'elt * (X.t*'elt) list * 'a
+     * ('elt, 'a) coq_R_fold
 
   val coq_R_fold_rect :
-    (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__ ->
-    (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> X.t -> 'a1 -> (X.t*'a1) list
-    -> __ -> __ -> ('a1, __) coq_R_fold -> 'a2 -> 'a2) -> (key -> 'a1 -> 'a3
-    -> 'a3) -> 'a1 t -> 'a3 -> 'a3 -> ('a1, 'a3) coq_R_fold -> 'a2
+    (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t ->
+    'a2 -> X.t -> 'a1 -> (X.t*'a1) list -> __ -> 'a2 -> ('a1, 'a2) coq_R_fold
+    -> 'a3 -> 'a3) -> 'a1 t -> 'a2 -> 'a2 -> ('a1, 'a2) coq_R_fold -> 'a3
 
   val coq_R_fold_rec :
-    (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__ ->
-    (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> X.t -> 'a1 -> (X.t*'a1) list
-    -> __ -> __ -> ('a1, __) coq_R_fold -> 'a2 -> 'a2) -> (key -> 'a1 -> 'a3
-    -> 'a3) -> 'a1 t -> 'a3 -> 'a3 -> ('a1, 'a3) coq_R_fold -> 'a2
+    (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t ->
+    'a2 -> X.t -> 'a1 -> (X.t*'a1) list -> __ -> 'a2 -> ('a1, 'a2) coq_R_fold
+    -> 'a3 -> 'a3) -> 'a1 t -> 'a2 -> 'a2 -> ('a1, 'a2) coq_R_fold -> 'a3
 
   val fold_rect :
-    (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__ ->
-    (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> X.t -> 'a1 -> (X.t*'a1) list
-    -> __ -> 'a2 -> 'a2) -> (key -> 'a1 -> 'a3 -> 'a3) -> 'a1 t -> 'a3 -> 'a2
+    (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t ->
+    'a2 -> X.t -> 'a1 -> (X.t*'a1) list -> __ -> 'a3 -> 'a3) -> 'a1 t -> 'a2
+    -> 'a3
 
   val fold_rec :
-    (__ -> (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> __ -> 'a2) -> (__ ->
-    (key -> 'a1 -> __ -> __) -> 'a1 t -> __ -> X.t -> 'a1 -> (X.t*'a1) list
-    -> __ -> 'a2 -> 'a2) -> (key -> 'a1 -> 'a3 -> 'a3) -> 'a1 t -> 'a3 -> 'a2
+    (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t ->
+    'a2 -> X.t -> 'a1 -> (X.t*'a1) list -> __ -> 'a3 -> 'a3) -> 'a1 t -> 'a2
+    -> 'a3
 
   val coq_R_fold_correct :
     (key -> 'a1 -> 'a2 -> 'a2) -> 'a1 t -> 'a2 -> 'a2 -> ('a1, 'a2) coq_R_fold

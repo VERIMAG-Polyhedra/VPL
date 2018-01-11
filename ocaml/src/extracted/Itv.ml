@@ -93,8 +93,7 @@ module QItv =
   (** val add : tInd -> tInd -> tInd **)
 
   let add i1 i2 =
-    { lower = (bndAdd i1.lower i2.lower); upper =
-      (bndAdd i1.upper i2.upper) }
+    { lower = (bndAdd i1.lower i2.lower); upper = (bndAdd i1.upper i2.upper) }
 
   (** val bndOpp : bndT -> bndT **)
 

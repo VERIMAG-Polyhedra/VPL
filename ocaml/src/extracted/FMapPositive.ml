@@ -37,10 +37,9 @@ module PositiveMap =
     (match i with
      | Coq_xI ii -> mem ii r
      | Coq_xO ii -> mem ii l
-     | Coq_xH ->
-       (match o with
-        | Some _ -> true
-        | None -> false))
+     | Coq_xH -> (match o with
+                  | Some _ -> true
+                  | None -> false))
 
   (** val add : key -> 'a1 -> 'a1 t -> 'a1 t **)
 

@@ -12,6 +12,7 @@ Require Export Setoid.
 Require Export Relation_Definitions.
 Require Export Morphisms.
 Require Import Program.Basics.
+Require Extraction.
 
 Hint Resolve f_equal f_equal2.
 

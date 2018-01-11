@@ -2,8 +2,7 @@ open QArith_base
 open Qreduction
 open Specif
 
-type coq_Qc =
-  coq_Q
+type coq_Qc = coq_Q
   (* singleton inductive, whose constructor was Qcmake *)
 
 val this : coq_Qc -> coq_Q
