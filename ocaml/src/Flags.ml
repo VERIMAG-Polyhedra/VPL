@@ -134,7 +134,7 @@ let row_echelon_equalities : bool ref = ref true
 (** *)
 type plp_method = Adj_Raytracing | Adj_Raytracing_min | Greedy
 
-let plp : plp_method ref = ref Greedy
+let plp : plp_method ref = ref Adj_Raytracing
 
 let plp_to_string : unit -> string
 	= fun () ->
