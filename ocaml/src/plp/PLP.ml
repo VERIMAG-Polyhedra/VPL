@@ -151,6 +151,86 @@ module PLP(Minimization : Min.Type) = struct
 		regions = [];
 	}
 
+	(* Checks if each basis can move to another one with only one pivot.
+	First version *)
+	let check_basis : (Region.t * 'c Cons.t) list option -> bool
+		= let rec differences : int list -> int list -> int
+			= fun b1 b2 ->
+			match b1,b2 with
+			| [],[] -> 0
+			| [],_ | _,[] -> Pervasives.invalid_arg "check_basis"
+			| x1 :: tl1, x2 :: tl2 when x1 = x2 -> differences tl1 tl2
+			| _ :: tl1, _ :: tl2 -> 1 + (differences tl1 tl2)
+		in
+		fun sols ->
+		match sols with
+		| None -> true
+		| Some sols -> begin
+			let bases = List.fold_left
+				(fun bases (reg, _) -> match reg.Region.sx with
+					| None -> bases
+					| Some sx -> PSplx.get_basis sx :: bases
+				)
+				[] sols
+			in
+			List.for_all
+				(fun basis -> List.exists
+					(fun basis' -> differences basis basis' = 1)
+					bases)
+				bases
+		end
+
+	(* Checks if each basis can move to another one with only one pivot.
+	Second version *)
+	let check_basis : (Region.t * 'c Cons.t) list option -> bool
+		= let rec differences : int list -> int list -> int
+			= fun b1 b2 ->
+			match b1,b2 with
+			| [],[] -> 0
+			| [],_ | _,[] -> Pervasives.invalid_arg "check_basis:1"
+			| x1 :: tl1, x2 :: tl2 when x1 = x2 -> differences tl1 tl2
+			| _ :: tl1, _ :: tl2 -> 1 + (differences tl1 tl2)
+		in
+		let reachable_in_one_pivot : Region.t -> Region.t -> bool
+			= fun reg1 reg2 ->
+			match reg1.Region.sx, reg2.Region.sx with
+			| None,_ | _,None -> Pervasives.invalid_arg "check_basis:2"
+			| Some sx1, Some sx2 -> differences sx1.PSplx.basis sx2.PSplx.basis = 1
+		in
+		let rec get_adjacent_region : (Region.t * 'c Cons.t) list -> Region.t -> Cs.t -> Region.t option
+			= fun sols reg cstr ->
+			match sols with
+			| [] -> None
+			| (reg',_) :: sols  ->
+				if Adjacency.adjacent_cstr reg reg' cstr (strict_comp cstr)
+				then Some reg'
+				else get_adjacent_region sols reg cstr
+		in
+		fun sols ->
+		match sols with
+		| None -> true
+		| Some sols -> begin
+			List.for_all
+				(fun (reg,cons) ->
+					List.for_all
+						(fun ((cstr,_), _) ->
+							match get_adjacent_region (Misc.pop (=) sols (reg,cons)) reg cstr with
+							| None -> Pervasives.failwith "check_basis:2"
+							| Some reg' -> begin
+								Debug.log DebugTypes.Detail
+									(lazy (Printf.sprintf "Adjacency between \n%s\nAND\n%s"
+									(Region.to_string reg)
+									(Region.to_string reg')));
+								if reachable_in_one_pivot reg reg'
+								then true
+								else (Debug.log DebugTypes.Detail (lazy " -> ko");false)
+								end
+						)
+					reg.Region.r
+				)
+				sols
+		end
+
 	let run: config -> PSplx.t -> (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
 		= fun config sx get_cert ->
 		let res =
@@ -162,6 +242,11 @@ module PLP(Minimization : Min.Type) = struct
 			then match res with
 				| None -> ()
 				| Some regs -> Plot.plot regs
+		end;
+		if PLPCore.Debug.is_enabled DebugTypes.Detail
+		then begin if check_basis res
+			then print_endline "ok"
+			else print_endline "ko"
 		end;
 		res
 
