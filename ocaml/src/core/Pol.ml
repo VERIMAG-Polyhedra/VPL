@@ -336,24 +336,19 @@ simplex object with a satisfied state if it is. If it is not satisfiable, then
 a linear combination of the input constraints is returned. [nvar] is used for
 fresh variable generation. *)
 let chkFeasibility: Var.t -> (int * Cs.t) list -> satChkT
-= fun nvar cs ->
-	match Splx.checkFromAdd (Splx.mk nvar cs) with
-	| Splx.IsOk sx -> Sat sx
-	| Splx.IsUnsat w -> Unsat w
+	= let chkFeasibility: Var.t -> (int * Cs.t) list -> satChkT
+		= fun nvar cs ->
+		match Splx.checkFromAdd (Splx.mk nvar cs) with
+		| Splx.IsOk sx -> Sat sx
+		| Splx.IsUnsat w -> Unsat w
+	in fun nvar cs ->
+	Profile.start "chkFeasibility";
+	let res = chkFeasibility nvar cs in
+	Profile.stop "chkFeasibility";
+	res
 
 let rec extract_implicit_eqs' : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) mayBotT) * (Scalar.Symbolic.t Rtree.t) option
 	= fun factory nvar lp ->
-	(*let cert_from_eq : int -> 'c Cons.t list -> (int * Cs.Vec.Coeff.t) list -> 'c
-		= fun i conss wit ->
-		let coeff = List.assoc i wit in
-		let lower_bound_wit = List.map
-			(fun (i,q) -> (i, Scalar.Rat.divr q coeff))
-			(List.remove_assoc i wit) in
-		let lower_bound = Cons.linear_combination_cert factory conss lower_bound_wit in
-		let upper_bound_wit = [(i,Scalar.Rat.u)] in
-		let upper_bound = Cons.linear_combination_cert factory conss upper_bound_wit in
-		factory.Cert.merge upper_bound lower_bound
-	in*)
 	(* TODO: peut-on factoriser le calcul des Is et Js?*)
 	let compute_Is : 'c Cons.t list -> (int * Cs.Vec.Coeff.t) list -> (int * 'c Cons.t) list
 		= fun conss wit ->
@@ -431,23 +426,6 @@ let rec extract_implicit_eqs' : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) 
 					then List.assoc i ijs :: res
 					else res)
 				[] ilist
-
-			(*
-			(* cette version génère une seule égalité à la fois *)
-			try
-				let (i,_) = List.find (fun (i,_) -> List.mem_assoc i wit) ilist in
-				let (cstr,cert) = List.nth conss i in
-				[{cstr with Cs.typ = Cstr.Eq}, cert_from_eq i conss wit]
-			with Not_found -> []
-			*)
-			(*
-				List.fold_left
-				(fun res (i,_) ->
-					if List.mem_assoc i wit
-					then let (cstr,cert) = List.nth conss i in
-						({cstr with Cs.typ = Cstr.Eq}, cert_from_eq i conss wit) :: res
-					else res)
-				[] ilist*)
 			in
 			let lp' = logAddEqs lp elist in
 			match logEqSetAddM factory lp' with
