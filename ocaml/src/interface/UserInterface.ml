@@ -910,13 +910,7 @@ module Lift_Ident (I : sig
     let mem : t -> bool
 		= fun s -> Map_t_to_var.mem s !maps.t_to_var
 
-	let toVar : t -> Var.t
-		= fun s -> Map_t_to_var.find s !maps.t_to_var
-
-	let ofVar : Var.t -> t
-		= fun s -> Map_var_to_t.find s !maps.var_to_t
-
-    let addVars : t list -> unit
+    let addVars : t list-> unit
 		= fun vars ->
             maps := List.fold_left
 				(fun m var ->
@@ -928,6 +922,24 @@ module Lift_Ident (I : sig
 					next = Var.next m.next
                 })
 				!maps vars
+
+    let toVar : t -> Var.t
+		= fun var ->
+        if mem var
+        then Map_t_to_var.find var !maps.t_to_var
+        else begin
+            let new_var = !maps.next in
+            maps := {
+				var_to_t = Map_var_to_t.add new_var var !maps.var_to_t ;
+				t_to_var = Map_t_to_var.add var new_var !maps.t_to_var ;
+				next = Var.next !maps.next
+            };
+            new_var
+        end
+
+
+	let ofVar : Var.t -> t
+		= fun s -> Map_var_to_t.find s !maps.var_to_t
 
     let to_string: t -> string
 		= fun var -> I.to_string var

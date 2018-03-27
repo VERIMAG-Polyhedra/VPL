@@ -44,9 +44,7 @@ module Expr = struct
 			|PolyParserBuild.Mul(p1,p2) -> Poly.mul (poly_to_pol_rec p1) (poly_to_pol_rec p2)
 
 	let to_poly: t -> Poly.t
-		= fun p -> let sl = oneOccListe (getStringVar p) in
-			Ident.addVars sl;
-			poly_to_pol_rec p
+		= fun p -> poly_to_pol_rec p
 
 	let poly_to_term : Poly.t -> Term.t
 		= fun p ->
