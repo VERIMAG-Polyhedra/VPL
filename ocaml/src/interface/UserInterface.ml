@@ -854,3 +854,86 @@ module Interface (Coeff : Scalar.Type) = struct
 		end
 	end
 end
+
+module Lift_Ident (I : sig
+    type t
+	val compare: t -> t -> int
+	val to_string: t -> string
+    end) = struct
+
+    type t = I.t
+
+    let compare = I.compare
+
+    module Map_var_to_t = Map.Make(struct
+		include Var
+		let compare = cmp
+		end)
+
+	module Map_t_to_var = Map.Make(I)
+
+
+	type map_var_to_t = t Map_var_to_t.t
+	type map_t_to_var = Var.t Map_t_to_var.t
+
+    type mapsT = {
+		var_to_t : map_var_to_t ;
+		t_to_var : map_t_to_var ;
+		next : Var.t
+    }
+
+	let emptyMaps = {
+		var_to_t = Map_var_to_t.empty ;
+		t_to_var = Map_t_to_var.empty ;
+		next = Var.u
+    }
+
+    let maps : mapsT ref = ref emptyMaps
+
+    let print_maps : unit -> unit
+		= fun () ->
+		Printf.sprintf "map var to t : \n\t%s\nmap t to var: \n\t%s"
+			(Misc.list_to_string
+				(fun (v,v') -> Printf.sprintf "%s -> %s"
+					(Var.to_string v)
+                    (I.to_string v'))
+				(Map_var_to_t.bindings !maps.var_to_t)
+				" ; ")
+			(Misc.list_to_string
+				(fun (v',v) -> Printf.sprintf "%s -> %s"
+					(I.to_string v')
+                    (Var.to_string v))
+				(Map_t_to_var.bindings !maps.t_to_var)
+				" ; ")
+		|> print_endline
+
+    let mem : t -> bool
+		= fun s -> Map_t_to_var.mem s !maps.t_to_var
+
+	let toVar : t -> Var.t
+		= fun s -> Map_t_to_var.find s !maps.t_to_var
+
+	let ofVar : Var.t -> t
+		= fun s -> Map_var_to_t.find s !maps.var_to_t
+
+    let addVars : t list -> unit
+		= fun vars ->
+            maps := List.fold_left
+				(fun m var ->
+				if mem var
+                then m
+				else {
+					var_to_t = Map_var_to_t.add m.next var m.var_to_t ;
+					t_to_var = Map_t_to_var.add var m.next m.t_to_var ;
+					next = Var.next m.next
+                })
+				!maps vars
+
+    let to_string: t -> string
+		= fun var -> I.to_string var
+
+	let get_string : Var.t -> string
+		= fun var ->
+		Map_var_to_t.find var !maps.var_to_t
+        |> I.to_string
+end

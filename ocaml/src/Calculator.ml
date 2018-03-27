@@ -20,81 +20,12 @@ let rec getStringVar (p:PolyParserBuild.poly) : string list
 	|PolyParserBuild.Leaf(ss,_) -> List.map Pervasives.fst ss
 	|PolyParserBuild.Add(p1,p2) |PolyParserBuild.Mul(p1,p2) |PolyParserBuild.Sub(p1,p2) -> (getStringVar p1) @ (getStringVar p2)
 
-module Ident = struct
-	type t = string
 
-	exception Out_of_Scope
-
-	(** map de var -> string **)
-	module Map1 = Map.Make(struct
-		include Var.Positive
-		let compare = cmp
-		end)
-
-	(** map de string -> var **)
-	module Map2 = Map.Make(String)
-	type map_var_to_string = string Map1.t
-	type map_string_to_var = Var.Positive.t Map2.t
-
-	type mapsT = {
-		map1 : map_var_to_string ;
-		map2 : map_string_to_var ;
-		next : Var.Positive.t}
-
-	let emptyMaps = {
-		map1 = Map1.empty ;
-		map2 = Map2.empty ;
-		next = Var.Positive.u}
-
-	let maps : mapsT ref = ref emptyMaps
-
-	let print_maps : unit -> unit
-		= fun () ->
-		Printf.sprintf "map1 : \n\t%s\nmap2 : \n\t%s"
-			(Misc.list_to_string
-				(fun (v,s) -> Printf.sprintf "%s -> %s"
-					(Var.Positive.to_string v) s)
-				(Map1.bindings !maps.map1)
-				" ; ")
-			(Misc.list_to_string
-				(fun (s,v) -> Printf.sprintf "%s -> %s"
-					s (Var.Positive.to_string v))
-				(Map2.bindings !maps.map2)
-				" ; ")
-		|> print_endline
-
-	let mem : string -> bool
-		= fun s -> Map2.mem s (!maps).map2
-
-	let toVar : t -> Pol.Var.t
-		= fun s -> Map2.find s (!maps).map2
-
-	let ofVar : Pol.Var.t -> t
-		= fun s -> Map1.find s (!maps).map1
-
-	let addVars_fold : string list -> mapsT -> mapsT
-		= fun sl m1 ->
-			List.fold_left
-				(fun m s ->
-				if mem s then m
-				else {
-					map1 = Map1.add m.next s m.map1 ;
-					map2 = Map2.add s m.next m.map2 ;
-					next = Var.Positive.next m.next })
-				m1 sl
-
-	let addVars : string list -> unit
-		= fun sl -> maps := addVars_fold sl (!maps)
-
-	let to_string: t -> t
-		= fun s -> s
-
-	let get_string : Var.Positive.t -> string
-		= fun v ->
-		Map1.find v (!maps).map1
-
-	let compare = Pervasives.compare
-end
+module Ident = UserInterface.Lift_Ident (struct
+    type t = string
+    let compare = Pervasives.compare
+    let to_string s = s
+    end)
 
 module Expr = struct
 
