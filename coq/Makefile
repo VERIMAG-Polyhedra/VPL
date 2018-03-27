@@ -1,6 +1,6 @@
-# requires: coq 8.6
+# requires: coq 8.7
 
-.PHONY: coq clean lscoqfiles cleanextract build install uninstall
+.PHONY: coq clean lscoqfiles cleanextract build install uninstall html
 
 COQOPT ?= -opt
 
@@ -55,6 +55,9 @@ build.mk: _CoqProject
 build: build.mk
 	$(MAKE) -j -f build.mk "OPT:=-opt" all
 
+html: build.mk
+	$(MAKE) -j -f build.mk html
+
 install: build.mk
 	$(MAKE) -j -f build.mk "OPT:=-opt" install
 
@@ -62,7 +65,7 @@ uninstall: build.mk
 	$(MAKE) -j -f build.mk "OPT:=-opt" uninstall || echo "skip last errors..."
 
 clean:
-	rm -rf *.vo *.dv *.glob *~ .*.aux
+	rm -rf *.vo *.dv *.glob *~ .*.aux html/
 
 cleanextract:
 	rm -rf DemoExtract.vo DemoExtractTests.vo $(EXTRACT_FOLDER) $(EXTRACT_TEST_FOLDER)

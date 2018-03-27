@@ -9,6 +9,7 @@
 coq/_CoqProject
 coq/build.mk
 coq/uninstall_me.sh
+coq/html
 
 ocaml/_build/*
 ocaml/setup.data
