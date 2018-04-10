@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: ed0e6d0d4a453fd325fa2f8c3799351a)
+# DO NOT EDIT (digest: da9c95c3deea0b9d3e3a8ab07337656c)
 datatypes/Scalar
 datatypes/Var
 datatypes/Rtree
@@ -35,6 +35,7 @@ plp/PLPParser
 plp/PLP
 core/Proj
 core/Join
+core/Join_RR
 core/MinLP
 core/Min
 core/Pol

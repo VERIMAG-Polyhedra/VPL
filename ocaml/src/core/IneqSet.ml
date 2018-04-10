@@ -6,8 +6,8 @@ It represents only sets of inequalities with {b nonempty interior}, meaning that
 *)
 
 module Cs = Cstr.Rat.Positive
-module EqSet = Proj.EqSet
-module Cons = Proj.Cons
+module EqSet = PLP.EqSet
+module Cons = PLP.Cons
 module Cert = Cons.Cert
 module Vec = Cs.Vec
 module V = Vec.V
@@ -583,3 +583,17 @@ let addM: V.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 	| Flags.MHeuristic -> apply (Heuristic.min (List.map Cons.get_c (s @ conss)))
 	| m -> apply m
 *)
+
+
+(** Returns the partition into regions of the given polyhedron, according to the given normalization point.
+    Certificates are lost during the process: frontiers of regions have no certificate.
+*)
+let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
+    = fun factory p point ->
+    let regions = PoltoPLP.minimize_and_plp factory point p in
+    List.map
+        (fun (reg,_) ->
+        List.map
+            (fun cstr -> cstr, ())
+            (PoltoPLP.PLP.Region.get_cstrs reg)
+        ) regions.PoltoPLP.mapping

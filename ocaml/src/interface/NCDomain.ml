@@ -196,7 +196,6 @@ module Polyhedron (F : Factory.Type) = struct
 				Pol.eqs = List.mapi (fun i (v,(cstr,_)) -> (v, F.mk (f1 i cstr))) eqs;
 				Pol.ineqs = List.mapi (fun i (cstr,_) -> F.mk (f2 i cstr)) ineqs
 			}
-
 end
 
 let translate_cstr : Cs.t -> Vec.t -> Cs.t
@@ -247,7 +246,6 @@ module NCVPL_Cstr = struct
 						(fun (cstr, _) -> Factory.Cstr.mk cstr)
 						(Pol.get_ineqs pol');
 					}
-
 
 	end
 	module I = NCInterface.Interface (P)

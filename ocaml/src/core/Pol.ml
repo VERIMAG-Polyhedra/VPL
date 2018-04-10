@@ -760,7 +760,7 @@ module Join_PLP = struct
 				else None in
 			match !Flags.join with
 			| Flags.Join_PLP _ -> Join.join scalar_type factory1 factory2 eps_opt p1_cons p2_cons
-			| Flags.Join_fromRegions -> PoltoPLP.Join.join factory1 factory2 eps_opt p1_cons p2_cons
+			| Flags.Join_fromRegions -> Join_RR.join factory1 factory2 eps_opt p1_cons p2_cons
 			| _ -> Pervasives.failwith "Pol.joinSub_epsilon"
 		in
 		let p1'_ineqs = remove_epsilon epsilon p1' |> filter_trivial
@@ -1157,3 +1157,32 @@ let minkowski : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 		|> Var.horizon
 	in
 	minkowskiSub factory1 factory2 nxt p1 p2
+
+let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
+    = fun factory p point ->
+    let regions = IneqSet.get_regions_from_point factory p.ineqs point
+    and eqs = List.map (fun (var, (cstr,_)) -> (var, (cstr, ()))) p.eqs
+    in
+    List.map (fun reg -> {eqs = eqs ; ineqs = reg}) regions
+
+let get_regions : 'c Cert.t -> 'c t -> unit t list
+    = fun factory p ->
+	Debug.log DebugTypes.Title (lazy "Getting regions");
+	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
+			(to_string_raw p)))
+	;
+    let point = match Opt.getAsg_raw (List.map Cons.get_c p.ineqs) with
+        | None -> Pervasives.failwith "Pol.get_regions"
+        | Some pl -> (Vec.M.map Vec.ofSymbolic pl)
+    in
+    let regions = IneqSet.get_regions_from_point factory p.ineqs point
+    and eqs = List.map (fun (var, (cstr,_)) -> (var, (cstr, ()))) p.eqs
+    in
+    List.map (fun reg -> {eqs = eqs ; ineqs = reg}) regions
+
+let size : 'c t -> Scalar.Rat.t option
+    = fun p ->
+    match Opt.getAsg_and_value_raw (List.map Cons.get_c p.ineqs) with
+    | Some (_, None) -> None
+    | None -> None
+    | Some (_, Some value) -> Some value

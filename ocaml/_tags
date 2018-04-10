@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: a5df4ad54f41a91a8b778908da0bc40c)
+# DO NOT EDIT (digest: d31812a260a3e8e6b454e408e9d223e1)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -51,6 +51,7 @@ true: annot, bin_annot
 "src/plp/PLP.cmx": for-pack(Vpl)
 "src/core/Proj.cmx": for-pack(Vpl)
 "src/core/Join.cmx": for-pack(Vpl)
+"src/core/Join_RR.cmx": for-pack(Vpl)
 "src/core/MinLP.cmx": for-pack(Vpl)
 "src/core/Min.cmx": for-pack(Vpl)
 "src/core/Pol.cmx": for-pack(Vpl)

@@ -419,7 +419,7 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     {poly with pol = f poly.pol}
 
   let minkowski p1 p2 =
-  {p1 with pol = LHD.minkowski p1.pol p2.pol}
+    {p1 with pol = LHD.minkowski p1.pol p2.pol}
 
   let translate pol vec =
   match backend_rep pol with
@@ -702,5 +702,11 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
 
   let minkowski _ _ = not_yet_implemented "minkowski"
 
-  let projectM _ _ = not_yet_implemented "projectM"
+  let projectM vars pol =
+  match backend_rep pol with
+  | None -> Pervasives.failwith "translate"
+  | Some (p,(ofVar,toVar)) ->
+    let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
+    let vars' = List.map ofVar' vars in
+  	{pol with pol = LHD.projectM vars' pol.pol}
 end

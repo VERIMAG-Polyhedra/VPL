@@ -214,6 +214,11 @@ module type Type = sig
      		Careful: the comparison sign of the result may be wrong. *)
 			val diff : t -> t -> t list
 
+            (** [get_regions p] returns the partition into regions of p. *)
+            val get_regions : t -> t list
+
+            val size : t -> Scalar.Rat.t option
+
 		end
 
 		(** Defines operators in terms of the User datastructures. *)
@@ -297,6 +302,11 @@ module type Type = sig
 
 			(** [diff p1 p2] returns a list of polyhedra whose union is [p1 \ p2]. *)
 			val diff : t -> t -> t list
+
+            (** [get_regions p] returns the partition into regions of p. *)
+            val get_regions : t -> t list
+
+            val size : t -> Scalar.Rat.t option
 		end
 	end
 end
@@ -738,6 +748,9 @@ module Interface (Coeff : Scalar.Type) = struct
 				lazy (itvize' p t)
 				|> handle
 
+            (*************************************)
+            (******* UNCERTIFIED OPERATORS *******)
+            (*************************************)
 			type rep = I.rep
 
 			let backend_rep
@@ -775,35 +788,65 @@ module Interface (Coeff : Scalar.Type) = struct
 					(* Complement that keeps the same comparison sign *)
 					{(Cs.compl cstr) with Cs.typ = Cs.get_typ cstr}
 					in
-					let diff' = fun p1 p2 ->
-					let (rep1,rep2, toVar2) = match backend_rep p1, backend_rep p2 with
-						| Some (p1',_), Some (p2', (ofVar2, toVar2)) ->
-							let (_,_,toVar2') = PedraQOracles.export_backend_rep (p2',(ofVar2,toVar2))
-							in
-							(p1',p2', toVar2')
-						| _, _ -> Pervasives.failwith "diff"
-					in
-					let p2_ineqs = Pol.get_ineqs rep2
-						|> List.map (fun (cstr,_) -> Pol.Cs.rename_f toVar2 cstr)
-					in
-					if p2_ineqs = []
-					then [p1]
-					else
-						let hd = List.hd p2_ineqs in
-						let fst_res = assume (Cond.of_cstrs [compl hd]) p1
-						and fst_cont = assume (Cond.of_cstrs [hd]) p1
+				let diff' = fun p1 p2 ->
+				let (rep1,rep2, toVar2) = match backend_rep p1, backend_rep p2 with
+					| Some (p1',_), Some (p2', (ofVar2, toVar2)) ->
+						let (_,_,toVar2') = PedraQOracles.export_backend_rep (p2',(ofVar2,toVar2))
 						in
-						List.fold_left
-							(fun (res,cont) ineq ->
-								let pol_cont = List.hd cont in
-								(assume (Cond.of_cstrs [compl ineq]) pol_cont :: res,
-								 assume (Cond.of_cstrs [ineq]) pol_cont :: cont))
-							([fst_res],[fst_cont]) (List.tl p2_ineqs)
-						|> Pervasives.fst
+						(p1',p2', toVar2')
+					| _, _ -> Pervasives.failwith "diff"
 				in
-				fun p1 p2 ->
-				lazy (diff' p1 p2)
+				let p2_ineqs = Pol.get_ineqs rep2
+					|> List.map (fun (cstr,_) -> Pol.Cs.rename_f toVar2 cstr)
+				in
+				if p2_ineqs = []
+				then [p1]
+				else
+					let hd = List.hd p2_ineqs in
+					let fst_res = assume (Cond.of_cstrs [compl hd]) p1
+					and fst_cont = assume (Cond.of_cstrs [hd]) p1
+					in
+					List.fold_left
+						(fun (res,cont) ineq ->
+							let pol_cont = List.hd cont in
+							(assume (Cond.of_cstrs [compl ineq]) pol_cont :: res,
+							 assume (Cond.of_cstrs [ineq]) pol_cont :: cont))
+						([fst_res],[fst_cont]) (List.tl p2_ineqs)
+					|> Pervasives.fst
+			in
+			fun p1 p2 ->
+			lazy (diff' p1 p2)
+			|> handle
+
+            let get_regions : t -> t list
+				= let get_regions' p =
+                    let rep = match backend_rep p with
+    					| Some (p',_) -> p'
+    					| _ -> Pervasives.failwith "get_regions"
+    				in
+                    let regions = Pol.get_regions Factory.Unit.factory rep in
+                    List.map
+                        (fun reg ->
+                            let cond = Cond.of_cstrs (Pol.get_cstr reg) in
+                            assume cond top
+                            )
+                        regions
+                in
+                fun p ->
+				lazy (get_regions' p)
 				|> handle
+
+            let size : t -> Scalar.Rat.t option
+                = let size' p =
+                    let rep = match backend_rep p with
+    					| Some (p',_) -> p'
+    					| _ -> Pervasives.failwith "size"
+    				in
+                    Pol.size rep
+                in
+                fun p ->
+                lazy (size' p)
+                |> handle
 		end
 
 		include BuiltIn

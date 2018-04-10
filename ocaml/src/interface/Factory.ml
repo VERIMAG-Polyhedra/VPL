@@ -12,6 +12,8 @@ module type Type = sig
 
 	val mk : Pol.Cs.t -> t Pol.Cons.t
 
+    val convert : 'c Pol.t -> t Pol.t
+
 	val check : t Pol.t -> bool
 
 	val equal : Pol.Cs.t -> t -> bool
@@ -55,6 +57,12 @@ module Cstr = struct
 	let mk : Pol.Cs.t -> t Pol.Cons.t
 		= fun cs -> (cs,cs)
 
+    let convert : 'c Pol.t -> t Pol.t
+        = fun p -> {
+            Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mk cstr)) p.Pol.eqs;
+            Pol.ineqs = List.map (fun (cstr,_) -> mk cstr) p.Pol.ineqs;
+        }
+
 	let check : t Pol.t -> bool
 		= fun p ->
 		List.for_all
@@ -86,6 +94,12 @@ module Unit = struct
 
 	let mk : Pol.Cs.t -> t Pol.Cons.t
 		= fun cs -> (cs,())
+
+    let convert : 'c Pol.t -> t Pol.t
+        = fun p -> {
+            Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mk cstr)) p.Pol.eqs;
+            Pol.ineqs = List.map (fun (cstr,_) -> mk cstr) p.Pol.ineqs;
+        }
 
 	let check : t Pol.t -> bool
 		= fun _ -> true

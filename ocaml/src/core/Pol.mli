@@ -74,7 +74,7 @@ possibility, where the certificate gives a proof of the intersection being empty
 A value [Added (s, (fwd, bwd))] states that [fwd] is the proof of the intersection
 of [s1] and [s2] being included in [s], while [bwd] is a proof of [s] being
 included in the intersection of [s1] and [s2]. *)
-type 'c meetT = 
+type 'c meetT =
 	| Added of 'c t
 	| Contrad of 'c
 
@@ -154,7 +154,7 @@ val rename: 'c Cert.t -> Var.t -> Var.t -> 'c t -> 'c t
 
 (** This function checks that the given polyhedron satisfies the following
 invariants. It returns [(true, "")] if it does and [(false, reason)] if not,
-where [reason] lists the checks that have failed. 
+where [reason] lists the checks that have failed.
 - there is no trivial constraint
 - the polyhedron is not empty
 - there is no redundant constraint
@@ -194,3 +194,17 @@ val inter : 'c t -> 'c t -> 'c t option
 val equal : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> bool
 
 val to_unit : 'c t -> unit t
+
+(** Returns the partition into regions of the given polyhedron, according to the given normalization point.
+    Certificates are lost during the process: frontiers of regions have no certificate.
+*)
+val get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
+
+(** Returns the partition into regions of the given polyhedron.
+    The normalization point is chosen using {!val:Opt.get_asg}.
+    Certificates are lost during the process: frontiers of regions have no certificate.
+*)
+val get_regions : 'c Cert.t -> 'c t -> unit t list
+
+(** Returns an estimation of the size of the polyhedron. *)
+val size : 'c t -> Scalar.Rat.t option

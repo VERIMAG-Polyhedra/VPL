@@ -1,4 +1,4 @@
-module Debug = DebugTypes.Debug(struct let name = "Handelman" end)
+module Debug = Hi.Debug
 
 module Cs = PLP.Cs
 module CP = CstrPoly.Positive
@@ -453,6 +453,16 @@ module Handelman (Minimization : Min.Type) = struct
 			let res = compute_certs his n_cstrs vars regs in
 			Debug.log DebugTypes.MOutput
 				(lazy(Misc.list_to_string CP.to_string (List.map Pervasives.fst res) "\n "))
+            ;
+			Debug.log DebugTypes.MOutput
+				(lazy(Printf.sprintf "Handelman certificates : %s"
+                    (Misc.list_to_string
+                            (fun (cp, cert) -> Printf.sprintf "%s -> %s"
+                                (CP.to_string cp)
+                                (Hi.Cert.to_string cert)
+                            )
+                            res "\n"
+                            )))
 			;
 			Some res
 			end

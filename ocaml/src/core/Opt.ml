@@ -17,7 +17,7 @@ let prProgress = function
   | Unbnd -> "Unbnd"
   | UpTo v -> Printf.sprintf "UpTo %s" (Scalar.Symbolic.to_string v)
   | NoChange -> "NoChange"
-		  
+
 let prDir = function
   | Incr -> "Incr"
   | Decr -> "Decr"
@@ -219,23 +219,22 @@ let max' : t mayUnsatT -> Vec.t -> optT mayUnsatT
   | IsUnsat _ as u -> fun _ -> u
   | IsOk sx -> fun obj -> max sx obj
 
-
-let getAsg : V.t -> (int * Cs.t) list -> Vector.Symbolic.Positive.t option
+let getAsg_and_value : V.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t * Scalar.Rat.t option) option
 	= let build_epsilon : V.t -> (int * Cs.t) list -> (int * Cs.t) list * Vec.t
 		= fun horizon cstrs ->
 			let epsilon = horizon in
 			let obj = Cs.Vec.mk [Cs.Vec.Coeff.u, epsilon] in
 			let cstrs' =
 				(2500, Cs.le [Scalar.Rat.u, epsilon] (Scalar.Rat.of_float 100000.)):: (* TODO : changer ça! *)
-				(List.map 
-					(fun (i,cstr) -> 
-						i, 
+				(List.map
+					(fun (i,cstr) ->
+						i,
 						{  cstr with
 							Cs.typ = Cstr.Le;
-							Cs.v = Cs.Vec.set cstr.Cs.v epsilon Cs.Vec.Coeff.u}) 
+							Cs.v = Cs.Vec.set cstr.Cs.v epsilon Cs.Vec.Coeff.u})
 					cstrs)
-			in 
-			(cstrs', obj)	
+			in
+			(cstrs', obj)
 	in
 	fun horizon cstrs ->
 	let (cstrs', obj) = build_epsilon horizon cstrs in
@@ -243,10 +242,20 @@ let getAsg : V.t -> (int * Cs.t) list -> Vector.Symbolic.Positive.t option
 	let sx = mk horizon' cstrs' in
 	match max' sx obj with
 	| IsUnsat _ -> None
-	| IsOk Infty -> getAsgOpt horizon cstrs
-	| IsOk (Sup (sx,_,_)) | IsOk (Finite (sx,_,_)) -> 
+	| IsOk Infty -> begin
+        match getAsgOpt horizon cstrs with
+        | Some point -> Some (point, None)
+        | None -> None
+        end
+	| IsOk (Sup (sx,obj_value,_)) | IsOk (Finite (sx,obj_value,_)) ->
 		let point = Vector.Symbolic.Positive.set (getAsg sx) horizon Scalar.Symbolic.z in
-		Some point
+		Some (point, Some obj_value)
+
+let getAsg : V.t -> (int * Cs.t) list -> Vector.Symbolic.Positive.t option
+	= fun horizon cstrs ->
+	match getAsg_and_value horizon cstrs with
+    | None -> None
+    | Some (point,_) -> Some point
 
 let getAsg_raw : Cs.t list -> Vector.Symbolic.Positive.t option
 	= fun cstrs ->
@@ -255,3 +264,11 @@ let getAsg_raw : Cs.t list -> Vector.Symbolic.Positive.t option
 	in
 	let cstrs_id = List.mapi (fun i cstr -> (i,cstr)) cstrs in
 	getAsg horizon cstrs_id
+
+let getAsg_and_value_raw : Cs.t list -> (Vector.Symbolic.Positive.t * Scalar.Rat.t option) option
+	= fun cstrs ->
+	let horizon = Cs.getVars cstrs
+		|> Cs.Vec.V.horizon
+	in
+	let cstrs_id = List.mapi (fun i cstr -> (i,cstr)) cstrs in
+	getAsg_and_value horizon cstrs_id
