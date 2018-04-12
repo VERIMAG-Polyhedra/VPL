@@ -127,32 +127,54 @@ module Polyhedron (F : Factory.Type) = struct
 			| Pol.Incl cert -> (check_incl cert (NonBot p2');true)
 			| Pol.NoIncl -> false
 
-	let check_bound : string -> Pol.bndT * F.t option -> Pol.bndT
-		= fun s ->
-		function
+	let check_bound : bool -> Vec.t -> Pol.bndT * F.t option -> Pol.bndT
+		= fun upper obj (bnd,cert) ->
+        let error_string = if upper
+            then "check_upper_bound"
+            else "check_lower_bound"
+        in
+		match (bnd,cert) with
 		| (Pol.Infty, None) -> Pol.Infty
 		| (_, None)
-		| (Pol.Infty, Some _) -> Pervasives.raise (Wrong_Certificate s)
-		| (Pol.Open bnd, Some cert) ->
-			if F.equal (Cs.lt [] bnd) cert
-			then Pol.Open bnd
-			else Pervasives.raise (Wrong_Certificate s)
-		| (Pol.Closed bnd, Some cert) ->
-			if F.equal (Cs.le [] bnd) cert
-			then Pol.Closed bnd
-			else Pervasives.raise (Wrong_Certificate s)
+		| (Pol.Infty, Some _) -> Pervasives.raise (Wrong_Certificate error_string)
+		| (Pol.Open v, Some cert) ->
+            let expected_cert = if upper
+                then (Cs.mk2 Cstr.Lt obj v)
+                else (Cs.mk2 Cstr.Lt (Vec.neg obj) (Scalar.Rat.neg v))
+            in
+			if F.equal expected_cert cert
+			then Pol.Open v
+			else Pervasives.raise (Wrong_Certificate
+                (Printf.sprintf "%s -> cstr: %s; expected %s, got: %s"
+                    error_string
+                    (Pol.bnd_to_string bnd)
+                    (Cs.to_string Cs.Vec.V.to_string expected_cert)
+                    (F.to_string cert)))
+		| (Pol.Closed v, Some cert) ->
+			let expected_cert = if upper
+                then (Cs.mk2 Cstr.Le obj v)
+                else (Cs.mk2 Cstr.Le (Vec.neg obj) (Scalar.Rat.neg v))
+            in
+			if F.equal expected_cert cert
+			then Pol.Closed v
+			else Pervasives.raise (Wrong_Certificate
+                (Printf.sprintf "%s -> cstr: %s; expected %s, got: %s"
+                    error_string
+                    (Pol.bnd_to_string bnd)
+                    (Cs.to_string Cs.Vec.V.to_string expected_cert)
+                    (F.to_string cert)))
 
 	let getUpperBound : t -> Vec.t -> Pol.bndT option
 		= fun p vec ->
 		match p with
 		| Bottom -> None
-		| NonBot p' -> Some (Pol.getUpperBound F.factory p' vec |> check_bound "getUpperBound")
+		| NonBot p' -> Some (Pol.getUpperBound F.factory p' vec |> check_bound true vec)
 
 	let getLowerBound : t -> Vec.t -> Pol.bndT option
 		= fun p vec ->
 		match p with
 		| Bottom -> None
-		| NonBot p' -> Some (Pol.getLowerBound F.factory p' vec |> check_bound "getLowerBound")
+		| NonBot p' -> Some (Pol.getLowerBound F.factory p' vec |> check_bound false vec)
 
 	let itvize : t -> Vec.t -> Pol.itvT
 		= fun p vec ->
@@ -160,8 +182,8 @@ module Polyhedron (F : Factory.Type) = struct
 		| Bottom -> {Pol.low = Pol.Closed Scalar.Rat.u ; Pol.up = Pol.Closed Scalar.Rat.z}
 		| NonBot p' ->
 			let (itv, certLower, certUpper) = Pol.itvize F.factory p' vec in
-			let itvLower = check_bound "itvize_Lower" (itv.Pol.low, certLower)
-			and itvUpper = check_bound "itvize_Upper" (itv.Pol.up, certUpper) in
+			let itvLower = check_bound false vec (itv.Pol.low, certLower)
+			and itvUpper = check_bound true vec (itv.Pol.up, certUpper) in
 			{Pol.low = itvLower ; Pol.up = itvUpper}
 
 	let get_cstr = function

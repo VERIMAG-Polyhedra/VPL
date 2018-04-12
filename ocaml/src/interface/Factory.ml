@@ -17,6 +17,8 @@ module type Type = sig
 	val check : t Pol.t -> bool
 
 	val equal : Pol.Cs.t -> t -> bool
+
+    val to_string : t -> string
 end
 
 module Cstr = struct
@@ -72,6 +74,8 @@ module Cstr = struct
 	let equal : Pol.Cs.t -> t -> bool
 		= fun cs cert ->
 		Cs.equalSyn cs cert
+
+    let to_string = Pol.Cs.to_string Pol.Var.to_string
 end
 
 module Unit = struct
@@ -106,4 +110,6 @@ module Unit = struct
 
 	let equal : Pol.Cs.t -> t -> bool
 		= fun _ _ -> true
+
+    let to_string _ = "unit"
 end

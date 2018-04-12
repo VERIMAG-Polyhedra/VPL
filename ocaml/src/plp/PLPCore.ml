@@ -103,6 +103,10 @@ module PLP(Minimization : Min.Type) = struct
 			= fun (c,p) ->
 			"Boundary : " ^ (Cs.to_string V.to_string c)
 			^ " - point_other_side : " ^ (Vec.to_string V.to_string p)
+
+        let canon : t -> t
+            = fun (c,v) ->
+            (Cs.canon c, v)
 	end
 
 	let (strict_comp : Cs.t -> Cs.t)
@@ -163,6 +167,12 @@ module PLP(Minimization : Min.Type) = struct
 			 point = point;
 			 sx = Some sx
 			}
+
+        let canon : t -> t
+            = fun reg ->
+            {reg with
+                r = List.map (fun (bnd, i) -> (Boundary.canon bnd, i)) reg.r;
+            }
 
 		let get_cstrs : t -> Cs.t list
 			= fun reg ->
@@ -1268,7 +1278,7 @@ module PLP(Minimization : Min.Type) = struct
 	This constraint is of type {!type:Cons.t}, which certificate is computed thanks to [map]. *)
 	let extract_sol : PSplx.t -> (PSplx.t -> 'c) -> 'c Cons.t
 		= fun sx get_cert ->
-		let cstr = PSplx.obj_value' sx
+		let cstr = PSplx.obj_value' sx |> Cs.canon
 		and cert = get_cert sx in
 		(cstr, cert)
 
@@ -1337,6 +1347,7 @@ module PLP(Minimization : Min.Type) = struct
 		let regs = MapV.bindings plp.regs
 			|> List.split
 			|> Pervasives.snd
+            |> List.map Region.canon
 		in
 		Stat.nb_regions := List.length regs;
 		let results = extract_sols get_cert regs in

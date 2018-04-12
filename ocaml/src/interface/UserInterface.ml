@@ -343,10 +343,17 @@ let report : exn -> unit
 		| None -> report e
 		| Some b -> if b then send() else ()
 	in
-	fun e ->
-	Printf.sprintf "An exception was raised: %s"
+	fun e -> begin match e with
+    | CertcheckerConfig.CertCheckerFailure (_,s) ->
+        Printf.sprintf "An exception was raised: %s"
 		(Printexc.to_string e)
 		|> print_endline;
+        print_endline s
+    | _ ->
+	   Printf.sprintf "An exception was raised: %s"
+		(Printexc.to_string e)
+		|> print_endline
+    end;
 	report e
 
 module Interface (Coeff : Scalar.Type) = struct
@@ -762,6 +769,18 @@ module Interface (Coeff : Scalar.Type) = struct
 				lazy (backend_rep' p)
 				|> handle
 
+            let get_cond : t -> Cond.t
+                = fun p ->
+                let (rep, toVar) = match backend_rep p with
+                    | Some (p',(ofVar, toVar)) ->
+                        let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                        (p', toVar')
+                    | _ -> Pervasives.failwith "get_cond"
+                in
+                Pol.get_cstr rep
+                |> List.map (fun cstr -> Pol.Cs.rename_f toVar cstr)
+                |> Cond.of_cstrs
+
 			let translate : t -> Pol.Cs.Vec.t -> t
 				= let translate' : t -> Pol.Cs.Vec.t -> t
 					= fun p vec ->
@@ -820,14 +839,19 @@ module Interface (Coeff : Scalar.Type) = struct
 
             let get_regions : t -> t list
 				= let get_regions' p =
-                    let rep = match backend_rep p with
-    					| Some (p',_) -> p'
+                    let (rep, toVar) = match backend_rep p with
+    					| Some (p',(ofVar, toVar)) ->
+                            let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                            (p', toVar')
     					| _ -> Pervasives.failwith "get_regions"
     				in
                     let regions = Pol.get_regions Factory.Unit.factory rep in
                     List.map
                         (fun reg ->
-                            let cond = Cond.of_cstrs (Pol.get_cstr reg) in
+                            let cond = Pol.get_cstr reg
+                                |> List.map (fun cstr -> Pol.Cs.rename_f toVar cstr)
+                                |> Cond.of_cstrs
+                                in
                             assume cond top
                             )
                         regions

@@ -40,6 +40,8 @@ type bndT =
 
 type itvT = { low: bndT; up: bndT }
 
+val bnd_to_string : bndT -> string
+
 val get_low: itvT -> bndT
 val get_up: itvT -> bndT
 

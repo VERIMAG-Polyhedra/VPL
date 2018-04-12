@@ -592,8 +592,8 @@ let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
     = fun factory p point ->
     let regions = PoltoPLP.minimize_and_plp factory point p in
     List.map
-        (fun (reg,_) ->
+        (fun (reg,cons) ->
         List.map
             (fun cstr -> cstr, ())
-            (PoltoPLP.PLP.Region.get_cstrs reg)
+            ((Cons.get_c cons) :: PoltoPLP.PLP.Region.get_cstrs reg)
         ) regions.PoltoPLP.mapping

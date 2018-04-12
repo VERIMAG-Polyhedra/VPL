@@ -58,6 +58,12 @@ type bndT =
 
 type itvT = { low: bndT; up: bndT }
 
+let bnd_to_string : bndT -> string
+    = function
+    | Infty -> "infty"
+	| Open r -> Printf.sprintf "Open(%s)" (Scalar.Rat.to_string r)
+	| Closed r ->  Printf.sprintf "Closed (%s)" (Scalar.Rat.to_string r)
+
 let get_up (i: itvT) = i.up
 let get_low (i: itvT) = i.low
 
@@ -876,7 +882,8 @@ let getUpperBoundSub : 'c Cert.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
   = fun factory x p v ->
   let conss = EqSet.list p.eqs @ IneqSet.list p.ineqs in
   let i_cstr = List.mapi (fun i cons -> (i, Cons.get_c cons)) conss in
-  Splx.mk x i_cstr |> getUpperBoundImpl factory conss v
+  Splx.mk x i_cstr
+    |> getUpperBoundImpl factory conss v
 
 let getLowerBoundImpl : 'c Cert.t -> 'c Cons.t list -> Vec.t -> Splx.t Splx.mayUnsatT -> bndT * 'c option
   = fun factory conss v sx ->
@@ -888,7 +895,8 @@ let getLowerBoundSub : 'c Cert.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
   = fun factory x p v ->
   let conss = EqSet.list p.eqs @ IneqSet.list p.ineqs in
   let i_cstr = List.mapi (fun i cons -> (i, Cons.get_c cons)) conss in
-  Splx.mk x i_cstr |> getLowerBoundImpl factory conss v
+  Splx.mk x i_cstr
+    |> getLowerBoundImpl factory conss v
 
 let itvizeSub: 'c Cert.t -> Var.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
 	= fun factory nxtVar p v ->
@@ -1171,6 +1179,7 @@ let get_regions : 'c Cert.t -> 'c t -> unit t list
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
 			(to_string_raw p)))
 	;
+    Profile.start "get_regions";
     let point = match Opt.getAsg_raw (List.map Cons.get_c p.ineqs) with
         | None -> Pervasives.failwith "Pol.get_regions"
         | Some pl -> (Vec.M.map Vec.ofSymbolic pl)
@@ -1178,11 +1187,22 @@ let get_regions : 'c Cert.t -> 'c t -> unit t list
     let regions = IneqSet.get_regions_from_point factory p.ineqs point
     and eqs = List.map (fun (var, (cstr,_)) -> (var, (cstr, ()))) p.eqs
     in
-    List.map (fun reg -> {eqs = eqs ; ineqs = reg}) regions
+    let res = List.map (fun reg -> {eqs = eqs ; ineqs = reg}) regions in
+    Profile.stop "get_regions";
+    res
 
 let size : 'c t -> Scalar.Rat.t option
     = fun p ->
-    match Opt.getAsg_and_value_raw (List.map Cons.get_c p.ineqs) with
+    Debug.log DebugTypes.Title (lazy "Size");
+	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
+    	(to_string_raw p)));
+    let res = match Opt.getAsg_and_value_raw (List.map Cons.get_c p.ineqs) with
     | Some (_, None) -> None
     | None -> None
     | Some (_, Some value) -> Some value
+    in
+    Debug.log DebugTypes.MOutput (lazy
+        (match res with
+            | None -> "none"
+            | Some r -> Printf.sprintf "%s: %f" (Scalar.Rat.to_string r) (Scalar.Rat.to_float r)));
+    res

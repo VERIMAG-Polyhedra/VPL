@@ -4,7 +4,7 @@ module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module V = Cs.Vec.V
 
-module MinFloat = Min.Splx(Vec)
+module MinFloat = Min.Classic(Vec)
 module B = Join.Build(MinFloat)
 include B
 

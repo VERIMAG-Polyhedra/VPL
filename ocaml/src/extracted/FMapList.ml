@@ -429,15 +429,15 @@ module Raw =
       'a2 -> X.t -> 'a1 -> (X.t*'a1) list -> __ -> 'a3 -> 'a3) -> 'a1 t ->
       'a2 -> 'a3 **)
 
-  let rec fold_rect f f1 f0 m acc =
-    let f2 = f1 m acc in
-    let f3 = f0 m acc in
+  let rec fold_rect f1 f0 f m acc =
+    let f2 = f0 m acc in
+    let f3 = f m acc in
     (match m with
      | [] -> f2 __
      | p::l ->
        let t0,e = p in
        let f4 = f3 t0 e l __ in
-       let hrec = fold_rect f f1 f0 l (f t0 e acc) in f4 hrec)
+       let hrec = fold_rect f1 f0 f l (f1 t0 e acc) in f4 hrec)
 
   (** val fold_rec :
       (key -> 'a1 -> 'a2 -> 'a2) -> ('a1 t -> 'a2 -> __ -> 'a3) -> ('a1 t ->

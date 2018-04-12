@@ -141,7 +141,7 @@ Module MapPoly.
   Definition find_or_1 (i : CIndex.NatIndex.t) (m : t) : PExpr :=
   match M.find i m with
   | Some p => p
-  | _ => (PEc 1%Q)
+  | _ => failwith CERT "find_or_1: element not found in map" (PEc 1%Q)
   end.
 
   Definition cons_rec (l : list CIndex.NatIndex.t) (m : t) : PExpr :=

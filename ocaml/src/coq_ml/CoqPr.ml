@@ -27,7 +27,7 @@ let posTr: BinNums.positive -> Nb.Z.t
 	= fun shift acc -> function
 		| BinNums.Coq_xH -> Nb.Z.orL acc (Nb.Z.shiftL Nb.Z.u shift)
 		| BinNums.Coq_xO p -> f (shift + 1) acc p
-		| BinNums.Coq_xI p -> f (shift + 1) (Nb.Z.orL acc (Nb.Z.shiftL Nb.Z.u shift)) p 
+		| BinNums.Coq_xI p -> f (shift + 1) (Nb.Z.orL acc (Nb.Z.shiftL Nb.Z.u shift)) p
 	in f 0 Nb.Z.z p0
 
 let posPr: BinNums.positive -> string
@@ -63,10 +63,34 @@ let zPr': BinNums.coq_Z -> char list
 = fun z -> stringTr (zPr z)
 
 let zPrRaw: BinNums.coq_Z -> string
-= function
+    = function
 	| BinNums.Z0 -> "Z0"
 	| BinNums.Zpos p -> Printf.sprintf "Zpos (%s)" (posPrRaw p)
 	| BinNums.Zneg p -> Printf.sprintf "Zneg (%s)" (posPrRaw p)
 
 let zPrRaw': BinNums.coq_Z -> char list
-= fun z -> stringTr (zPrRaw z)
+    = fun z ->
+    stringTr (zPrRaw z)
+
+let qPr : QArith_base.coq_Q -> string
+    = fun q ->
+    Printf.sprintf "%s/%s"
+        (zPr q.QArith_base.coq_Qnum)
+        (posPr q.QArith_base.coq_Qden)
+
+let rec exprPr: Ring_polynom_AddOnQ.coq_PExpr -> string
+    = Ring_polynom.(function
+    | PEO -> "0"
+    | PEI -> "1"
+    | PEc c -> qPr c
+    | PEX p -> "x_" ^ (posPr p)
+    | PEadd (p1,p2) -> Printf.sprintf "%s + %s" (exprPr p1) (exprPr p2)
+    | PEsub (p1,p2) -> Printf.sprintf "%s - (%s)" (exprPr p1) (exprPr p2)
+    | PEmul (p1,p2) -> Printf.sprintf "(%s) * (%s)" (exprPr p1) (exprPr p2)
+    | PEopp (p) -> Printf.sprintf "-1*(%s)" (exprPr p)
+    | PEpow (p,_) -> Printf.sprintf "(%s)^?" (exprPr p)
+    )
+
+let rec exprPr': Ring_polynom_AddOnQ.coq_PExpr -> char list
+    = fun p ->
+    exprPr p |> stringTr

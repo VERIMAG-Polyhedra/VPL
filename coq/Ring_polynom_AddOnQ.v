@@ -84,6 +84,9 @@ Fixpoint PEsem (pe: PExpr) (m: positive -> Q): Q :=
   | PEpow pe1 n => Qpower (PEsem pe1 m) n
   end.
 
+Require Import String.
+
+Fixpoint to_string (pe: PExpr) : string := "".
 
 (* We relate PEsem and PEeval. We are in the semantics, 
    hence we do not need an "efficient" translation

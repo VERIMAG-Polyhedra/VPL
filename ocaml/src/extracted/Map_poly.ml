@@ -70,7 +70,11 @@ module MapPoly =
   let find_or_1 i m =
     match M.find i m with
     | Some p -> p
-    | None -> PEc { coq_Qnum = (Zpos Coq_xH); coq_Qden = Coq_xH }
+    | None ->
+      (fun st mesg _ -> raise (CertcheckerConfig.CertCheckerFailure (st, (CoqPr.charListTr mesg))))
+        CERT
+        ('f'::('i'::('n'::('d'::('_'::('o'::('r'::('_'::('1'::(':'::(' '::('e'::('l'::('e'::('m'::('e'::('n'::('t'::(' '::('n'::('o'::('t'::(' '::('f'::('o'::('u'::('n'::('d'::(' '::('i'::('n'::(' '::('m'::('a'::('p'::[])))))))))))))))))))))))))))))))))))
+        (PEc { coq_Qnum = (Zpos Coq_xH); coq_Qden = Coq_xH })
 
   (** val cons_rec : NatIndex.t list -> t -> coq_PExpr **)
 
@@ -201,6 +205,9 @@ module Handelman_compute =
               one)
     else (fun st mesg _ -> raise (CertcheckerConfig.CertCheckerFailure (st, (CoqPr.charListTr mesg))))
            CERT
-           ('e'::('q'::('_'::('w'::('i'::('t'::('n'::('e'::('s'::('s'::(' '::(':'::(' '::('t'::('h'::('e'::(' '::('t'::('w'::('o'::(' '::('p'::('o'::('l'::('y'::('n'::('o'::('m'::('i'::('a'::('l'::('s'::(' '::('d'::('i'::('f'::('f'::('e'::('r'::[])))))))))))))))))))))))))))))))))))))))
+           ('e'::('q'::('_'::('w'::('i'::('t'::('n'::('e'::('s'::('s'::(' '::(':'::(' '::('t'::('h'::('e'::(' '::('t'::('w'::('o'::(' '::('p'::('o'::('l'::('y'::('n'::('o'::('m'::('i'::('a'::('l'::('s'::(' '::('d'::('i'::('f'::('f'::('e'::('r' ::
+           ('w' :: ':' :: CoqPr.exprPr' (witness p c g))
+           @ ('a' :: ':' :: CoqPr.exprPr' (QPom.toPExpr c.aff))
+           )))))))))))))))))))))))))))))))))))))))
            one
  end

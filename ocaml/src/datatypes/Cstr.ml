@@ -515,7 +515,7 @@ module Rat = struct
 			let g = Vec.gcd cstr.v in
 			if Vec.Coeff.isZ g
 			then cstr
-			else {cstr with v = Vec.divr cstr.v g ; c = Vec.Coeff.divr cstr.c g}
+			else {cstr with v = Vec.mulr g cstr.v ; c = Vec.Coeff.mulr g cstr.c}
 
 	end
 
