@@ -59,13 +59,7 @@ module BuildSx = struct
 	let build_norm_from_point : Vec.t -> Cs.t list -> Tableau.Vector.t
 		= fun init_point cstrs ->
 		List.map
-			(fun cstr ->
-				Scalar.Rat.sub
-					(Cs.Vec.dot_product
-						init_point
-						(Cs.get_v cstr))
-					(Cs.get_c cstr)
-			)
+			(fun cstr -> Cs.eval' cstr init_point)
 			cstrs
 		@ [Scalar.Rat.negU] (* Normalization constant *)
 

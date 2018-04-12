@@ -1,5 +1,7 @@
 open Splx
 
+module Debug = DebugTypes.Debug(struct let name = "Pol" end)
+
 type progressT = Unbnd | UpTo of Scalar.Symbolic.t | NoChange
 
 type dirT = Incr | Decr
@@ -224,8 +226,9 @@ let getAsg_and_value : V.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t *
 		= fun horizon cstrs ->
 			let epsilon = horizon in
 			let obj = Cs.Vec.mk [Cs.Vec.Coeff.u, epsilon] in
+            let id = (List.fold_left (fun r (i,_) -> Pervasives.max r i) 0 cstrs) + 1 in
 			let cstrs' =
-				(2500, Cs.le [Scalar.Rat.u, epsilon] (Scalar.Rat.of_float 100000.)):: (* TODO : changer ça! *)
+				(id, Cs.le [Scalar.Rat.u, epsilon] (Scalar.Rat.of_float max_float)):: (* TODO : changer ça! *)
 				(List.map
 					(fun (i,cstr) ->
 						i,
@@ -243,11 +246,13 @@ let getAsg_and_value : V.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t *
 	match max' sx obj with
 	| IsUnsat _ -> None
 	| IsOk Infty -> begin
+        Debug.log DebugTypes.Detail (lazy "getAsg_and_value: epsilon problem unbounded");
         match getAsgOpt horizon cstrs with
         | Some point -> Some (point, None)
         | None -> None
         end
 	| IsOk (Sup (sx,obj_value,_)) | IsOk (Finite (sx,obj_value,_)) ->
+        Debug.log DebugTypes.Detail (lazy "getAsg_and_value: epsilon problem bounded");
 		let point = Vector.Symbolic.Positive.set (getAsg sx) horizon Scalar.Symbolic.z in
 		Some (point, Some obj_value)
 

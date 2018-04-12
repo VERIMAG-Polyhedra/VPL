@@ -186,10 +186,14 @@ module Report = struct
 
 	let result_to_string : result -> result -> string
 		= fun (father_name, father_time) (name,time) ->
-		Printf.sprintf "%s -> %s, %f %c"
+		Printf.sprintf "%s -> %s, %s"
 			(remove_prefix name)
 			(time_to_string time)
-			(time *. 100. /. father_time) '%'
+			(let t = time *. 100. /. father_time in
+            if t = infinity
+            then ""
+            else Printf.sprintf "%.2f %c" t '%'
+            )
 
 	let rec tree_to_string_rec : result -> tree -> string
 		= fun father -> function

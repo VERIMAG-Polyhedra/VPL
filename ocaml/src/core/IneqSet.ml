@@ -12,7 +12,7 @@ module Cert = Cons.Cert
 module Vec = Cs.Vec
 module V = Vec.V
 
-module Debug = DebugTypes.Debug(struct let name = "Pol" end)
+module Debug = Opt.Debug
 
 type 'c t = 'c Cons.t list
 

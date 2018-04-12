@@ -1184,6 +1184,9 @@ let get_regions : 'c Cert.t -> 'c t -> unit t list
         | None -> Pervasives.failwith "Pol.get_regions"
         | Some pl -> (Vec.M.map Vec.ofSymbolic pl)
     in
+    Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Normalization point generated: %s"
+			(Vec.to_string Vec.V.to_string point)))
+	;
     let regions = IneqSet.get_regions_from_point factory p.ineqs point
     and eqs = List.map (fun (var, (cstr,_)) -> (var, (cstr, ()))) p.eqs
     in

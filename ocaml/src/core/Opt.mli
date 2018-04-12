@@ -1,5 +1,7 @@
 (** This module builds on {! Splx} to offer an optimizing simplex. *)
 
+module Debug : DebugTypes.Type
+
 (** A value of type [progressT] describes the change that can be operated on a given quantity.
 The change does not specify whether this is an increase or a decrease.
 In the case of [UpTo d], the change [d] is always positive. *)
