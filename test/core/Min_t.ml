@@ -9,9 +9,10 @@ module Test (Min : Min.Type) = struct
 	let x = Vec.V.fromInt 1
 	let y = Vec.V.fromInt 2
 	
-	let minimizeTs: T.testT
+	let minimizeTs: unit -> T.testT
 		(* The boolean is true if the points can saturate constraints. *)
-		= let check_points: (string * (Cs.t * Vec.t) list * Cs.t list * bool) -> T.testT 
+		= fun () ->
+		let check_points: (string * (Cs.t * Vec.t) list * Cs.t list * bool) -> T.testT
 			= fun (name, cstrs, _, b) state ->
 			try 
 				let (cstr,point) = List.find
@@ -226,8 +227,8 @@ module Test (Min : Min.Type) = struct
 				T.suite "check_cstrs" (List.map check_cstrs tcs)
 			]
 	
-	let ts : T.testT
-		= T.suite Min.name [minimizeTs]
+	let ts : unit -> T.testT
+		= fun () -> T.suite Min.name [minimizeTs ()]
 end
 
 module Classic = struct
@@ -236,7 +237,7 @@ module Classic = struct
 	module Symbolic = Test(Min.Classic(Vector.Symbolic.Positive))
 	
 	let ts : T.testT
-		= T.suite "Classic" [Rat.ts ; Float.ts ; Symbolic.ts]
+		= T.suite "Classic" [Rat.ts (); Float.ts (); Symbolic.ts ()]
 end
 
 module Raytracing = struct
@@ -244,19 +245,19 @@ module Raytracing = struct
 		module Rat = Test(Min.Glpk(Vector.Rat.Positive))
 		module Float = Test(Min.Glpk(Vector.Float.Positive))
 		module Symbolic = Test(Min.Glpk(Vector.Symbolic.Positive))
-		let ts : T.testT
-			= T.suite "Glpk" [(*Rat.ts ; Float.ts ; Symbolic.ts*)]
+		let ts : unit -> T.testT
+			= fun () -> T.suite "Glpk" [Rat.ts (); Float.ts (); Symbolic.ts ()]
 	end
 	module Splx = struct
 		module Rat = Test(Min.Splx(Vector.Rat.Positive))
 		module Float = Test(Min.Splx(Vector.Float.Positive))
 		module Symbolic = Test(Min.Splx(Vector.Symbolic.Positive))
 		let ts : T.testT
-			= T.suite "Splx" [Rat.ts ;  Float.ts ; Symbolic.ts]
+			= T.suite "Splx" [Rat.ts ();  Float.ts (); Symbolic.ts ()]
 	end
 	
 	let ts : T.testT
-		= T.suite "Raytracing" [Glpk.ts ; Splx.ts] 
+		= T.suite "Raytracing" ((if Wrapper.with_glpk then [Glpk.ts ()] else []) @ [Splx.ts])
 end
 
 let ts: T.testT

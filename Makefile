@@ -1,7 +1,16 @@
-all : vpl
+all: vpl
 
-vpl:
-	cd ocaml; $(MAKE)
+vpl: setup
+	$(MAKE) -C ocaml/
+
+setup:
+	cd ocaml; cp -f _oasis_no_glpk _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
+
+vpl_glpk: setup_glpk
+	$(MAKE) -C ocaml/
+
+setup_glpk:
+	cd ocaml; cp -f _oasis_glpk _oasis; cp -f src/Wrapper_glpk.ml src/Wrapper.ml; oasis setup
 
 clean:
 	$(MAKE) -C ocaml/ clean
@@ -12,7 +21,7 @@ to_opam:
 	cd ocaml
 	oasis2opam --local
 
-allclean: clean coq_clean test_clean
+allclean: clean coq_clean test_clean oasis_clean
 
 install:
 	$(MAKE) -C ocaml/ install
@@ -25,6 +34,10 @@ check:
 
 test_clean:
 	$(MAKE) -C test/ clean
+
+oasis_clean:
+	$(RM) -f ocaml/Makefile ocaml/configure ocaml/_tags ocaml/myocamlbuild.ml ocaml/setup.ml ocaml/setup.data ocaml/setup.log
+	$(RM) -f ocaml/src/META ocaml/src/*lib ocaml/src/*pack
 
 # extract Coq files into the expected  ocaml/ subdir.
 coq_update:

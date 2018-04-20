@@ -145,12 +145,12 @@ module Raytracing = struct
 end
 
 let ts : T.testT
-	= [
-	Raytracing.Glpk.Rat.ts;
-	Raytracing.Glpk.Float.ts;
-	Raytracing.Glpk.Symbolic.ts;
-	Raytracing.Splx.Rat.ts;
-	Raytracing.Splx.Float.ts;
-	Raytracing.Splx.Symbolic.ts;
-	] 
+	= (
+		(if Wrapper.with_glpk then [
+			Raytracing.Glpk.Rat.ts;
+			Raytracing.Glpk.Float.ts;
+			Raytracing.Glpk.Symbolic.ts;
+		] else [])
+	@
+	[ Raytracing.Splx.Rat.ts; Raytracing.Splx.Float.ts; Raytracing.Splx.Symbolic.ts; ])
 	|> T.suite "ProjBuild"
