@@ -28,7 +28,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
   
         First, add the following repository in your opam system:
 
-            opam repo add vpl http://www-verimag.imag.fr/~boulme/opam-vpl
+            opam repo add vpl https://raw.githubusercontent.com/VERIMAG-Polyhedra/opam-vpl/master
 
         Then, install the following packages (depending on your needs):
 

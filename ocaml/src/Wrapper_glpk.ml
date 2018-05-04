@@ -1,5 +1,7 @@
 type polyhedron
 
+let with_glpk = true
+
 external mk : int -> int -> polyhedron = "new_poly"
 
 external rm : polyhedron -> unit = "delete_poly"
