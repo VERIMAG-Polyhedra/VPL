@@ -320,7 +320,7 @@ module Handelman (Minimization : Min.Type) = struct
 							(Cs.getVars ineqs |> Cs.Vec.V.Set.elements)
 					in
 					Proj.proj Factory.Unit.factory Flags.Float vars_to_project
-						(List.map Factory.Unit.mk ineqs)
+						(List.map Factory.Unit.mkCons ineqs)
 					|> Pervasives.fst
 					|> List.map Pervasives.fst
 					|> List.map Cs.canon

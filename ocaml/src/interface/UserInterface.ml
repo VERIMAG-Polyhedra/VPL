@@ -110,12 +110,15 @@ module type Type = sig
 	module VPL_Expr : sig
 	end
 
-	(** The module is a functor taking a High Level Domain (of type {!module:HighLevelDomain_T}) and a user-defined expression module (of type {!module:Expr_T}).
+	(** The functor takes a High Level Domain (of type {!modtype:HighLevelDomain_T}) and a user-defined expression module (of type {!modtype:Expr_T}).
 	If you have no user-defined expressions, use {!module:VPL_Expr}. *)
-	module Interface : functor (I : HighLevelDomain_T)(Expr : Expr_T) -> sig
+	module Lift : functor (I : HighLevelDomain_T)(Expr : Expr_T) -> sig
 
 		(** Type of polyhedron *)
 		type t
+
+        (** Type of certificates *)
+        type cert
 
 		(** Defines conditions using the user-defined expressions. *)
 		module UserCond : sig
@@ -143,6 +146,9 @@ module type Type = sig
 
 			(** Checks if the given polyhedron is empty. *)
 			val is_bottom: t -> bool
+
+            (** If the polyhedron is bottom, returns the associated certificate. Otherwise, returns None. *)
+            val get_bottom_cert : t -> cert option
 
 			(** Computes the intersection of two polyhedra. *)
 			val meet : t -> t -> t
@@ -204,9 +210,6 @@ module type Type = sig
 
 			(** Uncertified functions : *)
 
-			(** [translate pol dir] translates polyhedron [pol] in direction [dir]. *)
-			val translate : t -> Pol.Cs.Vec.t -> t
-
 			(** [mapi f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol]. *)
 			val mapi : (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 
@@ -232,6 +235,9 @@ module type Type = sig
 
 			(** Checks if the given polyhedron is empty. *)
 			val is_bottom: t -> bool
+
+            (** If the polyhedron is bottom, returns the associated certificate. Otherwise, returns None. *)
+            val get_bottom_cert : t -> cert option
 
 			(** Computes the intersection of two polyhedra. *)
 			val meet : t -> t -> t
@@ -290,10 +296,6 @@ module type Type = sig
 			(* TODO: Specification of parallel assignments left to define. *)
 			(* TODO: Should it be (Var.t * I.Cond.t) list -> t -> t *)
 			val guassign: (Expr.Ident.t list) -> UserCond.t -> t -> t
-
-	  		(** The following are uncertified functions : *)
-			(** [translate pol dir] translates polyhedron [pol] in direction [dir]. *)
-			val translate : t -> Pol.Cs.Vec.t -> t
 
 			(** [mapi f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol].
 			Variables are translated from high-level to low-level before applying functions [f1] and [f2].
@@ -356,7 +358,7 @@ let report : exn -> unit
     end;
 	report e
 
-module Interface (Coeff : Scalar.Type) = struct
+module MakeInterface (Coeff : Scalar.Type) = struct
 
 	include Interface(Coeff)
 
@@ -393,12 +395,14 @@ module Interface (Coeff : Scalar.Type) = struct
 		let to_term x = x
 	end
 
-	module Interface (I : HighLevelDomain)(Expr : Expr_T) = struct
+	module Lift (I : HighLevelDomain)(Expr : Expr_T) = struct
 
 		type t = {
 			value: I.t;
 			name: string;
 			}
+
+        type cert = I.cert
 
 		(** Handles exception report *)
 		let handle : 'a Lazy.t -> 'a
@@ -573,15 +577,6 @@ module Interface (Coeff : Scalar.Type) = struct
 				lazy (Printf.sprintf "%s %s in %s" Symbols.s_itv (Term.to_string Var.to_string t) p.name)
 				|> Record.write
 
-			let translate : t -> Pol.Cs.Vec.t -> string
-				= fun p vec ->
-				let next = Names.mk() in
-				lazy (Printf.sprintf "%s %s %s %s %s"
-					next Symbols.s_assign p.name Symbols.s_translate
-					(Pol.Cs.Vec.to_string Pol.Cs.Vec.V.to_string vec))
-				|> Record.write;
-				next
-
 			let mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> string
 				= fun _ _ _ _ ->
 				let next = Names.mk() in
@@ -613,6 +608,16 @@ module Interface (Coeff : Scalar.Type) = struct
 				in
 				fun p ->
 				lazy (is_bottom' p)
+				|> handle
+
+            let get_bottom_cert : t -> cert option
+				= let get_bottom_cert' : t -> cert option
+					= fun p ->
+					Track.is_bottom p;
+					I.get_bottom_cert p.value
+				in
+				fun p ->
+				lazy (get_bottom_cert' p)
 				|> handle
 
 			let assume :  Cond.t -> t -> t
@@ -781,16 +786,6 @@ module Interface (Coeff : Scalar.Type) = struct
                 |> List.map (fun cstr -> Pol.Cs.rename_f toVar cstr)
                 |> Cond.of_cstrs
 
-			let translate : t -> Pol.Cs.Vec.t -> t
-				= let translate' : t -> Pol.Cs.Vec.t -> t
-					= fun p vec ->
-					let name = Track.translate p vec in
-					mk name (I.translate p.value vec)
-				in
-				fun p vec ->
-				lazy (translate' p vec)
-				|> handle
-
 			let mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 				= let mapi' : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 					= fun b f1 f2 p ->
@@ -881,43 +876,43 @@ module Interface (Coeff : Scalar.Type) = struct
 
 			let assume: UserCond.t -> t -> t
 				= fun c p ->
-				assume (UserCond.to_cond c) p
+				BuiltIn.assume (UserCond.to_cond c) p
 
 			let asserts: UserCond.t -> t -> bool
 				= fun c p ->
-				asserts (UserCond.to_cond c) p
+				BuiltIn.asserts (UserCond.to_cond c) p
 
 			let assign: (Expr.Ident.t * Expr.t) list -> t -> t
 				= fun l p ->
-				assign
+				BuiltIn.assign
 					(List.map (fun (v,e) -> Expr.Ident.toVar v, Expr.to_term e) l)
 					p
 
 			let project: Expr.Ident.t list -> t -> t
 				= fun vars p ->
 				let vars' = List.map Expr.Ident.toVar vars in
-				project vars' p
+				BuiltIn.project vars' p
 
 			let projectM: Expr.Ident.t list -> t -> t
 				= fun vars p ->
 				let vars' = List.map Expr.Ident.toVar vars in
-				projectM vars' p
+				BuiltIn.projectM vars' p
 
 			let guassign: (Expr.Ident.t list) -> UserCond.t -> t -> t
 				= fun vl c p ->
-				guassign (List.map Expr.Ident.toVar vl) (UserCond.to_cond c) p
+				BuiltIn.guassign (List.map Expr.Ident.toVar vl) (UserCond.to_cond c) p
 
 			let getUpperBound : t -> Expr.t -> Pol.bndT option
 				= fun p expr ->
-				getUpperBound p (Expr.to_term expr)
+				BuiltIn.getUpperBound p (Expr.to_term expr)
 
 			let getLowerBound : t -> Expr.t -> Pol.bndT option
 				= fun p expr ->
-				getLowerBound p (Expr.to_term expr)
+				BuiltIn.getLowerBound p (Expr.to_term expr)
 
 	  		let itvize : t -> Expr.t -> Pol.itvT
 	  			= fun p expr ->
-				itvize p (Expr.to_term expr)
+				BuiltIn.itvize p (Expr.to_term expr)
 		end
 	end
 end
@@ -933,8 +928,8 @@ module Lift_Ident (I : sig
     let compare = I.compare
 
     module Map_var_to_t = Map.Make(struct
-		include Var
-		let compare = cmp
+		type t = Var.t
+		let compare = Var.cmp
 		end)
 
 	module Map_t_to_var = Map.Make(I)

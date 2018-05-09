@@ -15,7 +15,7 @@ module CW = CWrappers
 
 let profiling = ref true;;
 
-module Polyhedron: NCInterface.Polyhedron_Type = struct
+module Polyhedron: NCInterface.PolyhedronDomain = struct
 
   let last_name = ref 0;;
 
@@ -32,6 +32,8 @@ module Polyhedron: NCInterface.Polyhedron_Type = struct
   type t =
     | NonBot of nonempty
     | Bottom
+
+  type cert = unit
 
   let make () =
     if !profiling then
@@ -199,7 +201,7 @@ module Polyhedron: NCInterface.Polyhedron_Type = struct
   	    | Bottom -> (print_endline "None"; None)
   	    | NonBot p -> Some (dump p)
 
-  	let translate p vec = failwith "not_yet_implemented : translate"
+    let get_bottom_cert _ = failwith "not_yet_implemented : get_bottom_cert"
 
   	let mapi _ _ _ _ = failwith "not_yet_implemented : map"
 
@@ -210,7 +212,7 @@ end
 
 
 module HLDomain = struct
-  module I = NCInterface.Interface (Polyhedron)
+  module I = NCInterface.Lift (Polyhedron)
   module I_Q = I.QInterface
   module Q = CW.MakeHighLevel (I_Q)
 

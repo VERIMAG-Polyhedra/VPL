@@ -10,7 +10,9 @@ module type Type = sig
 
 	val factory : t Pol.Cert.t
 
-	val mk : Pol.Cs.t -> t Pol.Cons.t
+	val mk : Pol.Cs.t -> t
+
+    val mkCons : Pol.Cs.t -> t Pol.Cons.t
 
     val convert : 'c Pol.t -> t Pol.t
 
@@ -56,13 +58,16 @@ module Cstr = struct
 		Cert.rename = Cs.rename;
 	}
 
-	let mk : Pol.Cs.t -> t Pol.Cons.t
+    let mk : Pol.Cs.t -> t
+        = fun cs -> cs
+
+	let mkCons : Pol.Cs.t -> t Pol.Cons.t
 		= fun cs -> (cs,cs)
 
     let convert : 'c Pol.t -> t Pol.t
         = fun p -> {
-            Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mk cstr)) p.Pol.eqs;
-            Pol.ineqs = List.map (fun (cstr,_) -> mk cstr) p.Pol.ineqs;
+            Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mkCons cstr)) p.Pol.eqs;
+            Pol.ineqs = List.map (fun (cstr,_) -> mkCons cstr) p.Pol.ineqs;
         }
 
 	let check : t Pol.t -> bool
@@ -96,13 +101,55 @@ module Unit = struct
 		Cert.rename = (fun _ _ _ -> ());
 	}
 
-	let mk : Pol.Cs.t -> t Pol.Cons.t
+    let mk : Pol.Cs.t -> t
+        = fun _ -> ()
+
+	let mkCons : Pol.Cs.t -> t Pol.Cons.t
 		= fun cs -> (cs,())
 
     let convert : 'c Pol.t -> t Pol.t
         = fun p -> {
-            Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mk cstr)) p.Pol.eqs;
-            Pol.ineqs = List.map (fun (cstr,_) -> mk cstr) p.Pol.ineqs;
+            Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mkCons cstr)) p.Pol.eqs;
+            Pol.ineqs = List.map (fun (cstr,_) -> mkCons cstr) p.Pol.ineqs;
+        }
+
+	let check : t Pol.t -> bool
+		= fun _ -> true
+
+	let equal : Pol.Cs.t -> t -> bool
+		= fun _ _ -> true
+
+    let to_string _ = "unit"
+end
+
+module Farkas = struct
+
+	type t = unit
+
+	module Cert = Pol.Cert
+
+	let factory : t Cert.t = {
+		Cert.name = "Unit";
+		Cert.top = ();
+		Cert.triv = (fun _ _ -> ());
+		Cert.add = (fun _ _ -> ());
+		Cert.mul = (fun _ _ -> ());
+		Cert.to_le = (fun _ -> ());
+		Cert.merge = (fun _ _ -> ());
+		Cert.to_string = (fun _ -> "unit");
+		Cert.rename = (fun _ _ _ -> ());
+	}
+
+    let mk : Pol.Cs.t -> t
+		= fun cs -> ()
+
+	let mkCons : Pol.Cs.t -> t Pol.Cons.t
+		= fun cs -> (cs,())
+
+    let convert : 'c Pol.t -> t Pol.t
+        = fun p -> {
+            Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mkCons cstr)) p.Pol.eqs;
+            Pol.ineqs = List.map (fun (cstr,_) -> mkCons cstr) p.Pol.ineqs;
         }
 
 	let check : t Pol.t -> bool

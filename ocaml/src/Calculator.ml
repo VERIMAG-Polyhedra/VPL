@@ -2,7 +2,7 @@
 module CP = CstrPoly.Positive
 module Poly = CP.Poly
 
-include UserInterface.Interface(Scalar.Rat)
+include UserInterface.MakeInterface(Scalar.Rat)
 
 let folder = "/tmp/"
 
@@ -63,7 +63,7 @@ module Expr = struct
 end
 
 (*module VPL = Interface(CDomain.PedraQWrapper)(Expr)*)
-module VPL = Interface(NCDomain.NCVPL_Unit.Q)(Expr)
+module VPL = Lift(NCDomain.NCVPL_Unit.Q)(Expr)
 
 let polyCP_to_polCP : PolyParserBuild.contrainte list -> VPL.UserCond.t
 	= fun l ->

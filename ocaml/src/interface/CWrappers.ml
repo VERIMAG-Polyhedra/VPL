@@ -52,6 +52,8 @@ module type LowLevelDomain = sig
 
   module Term : TermType
 
+  type cert
+
   type t
 
   val top: t
@@ -59,6 +61,9 @@ module type LowLevelDomain = sig
   val bottom: t
 
   val is_bottom: t -> bool
+
+  (** If the polyhedron is bottom, returns the associated certificate. Otherwise, returns None. *)
+  val get_bottom_cert : t -> cert option
 
   (* atomic assume *)
   val assume: (cmpT * Term.t) list -> t -> t
@@ -90,8 +95,6 @@ module type LowLevelDomain = sig
   val backend_rep : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option
 
   (** Uncertified functions : *)
-  (** [translate pol dir] translates polyhedron [pol] in direction [dir]. *)
-  val translate : t -> Pol.Cs.Vec.t -> t
 
   (** [mapi b f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol].
   Boolean [b] has no effect here. It is used in the high-level version of [mapi]. *)
@@ -412,6 +415,8 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   include FullDom
 
+  type cert = LHD.cert
+
   module Term = QInterface.Term
 
   let auto_lifting : (LHD.t -> LHD.t) -> t -> t
@@ -420,17 +425,6 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   let minkowski p1 p2 =
     {p1 with pol = LHD.minkowski p1.pol p2.pol}
-
-  let translate pol vec =
-  match backend_rep pol with
-  | None -> Pervasives.failwith "translate"
-  | Some (p,(ofVar,toVar)) ->
-    let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
-    let vec' = Vector.Rat.Positive.toList vec
-      |> List.map (fun (v,c) -> c, (ofVar' v))
-      |> Vector.Rat.Positive.mk
-    in
-    auto_lifting (fun p -> LHD.translate p vec') pol
 
   let projectM vars pol =
   match backend_rep pol with
@@ -457,6 +451,8 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     	 auto_lifting (fun p -> LHD.mapi false f1 f2 p) pol
 
   let is_bottom = isBottom
+
+  let get_bottom_cert p = LHD.get_bottom_cert p.pol
 
   let assume c p =
     assume (import_QCond c) p
@@ -643,12 +639,16 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
 
   include FullDom
 
+  type cert = LHD.cert
+
   let not_yet_implemented s =
     raise (CertcheckerConfig.CertCheckerFailure (Debugging.NYI, "makeZ " ^ s ^ " on Z"))
 
   module Term = ZInterface.Term
 
   let is_bottom = FullDom.isBottom
+
+  let get_bottom_cert p = LHD.get_bottom_cert p.pol
 
   let assume c p =
     assume (import_ZCond c) p

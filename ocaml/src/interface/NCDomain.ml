@@ -9,32 +9,44 @@ module Coeff = Scalar.Rat
 
 module CW = CWrappers
 
-module Polyhedron (F : Factory.Type) = struct
+(**
+ * This functor builds a {!modtype:NCInterface.PolyhedronDomain} by instantiating operators in {!module:Pol} with the given factory.
+ *)
+module MakePolyhedronDomain (F : Factory.Type) = struct
+
+    type cert = F.t
 
 	type t =
 		| NonBot of F.t Pol.t
-		| Bottom
+		| Bottom of cert
 
 	exception Wrong_Certificate of string
 
 	let top = NonBot Pol.top
 
-	let bottom = Bottom
+	let bottom = Bottom (F.mk (Cs.mk Cstr.Le [] Scalar.Rat.z))
 
-	let is_bottom p = p = Bottom
+	let is_bottom = function
+        | Bottom _ -> true
+        | _ -> false
 
+    let get_bottom_cert = function
+        | Bottom c -> Some c
+        | _ -> None
+        
 	let to_string : (Var.t -> string) -> t -> string
 		= fun varPr -> function
-		| Bottom -> "bottom"
+		| Bottom _ -> "bottom"
 		| NonBot p ->
 			if p = Pol.top then
 				"top"
 			else
 				Pol.to_string varPr p
 
+
 	let check : t -> t
 		= function
-		| Bottom -> Bottom
+		| Bottom c -> Bottom c (* XXX : test the certificate *)
 		| NonBot p as ph -> if F.check p
 			then ph
 			else Pervasives.failwith (Printf.sprintf "VPL has failed: wrong certificate in polyhedron %s"
@@ -43,12 +55,12 @@ module Polyhedron (F : Factory.Type) = struct
 	let addM : t -> Cs.t list -> t
 		= fun p cs ->
 		match p with
-		| Bottom -> p
+		| Bottom _ -> p
 		| NonBot p ->
-			let cs' = List.map F.mk cs in
+			let cs' = List.map F.mkCons cs in
 			match Pol.addM F.factory p cs' with
 			| Pol.Added pol -> check (NonBot pol)
-			| Pol.Contrad _ -> Bottom
+			| Pol.Contrad c -> Bottom c
 
 	let addNLM : t -> CP.t list -> t
 		= fun _ _ ->
@@ -57,19 +69,19 @@ module Polyhedron (F : Factory.Type) = struct
 	let meet : t -> t -> t
 		= fun p1 p2 ->
 		match p1,p2 with
-		| Bottom, _ | _, Bottom -> Bottom
+		| Bottom c, _ | _, Bottom c -> Bottom c
 		| NonBot p1', NonBot p2' ->
 			match Pol.meet F.factory p1' p2' with
 			| Pol.Added pol -> check (NonBot pol)
-			| Pol.Contrad _ -> Bottom
+			| Pol.Contrad c -> Bottom c
 
 	(* TODO: need Factory.equal! *)
 	let join : t -> t -> t
 		= fun p1 p2 ->
 		match p1, p2 with
-		| Bottom, Bottom -> Bottom
-		| Bottom, NonBot _ -> p2
-		| NonBot _, Bottom -> p1
+		| Bottom c, Bottom _ -> Bottom c
+		| Bottom _, NonBot _ -> p2
+		| NonBot _, Bottom _ -> p1
 		| NonBot p1', NonBot p2' ->
 			let p' = Pol.join F.factory F.factory p1' p2'
 				|> Pervasives.fst
@@ -80,9 +92,9 @@ module Polyhedron (F : Factory.Type) = struct
 	let minkowski : t -> t -> t
 		= fun p1 p2 ->
 		match p1, p2 with
-		| Bottom, Bottom -> Bottom
-		| Bottom, NonBot _ -> p2
-		| NonBot _, Bottom -> p1
+		| Bottom c, Bottom _ -> Bottom c
+		| Bottom _, NonBot _ -> p2
+		| NonBot _, Bottom _ -> p1
 		| NonBot p1', NonBot p2' ->
 			let p' = Pol.minkowski F.factory F.factory p1' p2'
 				|> Pervasives.fst
@@ -92,7 +104,7 @@ module Polyhedron (F : Factory.Type) = struct
 	let project : t -> Var.t list -> t
 		= fun p vars ->
 		match p with
-		| Bottom -> Bottom
+		| Bottom c -> Bottom c
 		| NonBot p' ->
 			let p' = Pol.projectM F.factory p' vars in
 			check (NonBot p')
@@ -102,9 +114,9 @@ module Polyhedron (F : Factory.Type) = struct
 	let widen: t -> t -> t
 		= fun p1 p2 ->
 		match p1, p2 with
-		| Bottom, Bottom -> Bottom
-		| Bottom, NonBot _ -> p2
-		| NonBot _, Bottom -> top
+		| Bottom c, Bottom _ -> Bottom c
+		| Bottom _, NonBot _ -> p2
+		| NonBot _, Bottom _ -> top
 		| NonBot p1', NonBot p2' ->
 			let p' = Pol.widen F.factory p1' p2' in
 			check (NonBot p')
@@ -112,7 +124,7 @@ module Polyhedron (F : Factory.Type) = struct
 	(* TODO: lever une exception spécifique*)
 	let check_incl : F.t list -> t -> unit
 		= fun rel -> function
-		| Bottom -> ()
+		| Bottom _ -> ()
 		| NonBot p ->
 			if not (Misc.list_eq2 F.equal (Pol.get_cstr p) rel)
 			then Pervasives.failwith "VPL has failed: wrong certificate in inclusion"
@@ -120,8 +132,8 @@ module Polyhedron (F : Factory.Type) = struct
 	let incl : t -> t -> bool
 		= fun p1 p2 ->
 		match p1,p2 with
-		| Bottom, Bottom | Bottom, NonBot _ -> true
-		| NonBot _, Bottom -> false
+		| Bottom _, Bottom _ | Bottom _, NonBot _ -> true
+		| NonBot _, Bottom _ -> false
 		| NonBot p1', NonBot p2' ->
 			match Pol.incl F.factory p1' p2' with
 			| Pol.Incl cert -> (check_incl cert (NonBot p2');true)
@@ -167,19 +179,19 @@ module Polyhedron (F : Factory.Type) = struct
 	let getUpperBound : t -> Vec.t -> Pol.bndT option
 		= fun p vec ->
 		match p with
-		| Bottom -> None
+		| Bottom _ -> None
 		| NonBot p' -> Some (Pol.getUpperBound F.factory p' vec |> check_bound true vec)
 
 	let getLowerBound : t -> Vec.t -> Pol.bndT option
 		= fun p vec ->
 		match p with
-		| Bottom -> None
+		| Bottom _ -> None
 		| NonBot p' -> Some (Pol.getLowerBound F.factory p' vec |> check_bound false vec)
 
 	let itvize : t -> Vec.t -> Pol.itvT
 		= fun p vec ->
 		match p with
-		| Bottom -> {Pol.low = Pol.Closed Scalar.Rat.u ; Pol.up = Pol.Closed Scalar.Rat.z}
+		| Bottom _ -> {Pol.low = Pol.Closed Scalar.Rat.u ; Pol.up = Pol.Closed Scalar.Rat.z}
 		| NonBot p' ->
 			let (itv, certLower, certUpper) = Pol.itvize F.factory p' vec in
 			let itvLower = check_bound false vec (itv.Pol.low, certLower)
@@ -187,12 +199,12 @@ module Polyhedron (F : Factory.Type) = struct
 			{Pol.low = itvLower ; Pol.up = itvUpper}
 
 	let get_cstr = function
-		| Bottom -> []
+		| Bottom _ -> []
 		| NonBot p -> Pol.get_cstr p
 
 	let rename : Var.t -> Var.t -> t -> t
 		= fun fromX toY -> function
-		| Bottom -> Bottom
+		| Bottom c -> Bottom c
 		| NonBot p ->
 			NonBot (Pol.rename F.factory fromX toY p)
 
@@ -201,7 +213,7 @@ module Polyhedron (F : Factory.Type) = struct
   	let backend_rep : t -> rep option
   		= fun p ->
   		match p with
-  		| Bottom -> None
+  		| Bottom _ -> None
   		| NonBot p ->
   			let eqs = List.map (fun (v, (c,_)) -> (v, (c,()))) p.Pol.eqs
   			and ineqs = List.map (fun (c,_) -> (c,())) p.Pol.ineqs
@@ -210,13 +222,13 @@ module Polyhedron (F : Factory.Type) = struct
 	let mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 		= fun _ f1 f2 ->
 		function
-		| Bottom -> Bottom
+		| Bottom c -> Bottom c
 		| NonBot pol ->
 			let eqs = Pol.get_eqs pol
 			and ineqs = Pol.get_ineqs pol in
 			NonBot {
-				Pol.eqs = List.mapi (fun i (v,(cstr,_)) -> (v, F.mk (f1 i cstr))) eqs;
-				Pol.ineqs = List.mapi (fun i (cstr,_) -> F.mk (f2 i cstr)) ineqs
+				Pol.eqs = List.mapi (fun i (v,(cstr,_)) -> (v, F.mkCons (f1 i cstr))) eqs;
+				Pol.ineqs = List.mapi (fun i (cstr,_) -> F.mkCons (f2 i cstr)) ineqs
 			}
 end
 
@@ -235,42 +247,26 @@ let translate_cstr : Cs.t -> Vec.t -> Cs.t
 (** High level domain with ocaml verification of certificates. *)
 module NCVPL_Cstr = struct
 	module P = struct
-		include Polyhedron (Factory.Cstr)
-
-		let translate : t -> Vec.t -> t
-			= fun pol vec ->
-			match pol with
-			| Bottom -> Bottom
-			| NonBot pol ->
-				let eqs = Pol.get_eqs pol in
-				let ineqs = Pol.get_ineqs pol in
-				NonBot {
-					Pol.eqs = List.map
-						(fun (v,(cstr, cert)) -> (v, (translate_cstr cstr vec, translate_cstr cert vec)))
-						eqs;
-					Pol.ineqs = List.map
-						(fun (cstr, cert) -> (translate_cstr cstr vec, translate_cstr cert vec))
-						ineqs;
-				}
+		include MakePolyhedronDomain (Factory.Cstr)
 
 		(** Careful : addNLM is UNcertified. *)
 		let addNLM : t -> CP.t list -> t
 			= fun p cps ->
 			match p with
-			| Bottom -> Bottom
+			| Bottom _ -> bottom
 			| NonBot pol -> match Lin.addPolyM Factory.Cstr.factory pol cps with
-				| None -> Bottom
+				| None -> bottom
 				| Some pol' -> NonBot {
 					Pol.eqs = List.map
-						(fun (var, (cstr, _)) -> (var, Factory.Cstr.mk cstr))
+						(fun (var, (cstr, _)) -> (var, Factory.Cstr.mkCons cstr))
 						(Pol.get_eqs pol');
 					Pol.ineqs = List.map
-						(fun (cstr, _) -> Factory.Cstr.mk cstr)
+						(fun (cstr, _) -> Factory.Cstr.mkCons cstr)
 						(Pol.get_ineqs pol');
 					}
 
 	end
-	module I = NCInterface.Interface (P)
+	module I = NCInterface.Lift (P)
 	module I_Q = I.QInterface
 	module Q = CW.MakeHighLevel (I_Q)
 
@@ -281,32 +277,18 @@ end
 (** High level domain with NO certificates. *)
 module NCVPL_Unit = struct
 	module P = struct
-		include Polyhedron (Factory.Unit)
-
-		let translate : t -> Vec.t -> t
-			= fun pol vec ->
-			match pol with
-			| Bottom -> Bottom
-			| NonBot pol ->
-				NonBot {
-					Pol.eqs = List.map
-						(fun (v,(cstr, cert)) -> (v, (translate_cstr cstr vec, cert)))
-						(Pol.get_eqs pol);
-					Pol.ineqs = List.map
-						(fun (cstr, cert) -> (translate_cstr cstr vec, cert))
-						(Pol.get_ineqs pol);
-				}
+		include MakePolyhedronDomain (Factory.Unit)
 
 		let addNLM : t -> CP.t list -> t
 			= fun p cps ->
 			match p with
-			| Bottom -> Bottom
+			| Bottom _ -> bottom
 			| NonBot pol -> match Lin.addPolyM Factory.Unit.factory pol cps with
-				| None -> Bottom
+				| None -> bottom
 				| Some pol' -> NonBot pol'
 
 	end
-	module I = NCInterface.Interface (P)
+	module I = NCInterface.Lift (P)
 	module I_Q = I.QInterface
 	module Q = CW.MakeHighLevel (I_Q)
 

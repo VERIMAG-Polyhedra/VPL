@@ -730,7 +730,6 @@ module AtomicD =
       -> BasicD.t Core.Base.imp **)
 
   let applyHandelman_one cmp qt pol0 a cert0 =
-    print_endline(Printf.sprintf "apply_handelman: %s "(polPr pol0 |> CoqPr.charListTr));
     let aff = Handelman_compute.eq_witness pol0.BasicD.cons cert0 qt in
     affAssume cmp aff a
 

@@ -12,6 +12,8 @@ module PedraQWrapper: QInterface.HighLevelDomain = struct
 
     module Term = QInterface.Term
 
+    type cert = unit
+
     let is_bottom = isBottom
 
     let assume c p =
@@ -66,9 +68,9 @@ module PedraQWrapper: QInterface.HighLevelDomain = struct
     	then None
     	else Some (export_QbndT itv.QItv.lower)
 
-  	let translate _ _ = not_yet_implemented "translate"
-
   	let mapi _ _ _ _ = not_yet_implemented "mapi"
+
+    let get_bottom_cert _ = not_yet_implemented "get_bottom_cert"
 
   	let minkowski _ _ = not_yet_implemented "minkowski"
 
@@ -86,6 +88,8 @@ module PedraZWrapper: ZInterface.HighLevelDomain = struct
     include FullDom
 
     module Term = ZInterface.Term
+
+    type cert = unit
 
     let is_bottom = FullDom.isBottom
 
@@ -139,7 +143,7 @@ module PedraZWrapper: ZInterface.HighLevelDomain = struct
     	try Some (export_ZbndT (getItvMode LOW (import_ZTerm t) p).ZItv.low)
     	with Failure s when String.compare s "empty" = 0 -> None
 
-    let translate _ _ = not_yet_implemented "translate"
+    let get_bottom_cert _ = not_yet_implemented "get_bottom_cert"
 
     let mapi _ _ _ _ = not_yet_implemented "mapi"
 

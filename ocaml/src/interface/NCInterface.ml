@@ -8,15 +8,21 @@ module Polynomial = CP.Poly
 
 module CW = CWrappers
 
-module type Polyhedron_Type = sig
+(**
+ * Module type of a polyhedron domain.
+ *)
+module type PolyhedronDomain = sig
 
 	type t
+
+    type cert
 
 	exception Wrong_Certificate of string
 
 	val top : t
 	val bottom : t
 	val is_bottom : t -> bool
+    val get_bottom_cert : t -> cert option
 	val addM : t -> Cs.t list -> t
 	val addNLM : t -> CP.t list -> t
 	val meet : t -> t -> t
@@ -36,13 +42,15 @@ module type Polyhedron_Type = sig
 	val rename : Var.t -> Var.t -> t -> t
 
 	(* Non certifed functions: *)
-	val translate : t -> Vec.t -> t
 	val mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 end
 
-module Interface (P : Polyhedron_Type)  = struct
+(**
+ * This functor lifts a {!modtype:PolyhedronDomain} into a {!modtype:CWrappers.LowLevelDomain}.
+ *)
+module Lift (P : PolyhedronDomain)  = struct
 
-	module Interface (Term: CW.TermType) = struct
+	module Lift (Term: CW.TermType) = struct
 		module Interval = struct
 
 			type bndT = Pol.bndT
@@ -132,12 +140,12 @@ module Interface (P : Polyhedron_Type)  = struct
 	module QInterface = struct
 		module Term = CW.QInterface.Term
 
-		include Interface(Term)
+		include Lift(Term)
 	end
 
 	module ZInterface = struct
 		module Term = CW.QAffTerm
 
-		include Interface(Term)
+		include Lift(Term)
 	end
 end
