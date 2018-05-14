@@ -1199,10 +1199,14 @@ let size : 'c t -> Scalar.Rat.t option
     Debug.log DebugTypes.Title (lazy "Size");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
     	(to_string_raw p)));
-    let res = match Opt.getAsg_and_value_raw (List.map Cons.get_c p.ineqs) with
-    | Some (_, None) -> None
-    | None -> None
-    | Some (_, Some value) -> Some value
+    let cstrs = List.map Cons.get_c p.ineqs in
+    let res = match Opt.getAsg_raw cstrs with
+    | Some point ->
+        let point' =  Vector.Symbolic.Positive.toRat point in
+        List.map (Cs.distance_point_cstr point') cstrs
+        |> Misc.max Scalar.Rat.cmp
+        |> fun x -> Some x
+    | _ -> None
     in
     Debug.log DebugTypes.MOutput (lazy
         (match res with

@@ -153,6 +153,9 @@ module type Type = sig
 
 	(** Returns a point that saturates the hyperplane defined by the given constraint. *)
 	val get_saturating_point : t -> Vec.t
+
+    (** Returns the euclidian distance between the given point and the line defined by the constraint. *)
+    val distance_point_cstr : Vec.t -> t -> Vec.Coeff.t
 end
 
 module Cstr (Vec : Vector.Type) = struct
@@ -401,6 +404,16 @@ module Cstr (Vec : Vector.Type) = struct
 		let (var,coeff) = Vec.toList cstr.v
 			|> List.hd in
 		Vec.mk [Coeff.div cstr.c coeff, var]
+
+    let distance_point_cstr : Vec.t -> t -> Vec.Coeff.t
+        = fun point cstr ->
+        let a = get_v cstr in
+        let num = Vec.Coeff.sub
+            (get_c cstr)
+            (Vec.dot_product a point)
+        in
+        let den = Vec.dot_product a a in
+        Vec.Coeff.div num den
 end
 
 module Rat = struct
@@ -462,6 +475,7 @@ module Rat = struct
 		val rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
 		val change_variable : Vec.V.t -> Vec.t -> Vec.Coeff.t -> t -> t
 		val get_saturating_point : t -> Vec.t
+        val distance_point_cstr : Vec.t -> t -> Vec.Coeff.t
 		(**/**)
 
 		(** Put the constraint in canonic form. *)
