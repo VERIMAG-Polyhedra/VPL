@@ -205,6 +205,8 @@ module Polyhedron: NCInterface.PolyhedronDomain = struct
 
   	let mapi _ _ _ _ = failwith "not_yet_implemented : map"
 
+    let get_regions _ = failwith "not_yet_implemented : get_regions"
+
   	let minkowski _ _ = failwith "not_yet_implemented : minkowski"
 
 	let projectM _ _ = failwith "not_yet_implemented : projectM"

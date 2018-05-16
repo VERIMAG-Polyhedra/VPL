@@ -100,6 +100,11 @@ module type LowLevelDomain = sig
   Boolean [b] has no effect here. It is used in the high-level version of [mapi]. *)
   val mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 
+  (**
+   * Returns the partition into regions of the given polyhedron.
+   *)
+  val get_regions : t -> t list
+
   (** Projection of several variables at the same time. *)
   val projectM: Var.t list -> t -> t
 end
@@ -450,6 +455,9 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     else
     	 auto_lifting (fun p -> LHD.mapi false f1 f2 p) pol
 
+  let get_regions p =
+    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions p.pol)
+
   let is_bottom = isBottom
 
   let get_bottom_cert p = LHD.get_bottom_cert p.pol
@@ -702,6 +710,8 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
 
   let minkowski _ _ = not_yet_implemented "minkowski"
 
+  let get_regions _ = not_yet_implemented "get_regions"
+
   let projectM vars pol =
   match backend_rep pol with
   | None -> Pervasives.failwith "translate"
@@ -709,4 +719,5 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
     let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
     let vars' = List.map ofVar' vars in
   	{pol with pol = LHD.projectM vars' pol.pol}
+
 end

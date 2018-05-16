@@ -834,6 +834,19 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 
             let get_regions : t -> t list
 				= let get_regions' p =
+                    List.map
+                        (fun p' -> mk (Names.mk ()) p')
+                        (I.get_regions p.value)
+                in
+                fun p ->
+				lazy (get_regions' p)
+				|> handle
+
+            (**
+             * This version of get_regions can be used with a certified factory.
+             *)
+            let get_regions_cert : t -> t list
+				= let get_regions_cert' p =
                     let (rep, toVar) = match backend_rep p with
     					| Some (p',(ofVar, toVar)) ->
                             let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
@@ -852,7 +865,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                         regions
                 in
                 fun p ->
-				lazy (get_regions' p)
+				lazy (get_regions_cert' p)
 				|> handle
 
             let size : t -> Scalar.Rat.t option

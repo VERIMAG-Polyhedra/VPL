@@ -33,7 +33,7 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
     let get_bottom_cert = function
         | Bottom c -> Some c
         | _ -> None
-        
+
 	let to_string : (Var.t -> string) -> t -> string
 		= fun varPr -> function
 		| Bottom _ -> "bottom"
@@ -230,6 +230,13 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
 				Pol.eqs = List.mapi (fun i (v,(cstr,_)) -> (v, F.mkCons (f1 i cstr))) eqs;
 				Pol.ineqs = List.mapi (fun i (cstr,_) -> F.mkCons (f2 i cstr)) ineqs
 			}
+
+    let get_regions : t -> t list
+        = function
+        | Bottom c -> []
+        | NonBot p ->
+            Pol.get_regions F.factory p
+            |> List.map (fun p -> NonBot (F.convert p))
 end
 
 let translate_cstr : Cs.t -> Vec.t -> Cs.t
