@@ -2,6 +2,7 @@
 It provides the Interface module (explained by module type Type).*)
 
 (**/**)
+open WrapperTraductors
 open CWrappers
 
 module Cs = Cstr.Rat.Positive

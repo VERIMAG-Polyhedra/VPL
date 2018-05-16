@@ -20,7 +20,6 @@ Require Export ASCond.
 Require Import Debugging.
 Require Export Impure.
 Require DomainFunctors.
-
 Open Scope impure.
 
 Module BasicD <: BasicDomain QNum.
@@ -736,6 +735,8 @@ Module QAtomicCondAssume <: HasAssume QNum QAtomicCond BasicD.
   Qed. 
     
 End QAtomicCondAssume.
+
+Module QPEQ := QPomialEquality QTerm QTerm.
 
 (* Gluing all this together *)
 

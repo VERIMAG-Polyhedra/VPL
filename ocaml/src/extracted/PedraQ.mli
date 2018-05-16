@@ -22,6 +22,7 @@ open PedraQBackend
 open ProgVar
 open QArith_base
 open Qcanon
+open Ring_polynom_AddOnQ
 open String0
 
 module BasicD :
@@ -133,6 +134,21 @@ module QAtomicCondAssume :
   val assume_neq : QTerm.t -> BasicD.polT -> BasicD.t Core.Base.imp
 
   val assume : QAtomicCond.t -> BasicD.t -> BasicD.t Core.Base.imp
+ end
+
+module QPEQ :
+ sig
+  module M1 :
+   sig
+    val toPExpr : QTerm.term -> coq_PExpr
+   end
+
+  module M2 :
+   sig
+    val toPExpr : QTerm.term -> coq_PExpr
+   end
+
+  val pomial_eq : QTerm.t -> QTerm.t -> bool
  end
 
 module AtomicD :

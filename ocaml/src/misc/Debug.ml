@@ -80,6 +80,16 @@ let hOracles = {
 	disable = HOtypes.Debug.disable;
 }
 
+let iOracles = {
+	print_enable = IOtypes.Debug.print_enable;
+	print_disable = IOtypes.Debug.print_disable;
+	levels = [Title ; MInput ; MOutput];
+	color = White;
+	set_color = IOtypes.Debug.set_color;
+	enable = IOtypes.Debug.enable;
+	disable = IOtypes.Debug.disable;
+}
+
 let pol = {
 	print_enable = Pol.Debug.print_enable;
 	print_disable = Pol.Debug.print_disable;
@@ -100,7 +110,7 @@ let pSplx = {
 	disable = PSplx.Debug.disable;
 }
 
-let modules : t list = [min ; proj ; join ; handelman ; minLP ; hOracles ; plp ; pol ; pSplx]
+let modules : t list = [min ; proj ; join ; handelman ; minLP ; hOracles ; plp ; pol ; pSplx ; iOracles]
 
 let print_enable : unit -> unit
 	= fun () ->

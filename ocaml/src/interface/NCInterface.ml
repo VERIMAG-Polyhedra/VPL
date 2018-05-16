@@ -6,7 +6,7 @@ module Var = Vec.V
 module CP = CstrPoly.Positive
 module Polynomial = CP.Poly
 
-module CW = CWrappers
+module CW = WrapperTraductors
 
 (**
  * Module type of a polyhedron domain.

@@ -1,159 +1,196 @@
 open IOtypes
 
-	type prophecy = ASTerm.BasicZTerm.term list
-	
-	type t = Poly.t -> env -> mode -> Var.t MapMonomial.t -> (AnnotedVar.t list) MapMonomial.t -> IPattern.t -> (prophecy * Var.t MapMonomial.t * (AnnotedVar.t list) MapMonomial.t * Poly.t)
+module Lift (T : Type) = struct
 
-	let rec (default : t)
+    open T
+
+    module Pattern = IPattern.Lift(T)
+
+    module P = D.Poly
+    module M = D.Poly.Monomial
+    module MB = D.Poly.MonomialBasis
+
+	type prophecy = D.BasicTerm.term list
+
+	type t = P.t -> env -> mode -> P.V.t MapMonomial.t
+        -> (AnnotedVar.t list) MapMonomial.t -> Pattern.t
+        -> (prophecy * P.V.t MapMonomial.t * (AnnotedVar.t list) MapMonomial.t * P.t)
+
+	let rec default : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		match pat with
-		| IPattern.Default p -> (match p with
-			| [] -> ([], mapKeep, mapNKeep, [])
-			| (m,c) :: tl -> let (pro', mapKeep', mapNKeep', poly') = default p env mode mapKeep mapNKeep (IPattern.Default tl) in
-			let var_to_keep = try MapMonomial.find m mapKeep'
-				with Not_found -> List.nth (AnnotedVar.update_monomial m mapNKeep') 0 in
-			let aVarl = try MapMonomial.find m mapNKeep'
-				with Not_found -> [] in
-			let aff = ASTerm.BasicZTerm.annotAFFINE (Term.of_monomial ([var_to_keep], c)) in
-			let mon = ASTerm.BasicZTerm.smartAnnot ASTerm.TopLevelAnnot.INTERV
-				(Term.of_monomialBasis (Misc.pop Var.equal m var_to_keep)) 
-				|> fun t -> AnnotedVar.apply t aVarl in
-			let value = ASTerm.BasicZTerm.smartMul mon aff in
-			( value :: pro', mapKeep', mapNKeep', poly'))
+		| Pattern.Default p -> begin
+            match P.data p with
+			| [] -> ([], mapKeep, mapNKeep, P.z)
+			| mono :: tl ->
+                let (m,c) = M.data mono in
+                let (pro', mapKeep', mapNKeep', poly') = default p env mode mapKeep mapNKeep (Pattern.Default (tl |> P.mk)) in
+    			let var_to_keep = try MapMonomial.find m mapKeep'
+    				with Not_found -> AnnotedVar.update_monomial m mapNKeep'
+                        |> MB.data
+                        |> List.hd
+                in
+    			let aVarl = try MapMonomial.find m mapNKeep'
+    				with Not_found -> []
+                in
+    			let aff = D.BasicTerm.annotAFFINE (Term.of_monomial (M.mk2 [var_to_keep] c)) in
+    			let mon = Misc.pop P.V.equal (MB.data m) var_to_keep
+                    |> MB.mk
+                    |> Term.of_monomialBasis
+                    |> D.BasicTerm.smartAnnot ASTerm.TopLevelAnnot.INTERV
+    				|> fun t -> AnnotedVar.apply t aVarl in
+    			let value = D.BasicTerm.smartMul mon aff in
+    			( value :: pro', mapKeep', mapNKeep', poly')
+        end
 		| _ -> Pervasives.failwith "Heuristic.default"
 
-	let (varCte : t)
+	let varCte : t
 		= fun p env mode mapKeep mapNKeep pat ->
-		match pat with 
-		| IPattern.VarCte((m,c),v) -> let l = 
-			try MapMonomial.find m mapNKeep
-			with Not_found -> [] in
-			([], mapKeep, MapMonomial.add m ((AnnotedVar.of_var v ASTerm.TopLevelAnnot.STATIC) :: l) mapNKeep, p)
+		match pat with
+		| Pattern.VarCte (mono,v) ->
+            let (m,_) = M.data mono in
+            let l = try MapMonomial.find m mapNKeep
+			with Not_found -> []
+            in
+			([],
+             mapKeep,
+             MapMonomial.add m ((AnnotedVar.of_var v ASTerm.TopLevelAnnot.STATIC) :: l) mapNKeep,
+             p)
 		| _ -> Pervasives.failwith "Heuristic.varCte"
 
-	let (multiplicity : t)
-		= 	let rec(range : int -> int -> int list)
-			= fun i j->
-			if i >= j then [] else i :: (range (i+1) j)
-		in fun p env mode mapKeep mapNKeep pat ->
-		match pat with 
-		| IPattern.Multiplicity(l,v) -> 
-		let mapNKeep' = 
-		List.fold_left
-		(fun map ((m,c),i) -> let l' = try MapMonomial.find m map with Not_found -> [] in
-		let l'' =  List.map (fun j -> AnnotedVar.Var v) (range 0 i) in
-		MapMonomial.add m (l''@l') map)
-		mapNKeep
-		l
-		in ([], mapKeep, mapNKeep', p)
-		| _ -> Pervasives.failwith "Heuristic.multiplicity"
-		
-	let (unboundedVarmode : t)
+	let multiplicity : t
 		= fun p env mode mapKeep mapNKeep pat ->
-		match pat with 
-		| IPattern.UnboundedVarmode((m,c),v) -> let l = 
-			try MapMonomial.find m mapNKeep
-			with Not_found -> [] in
+		match pat with
+		| Pattern.Multiplicity(l,v) ->
+    		let mapNKeep' = List.fold_left
+                (fun map (mono,i) ->
+                    let (m,_) = M.data mono in
+                    let l' = try MapMonomial.find m map with Not_found -> [] in
+                    let l'' =  List.map (fun j -> AnnotedVar.Var v) (Misc.range 0 i) in
+                MapMonomial.add m (l'' @ l') map)
+                mapNKeep
+    		l
+    		in ([], mapKeep, mapNKeep', p)
+		| _ -> Pervasives.failwith "Heuristic.multiplicity"
+
+	let unboundedVarmode : t
+		= fun p env mode mapKeep mapNKeep pat ->
+		match pat with
+		| Pattern.UnboundedVarmode(mono,v) ->
+            let (m,_) = M.data mono in
+            let l = try MapMonomial.find m mapNKeep with Not_found -> [] in
 			([], mapKeep, MapMonomial.add m (AnnotedVar.Var v :: l) mapNKeep, p)
 		| _ -> Pervasives.failwith "Heuristic.unboundedVarmode"
-			
-	let (greatestItv : t)
+
+	let greatestItv : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		match pat with
-		| IPattern.GreatestItv((m,c),v) -> ([], MapMonomial.add m v mapKeep, mapNKeep, p)
+		| Pattern.GreatestItv(mono,v) ->
+            ([], MapMonomial.add (M.data mono |> fst) v mapKeep, mapNKeep, p)
 		| _ -> Pervasives.failwith "Heuristic.greatestItv"
 
-	let (unboundedVar : t)
+	let unboundedVar : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		match pat with
-		| IPattern.UnboundedVar((m,c),v) -> ([], MapMonomial.add m v mapKeep, mapNKeep, p)
-		| _ -> Pervasives.failwith "Heuristic.unboundedVar"		
+		| Pattern.UnboundedVar(mono,v) ->
+            ([], MapMonomial.add (M.data mono |> fst) v mapKeep, mapNKeep, p)
+		| _ -> Pervasives.failwith "Heuristic.unboundedVar"
 
-	let (linearMonomial : t)
+	let linearMonomial : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		match pat with
-		| IPattern.LinearMonomial ((m,c),v) -> ([], MapMonomial.add m v mapKeep, mapNKeep, p)
+		| Pattern.LinearMonomial (mono,v) ->
+            ([], MapMonomial.add (M.data mono |> fst) v mapKeep, mapNKeep, p)
 		| _ -> Pervasives.failwith "Heuristic.linearMonomial"
 
-	let (centerZero : t)
+	let centerZero : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		match pat with
-		| IPattern.CenterZero(m,c) -> let vToKeep = MapMonomial.find m mapKeep in
-		let aVarl = try MapMonomial.find m mapNKeep with Not_found -> [] in
-		let l = Misc.pop Var.equal m vToKeep
-		|> List.filter (fun v -> v |> Var.toInt > 0 && 
-			(v |> Itv.of_var env |> fun itv -> Itv.is_bounded itv && not (Itv.contains_zero itv)) &&
-			(not (AnnotedVar.mem v aVarl))) in
-		let tlist = Term.center_zero_var (m,c) vToKeep l (List.map (fun v -> v |> Itv.of_var env |> Itv.get_translation_bound) l)
-		|> List.map (fun t -> AnnotedVar.apply t aVarl) in
-		(tlist, mapKeep, mapNKeep, Poly.sub_monomial p m)
-		| _ -> Pervasives.failwith "Heuristic.centerZero"		
+		| Pattern.CenterZero mono ->
+            let (m,_) = M.data mono in
+            let vToKeep = MapMonomial.find m mapKeep in
+    		let aVarl = try MapMonomial.find m mapNKeep with Not_found -> [] in
+    		let l = Misc.pop P.V.equal (MB.data m) vToKeep
+                |> List.filter
+                    (fun v ->
+                        let itv = Itv.of_var env v in
+                        Itv.is_bounded itv
+                      &&
+                        not (Itv.contains_zero itv)
+                      &&
+                        not (AnnotedVar.mem v aVarl)
+                    )
+            in
+    		let tlist = List.map
+                (fun v -> Itv.of_var env v|> Itv.get_translation_bound) l
+            |> Term.center_zero_var mono vToKeep l
+    		|> List.map (fun t -> AnnotedVar.apply t aVarl)
+            in
+    		(tlist, mapKeep, mapNKeep, P.sub_monomial p m)
+		| _ -> Pervasives.failwith "Heuristic.centerZero"
 
-	let (translation : t)
+	let translation : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		match pat with
-		| IPattern.Translation(m,c) ->
-		let aVarl = try MapMonomial.find m mapNKeep with Not_found -> [] in
-		let vToKeep = MapMonomial.find m mapKeep in
-		let (t, m') = Term.translate (m,c) vToKeep (vToKeep |> Itv.of_var env |> Itv.get_translation_bound) in
-		let t' = AnnotedVar.apply t aVarl in
-		([t'], mapKeep, mapNKeep, Poly.add (Poly.sub_monomial p m) [m'])
+		| Pattern.Translation mono ->
+            let (m,_) = M.data mono in
+    		let aVarl = try MapMonomial.find m mapNKeep with Not_found -> [] in
+    		let vToKeep = MapMonomial.find m mapKeep in
+    		let (t, m') = Itv.of_var env vToKeep |> Itv.get_translation_bound
+                |> Term.translate mono vToKeep
+            in
+    		let t' = AnnotedVar.apply t aVarl in
+            let p' = P.add (P.sub_monomial p m) (P.mk [m']) in
+    		([t'], mapKeep, mapNKeep, p')
 		| _ -> Pervasives.failwith "Heuristic.translation"
-	
-	let (screwed : t)
+
+	let screwed : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		match pat with
-		| IPattern.Screwed -> default p env mode mapKeep mapNKeep (IPattern.Default p)
+		| Pattern.Screwed -> default p env mode mapKeep mapNKeep (Pattern.Default p)
 		| _ -> Pervasives.failwith "Heuristic.screwed"
 
-	let (monomialCte : t)
+	let monomialCte : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		match pat with
-		| IPattern.MonomialCte (m,c) -> 
-			([Term.of_monomial (m,c)], mapKeep, mapNKeep, Poly.sub_monomial p m)
+		| Pattern.MonomialCte mono ->
+			([Term.of_monomial mono], mapKeep, mapNKeep, P.sub_monomial p (M.data mono |> fst))
 		| _ -> Pervasives.failwith "Heuristic.monomialCte"
 
-	let (firstUnbounded : t)
+	let firstUnbounded : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		match pat with
-		| IPattern.FirstUnbounded ((m,c),v) -> ([], MapMonomial.add m v mapKeep, mapNKeep, p)
+		| Pattern.FirstUnbounded (mono,v) ->
+            ([], MapMonomial.add (M.data mono |> fst) v mapKeep, mapNKeep, p)
 		| _ -> Pervasives.failwith "Heuristic.firstUnbounded"
-		
-	let (nulScalar : t)
-		= fun p env mode mapKeep mapNKeep pat ->
-		match pat with
-		| IPattern.NulScalar (m,c) -> 
-			([], mapKeep, mapNKeep, Poly.sub_monomial p m)
-		| _ -> Pervasives.failwith "Heuristic.nulScalar"
-		
-	let (of_pattern : t)
+
+	let of_pattern : t
 		= fun p env mode mapKeep mapNKeep pat ->
 		Debug.log DebugTypes.Normal (lazy "Heuristic used : ");
 		match pat with
-		| IPattern.NulScalar _ -> Debug.log DebugTypes.Normal (lazy "NulScalar\n");
-			nulScalar p env mode mapKeep mapNKeep pat
-		| IPattern.Multiplicity _ -> Debug.log DebugTypes.Normal (lazy "Multiplicity\n"); 
+		| Pattern.Multiplicity _ -> Debug.log DebugTypes.Normal (lazy "Multiplicity\n");
 			multiplicity p env mode mapKeep mapNKeep pat
-		| IPattern.MonomialCte _ -> Debug.log DebugTypes.Normal (lazy "MonomialCte\n"); 
+		| Pattern.MonomialCte _ -> Debug.log DebugTypes.Normal (lazy "MonomialCte\n");
 			monomialCte p env mode mapKeep mapNKeep pat
-		| IPattern.CenterZero _ -> Debug.log DebugTypes.Normal (lazy "CenterZero\n");
+		| Pattern.CenterZero _ -> Debug.log DebugTypes.Normal (lazy "CenterZero\n");
 			centerZero p env mode mapKeep mapNKeep pat
-		| IPattern.Translation _ -> Debug.log DebugTypes.Normal (lazy "Translation\n"); 
+		| Pattern.Translation _ -> Debug.log DebugTypes.Normal (lazy "Translation\n");
 			translation p env mode mapKeep mapNKeep pat
-		| IPattern.LinearMonomial _ -> Debug.log DebugTypes.Normal (lazy "LinearMonomial\n"); 
+		| Pattern.LinearMonomial _ -> Debug.log DebugTypes.Normal (lazy "LinearMonomial\n");
 			linearMonomial p env mode mapKeep mapNKeep pat
-		| IPattern.Screwed -> Debug.log DebugTypes.Normal (lazy "Screwed\n"); 
+		| Pattern.Screwed -> Debug.log DebugTypes.Normal (lazy "Screwed\n");
 			screwed p env mode mapKeep mapNKeep pat
-		| IPattern.VarCte _ -> Debug.log DebugTypes.Normal (lazy "VarCte\n"); 
+		| Pattern.VarCte _ -> Debug.log DebugTypes.Normal (lazy "VarCte\n");
 			varCte p env mode mapKeep mapNKeep pat
-		| IPattern.GreatestItv _ -> Debug.log DebugTypes.Normal (lazy "GreatestItv\n"); 
+		| Pattern.GreatestItv _ -> Debug.log DebugTypes.Normal (lazy "GreatestItv\n");
 			greatestItv p env mode mapKeep mapNKeep pat
-		| IPattern.UnboundedVar _ -> Debug.log DebugTypes.Normal (lazy "UnboundedVar\n"); 
+		| Pattern.UnboundedVar _ -> Debug.log DebugTypes.Normal (lazy "UnboundedVar\n");
 			unboundedVar p env mode mapKeep mapNKeep pat
-		| IPattern.UnboundedVarmode _ -> Debug.log DebugTypes.Normal (lazy "UnboundedVarmode\n"); 
+		| Pattern.UnboundedVarmode _ -> Debug.log DebugTypes.Normal (lazy "UnboundedVarmode\n");
 			unboundedVarmode p env mode mapKeep mapNKeep pat
-		| IPattern.FirstUnbounded _ -> Debug.log DebugTypes.Normal (lazy "FirstUnbounded\n"); 
+		| Pattern.FirstUnbounded _ -> Debug.log DebugTypes.Normal (lazy "FirstUnbounded\n");
 			firstUnbounded p env mode mapKeep mapNKeep pat
-		| IPattern.Default _ -> Debug.log DebugTypes.Normal (lazy "Default\n"); 
+		| Pattern.Default _ -> Debug.log DebugTypes.Normal (lazy "Default\n");
 			default p env mode mapKeep mapNKeep pat
 
+end

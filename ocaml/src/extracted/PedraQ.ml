@@ -22,6 +22,7 @@ open PedraQBackend
 open ProgVar
 open QArith_base
 open Qcanon
+open Ring_polynom_AddOnQ
 open String0
 
 module BasicD =
@@ -506,6 +507,8 @@ module QAtomicCondAssume =
                (handelman_oracle pol0.BasicD.ml c.QAtomicCond.cmpOp ti))
         | None -> None))
  end
+
+module QPEQ = QPomialEquality(QTerm)(QTerm)
 
 module AtomicD =
  struct

@@ -1,3 +1,4 @@
+open WrapperTraductors
 open CWrappers
 
 (* lifting de PedraQ.FullDom *)

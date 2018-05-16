@@ -3,8 +3,8 @@
 
 (** This module type defines the type of polynomials depending on the type of coefficients and variables*)
 module type Type = sig
-	module Vec : Vector.Type
-   module Coeff = Vec.Coeff
+    module Vec : Vector.Type
+    module Coeff = Vec.Coeff
 	module V = Vec.V
 
 	(** MonomialBasis represents the list of variables of a monomial *)
@@ -99,7 +99,7 @@ module type Type = sig
 	(** [mk2 l] builds a polynomial from the list of V.t * Coeff.t [l] *)
 	val mk2 : (V.t list * Coeff.t) list -> t
 
-	val mk3 : ((V.t * int) * Coeff.t) list -> t
+	val mk3 : ((V.t * int) list * Coeff.t) list -> t
 
 	val mk_cste : t -> Coeff.t -> t
 
@@ -205,7 +205,7 @@ module type Type = sig
 	val toCstr : t -> (Vec.t * Coeff.t)
 end
 
-module Poly_ (Vec : Vector.Type) = struct
+module Make (Vec : Vector.Type) = struct
 	module V = Vec.V
 
 	module MonomialBasis =
@@ -728,7 +728,7 @@ end
 module Poly (Vec : Vector.Type) = struct
 	module Vec = Vec
 	module Coeff = Vec.Coeff
-	include Poly_(Vec)
+	include Make(Vec)
 end
 
 module RelInt = Poly(Vector.RelInt.Int)
@@ -808,6 +808,6 @@ module Rat = struct
 	module Poly (Vec : Vector.Rat.Type) = struct
 		module Vec = Vec
 		module Coeff = Vec.Coeff
-		include Poly_(Vec)
+		include Make(Vec)
 	end
 end

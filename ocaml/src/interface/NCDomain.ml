@@ -41,8 +41,7 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
 			if p = Pol.top then
 				"top"
 			else
-				Pol.to_string varPr p
-
+				Pol.to_string_ext F.factory varPr p
 
 	let check : t -> t
 		= function

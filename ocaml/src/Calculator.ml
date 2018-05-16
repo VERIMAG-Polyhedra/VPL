@@ -70,7 +70,7 @@ let polyCP_to_polCP : PolyParserBuild.contrainte list -> VPL.UserCond.t
 	List.fold_left
 		(fun res (e1,cmp,e2) ->
 			let atom = VPL.UserCond.Atom (e1,cmp,e2) in
-			VPL.UserCond.BinL (res, CWrappers.AND, atom))
+			VPL.UserCond.BinL (res, WrapperTraductors.AND, atom))
 		(VPL.UserCond.Basic true)
 		l
 

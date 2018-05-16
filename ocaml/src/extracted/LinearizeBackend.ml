@@ -6,7 +6,7 @@ open PedraQBackend
 
 (** val oracle : linearizeContext -> ZTerm.t Core.Base.imp **)
 
-let oracle = IOracle.oracle
+let oracle = IOracle.oracleZ
 
 (** val handelman_oracle :
     t -> cmpG -> QTerm.t -> Handelman_compute.certif list **)

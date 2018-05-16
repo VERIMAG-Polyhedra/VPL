@@ -155,3 +155,10 @@ let log_trace : bool ref = ref true
 
 (** If [true], put sum lambda = 1 as normalization constraint in the projection via PLP. *)
 let sum_lambda_1 : bool ref = ref false
+
+type lin_method =
+    | Intervalization
+    | Handelman
+    | Both
+
+let lin : lin_method ref = ref Both

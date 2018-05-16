@@ -254,6 +254,129 @@ module QTerm2Pomial :
   val toPExpr : ATerm.term -> coq_PExpr
  end
 
+module QPomialEquality :
+ functor (ATerm1:sig
+  module Annot :
+   Typ
+
+  type term =
+  | Var of PVar.t
+  | Cte of QNum.t
+  | Add of term * term
+  | Opp of term
+  | Mul of term * term
+  | Annot of Annot.t * term
+
+  val term_rect :
+    (PVar.t -> 'a1) -> (QNum.t -> 'a1) -> (term -> 'a1 -> term -> 'a1 -> 'a1)
+    -> (term -> 'a1 -> 'a1) -> (term -> 'a1 -> term -> 'a1 -> 'a1) ->
+    (Annot.t -> term -> 'a1 -> 'a1) -> term -> 'a1
+
+  val term_rec :
+    (PVar.t -> 'a1) -> (QNum.t -> 'a1) -> (term -> 'a1 -> term -> 'a1 -> 'a1)
+    -> (term -> 'a1 -> 'a1) -> (term -> 'a1 -> term -> 'a1 -> 'a1) ->
+    (Annot.t -> term -> 'a1 -> 'a1) -> term -> 'a1
+
+  type t = term
+
+  val eval : term -> QNum.t Mem.t -> QNum.t
+
+  val mdBound : term -> PVar.t -> PVar.t
+
+  val fold_variables : term -> (PVar.t -> 'a1 -> 'a1) -> 'a1 -> 'a1
+
+  val map : term -> PVar.t Mem.t -> term
+
+  val pseudoIsZero : term -> bool
+
+  val smartScalAdd1 : QNum.t -> term -> term
+
+  val smartScalAdd : QNum.t -> term -> term
+
+  val smartAdd : term -> term -> term
+
+  val smartOpp : term -> term
+
+  val smartScalMul1 : QNum.t -> term -> term
+
+  val smartScalMul : QNum.t -> term -> term
+
+  val smartMul : term -> term -> term
+
+  val smartAnnot : Annot.t -> term -> term
+
+  val import_acc : (PVar.t*QNum.t) list -> term -> term
+
+  val import : (PVar.t*QNum.t) list -> term
+ end) ->
+ functor (ATerm2:sig
+  module Annot :
+   Typ
+
+  type term =
+  | Var of PVar.t
+  | Cte of QNum.t
+  | Add of term * term
+  | Opp of term
+  | Mul of term * term
+  | Annot of Annot.t * term
+
+  val term_rect :
+    (PVar.t -> 'a1) -> (QNum.t -> 'a1) -> (term -> 'a1 -> term -> 'a1 -> 'a1)
+    -> (term -> 'a1 -> 'a1) -> (term -> 'a1 -> term -> 'a1 -> 'a1) ->
+    (Annot.t -> term -> 'a1 -> 'a1) -> term -> 'a1
+
+  val term_rec :
+    (PVar.t -> 'a1) -> (QNum.t -> 'a1) -> (term -> 'a1 -> term -> 'a1 -> 'a1)
+    -> (term -> 'a1 -> 'a1) -> (term -> 'a1 -> term -> 'a1 -> 'a1) ->
+    (Annot.t -> term -> 'a1 -> 'a1) -> term -> 'a1
+
+  type t = term
+
+  val eval : term -> QNum.t Mem.t -> QNum.t
+
+  val mdBound : term -> PVar.t -> PVar.t
+
+  val fold_variables : term -> (PVar.t -> 'a1 -> 'a1) -> 'a1 -> 'a1
+
+  val map : term -> PVar.t Mem.t -> term
+
+  val pseudoIsZero : term -> bool
+
+  val smartScalAdd1 : QNum.t -> term -> term
+
+  val smartScalAdd : QNum.t -> term -> term
+
+  val smartAdd : term -> term -> term
+
+  val smartOpp : term -> term
+
+  val smartScalMul1 : QNum.t -> term -> term
+
+  val smartScalMul : QNum.t -> term -> term
+
+  val smartMul : term -> term -> term
+
+  val smartAnnot : Annot.t -> term -> term
+
+  val import_acc : (PVar.t*QNum.t) list -> term -> term
+
+  val import : (PVar.t*QNum.t) list -> term
+ end) ->
+ sig
+  module M1 :
+   sig
+    val toPExpr : ATerm1.term -> coq_PExpr
+   end
+
+  module M2 :
+   sig
+    val toPExpr : ATerm2.term -> coq_PExpr
+   end
+
+  val pomial_eq : ATerm1.t -> ATerm2.t -> bool
+ end
+
 module TopLevelAnnot :
  sig
   type topLevelAnnot =

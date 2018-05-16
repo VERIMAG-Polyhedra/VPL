@@ -485,8 +485,7 @@ Module QTerm2Pomial (Import ATerm: AnnotatedTermSig QNum).
     
 End QTerm2Pomial.
 
-(*
-Unused following module : 
+
 (** A polynomial equality of two terms with different annotation types *)
 Module QPomialEquality (ATerm1: AnnotatedTermSig QNum) (ATerm2: AnnotatedTermSig QNum). 
 
@@ -512,7 +511,7 @@ Module QPomialEquality (ATerm1: AnnotatedTermSig QNum) (ATerm2: AnnotatedTermSig
     Qed. 
 
 End QPomialEquality.
-*)
+
 Module TopLevelAnnot <: Typ.
 
   Inductive topLevelAnnot: Set :=
