@@ -1,4 +1,4 @@
-# VPL (Verified Polyhedra Library) version 0.2.1
+# VPL (Verified Polyhedra Library) version 0.3
 
 ## GENERAL INFORMATIONS
 
@@ -13,9 +13,9 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 ## INSTALLATION
 
 1. __From [opam](https://opam.ocaml.org/)__
-	
+
     1. External Dependencies
-	
+
         * [glpk](https://www.gnu.org/software/glpk/)
             __required version >= 4.61__
 
@@ -25,7 +25,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
            __tested with version 3.3.3__
 
     2. Installation
-  
+
         First, add the following repository in your opam system:
 
             opam repo add vpl https://raw.githubusercontent.com/VERIMAG-Polyhedra/opam-vpl/master
@@ -35,7 +35,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
         * `vpl-core`: the ocaml library
 
           ```
-                opam install vpl-core
+                opam install vpl-core.0.3
           ```
 
         * `coq-vpl`: the Coq library (only needed to get Coq proofs about VPL operators)
@@ -49,7 +49,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
           ```
  	       opam install coq-vpltactic
           ```
-          
+
       In case of trouble with this `opam` install, you should read [this](https://github.com/VERIMAG-Polyhedra/opam-vpl/blob/master/README.md#using-the-vpl-on-a-vagrantvirtualbox-virtual-machine).
 
 2. __From sources__
@@ -57,21 +57,21 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
     1. Dependencies
 
        The VPL requires the following packages:
-	
+
        * [ocaml](http://caml.inria.fr/ocaml/index.en.html)
           __required version >= 4.02.3__
-	
+
        * [zarith](https://forge.ocamlcore.org/projects/zarith)
           _available in OPAM_
           __tested with version 1.4.1__
-          
+
        * [glpk](https://www.gnu.org/software/glpk/)
           __required version >= 4.61__
 
        * [eigen](http://eigen.tuxfamily.org/)
           _debian package libeigen3-dev_
           __tested with version 3.3.3__
-	
+
        * [coq](https://coq.inria.fr/)
           (mandatory only if you want to re-extract files from Coq)
           _available in OPAM_
@@ -86,9 +86,9 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
             make coq_extract
 
        To compile the VPL, simply run from the root directory
-	
+
             make vpl
-	
+
        Tests can be run by typing
 
             make check
@@ -96,7 +96,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
        Finally, to install the library with ocamlfind, type
 
             make install
-	
+
        To uninstall the library from ocamlfind, run
 
             make uninstall
