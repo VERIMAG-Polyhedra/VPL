@@ -1,5 +1,7 @@
 (** This module defines the type of polynomials used in the Handelman linearization *)
 
+(** Exception raised when trying to divide a polynomial by a non-constant value *)
+exception Div_by_non_constant
 
 (** This module type defines the type of polynomials depending on the type of coefficients and variables*)
 module type Type = sig
@@ -147,6 +149,11 @@ module type Type = sig
 
 	(** [mul p1 c] returns the polynomial equal to [p1 * c] *)
 	val mulc : t -> Coeff.t -> t
+
+    (** [div p1 p2] returns the polynomial equal to [p1 / p2] if [p2] is constant.
+        @raise Div_by_non_constant if [p2] is non-constant.
+        *)
+    val div : t -> t -> t
 
 	(** [neg p] returns the polynomial equal to [-1*p] *)
 	val neg : t -> t
@@ -538,6 +545,15 @@ module Make (Vec : Vector.Type) = struct
 	let (mulc : t -> Vec.Coeff.t -> t)
 		= fun p c ->
 		mul p (cste c)
+
+    let div : t -> t -> t
+        = fun p1 p2 ->
+        if is_constant p2
+        then
+            let (_,c) = List.hd (data2 p2) in
+            mulc p1 (Vec.Coeff.div Vec.Coeff.u c)
+        else
+            Pervasives.raise Div_by_non_constant
 
 	let (neg : t -> t)
 		= fun p ->
