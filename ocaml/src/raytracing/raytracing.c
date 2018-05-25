@@ -4,11 +4,28 @@
 *******************************************************************************/
 
 #include <iostream>
+#include <algorithm>
 #include "raytracing.h"
-#include "glpkInterface.h"
 #include "double.h"
 
-Raytracing::Raytracing (Polyhedron& poly, const Point& point) { 
+#include <chrono>
+
+#ifdef VERIMAG_POLYHEDRA_MINIMIZE_TBB
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+#endif
+
+#ifdef DEBUGINFO_RAYTRACING
+std::mutex log_mtx_raytracing;
+#endif
+
+bool SortConstraints(std::pair<int, double> c1, std::pair<int, double> c2) { 
+  return c1.second > c2.second ;
+}
+
+Raytracing::Raytracing(Polyhedron& poly, const Point& point, bool getWitness)
+    : _polyptr(&poly), _start_point(&point), _hasInclusion(true),
+    _check_inclusion(false), _start_idx(0), _get_witness(getWitness) { 
   if ( poly.IsEmpty() ) {
     std::cerr << "Cannot create raytracing. The polyhedron is empty."
       << std::endl ;
@@ -19,12 +36,19 @@ Raytracing::Raytracing (Polyhedron& poly, const Point& point) {
       << std::endl ;
     std::terminate() ;
   }
-
-  _polyptr = &poly ;
-  _start_point = &point ; 
-  _evaluate = poly.get_constants() - poly.get_coefficients() * point.get_coordinates();
-  _hasInclusion = true ;
+  _evaluate = poly.get_constants() - 
+      point.get_coordinates() * poly.get_coefficients().transpose() ;
 }  
+
+/*******************************************************************************
+ * Set the parameters for inclusion
+ * @para startIdx if we test if P1 is included in P2, then startIdx is the index
+ * of the first constraint of P2
+*******************************************************************************/
+void Raytracing::SetInclusion(int startIdx) {
+  _check_inclusion = true ;
+  _start_idx = startIdx ;
+}
 
 /*******************************************************************************
  * Determine() is the second step of examining the redundancy of constraints.
@@ -35,43 +59,81 @@ Raytracing::Raytracing (Polyhedron& poly, const Point& point) {
  * @para startIdx the index of the first constraint of P2, if we are checking
  * if P1 is included in P2
 *******************************************************************************/
-void Raytracing::Determine (const bool checkInclusion, const int startIdx) {  
-  if (checkInclusion && !_hasInclusion) {
+void Raytracing::Determine_step(int i) {
+  if (_check_inclusion && !_hasInclusion) return;
+  int currIdx = _undetermined.at(i) ;
+  if (! (_check_inclusion && currIdx < _start_idx)) {
+    std::vector<int> headIdx ;
+    headIdx.push_back(currIdx) ;
+    int currHeadIdx ;
+    for (int i = 0; i < (int)_intersectHead[currIdx].size(); ++ i) {
+      currHeadIdx = _intersectHead[currIdx].at(i) ;
+      if (currHeadIdx != currIdx) {
+	headIdx.push_back( _intersectHead[currIdx].at(i) ) ;
+      }
+    }
+    bool isRedundant = CheckRedundant(currIdx, headIdx) ;
+    if( ! isRedundant) {
+      if (_check_inclusion) {
+	_hasInclusion = false ;
+#ifdef VERIMAG_POLYHEDRA_MINIMIZE_TBB
+	// cancel all tasks in the parallel_for
+	tbb::task::self().cancel_group_execution();
+#endif
+	return;
+      }
+      _polyptr->Activate(currIdx) ;
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "Second step: constraint " << currIdx
+      << " is irredundant" << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+    }
+  }
+}
+
+#ifdef VERIMAG_POLYHEDRA_MINIMIZE_TBB
+class determine_body {
+  Raytracing *raytracing;
+public:
+  determine_body(Raytracing *r) : raytracing(r) { }
+  
+  void operator()(tbb::blocked_range<unsigned> &range) const {
+    //std::cout << "chunk: " << range.size() << std::endl;
+    for(unsigned i=range.begin(); i<range.end(); i++) {
+      raytracing->Determine_step(i);
+    }
+  }
+};
+#endif
+
+void Raytracing::Determine() {  
+
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "Second step of raytracing starts." << std::endl ;
+#endif
+
+  if (_check_inclusion && !_hasInclusion) {
     return ;
   }
-  
+
+#ifdef VERIMAG_POLYHEDRA_MINIMIZE_TBB
+  tbb::parallel_for(tbb::blocked_range<unsigned>(0, _undetermined.size()),
+		    determine_body(this));
+#else
 #ifdef VERIMAG_POLYHEDRA_MINIMIZE_OPENMP
 #pragma omp parallel for schedule(dynamic)
-#endif
-#ifdef VERIMAG_POLYHEDRA_MINIMIZE_CILK
+  for
+#elif defined(VERIMAG_POLYHEDRA_MINIMIZE_CILK)
   _Cilk_for
 #else
   for
 #endif
     (int i = 0; i < (int)_undetermined.size(); ++ i) {
-    if (! (checkInclusion && !_hasInclusion)) {
-      int currIdx = _undetermined.at(i) ;
-      if (! (checkInclusion && currIdx < startIdx)) {
-	std::vector<int> headIdx ;
-	headIdx.push_back(currIdx) ;
-	for (int i = 0; i < (int)_intersectHead[currIdx].size(); ++ i) {
-	  if (_intersectHead[currIdx].at(i) != currIdx) {
-	    headIdx.push_back( _intersectHead[currIdx].at(i) ) ;
-	  }
-	}
-	bool isRedundant = CheckRedundant(currIdx, headIdx) ;
-	if(!isRedundant) {
-	  if (checkInclusion) {
-	    _hasInclusion = false ;
-#if !defined(VERIMAG_POLYHEDRA_MINIMIZE_OPENMP) && !defined(VERIMAG_POLYHEDRA_MINIMIZE_CILK)
-	    return ;
-#endif
-	  }
-	  _polyptr->Activate(currIdx) ;
-	}
-      }
+      Determine_step(i);
     }
-  }
+#endif
 }
 
 /*******************************************************************************
@@ -83,41 +145,112 @@ void Raytracing::Determine (const bool checkInclusion, const int startIdx) {
  * @para ray the ray which provides the direction.
  * @return a list of index of constraints, which are nearest to the start point. 
 *******************************************************************************/
-std::vector<int> Raytracing::GetIntersections (const Ray& ray) {
+std::vector<int> Raytracing::GetIntersections(const Ray& ray, int currIdx) {
   std::vector<int> head ;
-  double maxVal = 0 ;  
-  int consNum = _polyptr->get_constraint_num() ;
-  Vector products = _polyptr -> get_coefficients() * ray.get_direction();
-  for (int i = 0; i < consNum; ++ i) {
-    double consDirect = products(i);
-    if ( Double::IsLessEq(consDirect, 0.0) ) continue ;
+  int consNum ;
+  if (_check_inclusion) {
+    consNum = _start_idx ;
+  }
+  else {
+    consNum = _polyptr->get_constraint_num() ;
+  }
+  int variNum = _polyptr->get_variable_num() ;
+  Vector products = ray.get_direction() * _polyptr -> get_coefficients().transpose()  ;
+  double currIdxDis = GetDistanceInverse( currIdx, products(currIdx) ) ;
 
-    double currDistance = GetDistance(i, consDirect) ;
-    if ( Double::AreEqual(currDistance, maxVal) ) {
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "GetIntersections: distance to the constraint to be determined: "
+      << currIdxDis  << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
+  double threshold, currNorm ;
+  for (int i = 0; i < consNum; ++ i) {
+    //if (_check_inclusion && i >= _start_idx) continue ;
+    if (currIdx == i) continue ;
+    double consDirect = products(i);
+    currNorm = _polyptr->get_coefficients().row(i).norm() ;
+    threshold = Tool::GetDotProductThreshold(variNum, currNorm, 1) ;
+    if ( Double::IsLessEq(consDirect, 0.0, threshold) ) continue ;
+    double currDistance = GetDistanceInverse(i, consDirect) ;
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "GetIntersections: currDistance inverse: "
+      << currDistance << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
+    // the threshold 1e-6 will not effect the result
+    if ( Double::IsLessEq(currIdxDis, currDistance, 1e-6) ) {
       head.push_back(i) ;
-    }
-    else if ( Double::IsLessThan(maxVal, currDistance) ) {
-      head.clear() ;
-      head.push_back(i) ;
-      maxVal = currDistance ;
     }
   }
+  if (head.size() == 0) {
+    std::vector<int> singleVec ;
+    singleVec.push_back(currIdx) ;
+    if (_get_witness) {
+      Vector witness = _start_point->get_coordinates() +
+          ray.get_direction() * (1 / currIdxDis + 1) ;
+      _polyptr->AddWitnessPoint(currIdx, witness) ;
 
-  return head ;
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "Second step: Get witness for " << currIdx
+      << " : " << witness << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
+    }
+
+    return singleVec ;
+  } 
+  else {
+    return head ;
+  }
 }
 
+
 /*******************************************************************************
- * GetDistance() computes the distance between a point to a constraint in the 
+ * GetDistanceInverse() computes the distance between a point to a constraint in the 
  * direction of a ray. We compute the multiplicative inverse of the distance
  * to avoid dividing by 0.
  * @para currIdx the index of the constraint to compute
  * @para ray the ray which provides the direction
  * @return the multiplicative inverse of the distance 
 *******************************************************************************/
-double Raytracing::GetDistance (const int currIdx, const double consDirect) {
+double Raytracing::GetDistanceInverse(const int currIdx, const double consDirect) {
+  double norm = _polyptr->get_coefficients().row(currIdx).norm() ;
+  int variNum = _polyptr->get_variable_num() ;
+  double threshold = Tool::GetDotProductThreshold(variNum, norm, 1) ;
+  if ( Double::AreEqual(consDirect, 0, threshold) ) {
+    return 0 ;
+  }
   double temp1 = _evaluate(currIdx) ; 
   double res = consDirect / temp1 ;
   return res ;
+}
+
+double Raytracing::GetDistanceInverse(const Point& point, const Vector& cons, 
+      double constant, const Ray& ray) {
+  double den = ray.get_direction() * cons.transpose() ;
+  double threshold = Tool::GetDotProductThreshold(cons.size(), cons.norm(), 1) ;
+  if ( Double::AreEqual(den, 0, threshold) ) {
+    return 0 ;
+  }
+  double num = constant - cons * point.get_coordinates().transpose() ;
+  return den/num ;
+}
+
+/*******************************************************************************
+ * Use it when we know the den is not 0
+*******************************************************************************/
+double Raytracing::GetDistance(const Point& point, const Vector& cons, 
+      double constant, const Ray& ray) {
+  double den = ray.get_direction() * cons.transpose() ;
+  double num = constant - cons * point.get_coordinates().transpose() ;
+  return num/den ;
 }
 
 /*******************************************************************************
@@ -128,54 +261,127 @@ double Raytracing::GetDistance (const int currIdx, const double consDirect) {
  * start point in the direction of the ray orthogonal to the constraint currIdx. 
  * @return ture if the constraint is redundant.
 *******************************************************************************/
-bool Raytracing::CheckRedundant (const int currIdx, const std::vector<int>& headIdx) {
+bool Raytracing::CheckRedundant(const int currIdx, std::vector<int>& headIdx) {
   GlpkInterface glpkinter ;
-  std::vector<int> currHeadIdx(headIdx) ;
+
   // the loop has an upper bound which is the number of the constraints
   int consNum = _polyptr->get_constraint_num() ;
+  std::vector<int> allHead = headIdx ;
   for (int i = 0; i < consNum; ++ i) {
-    Point newPoint = glpkinter.GetSatPoint(currHeadIdx, *_polyptr) ;    
-    if (newPoint.IsEmpty()) {
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "Check redundancy of constraint " << currIdx << std::endl ;
+  std::cout << "Head index: " ;
+  for (int i = 0; i < (int)headIdx.size(); ++ i) {
+    std::cout << headIdx[i] << " " ;
+  }
+  std::cout << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
+    Point newPoint = glpkinter.GetIrddWitness(headIdx, *_polyptr) ;
+
+    if ( newPoint.IsEmpty() ) {
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "Cannot find a irredundant witness point."
+      << "The current constraint is redundant" << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
       return true ;
     }
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "found point: " << newPoint << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
     Ray currRay(newPoint, *_start_point) ;
-    std::vector<int> currInter = GetIntersections(currRay) ;
+    std::vector<int> currInter = GetIntersections(currRay, currIdx) ;
     if (currInter.size() == 1 && currInter[0] == currIdx) {
-      _polyptr->SetWitnessRay( currIdx, currRay.get_direction() ) ;
       return false ;
     }
     else {
-      currHeadIdx.clear() ;
-      for (int i = 0; i < (int)currInter.size(); ++ i) {
-        if (currInter[i] != currIdx) {
-          currHeadIdx.push_back(currInter[i]) ;
+      if (_check_inclusion) {
+        headIdx = _sndHead[currIdx] ; 
+      }
+      else {
+        headIdx.clear() ;
+        for (int i = 0; i < (int)currInter.size(); ++ i) {
+          if (currInter[i] == currIdx) continue ;
+          auto exist = std::find( allHead.begin(), allHead.end(), currInter[i] ) ;
+          if ( exist != allHead.end() ) {
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "head " << currInter[i] << " exist, use Farkas" << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
+            return Farkas(currIdx) ; 
+          } 
+          headIdx.push_back( currInter[i] ) ;
         }
+        for (int i = 0; i < (int)currInter.size(); ++ i) {
+          allHead.push_back( currInter[i] ) ;
+        }
+        // The ray hit a constraint of P2, then P1 is not included in P2,
+        // i.e. one of the constraints of P2 is irredundant.
+        //if (_check_inclusion && headIdx.size() == 0) return false ;
       }
     }
   }
-  std::cerr << "Error: cannot determine the current constraint" << std::endl ;
-  std::terminate() ;
+  // It should NOT reach here. Just in case.
+  std::cout << "raytracing cannot determine the current constraint" 
+      << std::endl ;
+  return Farkas(currIdx) ;
 }
 
 /*******************************************************************************
- * The same with RayHitting(), but computes the intersections with matrix 
- * instead of loops and it detect in two directions. 
+ * the first step of testing the redundancy of constraints.
+ * It creates an orthogonal ray for each constraint. In the direction of each 
+ * ray, it compute the distance between the start point to each constraint. 
+ * If a constraint is the single nearest one, then it is irredundant.
+ * This function computes the intersections with matrix, and it tests with
+ * two direction rays.
  * @para checkInclusion is true if Determin() is called for check inclusion
  * @para startIdx the index of the first constraint of P2, if we are checking
  * if P1 is included in P2
 ********************************************************************************/
-void Raytracing::RayHittingMatrixTwoDir (const bool checkInclusion, const int startIdx) {
+void Raytracing::RayHitting() {
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "First step of raytracing starts." << std::endl ;
+#endif
+
   const int consNum = _polyptr->get_constraint_num() ;
+  int variNum = _polyptr->get_variable_num() ;
   Matrix rayMatrix = _polyptr->get_coefficients().transpose() ;
-  Matrix normMatrix = _polyptr->get_coefficients() * rayMatrix ;
   for (int i = 0 ; i < consNum; ++ i) {
     rayMatrix.col(i).normalize() ; 
-    // set coefficients of duplicated constraints as 0
-    if (_polyptr->GetConstraintState(i) == 2) {
-      normMatrix.row(i).setZero() ;
+  }
+  Matrix normMatrix = _polyptr->get_coefficients() * rayMatrix ;
+
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "The matrix of a*r: " << std::endl << normMatrix << std::endl ;
+#endif
+
+  double currConsNorm ;
+  for (int i = 0; i < normMatrix.rows(); ++ i) {
+    currConsNorm = _polyptr->get_coefficients().row(i).norm() ;   
+    for (int j = 0; j < normMatrix.cols(); ++ j) {
+      if ( std::abs( normMatrix(i, j) ) < Tool::GetDotProductThreshold(variNum, currConsNorm, 1) ) {
+        normMatrix(i, j) = 0 ;
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "Set the matrix of a*r at (" << i << "," << j << ") as 0"  << std::endl ;
+#endif
+      } 
     }
-  } 
-  Matrix evaMatrix = _evaluate.rowwise().replicate(consNum) ; 
+  }
+  Matrix evaMatrix = _evaluate.transpose().rowwise().replicate(consNum) ; 
   Matrix distanceMatrix = normMatrix.cwiseQuotient(evaMatrix) ; 
   // the result in the form of 
   //      r1     r2   ....   rn
@@ -185,21 +391,138 @@ void Raytracing::RayHittingMatrixTwoDir (const bool checkInclusion, const int st
   // we need to find the minimum positive value of each column 
   // To simplify the computation, we store 1/distance, which means
   // we will find the maximum value in each column
-  std::vector< std::vector<int> > idxList =  GetMaxMinCoefIdx(distanceMatrix, checkInclusion, startIdx) ;
+  GetIrredundantCons(distanceMatrix) ;
   
-  if(checkInclusion == true && _hasInclusion == false) {
+  if(_check_inclusion == true && _hasInclusion == false) {
     return ;
   }
-  
-  for (int i = 0; i < (int)idxList.size(); ++ i) {
-    _intersectHead[i] = idxList[i] ;
-  }
+
   // push from the last ones for checking inclusion
   for (int i = consNum-1; i >= 0; -- i) {
-    if ( _polyptr->GetConstraintState(i) == REDUNDANT) {
+    if ( _polyptr->GetConstraintState(i) == ConstraintState::redundant) {
       _undetermined.push_back(i) ;
     }
   }
+  for (int i = 0; i < (int)_undetermined.size(); ++ i) {
+    int currIdx = _undetermined[i] ;
+    if (_check_inclusion) {
+      _intersectHead[currIdx] =
+          GetAllMetCons(distanceMatrix.col(currIdx).transpose(), currIdx) ;
+    }
+    else {
+      _intersectHead[currIdx] =
+          GetSortedCons(distanceMatrix.col(currIdx).transpose(), currIdx) ;
+    }
+  }
+}
+
+std::vector<int> Raytracing::GetAllMetCons(Vector distanceVec, int currIdx) {
+  std::vector<int> newVec ;
+  double curr ;
+  for (int i = 0; i < distanceVec.size(); ++ i) {
+    if (_check_inclusion && i >= _start_idx) continue ;
+    curr = distanceVec(i) ;
+    if ( curr > 0 ) {
+      newVec.push_back(i) ;
+    }
+    else {
+      _sndHead[currIdx].push_back(i) ;
+    }
+  }
+  return newVec ;
+}
+
+std::vector<int> Raytracing::GetSortedCons(Vector distanceVec, int currIdx) {
+  std::vector< std::pair<int, double> > pairVec ;
+  std::vector<int> newVec ;
+  double curr ;
+  double currConsDis = distanceVec(currIdx) ; 
+  for (int i = 0; i < distanceVec.size(); ++ i) {
+    if (_check_inclusion && i >= _start_idx) continue ;
+    curr = distanceVec(i) ;
+    // Note that the values in distanceVec are the inverse numbers of distance
+    if (currConsDis < curr) {
+      pairVec.push_back( std::pair<int, double>(i, curr) ) ;
+    }
+  }
+  std::sort(pairVec.begin(), pairVec.end(), SortConstraints) ; 
+  for (int i = 0; i < _polyptr->get_variable_num()
+      && i < (int)pairVec.size(); ++ i) {
+    newVec.push_back(pairVec[i].first) ;
+  }
+  return newVec ;
+} 
+
+Distance Raytracing::GetIrrdDistance(const Vector& disVec) {
+  Distance distance ;
+  double maxVal = 0.0, minVal = 0.0 ;
+  int maxIdx = -1, minIdx = -1 ;
+  // find the first met constraints in two directions
+  for (int i = 0; i < disVec.size(); ++ i) {
+    double currVal = disVec(i) ;
+    if (currVal < 0.0) {
+      // if by chance they are really equal...
+      // the value of the threshold is not important,
+      // as it will not effect the result
+      if ( Double::AreEqual(currVal, minVal, 1e-6) ) {
+        minIdx = -1 ;
+      }
+      else if (currVal < minVal) {
+        minVal = currVal ;
+        minIdx = i ;
+      }
+    }
+    else {
+      // if by chance they are really equal...
+      // the value of the threshold is not important,
+      // as it will not effect the result
+      if ( Double::AreEqual(currVal, maxVal, 1e-6) ) {
+        maxIdx = -1 ;
+      }
+      else if (maxVal < currVal) {
+        maxVal = currVal ;
+        maxIdx = i ;
+      } 
+    }
+  }
+  if (maxIdx != -1) {
+    distance.fst = 1/maxVal ;
+    distance.idx = maxIdx ;
+  }
+  if (minIdx != -1) {
+    distance.oppoFst = -1/minVal ;
+    distance.oppoIdx = minIdx ;
+  }
+
+  if (_get_witness) {
+    double sndMaxVal = 0.0, sndMinVal = 0.0 ;
+    int sndMaxIdx = -2, sndMinIdx = -2 ;
+    // find the second met constraints in two directions
+    for (int i = 0; i < disVec.size(); ++ i) {
+      double currVal = disVec[i] ;
+      if ( i == maxIdx || i == minIdx) continue ;
+      if (currVal < 0.0) {
+        if (currVal < sndMinVal) {
+          sndMinVal = currVal ;
+          sndMinIdx = i ;
+        }
+      }
+      else {
+        if (sndMaxVal < currVal) {
+          sndMaxVal = currVal ;
+          sndMaxIdx = i ;
+        }
+      }
+    }
+    if (sndMaxIdx != -2) {
+      distance.snd = 1/sndMaxVal ;
+    }
+    if (sndMinIdx != -2) {
+      distance.oppoSnd = -1/sndMinVal ;
+    }
+  }
+
+  return  distance ;
 }
 
 /*******************************************************************************
@@ -207,62 +530,164 @@ void Raytracing::RayHittingMatrixTwoDir (const bool checkInclusion, const int st
  * the constraints which to be activated. Gets the minimum value of each column, and 
  * activate the coressponding constraints.
  * @para matrix the distance matrix getten from RayHittingMatrix() 
- * @para checkInclusion is true if Determin() is called for check inclusion
- * @para startIdx the index of the first constraint of P2, if we are checking
  * if P1 is included in P2
  * @return the index of the nearest constraint if it is the single nearest one
 ********************************************************************************/
-std::vector< std::vector<int> > Raytracing::GetMaxMinCoefIdx (const Matrix& matrix, const bool checkInclusion, const int startIdx) {
-  std::vector< std::vector<int> > idxList ;
+void Raytracing::GetIrredundantCons(const Matrix& matrix) {
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "Distance matrix (multiplicative inverse of distance):"
+      << std::endl << matrix << std::endl ;
+#endif
+
   for (int j = 0; j < matrix.cols(); ++ j) {
-    double maxVal = 0 ;
-    double minVal = 0 ;
-    double minIdx = -1 ;
-    std::vector<int> idx ;
-    for (int i = 0; i < matrix.rows(); ++ i) {
-      double currVal = matrix(i, j) ;
-      if ( Double::IsLessThan(currVal, 0.0) ) {
-        if ( Double::IsLessThan(currVal, minVal) ) {
-          minVal = currVal ;
-          minIdx = i ;
-        }
-        else if ( Double::AreEqual(currVal, minVal) ) {
-          minIdx = -1 ;
-        }
+    // if the current constraint has been hit
+    if ( _polyptr->IsActive(j) ) continue ;
+    Distance distance = GetIrrdDistance( matrix.col(j).transpose() ) ;
+    if (distance.idx != -1) {
+      _polyptr->Activate(distance.idx) ;
+
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "First step: constraint " << distance.idx
+      << " is irredundant." << std::endl ;
+#endif
+
+    // compute witness
+    if (_get_witness) {
+      double witnessDis ;
+      Ray currRay( _polyptr->get_coefficients().row(j) ) ;
+      if (distance.snd > 0.0) {
+        witnessDis = (distance.fst + distance.snd) / 2 ; 
       }
-      else if ( ! Double::AreEqual(currVal, 0.0) ) {
-        if ( Double::IsLessThan(maxVal, currVal) ) {
-          idx.clear() ;
-          idx.push_back(i) ;
-          maxVal = currVal ;
-        }
-        else if ( Double::AreEqual(currVal, maxVal) ) {
-          idx.push_back(i) ;
-        }
+      else {
+        witnessDis = distance.fst + 1.0 ; 
+      }
+      Vector witness = _start_point->get_coordinates() 
+            + currRay.get_direction() * witnessDis ;
+      _polyptr->AddWitnessPoint(distance.idx, witness) ;
+
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "First step: Get witness for " << distance.idx
+      << " : " << witness << std::endl ;
+#endif
+
       }
     }
-    idxList.push_back(idx) ;
-    if (idx.size() == 1) { 
-      if (checkInclusion == true && idx[0] >= startIdx) {
-        _hasInclusion = false ;
-        return idxList ;
+
+    // the same for the opposite direction
+    if (distance.oppoIdx != -1) {
+      _polyptr->Activate(distance.oppoIdx) ;
+
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "First step opposite direction: constraint " << distance.oppoIdx
+      << " is irredundant." << std::endl ;
+#endif
+
+    // compute witness
+    if (_get_witness) {
+      double witnessDis ;
+      Ray currRay( - _polyptr->get_coefficients().row(j) ) ;
+      if (distance.oppoSnd > 0.0) {
+        witnessDis = (distance.oppoFst + distance.oppoSnd) / 2 ; 
       }
-      _polyptr->SetWitnessRay(idx[0], j) ; 
-      _polyptr->Activate( idx[0] ) ;
+      else {
+        witnessDis = distance.oppoFst + 1.0 ; 
+      }
+      Vector witness = _start_point->get_coordinates() 
+            + currRay.get_direction() * witnessDis ;
+      _polyptr->AddWitnessPoint(distance.oppoIdx, witness) ;
+
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "First step opposite direction: Get witness for "
+      << distance.oppoIdx << " : " << witness << std::endl ;
+#endif
+
+      }
     }
-    if (minIdx != -1) {
-      if (checkInclusion == true && minIdx >= startIdx) {
-        _hasInclusion = false ;
-        return idxList ;
-      }
-      _polyptr->SetWitnessRay(minIdx, j) ; 
-      _polyptr->Activate(minIdx) ;
-    } 
-  } 
-  
-  return idxList ;  
+  }
 }
 
-bool Raytracing::HasInclusion () const {
+bool Raytracing::HasInclusion() const {
   return _hasInclusion ;
+}
+
+/*******************************************************************************
+ * Test if the current constraint is redundant using Farkas' lemma. 
+ * @para currIdx the index of the constraint to be tested
+ * @return true if the current constraint is redundant 
+********************************************************************************/
+bool Raytracing::Farkas(int currIdx) {
+  int consNum = _polyptr->get_constraint_num() ;
+  int variNum = _polyptr->get_variable_num() ;
+  int lpConsNum = variNum + 1 ;
+  int lpVariNum = consNum ; 
+  Polyhedron lp(lpConsNum, lpVariNum) ;
+  double curr ;
+  // coefficients
+  for (int j = 0; j < variNum; ++ j) {
+    for (int i = 0, k = 0; i < consNum; ++ i) {
+      if (i == currIdx) continue ;
+      curr = _polyptr->GetCoef(i, j) ; 
+      lp.SetCoef(j, k, curr) ; 
+      ++ k ;
+    }
+    lp.SetCoef(j, lpVariNum-1, 0.0) ; 
+    curr = _polyptr->GetCoef(currIdx, j) ;
+    lp.SetConstant(j, curr) ;
+    lp.SetOperator(j, ConstraintOperator::equal) ;
+  }
+  // constants
+  for (int i = 0, k = 0; i < consNum; ++ i) {
+    if (i == currIdx) continue ;
+    curr = _polyptr->GetConstant(i) ; 
+    lp.SetCoef(lpConsNum-1, k, curr) ; 
+    ++ k ;
+  }
+  lp.SetCoef(lpConsNum-1, lpVariNum-1, 1.0) ; 
+  curr = _polyptr->GetConstant(currIdx) ;
+  lp.SetConstant(lpConsNum-1, curr) ;
+  lp.SetOperator(lpConsNum-1, ConstraintOperator::equal) ;
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "Farkas: test constraint " << currIdx << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
+  GlpkInterface glpk ;
+  bool res =  glpk.Simplex(lp, Vector(), true, true, false) ;
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "Farkas result: " << res << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
+  // add witness point
+  if (_get_witness && res == false) {
+
+    // TODO in this case we shouldn't add a witness point,
+    // otherwise it will become strange
+    Vector empty(0) ;
+    _polyptr->AddWitnessPoint( currIdx, empty ) ;
+    /*
+    Vector currCons = _polyptr->get_coefficients().row(currIdx) ;
+    Ray ray(currCons) ;
+    double constant = _polyptr->GetConstant(currIdx) ;
+    double num = constant - _start_point->get_coordinates() * currCons.transpose() ;
+    double den = ray.get_direction() * currCons.transpose() ;
+    double distance = num / den ;
+    Vector witness = _start_point->get_coordinates() +
+        ray.get_direction() * (distance + 1) ;
+    _polyptr->AddWitnessPoint(currIdx, witness) ;
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "Farkas: add a witness for " << currIdx
+      << " : " << witness << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+  */
+
+  }
+
+  return res ;
 }

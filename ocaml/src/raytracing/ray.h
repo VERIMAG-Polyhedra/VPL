@@ -14,11 +14,11 @@
 
 class Ray {
 public:
-  Ray (const Vector& direction) ;
+  Ray(const Vector& direction) ;
   
-  Ray (const Point& p1, const Point& p2) ;
+  Ray(const Point& p1, const Point& p2) ;
 
-  const Vector& get_direction () const ;
+  const Vector& get_direction() const ;
 
 private:
   Vector _direction ;

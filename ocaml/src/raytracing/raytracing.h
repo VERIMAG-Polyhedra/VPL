@@ -18,19 +18,47 @@
 #include <map>
 #include "polyhedron.h"
 #include "ray.h"
+#include "glpkInterface.h"
+#include "tool.h"
+
+#ifdef DEBUGINFO_RAYTRACING
+#include <mutex>
+#endif
+
+struct Distance {
+  Distance () : fst(-1.0), snd(-1.0), idx(-1.0),
+      oppoFst(-1.0), oppoSnd(-1), oppoIdx(-1) {}
+  double fst ;
+  double snd ;
+  int idx ;
+  double oppoFst ;
+  double oppoSnd ;
+  int oppoIdx ;
+} ;
 
 class Raytracing {
 public:
-  Raytracing (Polyhedron& poly, const Point& point) ;  
-  //void RayHitting () ;
-  void Determine (const bool checkInclusion = false, const int startIdx = 0) ;
-  std::vector<int> GetIntersections (const Ray& ray) ;
-  bool CheckRedundant (const int currIdx, const std::vector<int>& headIdx) ;
-  double GetDistance (const int currIdx, const double consDirect) ;
-  void RayHittingMatrixTwoDir (const bool checkInclusion = false, const int startIdx = 0) ;
-  std::vector< std::vector<int> > GetMaxMinCoefIdx (const Matrix& matrix, const bool checkInclusion, const int startIdx) ;
-  bool HasInclusion () const ;
+  Raytracing(Polyhedron& poly, const Point& point, bool getWitness) ;  
+  void SetInclusion(int startIdx) ;
+
+  void Determine() ;
+  void Determine_step(int i);
+  
+  std::vector<int> GetIntersections(const Ray& ray, int currIdx) ;
+  bool CheckRedundant(const int currIdx, std::vector<int>& headIdx) ;
+  double GetDistanceInverse(const int currIdx, const double consDirect) ;
+  static double GetDistanceInverse(const Point& point, const Vector& cons, 
+      double constant, const Ray& ray) ;
+  static double GetDistance(const Point& point, const Vector& cons, 
+      double constant, const Ray& ray) ;
+  void RayHitting() ;
+  void GetIrredundantCons(const Matrix& matrix) ;
+  bool HasInclusion() const ;
 private:
+  std::vector<int> GetAllMetCons(Vector distanceVec, int currIdx) ;
+  std::vector<int> GetSortedCons(Vector distanceVec, int currIdx) ;
+  Distance GetIrrdDistance(const Vector& disVec) ; 
+  bool Farkas(int currIdx) ;
   Polyhedron* _polyptr ;
   const Point* _start_point ;
   Vector _evaluate ;
@@ -38,7 +66,12 @@ private:
   std::vector<int> _undetermined ; 
   // the index of intersection for each constraint
   std::map< int, std::vector<int> > _intersectHead ;
+  std::map< int, std::vector<int> > _sndHead ;
+
   bool _hasInclusion ;
+  bool _check_inclusion ;
+  int _start_idx ;
+  bool _get_witness ;
 } ;
 
 #endif
