@@ -44,7 +44,7 @@ let scalar_to_xml : scalar -> string
 	{- [FM]: classical way that uses the Fourier-Motzkin algorithm}
 	{- [Proj_PLP]: method based on Parametric Linear Programming}}
 *)
-type proj_method = FM | Proj_PLP of scalar | PHeuristic | Proj_Apron
+type proj_method = FM | Proj_PLP of scalar | PHeuristic
 
 (** Choice of the join method.
 {ul
@@ -82,7 +82,6 @@ let proj_to_string : unit -> string
 	| FM -> "Fourier_Motzkin"
 	| Proj_PLP (scalar) -> "Proj_PLP(" ^ (scalar_to_string scalar) ^ ")"
 	| PHeuristic -> "Heuristic"
-	| Proj_Apron -> "Proj_Apron"
 
 let proj_to_xml : unit -> string
 	= fun () ->
@@ -90,7 +89,6 @@ let proj_to_xml : unit -> string
 	| FM -> "fm"
 	| Proj_PLP _ -> "plp"
 	| PHeuristic -> "heuristic"
-	| Proj_Apron -> "apron"
 
 (** Default choice for join. *)
 let join : join_method ref = ref (Baryc)

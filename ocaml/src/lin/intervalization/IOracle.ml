@@ -77,15 +77,15 @@ module Lift (T : Type) = struct
     let get_mode : linearizeContext -> mode
     	= fun lc ->
     	match lc.cmp with
-    	| NumC.Le | NumC.Lt -> UP
-    	| _ -> BOTH
+    	| NumC.Le | NumC.Lt -> DomainInterfaces.UP
+    	| _ -> DomainInterfaces.BOTH
 
     let rec translateAF : Term.t -> env -> Term.t
     	= let translate : Term.t -> Term.t -> D.N.t -> env -> Term.t
     		= fun t_aff t_interv c env->
     		let t_interv' = (D.BasicTerm.smartScalMul c t_interv)
     		|> Term.to_polynomial
-    		|> fun p -> choose_var p env BOTH
+    		|> fun p -> choose_var p env DomainInterfaces.BOTH
     		|> factorize in
     		D.BasicTerm.smartAdd
     			(D.BasicTerm.smartMul
@@ -181,12 +181,12 @@ module OracleQ = Lift(DQ)
 
 let oracleZ : ASTerm.linearizeContext -> ASTerm.ZTerm.t ImpureConfig.Core.Base.imp
     = fun lc ->
-    OracleZ.oracle {
-        nonaffine = lc.nonaffine;
-        env = lc.env;
-        affine = lc.affine;
-        source = lc.source;
-        cmp = lc.cmp;
+    OracleZ.oracle OracleZ.{
+        OracleZ.nonaffine = lc.ASTerm.nonaffine;
+        OracleZ.env = lc.ASTerm.env;
+        OracleZ.affine = lc.ASTerm.affine;
+        OracleZ.source = lc.ASTerm.source;
+        OracleZ.cmp = lc.ASTerm.cmp;
     }
 
 let oracleQ = OracleQ.oracle

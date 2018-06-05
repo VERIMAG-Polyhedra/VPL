@@ -749,12 +749,12 @@ let inclSub: 'c1 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 	| EqSet.NoIncl -> NoIncl
 	| EqSet.Incl certE -> begin
 		Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Inclusion holds for equalities: %s"
-			(Misc.list_to_string factory.to_string certE "\n")));
+			(Misc.list_to_string factory.Cert.to_string certE "\n")));
 		match IneqSet.incl factory nxtVar p1.eqs p1.ineqs p2.ineqs with
 		| IneqSet.NoIncl -> NoIncl
 		| IneqSet.Incl certI -> begin
 			Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Inclusion holds for inequalities: %s"
-			(Misc.list_to_string factory.to_string certI "\n")));
+			(Misc.list_to_string factory.Cert.to_string certI "\n")));
 			Incl (List.append certI certE)
 			end
 		end
@@ -884,7 +884,7 @@ let add: 'c Cert.t -> 'c t -> 'c Cons.t -> 'c meetT
 	Debug.log DebugTypes.MOutput (lazy (Printf.sprintf "%s"
 			(match res with
 			| Added p -> to_string_raw p
-			| Contrad cert -> "Contrad " ^ (factory.to_string cert))))
+			| Contrad cert -> "Contrad " ^ (factory.Cert.to_string cert))))
 	;
 	res
 
@@ -900,7 +900,7 @@ let addM: 'c Cert.t -> 'c t -> 'c Cons.t list -> 'c meetT
 	Debug.log DebugTypes.MOutput (lazy (Printf.sprintf "%s"
 			(match res with
 			| Added p -> to_string_raw p
-			| Contrad cert -> "Contrad " ^ (factory.to_string cert))))
+			| Contrad cert -> "Contrad " ^ (factory.Cert.to_string cert))))
 	;
 	res
 
@@ -965,7 +965,7 @@ let incl: 'c1 Cert.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
     Debug.log DebugTypes.MOutput (lazy (match res with
         | NoIncl -> "Inclusion does not hold"
         | Incl certs -> Printf.sprintf "Inclusion holds, the first polyhedron can be expressed as %s"
-            (Misc.list_to_string factory.to_string certs " ; ")
+            (Misc.list_to_string factory.Cert.to_string certs " ; ")
     ));
     res
 

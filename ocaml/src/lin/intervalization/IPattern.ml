@@ -104,7 +104,7 @@ module Lift (T : Type) = struct
     let unboundedVarmode : matcher
 		= fun p env mode mapKeep mapNKeep ->
 		match mode with
-		| BOTH -> None
+		| DomainInterfaces.BOTH -> None
 		| _ -> begin try
 				let mono = List.find (* premier cas *)
     				(fun mono ->
@@ -123,9 +123,9 @@ module Lift (T : Type) = struct
                         in
                         let mono' = M.mk m'' c' in
     					match mode with
-    					| UP -> not (Misc.sign_changing mono' v env)
-    					| LOW -> Misc.sign_changing mono' v env
-    					| BOTH -> Pervasives.failwith "IPattern.unboundedVarmode"
+    					| DomainInterfaces.UP -> not (Misc.sign_changing mono' v env)
+    					| DomainInterfaces.LOW -> Misc.sign_changing mono' v env
+    					| DomainInterfaces.BOTH -> Pervasives.failwith "IPattern.unboundedVarmode"
                     )
     				(P.data p)
 				in
@@ -157,9 +157,9 @@ module Lift (T : Type) = struct
                     in
                     let mono' = M.mk m'' c' in
 					match mode with
-					| UP -> Misc.sign_changing mono' v env
-					| LOW -> not (Misc.sign_changing mono' v env)
-					| BOTH -> Pervasives.failwith "IPattern.unboundedVarmode"
+					| DomainInterfaces.UP -> Misc.sign_changing mono' v env
+					| DomainInterfaces.LOW -> not (Misc.sign_changing mono' v env)
+					| DomainInterfaces.BOTH -> Pervasives.failwith "IPattern.unboundedVarmode"
                 )
 				(P.data p)
 				in
