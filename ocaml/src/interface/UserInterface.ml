@@ -348,13 +348,15 @@ let report : exn -> unit
 	in
 	fun e -> begin match e with
     | CertcheckerConfig.CertCheckerFailure (_,s) ->
-        Printf.sprintf "An exception was raised: %s"
+        Printf.sprintf "An exception was raised: %s\n%s"
 		(Printexc.to_string e)
+        (Printexc.get_backtrace ())
 		|> print_endline;
         print_endline s
     | _ ->
-	   Printf.sprintf "An exception was raised: %s"
+	   Printf.sprintf "An exception was raised: %s\n%s"
 		(Printexc.to_string e)
+        (Printexc.get_backtrace ())
 		|> print_endline
     end;
 	report e

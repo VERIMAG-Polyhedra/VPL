@@ -946,7 +946,7 @@ module Test (F : sig
 			le [1, a; -1, z] 1
 		];
 		(* known to fail*)
-		(*
+
 		"notClosed0", p [
 			lt [1, y] 3;
 		], p [
@@ -954,7 +954,29 @@ module Test (F : sig
 			le [-1, x; 1, y] 1
 		], p [
 			le [1, y] 3
-		];*)
+		];
+        (*
+        "similarities", p [
+            le [-1, x ; 1, y] 0;
+            le [1, x ; 1, y] 5;
+            le [56, x ; 20, y] 237;
+            le [-1, y] 0;
+            lt [-586, x ; -280, y] (-922)
+        ], p [
+            le [-1, x] (-1);
+            le [-1, y] 2;
+            le [56, x ; 20, y] 237;
+            lt [1, y] 0;
+            lt [-333, x ; 112, y] (-501)
+        ], p [
+            le [56, x ; 20, y] 237;
+            lt [-1, x ; 1, y] 0;
+            lt [1, x ; 1, y] 5;
+            lt [-1, y] 2;
+            lt [-1, x] (-1);
+            lt [-2221, x ; 56, y] (-2305)
+        ];
+        *)
 
 		"dots0", p [
 			eq [1, x] 0;

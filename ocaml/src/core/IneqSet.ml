@@ -123,11 +123,16 @@ exception CertSyn
 
 let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 	= fun factory (c1,cert1) c2 ->
+    Printf.sprintf "certSyn %s     %s"
+        (Cons.to_string_ext factory Cs.Vec.V.to_string (c1,cert1))
+        (Cs.to_string Cs.Vec.V.to_string c2)
+        |> print_endline;
 	let v1 = Cs.get_v c1 in
 	let v2 = Cs.get_v c2 in
 	match Vec.isomorph v2 v1 with
 	| Some r -> (* v2 = r.v1 *)
 		begin
+        Printf.sprintf "r = %s" (Scalar.Rat.to_string r) |> print_endline;
 		let cert =
 			let cste = Scalar.Rat.sub
 				(Cs.get_c c2)
@@ -136,10 +141,10 @@ let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 			if Scalar.Rat.lt cste Scalar.Rat.z
 			then factory.Cert.mul r cert1
 			else
-				let cste_cert = factory.Cert.triv (Cs.get_typ c2) cste
+                let cste_cert = factory.Cert.triv (Cs.get_typ c2) cste
 				in
 				factory.Cert.mul r cert1
-					|> factory.Cert.add cste_cert
+				|> factory.Cert.add cste_cert
 		in
 		match Cs.get_typ c1, Cs.get_typ c2 with
 		| Cstr.Lt, Cstr.Le -> factory.Cert.to_le cert
@@ -149,6 +154,11 @@ let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 
 let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 	= fun factory es s c ->
+    Printf.sprintf "synIncl\n\teqs : %s\n\tineqs : %s\n\tcstr : %s"
+        (EqSet.to_string_ext factory Cs.Vec.V.to_string es)
+        (to_string_ext factory Cs.Vec.V.to_string s)
+        (Cs.to_string Cs.Vec.V.to_string c)
+        |> print_endline;
 	match Cs.tellProp c with
 	| Cs.Trivial -> Trivial
 	| Cs.Contrad -> Empty (factory.Cert.top)

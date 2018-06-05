@@ -204,7 +204,7 @@ module type Type = sig
 	(** [eval_partial p v] returns a polynomial, which is the evaluation of polynomial [p] where each variable is replaced by its value in function [v]. If a variable has no value in [v], it remains in the result. *)
 	val eval_partial : t -> (V.t -> Coeff.t option) -> t
 
-	(** [ofCstr names vec coeff] builds the polynomial [vec + coeff]. *)
+	(** [ofCstr vec coeff] builds the polynomial [vec + coeff]. *)
 	val ofCstr : Vec.t -> Coeff.t -> t
 
 	(** [toCstr p] returns the linear part and the coefficient of [p].
