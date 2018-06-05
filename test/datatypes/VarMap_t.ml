@@ -1,15 +1,15 @@
 open Vpl
 
-module Test (M: VarMap.Type) = struct
+module Make_Tests (M: VarMap.Type) = struct
 	module V = M.V
 
 	(* M.set *)
-	let setNilConsTs: T.testT
-	=
+	let setNilConsTs: Test.t
+	   = fun () ->
 		let chk (name, tree) = fun state ->
 			if M.is_empty tree
-			then T.fail name "rt is nil" state
-			else T.succeed state
+			then Test.fail name "rt is nil" state
+			else Test.succeed state
 		in
 		let tcs = [
 			"_", M.set 0 M.empty V.u 1;
@@ -20,15 +20,15 @@ module Test (M: VarMap.Type) = struct
 			"IO_", M.set 0 M.empty (V.fromRight (V.fromLeft V.u)) 1;
 			"II_", M.set 0 M.empty (V.fromRight (V.fromRight V.u)) 1;
 		] in
-		T.suite "nilCons" (List.map chk tcs)
+		Test.suite "nilCons" (List.map chk tcs)
 
-	let setOrderTs: T.testT
-	=
+	let setOrderTs: Test.t
+	   = fun () ->
 		let chk (name, tree1, tree2) = fun state ->
 			if M.equal (=) tree1 tree2 then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name "not equal" state
+				Test.fail name "not equal" state
 		in
 		let set = M.set 0 in
 		let tcs = [
@@ -54,14 +54,15 @@ module Test (M: VarMap.Type) = struct
 				set (set M.empty V.u 1) (V.fromRight (V.fromRight V.u)) 2,
 				set (set M.empty (V.fromRight (V.fromRight V.u)) 2) V.u 1
 		] in
-		T.suite "order" (List.map chk tcs)
+		Test.suite "order" (List.map chk tcs)
 
-	let setTs: T.testT
-	= T.suite "set" [setNilConsTs; setOrderTs]
+	let setTs: Test.t
+	   = fun () ->
+       Test.suite "set" [setNilConsTs (); setOrderTs ()]
 
 	(* M.find *)
-	let findTs: T.testT
-	=
+	let findTs: Test.t
+	   = fun () ->
 		let chk (name, predicate, tree, expected) = fun state ->
 			let pr
 			= function
@@ -70,9 +71,9 @@ module Test (M: VarMap.Type) = struct
 			in
 			let actual = M.find predicate tree in
 			if List.exists ((=) actual) expected then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name (pr actual) state
+				Test.fail name (pr actual) state
 		in
 		let tcs = [
 			"nil0", (fun _ -> Some 0), M.empty, [None];
@@ -88,18 +89,18 @@ module Test (M: VarMap.Type) = struct
 			"ret0", (fun i -> if i = 1 then Some 10 else None), M.mk 0 [V.u, 1; V.fromRight V.u, 2],
 				[Some (V.u, 10)]
 		] in
-		T.suite "find" (List.map chk tcs)
+		Test.suite "find" (List.map chk tcs)
 
 	(* M.pathsGet *)
-	
-	let pathsGetTs: T.testT
-	=
+
+	let pathsGetTs: Test.t
+	   = fun () ->
 		let set = M.set false in
 		let chk (name, tree, paths) = fun state ->
 			let res = M.pathsGet tree in
 			if V.Set.equal (V.Set.of_list paths) res
-			then T.succeed state
-			else T.fail name "not equal" state
+			then Test.succeed state
+			else Test.fail name "not equal" state
 		in
 		let tcs = [
 			"nil", M.empty, [];
@@ -110,18 +111,18 @@ module Test (M: VarMap.Type) = struct
 			"m0", set (set M.empty (V.fromLeft V.u) true) V.u true, [V.u; V.fromLeft V.u];
 			"m1", set (set M.empty (V.fromRight V.u) true) V.u true, [V.u; V.fromRight V.u]
 		] in
-		T.suite "pathsGet" (List.map chk tcs)
-	
+		Test.suite "pathsGet" (List.map chk tcs)
+
 	(* M.toList *)
-	let toListTs: T.testT
-	=
+	let toListTs: Test.t
+	   = fun () ->
 		let set = M.set false in
 		let chk (name, tree, paths) = fun state ->
 			let res = M.toList tree in
 			if res = paths then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name "not equal" state
+				Test.fail name "not equal" state
 		in
 		let tcs = [
 			"nil", M.empty, [];
@@ -132,24 +133,27 @@ module Test (M: VarMap.Type) = struct
 			"m0", set (set M.empty V.u true) (V.fromLeft V.u) true, [V.u, true; V.fromLeft V.u, true];
 			"m1", set (set M.empty V.u true) (V.fromRight V.u) true, [V.u, true; V.fromRight V.u, true]
 		] in
-		T.suite "toList" (List.map chk tcs)
-	
-	let ts: T.testT
-		= T.suite V.name [setTs; findTs; pathsGetTs; toListTs]
+		Test.suite "toList" (List.map chk tcs)
+
+	let ts: Test.t
+		= fun () ->
+        List.map Test.run [setTs ; findTs ; pathsGetTs ; toListTs]
+        |> Test.suite V.name
 
 end
 
-module Rtree = Test (Rtree)
+module Rtree = Make_Tests (Rtree)
 
 module VarMap = struct
-	module Int = Test (VarMap.VarMap(Var.Int))
-	
+	module Int = Make_Tests (VarMap.VarMap(Var.Int))
+
 	(*module String = Test (VarMap.VarMap(Var.String))*)
-	
-	let ts: T.testT
-		= T.suite "VarMap" [Int.ts]
+
+	let ts: Test.t
+		= fun () ->
+        Test.suite "VarMap" [Int.ts ()]
 end
 
-let ts: T.testT
-	= T.suite "VarMap" [Rtree.ts ; VarMap.ts]
-		
+let ts: Test.t
+	= fun () ->
+    Test.suite "VarMap" [Rtree.ts (); VarMap.ts ()]

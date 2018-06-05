@@ -100,8 +100,8 @@ let relPr: Cs.t IneqSet.rel_t -> string
 	| IneqSet.Incl l -> Printf.sprintf "Incl l with l:\n%s" (Misc.list_to_string (Cs.to_string Cs.Vec.V.to_string) l " ; ")
 
 (* IneqSet.synIncl *)
-let synInclCheckTs: T.testT
-=
+let synInclCheckTs: Test.t
+= fun () ->
 	let chk (t, es, s, cIn, cOut) = fun state ->
 		let eq : Cs.t IneqSet.prop_t -> Cs.t IneqSet.prop_t -> bool
 			= fun c1 c2 ->
@@ -114,13 +114,13 @@ let synInclCheckTs: T.testT
 		in
 		let result = IneqSet.synIncl factory es s cIn in
 		if eq (IneqSet.Check cOut) result then
-			T.succeed state
+			Test.succeed state
 		else
 			let s = Printf.sprintf "Expected %s\ngot %s"
 				(propPr (IneqSet.Check cOut))
 				(propPr result)
 			in
-			T.fail t s state
+			Test.fail t s state
 	in
 	let tcs = [
 		"subst0",
@@ -134,10 +134,10 @@ let synInclCheckTs: T.testT
 			(lt [1, x] 2, eq [1, y] 0) ;
 
 	] in
-	T.suite "check" (List.map chk tcs)
+	Test.suite "check" (List.map chk tcs)
 
-let synInclImpliedTs: T.testT
-=
+let synInclImpliedTs: Test.t
+= fun () ->
 	let chk (t, es, s, cIn, cOut) = fun state ->
 		let eq : Cs.t IneqSet.prop_t -> Cs.t IneqSet.prop_t -> bool
 			= fun c1 c2 ->
@@ -149,13 +149,13 @@ let synInclImpliedTs: T.testT
 		in
 		let result = IneqSet.synIncl factory es s cIn in
 		if eq (IneqSet.Implied cOut) result then
-			T.succeed state
+			Test.succeed state
 		else
 			let s = Printf.sprintf "Expected %s\ngot %s"
 				(propPr (IneqSet.Implied cOut))
 				(propPr result)
 			in
-			T.fail t s state
+			Test.fail t s state
 	in
 	let tcs = [
 
@@ -170,14 +170,15 @@ let synInclImpliedTs: T.testT
 			(lt [1, y] 3) ;
 
 	] in
-	T.suite "implied" (List.map chk tcs)
+	Test.suite "implied" (List.map chk tcs)
 
-let synInclTs: T.testT
-= T.suite "synIncl" [synInclCheckTs ; synInclImpliedTs]
+let synInclTs: Test.t
+= fun () ->
+Test.suite "synIncl" [synInclCheckTs() ; synInclImpliedTs()]
 
 (* IneqSet.addM *)
-let addMTs: T.testT
-=
+let addMTs: Test.t
+= fun () ->
 let chk (nm, s, l, r)
 	= fun st ->
 		let ilist = List.mapi (fun i cs -> i, cs) (l @ (List.map Pervasives.fst s))
@@ -189,12 +190,12 @@ let chk (nm, s, l, r)
 			let conss = List.map mkCons l in
 			let s' = IneqSet.addM nxt s conss (Splx.getAsg sx_strict) in
 			if IneqSet.equal r s'
-			then T.succeed st
+			then Test.succeed st
 			else
 				let estr = Printf.sprintf "expected:\n%s\ngot:\n%s\n"
 					(IneqSet.to_string varPr r) (IneqSet.to_string varPr s')
 				in
-				T.fail nm estr st
+				Test.fail nm estr st
 	in
 	let tcs: (string * Cs.t IneqSet.t * Cs.t list * Cs.t IneqSet.t) list
 	= [
@@ -247,19 +248,19 @@ let chk (nm, s, l, r)
 			le [1, x] 1;
 			le [1, y] 1];
 	] in
-	T.suite "addM" (List.map chk tcs)
+	Test.suite "addM" (List.map chk tcs)
 
 
 (* IneqSet.pick *)
-let pickTs: T.testT
-=
+let pickTs: Test.t
+= fun () ->
 	let chk (t, msk, x, l) = fun state ->
 		let s = iset l in
 		let x1 = IneqSet.pick msk s in
 		if x = x1 then
-			T.succeed state
+			Test.succeed state
 		else
-			T.fail t (optxpr x1) state
+			Test.fail t (optxpr x1) state
 	in
 	let tcs = [
 		"nil0", mask [], None, [];
@@ -283,19 +284,19 @@ let pickTs: T.testT
 			le [-1, x; 1, y] 0;
 			le [2, y; 1, z] 0 ]
 	] in
-	T.suite "pick" (List.map chk tcs)
+	Test.suite "pick" (List.map chk tcs)
 
 (* IneqSet.subst *)
-let substTs: T.testT
-=
+let substTs: Test.t
+= fun () ->
 	let chk_res (t, x, e, s, s1) = fun state ->
 		let s2 = iset s in
 		let s3 = iset s1 in
 		let s4 = IneqSet.subst factory nxt EqSet.nil x e s2 in
 		if IneqSet.equal s3 s4 then
-			T.succeed state
+			Test.succeed state
 		else
-			T.fail t (IneqSet.to_string_ext factory varPr s4) state
+			Test.fail t (IneqSet.to_string_ext factory varPr s4) state
 	in
 	let tcs = [
 		"nil0", x, mkCons (eq [1, x] 0), [], [];
@@ -330,21 +331,21 @@ let substTs: T.testT
 		], [
 			le [1, y] 0 ]
 	] in
-	T.suite "subst" [
-		T.suite "res" (List.map chk_res tcs)
+	Test.suite "subst" [
+		Test.suite "res" (List.map chk_res tcs)
 	]
 
 (* IneqSet.fmElim *)
-let fmElimTs: T.testT
-=
+let fmElimTs: Test.t
+= fun () ->
 	let chk_res (t, x, s, s1) = fun state ->
 		let s2 = iset s in
 		let s3 = iset s1 in
 		let s4 = IneqSet.fmElim factory nxt EqSet.nil x s2 in
 		if IneqSet.equal s3 s4 then
-			T.succeed state
+			Test.succeed state
 		else
-			T.fail t (IneqSet.to_string_ext factory varPr s4) state
+			Test.fail t (IneqSet.to_string_ext factory varPr s4) state
 	in
 	let tcs = [
 		"nil0", x, [], [];
@@ -404,21 +405,21 @@ let fmElimTs: T.testT
 			le [1, y] 0;
 			le [1, z] 0 ]
 	] in
-	T.suite "fmElim" [
-		T.suite "res" (List.map chk_res tcs)
+	Test.suite "fmElim" [
+		Test.suite "res" (List.map chk_res tcs)
 	]
 
 (* IneqSet.fmElimM *)
-let fmElimMTs: T.testT
-=
+let fmElimMTs: Test.t
+= fun () ->
 	let chk_res (t, msk, cList, cList1) =fun state ->
 		let s = iset cList in
 		let s1 = iset cList1 in
 		let s2 = IneqSet.fmElimM factory nxt EqSet.nil msk s in
 		if IneqSet.equal s1 s2 then
-			T.succeed state
+			Test.succeed state
 		else
-			T.fail t (IneqSet.to_string_ext factory varPr s2) state
+			Test.fail t (IneqSet.to_string_ext factory varPr s2) state
 	in
 	let tcs = [
 		"nil0", mask [], [], [];
@@ -444,20 +445,20 @@ let fmElimMTs: T.testT
 		], [
 			le [1, z] 0 ]
 	] in
-	T.suite "fmElimM" [
-		T.suite "res" (List.map chk_res tcs)
+	Test.suite "fmElimM" [
+		Test.suite "res" (List.map chk_res tcs)
 	]
 
 (* IneqSet.incl *)
-let isInclTs: T.testT
-=
+let isInclTs: Test.t
+= fun () ->
 	let chk (name, es, s1, s2, expected) = fun state ->
 		let actual = IneqSet.incl factory nxt es s1 s2 in
 		if relEq actual expected then
-			T.succeed state
+			Test.succeed state
 		else
 			let err = Printf.sprintf "expected:\n%s\nactual:\n%s" (relPr expected) (relPr actual) in
-			T.fail name err state
+			Test.fail name err state
 	in
 	let tcs = [
 		"simpl0", EqSet.nil, iset [
@@ -518,7 +519,9 @@ let isInclTs: T.testT
 		], iset [le [-1, x; 1, z] 0],
 		IneqSet.Incl [le [-1, x; 1, z] 0]
 	] in
-	T.suite "isIncl" (List.map chk tcs)
+	Test.suite "isIncl" (List.map chk tcs)
 
-let ts: T.testT
-= T.suite Vec.V.name [synInclTs; addMTs; substTs; isInclTs ; pickTs ; fmElimTs; fmElimMTs]
+let ts: Test.t
+    = fun () ->
+    List.map Test.run [synInclTs; addMTs; substTs; isInclTs ; pickTs ; fmElimTs; fmElimMTs]
+    |> Test.suite Vec.V.name

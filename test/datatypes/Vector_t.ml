@@ -1,8 +1,8 @@
 open Vpl
 
 module VectorRtree = struct
-	
-	module Test(Coeff : Scalar.Type) = struct
+
+	module Make_Tests(Coeff : Scalar.Type) = struct
 		module Vec = Vector.VectorRtree(Coeff)
 		let x = Vec.V.fromInt 1
 		let y = Vec.V.fromInt 2
@@ -24,56 +24,57 @@ module VectorRtree = struct
 		= fun l -> Vec.mk (List.map (fun (i, v) -> (Coeff.mk1 i, v)) l)
 
 		(* Vec.elim *)
-		let elimInFromOnlyTs: T.testT
-		=
+		let elimInFromOnlyTs: Test.t
+		 = fun () ->
 			let chk (name, using, from) = fun state ->
 				try
 					let _ = Vec.elim y using from in
-					T.fail name "Invalid_argument not raised" state
+					Test.fail name "Invalid_argument not raised" state
 				with
-				| Invalid_argument "Vec.elim" -> T.succeed state
-				| _ -> T.fail name "unexpected exception raised" state
+				| Invalid_argument s when s = "Vec.elim" -> Test.succeed state
+				| _ -> Test.fail name "unexpected exception raised" state
 			in
 			let tcs = [
 				"simple0", v [1, x], v [1, x; 1, y]
 			] in
-			T.suite "inFromOnly" (List.map chk tcs)
+			Test.suite "inFromOnly" (List.map chk tcs)
 
-		let elimNotInFromTs: T.testT
-		=
+		let elimNotInFromTs: Test.t
+		= fun () ->
 			let chk (name, using, from) = fun state ->
 				let r = Vec.elim y using from in
 				if Vec.equal from r then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail name (Vec.to_string varPr r) state
+					Test.fail name (Vec.to_string varPr r) state
 			in
 			let tcs = [
 				"simple0", v [1, x; 1, y; 1, z], v [1, x];
 				"nowhere0", v [1, x; 1, z], v [1, x]
 			] in
-			T.suite "notInFrom" (List.map chk tcs)
+			Test.suite "notInFrom" (List.map chk tcs)
 
-		let elimInBothTs: T.testT
-		=
+		let elimInBothTs: Test.t
+		= fun () ->
 			let chk (name, using, from, expected) = fun state ->
 				let r = Vec.elim y using from in
 				if Vec.equal r expected then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail name (Vec.to_string varPr r) state
+					Test.fail name (Vec.to_string varPr r) state
 			in
 			let tcs = [
 				"simple0", v [1, x; 1, y], v [-1, y], v [1, x]
 			] in
-			T.suite "inBoth" (List.map chk tcs)
+			Test.suite "inBoth" (List.map chk tcs)
 
-		let elimTs: T.testT
-		= T.suite "elim" [elimInFromOnlyTs; elimNotInFromTs; elimInBothTs]
+		let elimTs: Test.t
+		= fun () ->
+        Test.suite "elim" [elimInFromOnlyTs(); elimNotInFromTs(); elimInBothTs()]
 
 		(* Vec.shift *)
-		let shiftTs: T.testT
-		=
+		let shiftTs: Test.t
+		= fun () ->
 			(* Check that the coefficients in [vec] are to be found at the right place in [shiftedVec]. *)
 			let chkCoefs (name, vec, relocTbl) = fun state ->
 				let (_, shiftedVec, relocTbl1) = Vec.shift nxt vec relocTbl in
@@ -93,9 +94,9 @@ module VectorRtree = struct
 						node && chk l lTbl && chk r rTbl
 				in
 				if chk vec relocTbl1 then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail name "difference between coefficients" state
+					Test.fail name "difference between coefficients" state
 			in
 			(* Check that no more than the expected coefficients are to be found in the result.
 			XXX: this way of checking is maybe overkill and redundant with [chkCoefs]. *)
@@ -130,9 +131,9 @@ module VectorRtree = struct
 						a && chk l1 l2 && chk r1 r2
 				in
 				if chk sv (build Rtree.Nil v nr) then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail name "unexpected non-nul coefficient" state
+					Test.fail name "unexpected non-nul coefficient" state
 			in
 			(* "Syntactic" criteria on the relocation table:
 				- once set, a node does not change
@@ -151,9 +152,9 @@ module VectorRtree = struct
 					| Rtree.Sub (l1, Some x1, r1), Rtree.Sub (l2, Some x2, r2) -> x1 = x2 && chk l1 l2 && chk r1 r2
 				in
 				if chk r nr then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail name "bad relocation table" state
+					Test.fail name "bad relocation table" state
 			in
 			let x1 = nxt in
 			let y1 = Vec.V.next x1 in
@@ -169,19 +170,20 @@ module VectorRtree = struct
 				"all0", Vec.mk [Coeff.u, x; Coeff.u, y],
 					Rtree.mk None [x, Some x1; y, Some y1]
 			] in
-			T.suite "shift" [
-				T.suite "coefs" (List.map chkCoefs tcs);
-				T.suite "nil" (List.map chkNil tcs);
-				T.suite "reloc" (List.map chkReloc tcs)
+			Test.suite "shift" [
+				Test.suite "coefs" (List.map chkCoefs tcs);
+				Test.suite "nil" (List.map chkNil tcs);
+				Test.suite "reloc" (List.map chkReloc tcs)
 			]
 
 		(* getVars *)
-		let getVarsTs: T.testT
-		  = let chk (name, vars, vecs) state =
+		let getVarsTs: Test.t
+		  =  fun () ->
+          let chk (name, vars, vecs) state =
 				let vars' = Vec.getVars vecs in
 				if Vec.V.Set.equal (Vec.V.Set.of_list vars) vars'
-				then T.succeed state
-				else T.fail name "not equal" state
+				then Test.succeed state
+				else Test.fail name "not equal" state
 			 in
 			 let x = Vec.V.XH and y = Vec.V.XO Vec.V.XH and z = Vec.V.XI Vec.V.XH and t = Vec.V.XO (Vec.V.XO Vec.V.XH) in
 			 let tcs = [
@@ -192,29 +194,30 @@ module VectorRtree = struct
 			"one2", [z], [Vec.mk [Coeff.u, z]];
 			"m0", [x; y; z], [Vec.mk [Coeff.u, x; Coeff.mk1 2, z]; Vec.mk [Coeff.u, y]]
 				] in
-			 T.suite "listVars" (List.map chk tcs)
+			 Test.suite "listVars" (List.map chk tcs)
 
-		let ts: T.testT
-		= T.suite Coeff.name [elimTs; shiftTs; getVarsTs]
+		let ts: Test.t
+		=  fun () ->
+        Test.suite Coeff.name [elimTs(); shiftTs(); getVarsTs()]
 	end
 
 	module Rat = struct
-		include Test(Scalar.Rat)
+		include Make_Tests(Scalar.Rat)
 		module Coeff = Vector.Rat.Positive.Coeff
 			(* Vec.gcd *)
-		
+
 		let x = Vector.Rat.Positive.V.fromInt 1
 		let y = Vector.Rat.Positive.V.fromInt 2
 		let z = Vector.Rat.Positive.V.fromInt 3
-		
-		let gcdTs: T.testT
-			=
+
+		let gcdTs: Test.t
+			= fun () ->
 			let chk (name, r, v1) = fun state ->
 				let r1 = Vector.Rat.Positive.gcd v1 in
 				if Coeff.cmp r r1 = 0 then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail name (Coeff.to_string r1) state
+					Test.fail name (Coeff.to_string r1) state
 			in
 			let tcs = [
 				"nil0", Coeff.u, Vector.Rat.Positive.mk [];
@@ -230,25 +233,29 @@ module VectorRtree = struct
 				"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 4, y; Coeff.mk1 6, z];
 				"neg0", Coeff.u, Vector.Rat.Positive.mk [Coeff.negU, x]
 			] in
-			T.suite "gcd" (List.map chk tcs)
-	
-		let ts: T.testT
-			= T.suite Coeff.name [elimTs; shiftTs; gcdTs ; getVarsTs]
+			Test.suite "gcd" (List.map chk tcs)
+
+		let ts: Test.t
+			= fun () ->
+            List.map Test.run [elimTs; shiftTs; gcdTs ; getVarsTs]
+            |> Test.suite Coeff.name
 	end
 
-	module Symbolic = Test(Scalar.Symbolic)
+	module Symbolic = Make_Tests(Scalar.Symbolic)
 
-	module Float = Test(Scalar.Float)
-	
-	module RelInt = Test(Scalar.RelInt)
-	
-	let ts : T.testT
-		= T.suite "Rtree" [Rat.ts ; Symbolic.ts ; Float.ts ; RelInt.ts]
+	module Float = Make_Tests(Scalar.Float)
+
+	module RelInt = Make_Tests(Scalar.RelInt)
+
+	let ts : Test.t
+		= fun () ->
+        List.map Test.run [Rat.ts ; Symbolic.ts ; Float.ts ; RelInt.ts]
+        |> Test.suite "Rtree"
 end
 
 module VectorMap = struct
-	
-	module Test(Coeff : Scalar.Type)(V : Var.Type) = struct
+
+	module Make_Tests(Coeff : Scalar.Type)(V : Var.Type) = struct
 		module Vec = Vector.VectorMap(Coeff)(V)
 		let x = Vec.V.fromInt 1
 		let y = Vec.V.fromInt 2
@@ -271,60 +278,62 @@ module VectorMap = struct
 		= fun l -> Vec.mk (List.map (fun (i, v) -> (Coeff.mk1 i, v)) l)
 
 		(* Vec.elim *)
-		let elimInFromOnlyTs: T.testT
-		=
+		let elimInFromOnlyTs: Test.t
+		= fun () ->
 			let chk (name, using, from) = fun state ->
 				try
 					let _ = Vec.elim y using from in
-					T.fail name "Invalid_argument not raised" state
+					Test.fail name "Invalid_argument not raised" state
 				with
-				| Invalid_argument "Vec.elim" -> T.succeed state
-				| _ -> T.fail name "unexpected exception raised" state
+				| Invalid_argument s when s = "Vec.elim" -> Test.succeed state
+				| _ -> Test.fail name "unexpected exception raised" state
 			in
 			let tcs = [
 				"simple0", v [1, x], v [1, x; 1, y]
 			] in
-			T.suite "inFromOnly" (List.map chk tcs)
+			Test.suite "inFromOnly" (List.map chk tcs)
 
-		let elimNotInFromTs: T.testT
-		=
+		let elimNotInFromTs: Test.t
+		= fun () ->
 			let chk (name, using, from) = fun state ->
 				let r = Vec.elim y using from in
 				if Vec.equal from r then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail name (Vec.to_string varPr r) state
+					Test.fail name (Vec.to_string varPr r) state
 			in
 			let tcs = [
 				"simple0", v [1, x; 1, y; 1, z], v [1, x];
 				"nowhere0", v [1, x; 1, z], v [1, x]
 			] in
-			T.suite "notInFrom" (List.map chk tcs)
+			Test.suite "notInFrom" (List.map chk tcs)
 
-		let elimInBothTs: T.testT
-		=
+		let elimInBothTs: Test.t
+		= fun () ->
 			let chk (name, using, from, expected) = fun state ->
 				let r = Vec.elim y using from in
 				if Vec.equal r expected then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail name (Vec.to_string varPr r) state
+					Test.fail name (Vec.to_string varPr r) state
 			in
 			let tcs = [
 				"simple0", v [1, x; 1, y], v [-1, y], v [1, x]
 			] in
-			T.suite "inBoth" (List.map chk tcs)
+			Test.suite "inBoth" (List.map chk tcs)
 
-		let elimTs: T.testT
-		= T.suite "elim" [elimInFromOnlyTs; elimNotInFromTs; elimInBothTs]
-		
+		let elimTs: Test.t
+		= fun () ->
+        Test.suite "elim" [elimInFromOnlyTs(); elimNotInFromTs(); elimInBothTs()]
+
 		(* getVars *)
-		let getVarsTs: T.testT
-		  = let chk (name, vars, vecs) state =
+		let getVarsTs: Test.t
+		= fun () ->
+            let chk (name, vars, vecs) state =
 				let vars' = Vec.getVars vecs in
 				if Vec.V.Set.equal (Vec.V.Set.of_list vars) vars'
-				then T.succeed state
-				else T.fail name "not equal" state
+				then Test.succeed state
+				else Test.fail name "not equal" state
 			 in
 			 (*let x = Vec.V.XH and y = Vec.V.XO Vec.V.XH and z = Vec.V.XI Vec.V.XH and t = Vec.V.XO (Vec.V.XO Vec.V.XH) in*)
 			 let tcs = [
@@ -335,30 +344,31 @@ module VectorMap = struct
 			"one2", [z], [Vec.mk [Coeff.u, z]];
 			"m0", [x; y; z], [Vec.mk [Coeff.u, x; Coeff.mk1 2, z]; Vec.mk [Coeff.u, y]]
 				] in
-			 T.suite "listVars" (List.map chk tcs)
-			 
-		let ts: T.testT
-		= T.suite Coeff.name [elimTs; getVarsTs]
+			 Test.suite "listVars" (List.map chk tcs)
+
+		let ts: Test.t
+		= fun () ->
+        Test.suite Coeff.name [elimTs(); getVarsTs()]
 	end
-	
+
 	module Rat = struct
 		module Int = struct
-			include Test(Scalar.Rat)(Var.Int)
+			include Make_Tests(Scalar.Rat)(Var.Int)
 			module Coeff = Vector.Rat.Positive.Coeff
 				(* Vec.gcd *)
-		
+
 			let x = Vector.Rat.Positive.V.fromInt 1
 			let y = Vector.Rat.Positive.V.fromInt 2
 			let z = Vector.Rat.Positive.V.fromInt 3
-		
-			let gcdTs: T.testT
-				=
+
+			let gcdTs: Test.t
+				= fun () ->
 				let chk (name, r, v1) = fun state ->
 					let r1 = Vector.Rat.Positive.gcd v1 in
 					if Coeff.cmp r r1 = 0 then
-						T.succeed state
+						Test.succeed state
 					else
-						T.fail name (Coeff.to_string r1) state
+						Test.fail name (Coeff.to_string r1) state
 				in
 				let tcs = [
 					"nil0", Coeff.u, Vector.Rat.Positive.mk [];
@@ -374,29 +384,30 @@ module VectorMap = struct
 					"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 4, y; Coeff.mk1 6, z];
 					"neg0", Coeff.u, Vector.Rat.Positive.mk [Coeff.negU, x]
 				] in
-				T.suite "gcd" (List.map chk tcs)
-	
-			let ts: T.testT
-				= T.suite Var.Int.name [elimTs; gcdTs ; getVarsTs]
+				Test.suite "gcd" (List.map chk tcs)
+
+			let ts: Test.t
+				= fun () ->
+                Test.suite Var.Int.name [elimTs(); gcdTs(); getVarsTs()]
 		end
-		
+
 		module String = struct
-			include Test(Scalar.Rat)(Var.String)
+			include Make_Tests(Scalar.Rat)(Var.String)
 			module Coeff = Vector.Rat.Positive.Coeff
 				(* Vec.gcd *)
-		
+
 			let x = Vector.Rat.Positive.V.fromInt 1
 			let y = Vector.Rat.Positive.V.fromInt 2
 			let z = Vector.Rat.Positive.V.fromInt 3
-		
-			let gcdTs: T.testT
-				=
+
+			let gcdTs: Test.t
+				= fun () ->
 				let chk (name, r, v1) = fun state ->
 					let r1 = Vector.Rat.Positive.gcd v1 in
 					if Coeff.cmp r r1 = 0 then
-						T.succeed state
+						Test.succeed state
 					else
-						T.fail name (Coeff.to_string r1) state
+						Test.fail name (Coeff.to_string r1) state
 				in
 				let tcs = [
 					"nil0", Coeff.u, Vector.Rat.Positive.mk [];
@@ -412,43 +423,51 @@ module VectorMap = struct
 					"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 4, y; Coeff.mk1 6, z];
 					"neg0", Coeff.u, Vector.Rat.Positive.mk [Coeff.negU, x]
 				] in
-				T.suite "gcd" (List.map chk tcs)
-	
-			let ts: T.testT
-				= T.suite Var.String.name [elimTs; gcdTs ; getVarsTs]
+				Test.suite "gcd" (List.map chk tcs)
+
+			let ts: Test.t
+				= fun () ->
+                Test.suite Var.String.name [elimTs(); gcdTs (); getVarsTs()]
 		end
-		
-		let ts: T.testT
-				= T.suite "Rat" [Int.ts; String.ts]
+
+		let ts: Test.t
+			= fun () ->
+            Test.suite "Rat" [Int.ts(); String.ts()]
 	end
-	
+
 	module Symbolic = struct
-		module Int = Test(Scalar.Symbolic)(Var.Int)
-		module String = Test(Scalar.Symbolic)(Var.String)
-		
-		let ts: T.testT
-				= T.suite "Symbolic" [Int.ts; String.ts]
+		module Int = Make_Tests(Scalar.Symbolic)(Var.Int)
+		module String = Make_Tests(Scalar.Symbolic)(Var.String)
+
+		let ts: Test.t
+			= fun() ->
+            Test.suite "Symbolic" [Int.ts(); String.ts()]
 	end
-	
+
 	module Float = struct
-		module Int = Test(Scalar.Float)(Var.Int)
-		module String = Test(Scalar.Float)(Var.String)
-		
-		let ts: T.testT
-				= T.suite "Float" [Int.ts; String.ts]
+		module Int = Make_Tests(Scalar.Float)(Var.Int)
+		module String = Make_Tests(Scalar.Float)(Var.String)
+
+		let ts: Test.t
+			= fun () ->
+            Test.suite "Float" [Int.ts(); String.ts()]
 	end
-	
+
 	module RelInt = struct
-		module Int = Test(Scalar.RelInt)(Var.Int)
-		module String = Test(Scalar.RelInt)(Var.String)
-		
-		let ts: T.testT
-				= T.suite "RelInt" [Int.ts; String.ts]
+		module Int = Make_Tests(Scalar.RelInt)(Var.Int)
+		module String = Make_Tests(Scalar.RelInt)(Var.String)
+
+		let ts: Test.t
+			= fun () ->
+            Test.suite "RelInt" [Int.ts (); String.ts ()]
 	end
-	
-	let ts : T.testT
-		= T.suite "IntMap" [Rat.ts ; Symbolic.ts ; Float.ts ; RelInt.ts]
+
+	let ts : Test.t
+		= fun () ->
+        List.map Test.run [Rat.ts ; Symbolic.ts ; Float.ts ; RelInt.ts]
+        |> Test.suite "IntMap"
 end
-	
-let ts : T.testT
-		= T.suite "Vector" [VectorRtree.ts ; VectorMap.ts]
+
+let ts : Test.t
+	= fun () ->
+    Test.suite "Vector" [VectorRtree.ts() ; VectorMap.ts()]
