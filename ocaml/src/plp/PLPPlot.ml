@@ -1,13 +1,10 @@
-let (print_channel : out_channel * string -> unit) = function
-	(o,s) -> (output o s 0 (String.length s));;
-
-let str_to_ieq = 
+let str_to_ieq =
 "def to_ieq(poly, ring, variables):
 	monomials = [ring(1)] + [ring(x) for x in variables]
 	return [poly.monomial_coefficient(m) for m in monomials]
 "
 
-let str_projection = 
+let str_projection =
 "#PROJECTION
 def standard_basis_vector(n, i):
     assert i>=0
@@ -27,7 +24,7 @@ def proj(P,variable, variables, ring, nb_dim):
 	monomials = [ring(x) for x in variables]
 	vertices = P.vertices()
 	i = variables.index(variable)
-	new_variables = variables[0:i] + variables[i+1:] 
+	new_variables = variables[0:i] + variables[i+1:]
 	nb_var = len(variables) -1
 	projection = matrix(QQ, [monomial_image(m,new_variables,nb_var) for m in monomials])
 	proj_vertices = [(v.vector()*projection)[0:len(new_variables)] for v in vertices]
@@ -38,7 +35,7 @@ def get_itv_from_poly(P,variable,variables,ring, nb_dim):
 	i = variables.index(variable)
 	new_variables = variables[0:i] + variables[i+1:] #on enlève variable de variables
 	variables_inter = variables
-	for v in new_variables:	#on parcourt toutes les variables sauf variable	
+	for v in new_variables:	#on parcourt toutes les variables sauf variable
 		P = proj(P,v,variables_inter,ring, nb_dim)
 		i = variables_inter.index(v)
 		variables_inter = variables_inter[0:i] + variables_inter[i+1:]
@@ -50,7 +47,7 @@ def get_itv_from_poly(P,variable,variables,ring, nb_dim):
 	return [int(min(vertices[0][0],vertices[1][0])),int(max(vertices[0][0],vertices[1][0]))]
 "
 
-let str_plot_polyhedra = 
+let str_plot_polyhedra =
 "# polyhedra = polyhedron list
 def plot_polyhedra(polyhedra, nb_dim):
 	if len(polyhedra) > 0:
@@ -67,7 +64,7 @@ def plot_polyhedra(polyhedra, nb_dim):
 			for i in range(1,len(polyhedra)):
 				couleur = color(polyhedra[i])
 				to_plot += polyhedra[i].projection().render_outline_2d(color = couleur)
-				
+
 		if nb_dim == 3:
 			couleur = color(polyhedra[0])
 			to_plot = polyhedra[0].projection().render_wireframe_3d(color = couleur)
@@ -76,7 +73,7 @@ def plot_polyhedra(polyhedra, nb_dim):
 				to_plot += polyhedra[i].projection().render_wireframe_3d(color = couleur)
 		return to_plot
 "
-let str_plot_polynomial = 
+let str_plot_polynomial =
 "
 def plot_polynomial(f, ranges, parameters):
 	var(' '.join(parameters))
@@ -88,7 +85,7 @@ def plot_polynomial(f, ranges, parameters):
 	return to_plot
 "
 
-let str_color = 
+let str_color =
 "#Color handling
 colors = []
 color_bind = []
@@ -108,7 +105,7 @@ def color(x):
 	return colors[color_bind.index(x)]
 "
 
-let str_color_from_polyhedra = 
+let str_color_from_polyhedra =
 "#polyhedra : polyhedron list
 def color_from_polyhedra(polyhedra):
 	for p in polyhedra:
@@ -142,7 +139,7 @@ let str_plot_regions =
 		return to_plot
 "
 
-let str_def_regions = 
+let str_def_regions =
 "#arbre = liste de [region, solution]
 def regions_from_tree(arbre, ring, variables, nb_dim):
 	regions = []
@@ -164,12 +161,12 @@ def regions_from_tree(arbre, ring, variables, nb_dim):
 	return (regions,lines)
 "
 
-let str_poly_from_regions = 
+let str_poly_from_regions =
 "def poly_from_regions(regions):
 	return [x[0] for x in regions]
 "
 
-let str_print_lines = 
+let str_print_lines =
 "def print_lines(lines, ranges, variables):
 	if len(variables) == 2:
 		var(variables[0])
@@ -188,23 +185,23 @@ let str_print_lines =
 		to_plot.show()
 "
 
-let str_compute_solution = 
+let str_compute_solution =
 "def compute_output_polyhedron(result, nb_dim, variables):
 	solutions = [-1*x[1] for x in result]
 	if len(variables) == nb_dim:
 		P = Polyhedron(ieqs = [to_ieq(c,ring,parameters) for c in solutions])
-	if len(variables) + 1 == nb_dim:	
+	if len(variables) + 1 == nb_dim:
 		ineqs = [to_ieq(c,ring,variables)+[0] for c in solutions]
 		eqs = [[0,0,0,1]]
 		P = Polyhedron(ieqs = ineqs, eqns = eqs)
-		
+
 	if nb_dim == 2:
 		return P.projection().render_outline_2d(color = 'black')
 	if nb_dim == 3:
 		return P.projection().render_wireframe_3d(color = 'black', thickness = 2)
 "
 
-let str_plot = 
+let str_plot =
 "to_plot.show()
 "
 module Cs = PLPCore.Cs
@@ -212,33 +209,33 @@ module Cons = PLPCore.Cons
 
 module Plot (Minimization : Min.Type) = struct
 	include PLPCore.PLP(Minimization)
-	
+
 	module Plot = struct
 		module Poly = ParamCoeff.Poly
-	
+
 		let (monomial_to_string : Poly.Monomial.t -> string)
-			= fun m -> let (vlist, c) = Poly.Monomial.data m in 
+			= fun m -> let (vlist, c) = Poly.Monomial.data m in
 			match Poly.MonomialBasis.data vlist with
 			| [] -> Q.to_string c
 			| _ -> if Q.equal c (Q.of_int 1)
 			then Poly.MonomialBasis.to_string_param vlist "p"
-			else if Q.lt c (Q.of_int 0) 
+			else if Q.lt c (Q.of_int 0)
 				then String.concat "" ["(";Q.to_string c;")*"; Poly.MonomialBasis.to_string_param vlist "p"]
 				else String.concat "" [Q.to_string c;"*"; Poly.MonomialBasis.to_string_param vlist "p"]
-	
+
 		let polynomial_to_string : Poly.t -> string
 			= fun p ->
 			Poly.data p
 			|> List.map monomial_to_string
 			|> String.concat " + "
 			|> fun s -> if String.length s = 0 then "0" else s
-	
+
 		let (result_to_string : (Region.t * 'c Cons.t) list -> string)
 		= fun solutions ->
-		Misc.list_to_string 
+		Misc.list_to_string
 			(fun (reg,(c,_)) -> Printf.sprintf "[%s,%s]"
 				(Misc.list_to_string
-					(fun cstr -> 
+					(fun cstr ->
 						let poly = Poly.ofCstr cstr.Cs.v (Scalar.Rat.neg cstr.Cs.c) in
 						Printf.sprintf "ring(\"%s\")" (Poly.neg poly |> polynomial_to_string))
 					(Region.get_cstrs reg)
@@ -248,10 +245,10 @@ module Plot (Minimization : Min.Type) = struct
 				 Printf.sprintf "ring(\"%s\")" (polynomial_to_string poly))
 			)
 			solutions ","
-	
-		let (plot': string -> Poly.V.t list -> int -> (Region.t * 'c Cons.t) list -> unit) 
+
+		let (plot': string -> Poly.V.t list -> int -> (Region.t * 'c Cons.t) list -> unit)
 			= fun file_name parameters nb_dim result ->
-			let output_file = open_out file_name in 
+			let output_file = open_out file_name in
 			let result_str = result_to_string result in
 			let str = Printf.sprintf "%s\n\nparameters = %s\nring = %s\nnb_dim = %s\nresult = %s\n(P,lines) = %s\n%s\n%s"
 				(Printf.sprintf "%s%s%s%s%s"
@@ -268,21 +265,20 @@ module Plot (Minimization : Min.Type) = struct
 				"to_plot = plot_regions(P, nb_dim)"])
 				"to_plot += compute_output_polyhedron(result, nb_dim, parameters)"
 				(str_plot)
-				in print_channel (output_file, str);
+				in Pervasives.output_string output_file str;
 				close_out output_file;;
-			
+
 		let plot : (Region.t * 'c Cons.t) list -> unit
 			= fun res ->
-			let parameters = List.split res 
+			let parameters = List.split res
 				|> Pervasives.snd
 				|> List.split
 				|> Pervasives.fst
 				|> Cs.getVars
-				|> Cs.Vec.V.Set.elements 
+				|> Cs.Vec.V.Set.elements
 			in
 			let n_params = List.length parameters in
 			let dim = if n_params = 2 then 3 else n_params in
 			plot' Config.sage_log parameters dim res
 	end
 end
-		
