@@ -1003,6 +1003,10 @@ module Make_Tests (F : sig
 	= fun () ->
 		let chk1 (name, p1, p2, _) = fun state ->
 			let (p, _) = Pol.join factory factory p1 p2 in
+            (*Debug.enable();
+            Debug.print_enable();
+            Debug.set_colors();
+            Pol.Debug.enable DebugTypes.([MInput ; Title ; MOutput ; Normal ; Detail]);*)
 			match Pol.incl factory p1 p, check_certificates p with
 			| Pol.Incl _, true -> Test.succeed state
 			| Pol.NoIncl, _ ->

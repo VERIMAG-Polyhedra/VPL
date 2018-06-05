@@ -1151,7 +1151,7 @@ module Make_Tests (Cs : Cstr.Rat.Type) = struct
 					let _ = Splx.compl s id in
 					Test.fail t "no exception raised" state
 				with
-				| Invalid_argument "Splx.compl" -> Test.succeed state
+				| Invalid_argument s when s = "Splx.compl" -> Test.succeed state
 				| _ -> Test.fail t "unexpected exception raised" state
 		in
 		let tcs = [
@@ -1283,7 +1283,7 @@ module Make_Tests (Cs : Cstr.Rat.Type) = struct
 					let _ = Splx.stricten s id in
 					Test.fail t "no exception raised" state
 				with
-				| Invalid_argument "Splx.stricten" -> Test.succeed state
+				| Invalid_argument s when s = "Splx.stricten" -> Test.succeed state
 				| _ -> Test.fail t "unexpected exception raised" state
 		in
 		let tcs = [
@@ -1469,7 +1469,7 @@ module Make_Tests (Cs : Cstr.Rat.Type) = struct
 					let _ = Splx.forget s id in
 					Test.fail t "no exception raised" state
 				with
-				| Invalid_argument "Splx.forget" -> Test.succeed state
+				| Invalid_argument s when s = "Splx.forget" -> Test.succeed state
 				| _ -> Test.fail t "unexpected exception raised" state
 		in
 		let tcs = [

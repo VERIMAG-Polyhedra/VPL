@@ -955,8 +955,19 @@ let join: 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 
 let incl: 'c1 Cert.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 	= fun factory p1 p2 ->
+    Debug.log DebugTypes.Title (lazy "Testing inclusion");
+	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "%s ⊂ %s"
+		(to_string_ext factory Var.to_string p1)
+		(to_string Var.to_string p2)))
+	;
 	let nxt = Var.Set.union (varSet p1) (varSet p2) |> Var.horizon in
-	inclSub factory nxt p1 p2
+	let res = inclSub factory nxt p1 p2 in
+    Debug.log DebugTypes.MOutput (lazy (match res with
+        | NoIncl -> "Inclusion does not hold"
+        | Incl certs -> Printf.sprintf "Inclusion holds, the first polyhedron can be expressed as %s"
+            (Misc.list_to_string factory.to_string certs " ; ")
+    ));
+    res
 
 let itvize: 'c Cert.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
 	= fun factory p v ->

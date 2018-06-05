@@ -182,7 +182,7 @@ module Make_Tests (Cs : Cstr.Rat.Type) = struct
 					(EqSet.meet_to_string factory varPr r) (EqSet.meet_to_string factory varPr ar)
 				in
 				Test.fail nm estr st
-			with Failure "EqSet.addM" -> Test.fail nm "caught Failure exception" st
+			with Failure s when s = "EqSet.addM" -> Test.fail nm "caught Failure exception" st
 		in
 		let tcs: (string * 'c EqSet.t * Cs.t Cons.t list * 'c EqSet.meetT) list
 		= [

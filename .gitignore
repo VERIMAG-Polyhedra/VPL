@@ -25,7 +25,7 @@ ocaml/Makefile
 ocaml/configure
 ocaml/src/Wrapper.ml
 ocaml/_oasis
-test/All_t.native
+test/Run_tests.byte
 
 test/*.native
 test/_build/*

@@ -16,8 +16,8 @@ clean:
 	$(OCB) -clean
 
 check:
-	$(OCB) Run_tests.native
-	./_build/Run_tests.native
+	$(OCB) Run_tests.byte
+	./_build/Run_tests.byte
 
 coq_update:
 	$(MAKE) -C ../coq DemoExtractTests.vo

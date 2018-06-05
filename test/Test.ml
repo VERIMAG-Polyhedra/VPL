@@ -59,7 +59,8 @@ let suite: string -> (stateT -> stateT) list -> (stateT -> stateT)
                     name
                     (Printexc.to_string e)
                 |> print_endline;
-                    {st with ignCnt = st.ignCnt + 1}
+                failwith "Exception"(*
+                    {st with ignCnt = st.ignCnt + 1}*)
                 end)
             {state with path = name::state.path}
             tcs
