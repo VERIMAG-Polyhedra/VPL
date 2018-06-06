@@ -1,31 +1,10 @@
 module Cstr_BE = Cstr
 open ASAtomicCond
-open ASCond
 open ASTerm
-open BinNums
-open ConsSet
-open CoqAddOn
-open CstrC
-open CstrLCF
-open Datatypes
 open Debugging
-open DomainFunctors
 open DomainInterfaces
-open ImpureConfig
-open Itv
-open LinTerm
-open LinearizeBackend
-open List0
-open MSetPositive
-open Map_poly
 open NumC
-open PedraQBackend
 open ProgVar
-open QArith_base
-open Qcanon
-open Ring_polynom_AddOnQ
-open String0
-open PedraQ
 open WrapperTraductors
 
 module CQAffTerm = LinTerm.QAffTerm

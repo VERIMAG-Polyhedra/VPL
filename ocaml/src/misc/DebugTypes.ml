@@ -59,7 +59,7 @@ module Debug (D : sig val name : string end) = struct
         match !color with
         | Some c -> c
         | None -> Black
-            
+
 	let enabled : (levelT -> bool) Pervasives.ref
 	  = Pervasives.ref (function _ -> false)
 
@@ -79,7 +79,7 @@ module Debug (D : sig val name : string end) = struct
 	  = fun () -> print_on_fly := true
 
 	let disable : unit -> unit
-		= fun lvl ->
+		= fun () ->
 		enabled := (function _ -> false)
 
 	let print_disable : unit -> unit

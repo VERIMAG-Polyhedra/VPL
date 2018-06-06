@@ -1,10 +1,9 @@
-(** This module defines heuristics use in the Handelman oracle. 
+(** This module defines heuristics use in the Handelman oracle.
 A heuristic aim at finding one or several products able to cancel a given monomial.
 *)
 
 open HOtypes
-open HPattern
-	
+
 type t = Pneuma.t -> HPattern.t -> Pneuma.t
 
 module AllUnderMaxDegree : sig
@@ -23,6 +22,5 @@ val powerLTOne : t
 val extractEvenPowers : t
 
 val linearMonomial : t
-		
-val of_pattern : t
 
+val of_pattern : t

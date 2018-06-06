@@ -349,7 +349,7 @@ module Cstr (Vec : Vector.Type) = struct
 		Misc.list_to_string (to_string V.to_string) l " ; "
 
 
-	let rec cmp : t -> t -> int
+	let cmp : t -> t -> int
 		= fun c1 c2 ->
 		match (c1.typ,c2.typ) with
 		| (Eq,Le) | (Le,Lt) | (Eq,Lt) -> -1

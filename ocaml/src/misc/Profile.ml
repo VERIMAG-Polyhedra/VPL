@@ -86,7 +86,7 @@ module Profile (D : sig val name : string end) = struct
 	(* get prefix, avoids the given name s *)
 	let get_prefix : string -> string
 		= fun s ->
-		let (max_name, max) = MapPro.fold
+		let (max_name, _) = MapPro.fold
 			(fun name e (max_name, max) ->
 				if e.start <> None && not (Misc.string_equal name s)
 				then match e.start, max.start with
@@ -185,7 +185,7 @@ module Report = struct
 		 with Not_found -> s
 
 	let result_to_string : result -> result -> string
-		= fun (father_name, father_time) (name,time) ->
+		= fun (_, father_time) (name,time) ->
 		Printf.sprintf "%s -> %s, %s"
 			(remove_prefix name)
 			(time_to_string time)

@@ -138,7 +138,7 @@ module Polyhedron: NCInterface.PolyhedronDomain = struct
       )
 
   let meet : t -> t -> t
-    = fun p1 p2 -> assert false
+    = fun _ _ -> assert false
 
   let join : t -> t -> t
     = fun p1 p2 ->
@@ -167,17 +167,17 @@ module Polyhedron: NCInterface.PolyhedronDomain = struct
 	 NonBot p
 
   let widen: t -> t -> t
-    = fun p1 p2 -> assert false
+    = fun _ _ -> assert false
 
 
 	let getUpperBound : t -> Vec.t -> Pol.bndT option
-	  = fun p vec -> assert false
+	  = fun _ _ -> assert false
 
 	let getLowerBound : t -> Vec.t -> Pol.bndT option
-	  = fun p vec -> assert false
+	  = fun _ _ -> assert false
 
 	let itvize : t -> Vec.t -> Pol.itvT
-	  = fun p vec -> assert false
+	  = fun _ _ -> assert false
 
         let dump: nonempty -> unit Pol.t = fun p ->
           let ineqs = List.fold_left (fun l (c, _) -> (c, ())::l) [] p.pol.Pol.ineqs in
@@ -191,7 +191,7 @@ module Polyhedron: NCInterface.PolyhedronDomain = struct
 	  | NonBot p -> Pol.get_cstr (dump p)
 
 	let rename : Var.t -> Var.t -> t -> t
-	  = fun fromX toY -> assert false
+	  = fun _ _-> assert false
 
 	type rep = unit Pol.t
 

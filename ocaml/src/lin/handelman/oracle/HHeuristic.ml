@@ -31,8 +31,8 @@ module AllUnderMaxDegree = struct
 		if List.mem ind' il || List.mem ind' il'
 		then (il,mapIP,mapI)
 		else
-			let (p1,mapIP1,mapI1) = (MapIndexP.get ind mapIP mapI) in
-			let (p2,mapIP2,mapI2) = (MapIndexP.get cons mapIP1 mapI1) in
+			let (_,mapIP1,mapI1) = (MapIndexP.get ind mapIP mapI) in
+			let (_,mapIP2,mapI2) = (MapIndexP.get cons mapIP1 mapI1) in
 			let (p3,mapIP3,mapI3) = (MapIndexP.get ind' mapIP2 mapI2) in
 			if check p3
 			then (ind' :: il, mapIP3, mapI3)
@@ -70,7 +70,7 @@ module AllUnderMaxDegree = struct
 				(lazy(Printf.sprintf "AllUnderMaxDegree : %s" (Poly.to_string p)));
 			let n_cstrs = Pneuma.n_cstrs pn in
 			let constraints = List.map (fun i -> Index.Int.unitary i n_cstrs) (Misc.range 0 n_cstrs) in
-			let (l,mapIP,mapI) = get_next_constraints pn constraints in
+			let (l, _, _) = get_next_constraints pn constraints in
 			let l' = List.map (fun x -> Hi.Ci(x)) (constraints @ l) in
 			{pn with Pneuma.p = Poly.sub pn.Pneuma.p p ; Pneuma.mapP = MapP.add p l' pn.Pneuma.mapP}
 		| _ -> Pervasives.failwith "Heuristic.allUnderMaxDegree"
@@ -92,13 +92,13 @@ let rec (default : t)
 					(lazy(Printf.sprintf "powerLTOne : %s" (Poly.Monomial.to_string mon)));
 				let get_coeff : Poly.t -> Poly.Monomial.t -> Q.t
 						= fun p mon ->
-						let (m,c) = Poly.Monomial.data mon in
+						let (_,c) = Poly.Monomial.data mon in
 						let (_,c') = List.find (fun m' -> Poly.Monomial.compare m' mon = 0) (Poly.data p) |> Poly.Monomial.data
 						in Q.mul Q.minus_one (Q.div c c') in
 				let (bI,bounds) = (match HLP.run pn.Pneuma.lp pn.Pneuma.ph pn.Pneuma.sx pn.Pneuma.vl mon with
-					| (Some bI,bounds) -> HOtypes.Debug.exec HOtypes.Debug.(bI,bounds)
+					| (Some bI,bounds) -> HOtypes.Debug.exec (bI,bounds)
 						DebugTypes.Detail (lazy("extractEvenPowers : LP succeed"))
-					| (None,bounds) -> Pervasives.raise Not_found) in
+					| (None,_) -> Pervasives.raise Not_found) in
 				HOtypes.Debug.log DebugTypes.Detail
 					(lazy("Result LP = " ^ (Misc.list_to_string Index.Rat.to_string bI " ; ")));
 				let id = Index.Int.init (pn.Pneuma.vl |> List.length) in
@@ -135,7 +135,7 @@ let rec (default : t)
 			= fun pl poly mon coeff ->
 			let pl = List.fold_left
 				(fun l p -> try
-						let (m',c') = List.find
+						let (_,c') = List.find
 							(fun m' -> Poly.Monomial.compare m' mon = 0)
 							(Poly.data p)
 						|> Poly.Monomial.data
@@ -167,7 +167,7 @@ let rec (default : t)
 		fun pn pat ->
 		match pat with
 		| ExtractEvenPowers (mon,id) ->
-			let (m,c) = Poly.Monomial.data mon in
+			let (_,c) = Poly.Monomial.data mon in
 			HOtypes.Debug.log DebugTypes.Normal
 				(lazy(Printf.sprintf "extractEvenPowers : %s, %s"
 				(Poly.Monomial.to_string mon)
@@ -215,8 +215,8 @@ let rec (default : t)
 		HOtypes.Debug.log DebugTypes.Normal (lazy "Heuristic used : ");
 		match pat with
 		| HPattern.Default _ -> HOtypes.Debug.exec (default pn pat) DebugTypes.Normal (lazy "Default\n")
-		| HPattern.AlreadyIn m -> HOtypes.Debug.exec (alreadyIn pn pat) DebugTypes.Normal (lazy "AlreadyIn\n")
-		| HPattern.LinearMonomial m -> HOtypes.Debug.exec (linearMonomial pn pat) DebugTypes.Normal  (lazy "LinearMonomial\n")
-		| HPattern.ExtractEvenPowers(p,id) -> HOtypes.Debug.exec (extractEvenPowers pn pat) DebugTypes.Normal (lazy "ExtractEvenPowers\n")
-		| HPattern.PowerLTOne m -> HOtypes.Debug.exec (powerLTOne pn pat) DebugTypes.Normal (lazy("PowerLTOne\n"))
+		| HPattern.AlreadyIn _ -> HOtypes.Debug.exec (alreadyIn pn pat) DebugTypes.Normal (lazy "AlreadyIn\n")
+		| HPattern.LinearMonomial _ -> HOtypes.Debug.exec (linearMonomial pn pat) DebugTypes.Normal  (lazy "LinearMonomial\n")
+		| HPattern.ExtractEvenPowers(_,_) -> HOtypes.Debug.exec (extractEvenPowers pn pat) DebugTypes.Normal (lazy "ExtractEvenPowers\n")
+		| HPattern.PowerLTOne _ -> HOtypes.Debug.exec (powerLTOne pn pat) DebugTypes.Normal (lazy("PowerLTOne\n"))
 		| _ -> HOtypes.Debug.exec (default pn (HPattern.Default pn.Pneuma.p)) DebugTypes.Normal (lazy("Unexpected pattern matched, calling default"))

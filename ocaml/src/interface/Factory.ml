@@ -141,7 +141,7 @@ module Farkas = struct
 	}
 
     let mk : Pol.Cs.t -> t
-		= fun cs -> ()
+		= fun _ -> ()
 
 	let mkCons : Pol.Cs.t -> t Pol.Cons.t
 		= fun cs -> (cs,())

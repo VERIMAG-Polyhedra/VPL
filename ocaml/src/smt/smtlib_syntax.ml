@@ -2,7 +2,7 @@
 
 open Smtlib_util;;
 
-type dummy = Dummy 
+type dummy = Dummy
 and an_option = | AnOptionAttribute of pd * attribute
 and attribute = | AttributeKeyword of pd * string | AttributeKeywordValue of pd * string * attributevalue
 and attributevalue = | AttributeValSpecConst of pd * specconstant | AttributeValSymbol of pd * symbol | AttributeValSexpr of pd * attributevalsexpr_attributevalue_sexpr5
@@ -34,23 +34,23 @@ and commanddefinesort_command_symbol11 = pd * ( symbol) list
 and attributevalsexpr_attributevalue_sexpr5 = pd * ( sexpr) list;;
 
 (* pd stands for pos (position) and extradata *)
-let rec dummy () = () 
-and pd_an_option = function 
+let dummy () = ()
+and pd_an_option = function
   | AnOptionAttribute(d,_) -> d
 
-and pd_attribute = function 
+and pd_attribute = function
   | AttributeKeyword(d,_) -> d
 
   | AttributeKeywordValue(d,_,_) -> d
 
-and pd_attributevalue = function 
+and pd_attributevalue = function
   | AttributeValSpecConst(d,_) -> d
 
   | AttributeValSymbol(d,_) -> d
 
   | AttributeValSexpr(d,_) -> d
 
-and pd_command = function 
+and pd_command = function
   | CommandSetLogic(d,_) -> d
 
   | CommandSetOption(d,_) -> d
@@ -89,23 +89,23 @@ and pd_command = function
 
   | CommandExit(d) -> d
 
-and pd_commands = function 
+and pd_commands = function
   | Commands(d,_) -> d
 
-and pd_identifier = function 
+and pd_identifier = function
   | IdSymbol(d,_) -> d
 
   | IdUnderscoreSymNum(d,_,_) -> d
 
-and pd_infoflag = function 
+and pd_infoflag = function
   | InfoFlagKeyword(d,_) -> d
 
-and pd_qualidentifier = function 
+and pd_qualidentifier = function
   | QualIdentifierId(d,_) -> d
 
   | QualIdentifierAs(d,_,_) -> d
 
-and pd_sexpr = function 
+and pd_sexpr = function
   | SexprSpecConst(d,_) -> d
 
   | SexprSymbol(d,_) -> d
@@ -114,15 +114,15 @@ and pd_sexpr = function
 
   | SexprInParen(d,_) -> d
 
-and pd_sort = function 
+and pd_sort = function
   | SortIdentifier(d,_) -> d
 
   | SortIdSortMulti(d,_,_) -> d
 
-and pd_sortedvar = function 
+and pd_sortedvar = function
   | SortedVarSymSort(d,_,_) -> d
 
-and pd_specconstant = function 
+and pd_specconstant = function
   | SpecConstsDec(d,_) -> d
 
   | SpecConstNum(d,_) -> d
@@ -133,12 +133,12 @@ and pd_specconstant = function
 
   | SpecConstsBinary(d,_) -> d
 
-and pd_symbol = function 
+and pd_symbol = function
   | Symbol(d,_) -> d
 
   | SymbolWithOr(d,_) -> d
 
-and pd_term = function 
+and pd_term = function
   | TermSpecConst(d,_) -> d
 
   | TermQualIdentifier(d,_) -> d
@@ -153,77 +153,77 @@ and pd_term = function
 
   | TermExclimationPt(d,_,_) -> d
 
-and pd_varbinding = function 
+and pd_varbinding = function
   | VarBindingSymTerm(d,_,_) -> d
 
-and pd_termexclimationpt_term_attribute64 = function 
+and pd_termexclimationpt_term_attribute64 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_termexiststerm_term_sortedvar62 = function 
+and pd_termexiststerm_term_sortedvar62 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_termforallterm_term_sortedvar60 = function 
+and pd_termforallterm_term_sortedvar60 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_termletterm_term_varbinding58 = function 
+and pd_termletterm_term_varbinding58 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_termqualidterm_term_term56 = function 
+and pd_termqualidterm_term_term56 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_sortidsortmulti_sort_sort44 = function 
+and pd_sortidsortmulti_sort_sort44 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_sexprinparen_sexpr_sexpr41 = function 
+and pd_sexprinparen_sexpr_sexpr41 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_idunderscoresymnum_identifier_numeral33 = function 
+and pd_idunderscoresymnum_identifier_numeral33 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_commands_commands_command30 = function 
+and pd_commands_commands_command30 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_commandgetvalue_command_term24 = function 
+and pd_commandgetvalue_command_term24 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_commanddefinefun_command_sortedvar15 = function 
+and pd_commanddefinefun_command_sortedvar15 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_commanddeclarefun_command_sort13 = function 
+and pd_commanddeclarefun_command_sort13 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_commanddefinesort_command_symbol11 = function 
+and pd_commanddefinesort_command_symbol11 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 
-and pd_attributevalsexpr_attributevalue_sexpr5 = function 
+and pd_attributevalsexpr_attributevalue_sexpr5 = function
   | (d,[]) -> d
 
-  | (d,( _ )::f1239o2) -> d
+  | (d,( _ )::_) -> d
 ;;
 let pd e = pd_commands e;;

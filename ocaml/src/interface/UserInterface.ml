@@ -3,7 +3,6 @@ It provides the Interface module (explained by module type Type).*)
 
 (**/**)
 open WrapperTraductors
-open CWrappers
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
@@ -511,7 +510,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 				next
 
 			let guassign: (Var.t list) -> Cond.t -> t -> string
-				= fun l cond p ->
+				= fun _ _ _ ->
 				let next = Names.mk() in
 				lazy (Printf.sprintf "guassign not implemented")
 				|> Record.write;
@@ -810,7 +809,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 					{(Cs.compl cstr) with Cs.typ = Cs.get_typ cstr}
 					in
 				let diff' = fun p1 p2 ->
-				let (rep1,rep2, toVar2) = match backend_rep p1, backend_rep p2 with
+				let (_, rep2, toVar2) = match backend_rep p1, backend_rep p2 with
 					| Some (p1',_), Some (p2', (ofVar2, toVar2)) ->
 						let (_,_,toVar2') = PedraQOracles.export_backend_rep (p2',(ofVar2,toVar2))
 						in

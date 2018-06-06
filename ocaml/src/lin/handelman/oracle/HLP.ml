@@ -2,9 +2,14 @@
 Within this heuristic, we must choose one bound (either the upper or lower) per variable x_i. As some bounds may not exist if the input polyhedron is unbouded, we handle this using a {!type HOtypes.LPMaps.mapDetBound}.
 Decision variables are called lpvars, and lpvars_i = 1 if we choose the upper bound of x_i.
 *)
-module Debug = HOtypes.Debug
+
+(* Avoids circular dependency for module Debug. *)
+module Debug_ = HOtypes.Debug
 
 open HOtypes
+
+(* Using Debug_ avoids warning 44 *)
+module Debug = Debug_
 
 module Build = struct
 
@@ -90,7 +95,7 @@ module Bound = struct
 	(** [get vars typ v sx] returns a witness allowing to compute the tightest (upper or lower depending on [typ] bound of [v] in  the polyhedron represented by [sx].
 	It returns [None] if such bound does not exists ({i i.e.} is the polyhedron is unbounded in that direction). *)
 	let (getWitness : V.t list -> LPMaps.t -> V.t -> Splx.t -> Splx.witness_t option)
-		= fun vars typ v sxPh ->
+		= fun _ typ v sxPh ->
 		let coeff = match typ with
 			| LPMaps.Upper -> Scalar.Rat.u
 			| LPMaps.Lower -> Scalar.Rat.negU
@@ -98,7 +103,7 @@ module Bound = struct
 		let obj = Poly.Vec.mk [(coeff, v)]
 		in
 		match Opt.max sxPh obj with
-		| Splx.IsOk (Opt.Finite (sxPh, value, wit) | Opt.Sup (sxPh, value, wit)) -> Some wit
+		| Splx.IsOk (Opt.Finite (_, _, wit) | Opt.Sup (_, _, wit)) -> Some wit
 		| Splx.IsOk (Opt.Infty) | Splx.IsUnsat _ -> None
 
 	(** [getBoundIndex wit ph] returns the {!type Hi.boundIndex} corresponding to [wit], which depends on the order of the constraints in [ph]. *)
@@ -174,7 +179,7 @@ module Solve = struct
 			begin
 			let obj = Build.build_obj vars mapDB in
 			match Opt.max sx obj with
-			| Splx.IsOk (Opt.Finite (sx, value, wit) | Opt.Sup (sx, value, wit)) ->
+			| Splx.IsOk (Opt.Finite (sx, _, _) | Opt.Sup (sx, _, _)) ->
 				begin
 				let vec = Splx.getAsg sx
 					|> getModel vars

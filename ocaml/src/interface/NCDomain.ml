@@ -232,7 +232,7 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
 
     let get_regions : t -> t list
         = function
-        | Bottom c -> []
+        | Bottom _ -> []
         | NonBot p ->
             Pol.get_regions F.factory p
             |> List.map (fun p -> NonBot (F.convert p))

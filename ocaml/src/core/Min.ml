@@ -268,7 +268,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 			= fun cstr (dirType,v) ->
 			match dirType with
 			| Normal _ as d -> getPoint' (d,v)
-			| TwoPoints (x0,_) as d ->
+			| TwoPoints (_,_) as d ->
 				let x' = getPoint' (d,v) in
 				let x'' = !conv.vecInput_Vec x' |> !conv.vec_CsVec in
 				try
@@ -286,8 +286,8 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 		let sort : ('a * direction) list -> ('a * direction) list
 			= fun dirs ->
 				dirs
-			|> List.filter (fun (_,(dir,v)) -> Cs.Vec.Coeff.well_formed v && Cs.Vec.Coeff.le Cs.Vec.Coeff.z v) (* XXX: le ou lt?*)
-			|> List.sort (fun (_,(dir1,v1)) (_,(dir2,v2)) -> Cs.Vec.Coeff.cmp v1 v2)
+			|> List.filter (fun (_,(_,v)) -> Cs.Vec.Coeff.well_formed v && Cs.Vec.Coeff.le Cs.Vec.Coeff.z v) (* XXX: le ou lt?*)
+			|> List.sort (fun (_,(_,v1)) (_,(_,v2)) -> Cs.Vec.Coeff.cmp v1 v2)
 
 		(** Resulting type of a sorting. *)
 		type eval = (Cs.t * direction) list list
@@ -300,7 +300,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 			| (c,(dir1,v1)) :: tl ->
 				let l = stack tl in
 				let l1 = List.hd l in
-				let (_,(dir2,v2)) = List.hd l1 in
+				let (_,(_,v2)) = List.hd l1 in
 				if Cs.Vec.Coeff.equalApprox v1 v2 (* XXX: attention equalApprox?*)
 				then ((c,(dir1,v1)) :: l1) :: (List.tl l)
 				else [(c,(dir1,v1))] :: l
@@ -315,7 +315,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 				let v' = Cs.Vec.Coeff.mul (Cs.Vec.Coeff.of_float 2.) v in
 				let x = getPoint cstr (dir,v') in
 				Some (cstr,x)
-			| (x1 :: x2 ::_) :: tl -> None
+			| (_ :: _ ::_) :: _ -> None
 			| [(cstr,(dir1,v1))] :: tl ->
 				let l = List.hd tl in
 				let (_,(_,v2)) = List.hd l in
@@ -677,7 +677,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 		Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Run : map = %s"
 			(map_to_string map)));
 		let l = List.map
-			(fun (c,(l1,l2)) -> (c,l1))
+			(fun (c,(l1,_)) -> (c,l1))
 			(LP.MapC.bindings map)
 		in
 		run_rec typ l vars
@@ -867,7 +867,7 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
 			(fun (var,coeff) ->
 				let i_var = Misc.findi (Cs.Vec.V.equal var) vars in
 				Wrapper.set_coeff poly i_cstr i_var (Cs.Vec.Coeff.to_float coeff))
-			(Cs.Vec.toList cstr.Cs.v) 
+			(Cs.Vec.toList cstr.Cs.v)
 
 	let get_witness : Wrapper.polyhedron -> Vec.V.t list -> int -> Vec.t
 		= fun poly vars id_cstr ->
@@ -889,7 +889,7 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
             Wrapper.set_central_point_coeff poly i coeff
           )
           vars
-          
+
 	(* XXX: must check polyhedron emptiness?*)
 	let minimize_witness': Vec.t -> Cs.t list -> (Cs.t * Vec.t) list
 		= fun point cstrs ->

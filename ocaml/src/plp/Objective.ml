@@ -155,13 +155,13 @@ module Objective (Cs : Cstr.Rat.Type) = struct
 	  |> String.concat ", "
 
 	let getColumnWidth : (int -> string) -> t -> ParamCoeff.t -> int
-	  = fun f o c -> ParamCoeff.pr f c |> String.length
+	  = fun f _ c -> ParamCoeff.pr f c |> String.length
 
 	let getColumnsWidth : (int -> string) -> t -> int list
 	  = fun f o ->
 	  List.map (getColumnWidth f o) (o.lin @ [o.cst])
 
-	let rec pretty_print : (int -> string) -> t -> int list -> string
+	let pretty_print : (int -> string) -> t -> int list -> string
 	  = let pr1 : (int -> string) -> t -> ParamCoeff.t -> int -> string
 		   = fun f o p i ->
 		   let nb_spaces = i - getColumnWidth f o p in
@@ -331,8 +331,8 @@ module Objective (Cs : Cstr.Rat.Type) = struct
 			= fun names p i ->
 			try
 				let i = Naming.to_vpl names i in
-				let (v,nb) = List.find
-					(fun (v,nb) -> Vec.V.cmp v i = 0)
+				let (_,nb) = List.find
+					(fun (v,_) -> Vec.V.cmp v i = 0)
 					(Vec.toList p) in (* XXX toList? *)
 				nb
 			with Not_found -> Coeff.z
@@ -346,14 +346,14 @@ module Objective (Cs : Cstr.Rat.Type) = struct
 		type signDecT = StrictPos | StrictNeg
 
 		let decide_sign : (int -> Vec.V.t) -> Vec.V.t -> Naming.t -> Vec.t -> ParamCoeff.t -> signDecT
-			= fun f h names point c ->
+			= fun _ _ names point c ->
 			let q = sat c (point_to_fun names point) in
 			if Coeff.cmp q Coeff.z < 0
 			then StrictNeg
 			else StrictPos
 
 		let getCol_Bland : (int -> Vec.V.t) -> Vec.V.t -> Naming.t -> Vec.t -> t -> choiceT
-			= let f = fun tr h names o point i c ->
+			= let f = fun tr h names _ point i c ->
 				function None ->
 					(if ParamCoeff.is_constant c
 						then if Q.sign (ParamCoeff.getCst c) < 0 then Some (PivotOn i) else None

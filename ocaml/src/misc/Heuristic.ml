@@ -16,7 +16,7 @@ let join : Cstr.Rat.Positive.t list -> Cstr.Rat.Positive.t list -> Flags.join_me
 	if max(List.length p1) (List.length p2) >= 5
 	then Flags.Join_PLP Flags.Float
 	else Flags.Baryc
-	
+
 let apply_min: Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
 	= fun cstrs f a ->
 	match !Flags.min with
@@ -27,8 +27,8 @@ let apply_min: Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
 		Flags.min := !min_method_old;
 		res
 		end
-	| m -> f a
-	
+	| _ -> f a
+
 let apply_proj: Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
 	= fun cstrs f a ->
 	match !Flags.proj with
@@ -39,8 +39,8 @@ let apply_proj: Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
 		Flags.proj := !proj_method_old;
 		res
 		end
-	| m -> f a
-	
+	| _ -> f a
+
 let apply_join: Cstr.Rat.Positive.t list -> Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
 	= fun cstrs1 cstrs2 f a ->
 	match !Flags.join with
@@ -51,4 +51,4 @@ let apply_join: Cstr.Rat.Positive.t list -> Cstr.Rat.Positive.t list -> ('a -> '
 		Flags.join := !join_method_old;
 		res
 		end
-	| m -> f a
+	| _ -> f a

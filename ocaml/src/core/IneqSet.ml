@@ -446,7 +446,7 @@ let isRed: Splx.t -> int -> bool
 	let sx' = Splx.compl sx i in
 	match Splx.check sx' with
 	| Splx.IsOk _ -> false
-	| Splx.IsUnsat w -> true
+	| Splx.IsUnsat _ -> true
 
 module RmRedAux = struct
 
@@ -521,7 +521,7 @@ let inclSyn: 'c t -> 'c Cons.t -> bool
 	= fun s c ->
 	match List.filter (fun c' -> Cons.implies c' c) s with
 	| [] -> false
-	| [c'] -> true
+	| [_] -> true
 	| _ -> failwith "IneqSet.addM"
 
 (** [rmSynRed2 s l] removes syntactically redundant constraints from the union
@@ -532,7 +532,7 @@ let rmRedSyn: 'c t -> 'c Cons.t list -> 'c t
 		if inclSyn s c
 		then s
 		else
-			let (s1, s2) = List.partition (fun c' -> Cons.implies c c') s in
+			let (_, s2) = List.partition (fun c' -> Cons.implies c c') s in
 			c::s2
 	in
 	fun s l -> List.fold_left rm1 [] (s @ l)

@@ -68,7 +68,7 @@ let coq_QToNb: QArith_base.coq_Q -> Nb.t
 	= nToNb
 
 let nToCoq_Q: Nb.t -> QArith_base.coq_Q
-	= fun n -> 
+	= fun n ->
 	let (num, den) = Nb.toZ n in
 	{
 		QArith_base.coq_Qnum = zToCoqZ num;
@@ -108,13 +108,13 @@ let vecToLt: Vec.t -> LinTerm.LinQ.t
 	= fun l -> List.filter (fun (_, n) -> Nb.cmpz n <> 0) l
 	in
 *)
-	let convert: Var.t * Nb.t -> ProgVar.PVar.t * NumC.QNum.t 
+	let convert: Var.t * Nb.t -> ProgVar.PVar.t * NumC.QNum.t
 	= fun (x, n) -> (varToProgVar x, nToNumC n)
 	in
 	LinTerm.LinQ.import (List.map convert (Rtree.toList v))
 
 let cToCmpT: NumC.cmpT -> Cstr.cmpT
-= function 
+= function
 	| NumC.EqT -> Cstr.Eq
 	| NumC.LeT -> Cstr.Le
 	| NumC.LtT -> Cstr.Lt
@@ -180,16 +180,16 @@ let cstrLCF_from_frontend: (CstrC.Cstr.t, 'c) CstrLCF.cstrLCF -> 'c Cert.t
 let trivLCF: unit Cert.t
 = { Cert.name = "Trivial LCF";
     Cert.top = ();
-    Cert.triv = (fun t n -> ());
-    Cert.add = (fun c1 c2 -> ());
-    Cert.mul = (fun n c -> ());
-    Cert.merge = (fun c1 c2 -> ());
-    Cert.to_le = (fun c -> ());
-    Cert.to_string = (fun c -> "");
-    Cert.rename = (fun x y c -> ())
+    Cert.triv = (fun _ _ -> ());
+    Cert.add = (fun _ _ -> ());
+    Cert.mul = (fun _ _ -> ());
+    Cert.merge = (fun _ _ -> ());
+    Cert.to_le = (fun _ -> ());
+    Cert.to_string = (fun _ -> "");
+    Cert.rename = (fun _ _ _ -> ())
   }
-  
-(*** IMPORT certificates into backend representation 
+
+(*** IMPORT certificates into backend representation
 **)
 
 let direct_import: (CstrC.Cstr.t, 'c) CstrLCF.cstrLCF -> ('c list) -> ('c Cons.t) list
@@ -199,7 +199,7 @@ let direct_import: (CstrC.Cstr.t, 'c) CstrLCF.cstrLCF -> ('c list) -> ('c Cons.t
   | c::l' -> direct_import lcf l' ((cToCstr (lcf.export c), c)::acc)
   in fun lcf l -> direct_import lcf l []
 
-let check_cstr_synchro: 'c Cert.t -> Cs.t -> 'c -> bool 
+let check_cstr_synchro: 'c Cert.t -> Cs.t -> 'c -> bool
 = fun lcf c cert ->
   let actual = lcf.Cert.to_string cert in
   let expected = cstrCPr (cToCstrC c) in
@@ -208,16 +208,16 @@ let check_cstr_synchro: 'c Cert.t -> Cs.t -> 'c -> bool
     false
   ) else (
     true
-  )  
+  )
 
 let rec ineqs_import: 'c Cert.t -> (unit Cons.t) list -> 'c list -> ('c Cons.t) list -> ('c Cons.t) list * ('c list)
 = fun lcf p l acc ->
   match p with
   | [] -> (acc, l)
-  | (c,_)::p' -> 
+  | (c,_)::p' ->
     match l with
     | [] -> assert false
-    | cert::l' -> 
+    | cert::l' ->
       (* check invariant *)
       assert (not debug || check_cstr_synchro lcf c cert);
       ineqs_import lcf p' l' ((c, cert)::acc)
@@ -226,35 +226,35 @@ let rec eqs_import: 'c Cert.t -> ('a * unit Cons.t) list -> 'c list -> ('a * 'c 
 = fun lcf p l acc ->
   match p with
   | [] -> (acc, l)
-  | (a, (c,_))::p' -> 
+  | (a, (c,_))::p' ->
     match l with
     | [] -> assert false
-    | cert::l' -> 
+    | cert::l' ->
       (* check invariant *)
       assert (not debug || check_cstr_synchro lcf c cert);
       eqs_import lcf p' l' ((a, (c, cert))::acc)
 
-let import: 'c Cert.t -> unit Pol.t -> 'c list -> 'c Pol.t 
+let import: 'c Cert.t -> unit Pol.t -> 'c list -> 'c Pol.t
 = fun lcf p l ->
   let (eqs, l0) = eqs_import lcf p.Pol.eqs l [] in
   let (ineqs, l1) = ineqs_import lcf p.Pol.ineqs l0 [] in
   assert (l1=[]);
   {Pol.eqs = eqs; Pol.ineqs = ineqs}
 
-(*** EXPORT certificates from backend representation 
+(*** EXPORT certificates from backend representation
 **)
 
-let rec ineqs_export: ('c Cons.t) list -> (unit Cons.t) list -> 'c list -> ((unit Cons.t) list) * ('c list) 
+let rec ineqs_export: ('c Cons.t) list -> (unit Cons.t) list -> 'c list -> ((unit Cons.t) list) * ('c list)
 = fun p acc1 acc2 ->
   match p with
   | [] -> (acc1, acc2)
-  | (c,ce)::p' -> 
-    ineqs_export p' ((c,())::acc1) (ce::acc2)  
+  | (c,ce)::p' ->
+    ineqs_export p' ((c,())::acc1) (ce::acc2)
 
 let rec eqs_export: ('a * 'c Cons.t) list ->  ('a * unit Cons.t) list -> 'c list ->  (('a * unit Cons.t) list) * ('c list)
 = fun p acc1 acc2 ->
   match p with
-  | [] -> (acc1, acc2) 
+  | [] -> (acc1, acc2)
   | (a,(c,ce))::p' -> eqs_export p' ((a, (c,()))::acc1) (ce::acc2);;
 
 let export: 'c Pol.t -> (unit Pol.t) * ('c list)
@@ -274,11 +274,11 @@ let top: t
 = Pol.top
 
 (* [isEmpty p]
- - returns [None]  (if [p] is not empty) 
+ - returns [None]  (if [p] is not empty)
  - or returns [Some c] such that [c] is unsatisfiable.
    see frontend test [Cstr.isContrad c] (of CstrC.v)
 
-NB: in the current implementation, all generated polyhedra are non-empty 
+NB: in the current implementation, all generated polyhedra are non-empty
 (and redundant constraints are removed).
 
 Hence, no actual test is needed !
@@ -287,12 +287,12 @@ let isEmpty: ('c pedraCert) -> ('c option)
 = fun _ -> None
 
 (* [isIncl (p1,p2)]
- - returns [None]  (if [p1] is not included in [p2]) 
+ - returns [None]  (if [p1] is not included in [p2])
  - or, returns [Some (is_triv,l)] such that
-    if [is_triv] 
+    if [is_triv]
     then [l] is a singleton [c] such that [c] is unsatisfiable (see [isEmpty] above)
     else [l] is "syntactically" equals to [p2.cert]
-    => each constraints of [l] must exactly match the corresponding one in [p2.cert] 
+    => each constraints of [l] must exactly match the corresponding one in [p2.cert]
     (see frontend test [Cstr.isEq] of CstrC.v)
 
 NB: in the current implementation, case [is_triv=true] can not happen !
@@ -307,44 +307,44 @@ let isIncl: ('c pedraCert) * t -> (bool * ('c list)) option
 
 (* [add p1 c]
    - assumes that [p1.cert] corresponds to the list of certificates in
-                  [p1.backend] which has been appended to [c] 
+                  [p1.backend] which has been appended to [c]
      ([c] is thus the last constraint of [p1.cert]
       but it has not yet been inserted in [p1.backend])
    - returns [(None,c')] such that [c'] is unsatisfiable (see [isEmpty] above).
-     Hence, [p1.backend /\ c] is empty 
+     Hence, [p1.backend /\ c] is empty
    - or returns [(Some p',l)] such that
    [p'] is the backend representation for [p1.backend /\ c]
    and [l] is the list of certificates corresponding to [p']
    NB: there is no test in the frontend for this last case !
 *)
 let add: ('c pedraCert) * ('c list) -> (t option) * ('c list)
-= function (p, fc) ->   
+= function (p, fc) ->
   let lcf = cstrLCF_from_frontend p.lcf in
   let ip = import lcf p.backend p.cert in
   let ic = direct_import p.lcf fc in
   match Pol.addM lcf ip ic with
-  | Pol.Added p0 -> 
+  | Pol.Added p0 ->
      let (p', ce) = export p0 in
      (Some p', ce)
-  | Pol.Contrad ce -> 
+  | Pol.Contrad ce ->
      (None, [ce]);;
-     
+
 let meet: ('c pedraCert) * (t * 'c list) -> (t option) * ('c list)
 = function (p1, (p2, cert2)) ->
   let lcf = cstrLCF_from_frontend p1.lcf in
   let ip1 = import lcf p1.backend p1.cert in
   let ip2 = import lcf p2 cert2 in
   match Pol.meet lcf ip1 ip2 with
-  | Pol.Added p0 -> 
+  | Pol.Added p0 ->
      let (p', ce) = export p0 in
      (Some p', ce)
-  | Pol.Contrad ce -> 
+  | Pol.Contrad ce ->
      (None, [ce])
 
-(* [join p1 p2] returns [(p,(l1,l2))] 
+(* [join p1 p2] returns [(p,(l1,l2))]
  such that [p] contains both [p1] and [p2] (e.g. their convex hull)
  and such that both [l1] and [l2] are list of certificates corresponding to [p].
- The frontend tests that [l1] and [l2] are syntactically equals: see [Cs.join] in ConsSet.v. 
+ The frontend tests that [l1] and [l2] are syntactically equals: see [Cs.join] in ConsSet.v.
 *)
 let join: ('c1 pedraCert) * ('c2 pedraCert) -> (t * (('c1 list) * ('c2 list)))
 = fun (p1, p2) ->
@@ -358,11 +358,11 @@ let join: ('c1 pedraCert) * ('c2 pedraCert) -> (t * (('c1 list) * ('c2 list)))
   (p, (ce1, ce2))
 
 
-(* [project p x] returns [(p,l)] 
+(* [project p x] returns [(p,l)]
  such that [p] contains [p] but has no occurrence of [x]
  and such that [l] is a list of certificates corresponding to [p].
- The frontend tests [x] is free in [l]: 
-   it applies [Cstr.isFree] of CstrC.v for each constraint. 
+ The frontend tests [x] is free in [l]:
+   it applies [Cstr.isFree] of CstrC.v for each constraint.
 *)
 let project: ('c pedraCert) * ProgVar.PVar.t -> t * ('c list)
 = fun (p, x) ->
@@ -372,7 +372,7 @@ let project: ('c pedraCert) * ProgVar.PVar.t -> t * ('c list)
   export (Pol.project lcf ip x')
 
 (* [rename ((x,y),p1)]
-   - assumes that [y] is a variable fresh in p1 
+   - assumes that [y] is a variable fresh in p1
      (otherwise, this is a bug of the front-end or from vpl clients)
    - returns [p1] where [x] has been renamed in [x]
 *)
@@ -398,9 +398,9 @@ let bToBnd: Pol.bndT -> 'c option -> 'c CstrLCF.bndT
   | Pol.Open n ->
     (match opt with
     | None -> assert false
-    | Some c -> 
+    | Some c ->
       CstrLCF.Open (nToNumC n,c))
-  | Pol.Closed n -> 
+  | Pol.Closed n ->
     (match opt with
     | None -> assert false
     | Some c ->
@@ -418,7 +418,7 @@ let getItv: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.itvT
     CstrLCF.up = bToBnd (Pol.get_up itv) upf
   }
 
-let getUpperBound: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.bndT 
+let getUpperBound: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.bndT
 = fun (p, lt) ->
   let lt = ltToVec lt in
   (* Printf.printf "getUpperBound %s\n" (Vec.to_string Var.to_string lt); *)
@@ -427,7 +427,7 @@ let getUpperBound: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.bndT
   let (b, pf) = Pol.getUpperBound lcf ip lt in
   bToBnd b pf
 
-let getLowerBound: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.bndT 
+let getLowerBound: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.bndT
 = fun (p, lt) ->
   let lt = ltToVec lt in
   (* Printf.printf "getLowerBound %s\n" (Vec.to_string Var.to_string lt); *)
@@ -436,7 +436,7 @@ let getLowerBound: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.bndT
   let (b, pf) = Pol.getLowerBound lcf ip lt in
   bToBnd b pf
 
-let export_backend_rep (p, (a, u)) = 
+let export_backend_rep (p, (a, u)) =
   (p,
    (fun x -> progVarToVar (a (varToProgVar x))),
    (fun x -> progVarToVar (u (varToProgVar x))))

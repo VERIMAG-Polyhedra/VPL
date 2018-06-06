@@ -308,7 +308,7 @@ let logrewriteIneqs: 'c Cert.t -> 'c logT -> ('c logT, 'c) mayBotT
 						then Ok ip2
 						else Ok (IAdd (l', ip2))
 				end
-			| IMin iset | IRed iset ->	Ok ip
+			| IMin _ | IRed _ ->	Ok ip
 			| IRw iset ->
 				match rewriteIneqs factory eset iset with
 				| RewriteBot f -> Bot f
@@ -562,7 +562,7 @@ let projectMSubPLP: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> Flags.scalar -> 
 		= fun vars eqs ineqs ->
 		match vars with
 		| [] -> (eqs,ineqs)
-		| v :: tl ->
+		| _ :: tl ->
 			let (opte, eqs1) = EqSet.trySubstM factory msk eqs in
 			match opte with
 			| Some (e, x) ->
@@ -595,12 +595,12 @@ let joinSetup: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
 	Debug.log DebugTypes.Detail (lazy "Entering joinSetup");
 	let factory = Cons.discr_factory factory1 factory2 in
 	let alpha = varNxt in
-	let aIneqs = Cert.([
+	let aIneqs = [
 		(Cs.mk Cstr.Le [Scalar.Rat.u, alpha] Scalar.Rat.u,
-			(factory1.triv Cstr.Le Cs.Vec.Coeff.z, factory2.triv Cstr.Le Cs.Vec.Coeff.u));
+			(factory1.Cert.triv Cstr.Le Cs.Vec.Coeff.z, factory2.Cert.triv Cstr.Le Cs.Vec.Coeff.u));
 		(Cs.mk Cstr.Le [Scalar.Rat.negU, alpha] Scalar.Rat.z,
-			(factory1.triv Cstr.Le Cs.Vec.Coeff.u, factory2.triv Cstr.Le Cs.Vec.Coeff.z))
-		])
+			(factory1.Cert.triv Cstr.Le Cs.Vec.Coeff.u, factory2.Cert.triv Cstr.Le Cs.Vec.Coeff.z))
+		]
 	in
 	let (varNxt1, r, eqs1) = EqSet.joinSetup_1 factory2 (Var.next varNxt) Rtree.Nil alpha p1.eqs in
 	Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Equalities of P1 handled: \n%s"
@@ -672,7 +672,7 @@ module Join_PLP = struct
 	(* Version spéciale pour extract_implicit_eq*)
 	let logOut: ('c logT, 'c) mayBotT -> 'c t
 		= function
-			| Bot ce -> Pervasives.failwith "Pol.join:extract_implicit_eq"
+			| Bot _ -> Pervasives.failwith "Pol.join:extract_implicit_eq"
 			| Ok lp -> begin
 				match lp.iset with
 				| IRed _ | IRw _ | IAdd (_, _) | IAddRw (_, _) -> assert false
@@ -800,9 +800,6 @@ let joinSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 
     				| Flags.Join_fromRegions -> Join_PLP.joinSub_epsilon Flags.Float factory1 factory2 nxtVar p1 p2
     				| Flags.JHeuristic -> Pervasives.invalid_arg "Pol.joinSub"
     		end
-type relVarT = OldSt of Var.t | NewSt of Var.t
-type relLinT = (Scalar.Rat.t * relVarT) list
-type relCstrT = {cmpSign: Cstr.cmpT; linear: relLinT; constant: Scalar.Rat.t}
 
 let widen : 'c Cert.t -> 'c t -> 'c t -> 'c t
 	= fun factory p1 p2 ->
@@ -1122,7 +1119,7 @@ let minkowskiSetup : 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
 	= fun factory1 factory2 nxt p1 p2 ->
 	let factory = Cons.discr_factory factory1 factory2 in
 	let (varNxt1, r, eqs1) = EqSet.minkowskiSetup_1 factory2 (Var.next nxt) Rtree.Nil p1.eqs in
-	let (varNxt2, r, eqs2) = EqSet.minkowskiSetup_2 factory1 (Var.next nxt) Rtree.Nil p2.eqs in
+	let (varNxt2, r, eqs2) = EqSet.minkowskiSetup_2 factory1 varNxt1 r p2.eqs in
 	let (varNxt3, r, ineqs1) = IneqSet.minkowskiSetup_1 factory2 varNxt2 r p1.ineqs in
 	let (varNxt4, r, ineqs2) = IneqSet.minkowskiSetup_2 factory1 varNxt3 r p2.ineqs in
 	let eqs = List.append eqs1 eqs2 in

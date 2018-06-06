@@ -62,7 +62,7 @@ module Liste = struct
 		else
 		let ind = Index.Int.init dim in
 			match get_next_rec il dim ind (Pervasives.max 2 ((List.length il)/2)) with
-			| Some (i,f) -> i
+			| Some (i,_) -> i
 			| None -> Pervasives.failwith "List.get_next : no next element"
 
     (*
@@ -138,14 +138,7 @@ end
 
 module MapI = struct
 	include Map.Make(Index.Int)
-		(*
-	let addList : key list -> 'a list -> 'a t -> 'a t
-		= fun keys elements map ->
-		List.fold_left2
-			(fun map key e -> add key e map)
-			map
-			keys elements
-	*)
+
 	(** [addMap f keys map] adds to [map] bindings from [k] to f[k] for all [k] in [keys]. *)
 	let addMap : (key -> 'a) -> key list -> 'a t -> 'a t
 		= fun f keys map ->
@@ -283,7 +276,7 @@ module Map =
 			compute_list_from_map_rec dim il map
 
 
-	let rec (get_next : Index.Int.t -> t -> Index.Int.t)
+	let get_next : Index.Int.t -> t -> Index.Int.t
 		= fun i map ->
 		let init = Index.Int.init (Index.Int.len i) in
 			 (MapI.bindings map)
@@ -293,7 +286,7 @@ module Map =
 			|> List.map (fun j -> (j, Index.Int.value j))
 			|> fun l -> if List.length l = 0
 				then init
-				else Misc.max (fun (j1,v1) (j2,v2) -> if v1 > v2 then -1 else 1) l (* on cherche le min des valeurs*)
+				else Misc.max (fun (_,v1) (_,v2) -> if v1 > v2 then -1 else 1) l (* on cherche le min des valeurs*)
 				|> Pervasives.fst
 
 	let rec (compute_from_map : Index.Int.t -> t -> (Liste.t * t))
