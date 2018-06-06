@@ -1117,7 +1117,11 @@ module PLP(Minimization : Min.Type) = struct
 		  	Debug.log DebugTypes.Normal
 		  		(lazy("Exec on the point " ^ (Vec.to_string V.to_string pointToExplore)));
 		  	Profile.start "LP" ;
-		 	let sx' = Explore.push st pointToExplore sx in
+            let sx' = try Explore.push st pointToExplore sx with ex -> begin
+                Profile.stop "LP" ;
+                raise ex
+                end
+            in
 		 	Profile.stop "LP" ;
 		 	Debug.log DebugTypes.Normal
 		  		(lazy("Found solution " ^ (PSplx.obj_value sx' |> PSplx.ParamCoeff.to_string)));
@@ -1136,7 +1140,11 @@ module PLP(Minimization : Min.Type) = struct
 		let exec : region_t -> Objective.pivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
 		  	= fun reg_t st sx pointToExplore ->
 		  	Profile.start "exec";
-		  	let res = exec' reg_t st sx pointToExplore in
+		  	let res = try exec' reg_t st sx pointToExplore with ex -> begin
+                Profile.stop "exec" ;
+                raise ex
+                end
+            in
 		  	Profile.stop "exec";
 		  	res
 	end

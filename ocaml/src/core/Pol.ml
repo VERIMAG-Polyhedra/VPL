@@ -67,6 +67,12 @@ let bnd_to_string : bndT -> string
 let get_up (i: itvT) = i.up
 let get_low (i: itvT) = i.low
 
+let length_itv : itvT -> Scalar.Rat.t option
+    = fun itv ->
+    match get_low itv, get_up itv with
+    | Infty, _ | _, Infty-> None
+	| Open l, Open u | Open l, Closed u | Closed l, Open u | Closed l, Closed u -> Some (Scalar.Rat.sub u l)
+
 type cstT = S of Scalar.Rat.t | I of itvT
 
 (** The description of an assignment operation.
@@ -1172,6 +1178,7 @@ let size : 'c t -> Scalar.Rat.t option
     Debug.log DebugTypes.Title (lazy "Size");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
     	(to_string_raw p)));
+    Profile.start "size";
     let cstrs = List.map Cons.get_c p.ineqs in
     let res = match Opt.getAsg_raw cstrs with
     | Some point ->
@@ -1181,8 +1188,42 @@ let size : 'c t -> Scalar.Rat.t option
         |> fun x -> Some x
     | _ -> None
     in
+    Profile.stop "size";
     Debug.log DebugTypes.MOutput (lazy
         (match res with
             | None -> "none"
             | Some r -> Printf.sprintf "%s: %f" (Scalar.Rat.to_string r) (Scalar.Rat.to_float r)));
     res
+
+let split_in_half : 'c Cert.t -> 'c t -> Cs.t option
+    = fun factory p ->
+    Debug.log DebugTypes.Title (lazy "Splitting in half");
+	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
+			(to_string_raw p)))
+	;
+    Profile.start "split_in_half";
+    let var_set = varSet p in
+    let nxt_var = Var.horizon var_set in
+    let itvs = List.map
+        (fun v ->
+            let (itv,_,_) = itvizeSub factory nxt_var p (Vec.mk [Scalar.Rat.u, v]) in
+            (v,itv))
+        (Var.Set.elements var_set)
+    in
+    let (max_var, max_itv) = Misc.max
+        (fun (_,itv1) (_,itv2) -> match length_itv itv1, length_itv itv2 with
+            | None, _ -> -1
+            | _, None -> 1
+            | Some l1, Some l2 -> Scalar.Rat.cmp l1 l2)
+        itvs
+    in
+    match length_itv max_itv with
+    | None -> (Profile.stop "split_in_half"; None)
+    | Some length -> begin
+        let cste = match get_low max_itv with
+        | Infty -> Pervasives.failwith "split_in_half: unexpected unbounded lower bound"
+        | Closed r | Open r -> Scalar.Rat.add r (Scalar.Rat.divr length (Scalar.Rat.mk1 2))
+        in
+        Profile.stop "split_in_half";
+        Some (Cs.mk Cstr.Le [Scalar.Rat.u, max_var] cste)
+        end

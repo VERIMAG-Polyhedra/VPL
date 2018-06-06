@@ -223,6 +223,8 @@ module type Type = sig
 
             val size : t -> Scalar.Rat.t option
 
+            val split_in_half : t -> t list
+
 		end
 
 		(** Defines operators in terms of the User datastructures. *)
@@ -308,6 +310,8 @@ module type Type = sig
 
             (** [get_regions p] returns the partition into regions of p. *)
             val get_regions : t -> t list
+
+            val split_in_half : t -> t list
 
             val size : t -> Scalar.Rat.t option
 		end
@@ -869,6 +873,30 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                 in
                 fun p ->
 				lazy (get_regions_cert' p)
+				|> handle
+
+            let split_in_half : t -> t list
+                = let split_in_half' p =
+                    let (rep, toVar) = match backend_rep p with
+    					| Some (p',(ofVar, toVar)) ->
+                            let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                            (p', toVar')
+    					| _ -> Pervasives.failwith "get_regions"
+    				in
+                    match Pol.split_in_half Factory.Unit.factory rep with
+                    | None -> Pervasives.failwith "split_in_half: unbounded polyhedron"
+                    | Some cstr ->
+                        let cond1 = [Pol.Cs.rename_f toVar cstr]
+                            |> Cond.of_cstrs
+                        and cond2 = [Pol.Cs.rename_f toVar (Pol.Cs.compl cstr)]
+                            |> Cond.of_cstrs
+                        in
+                        let p1 = assume cond1 p
+                        and p2 = assume cond2 p in
+                        [p1 ; p2]
+                in
+                fun p ->
+				lazy (split_in_half' p)
 				|> handle
 
             let size : t -> Scalar.Rat.t option
