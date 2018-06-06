@@ -1,5 +1,5 @@
 Name: Verified Polyhedra Library
-Version: 0.2.0
+Version: 0.3.0
 Authors: Sylvain Boulmé <Sylvain.Boulme@univ-grenoble-alpes.fr>, Alexis Fouilhé <a@Alexis-Fouilhe.fr>, Alexandre Maréchal <Alex.Marechal@univ-grenoble-alpes.fr>, David Monniaux <David.Monniaux@univ-grenoble-alpes.fr>, Michaël Périn <Michael.Perin@univ-grenoble-alpes.fr>, Hang Yu <Hang.Yu@univ-grenoble-alpes.fr>
 Maintainers: Alexandre Maréchal <Alex.Marechal@univ-grenoble-alpes.fr>
 License: LGPL
@@ -19,8 +19,6 @@ Library vpl
   CSources: raytracing/vpl_stubs.c, raytracing/double.c, raytracing/glpkInterface.c, raytracing/ioInterface.c, raytracing/point.c, raytracing/polyhedron.c, raytracing/ray.c, raytracing/raytracing.c, raytracing/double.h, raytracing/glpkInterface.h, raytracing/ioInterface.h, raytracing/point.h, raytracing/polyhedron.h, raytracing/ray.h, raytracing/raytracing.h
   CClib:  -L/usr/local/lib -L/usr/lib -L/usr/local/opt/llvm/lib -lstdc++ -lglpk -lm -lgmpxx -lgmp -lgomp
   CCopt:  -I/usr/local/include -I/usr/include -I/usr/local/opt/llvm/include -x c++ -std=c++11 -fopenmp -O3 -march=native -Wno-deprecated
-  ByteOpt: -w "+a-4-32"
-  NativeOpt: -w "+a-4-32"
 
 SourceRepository vpl
   Type:  git
