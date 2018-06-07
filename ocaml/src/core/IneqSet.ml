@@ -450,9 +450,9 @@ let isRed: Splx.t -> int -> bool
 
 module RmRedAux = struct
 
-	let glpk: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
-   = fun s point ->
-    let point = Cstr.Rat.Positive.Vec.M.map Cstr.Rat.Positive.Vec.ofSymbolic point in
+    let glpk: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
+        = fun s point ->
+        let point = Cstr.Rat.Positive.Vec.M.map Cstr.Rat.Positive.Vec.ofSymbolic point in
 		let cstrs = List.map Cons.get_c s in
 		let l = Min.Rat_Glpk.minimize point cstrs in
 		let s' = List.filter
@@ -590,12 +590,15 @@ let addM: V.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 (** Returns the partition into regions of the given polyhedron, according to the given normalization point.
     Certificates are lost during the process: frontiers of regions have no certificate.
 *)
-let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
+let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> (unit t * Vector.Symbolic.Positive.t) list
     = fun factory p point ->
     let regions = PoltoPLP.minimize_and_plp factory point p in
     List.map
         (fun (reg,cons) ->
-        List.map
-            (fun cstr -> cstr, ())
-            ((Cons.get_c cons) :: PoltoPLP.PLP.Region.get_cstrs reg)
+            let ineqs = List.map
+                (fun cstr -> cstr, ())
+                ((Cons.get_c cons) :: PoltoPLP.PLP.Region.get_cstrs reg)
+            and point = Vector.Symbolic.Positive.ofRat reg.PoltoPLP.PLP.Region.point
+            in
+            (ineqs, point)
         ) regions.PoltoPLP.mapping

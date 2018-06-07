@@ -81,6 +81,12 @@ module type Type = sig
 
 	val toRat : t -> Scalar.Rat.t M.t
 	val ofRat : Scalar.Rat.t M.t -> t
+
+    (** [projects vars v] eliminates all variables from [vars] into [v], by setting their value to 0. *)
+    val project : V.t list -> t -> t
+
+    (** [rename fromX toY vec] *)
+    val rename : V.t -> V.t -> t -> t
 end
 
 module VectorRtree (Coeff : Scalar.Type) = struct
@@ -326,6 +332,19 @@ module VectorRtree (Coeff : Scalar.Type) = struct
 			Coeff.add
 				(Coeff.mulr n1 n2)
 				(Coeff.add (dot_productr l1 l2) (dot_productr r1 r2))
+
+    let project : V.t list -> t -> t
+        = fun vars vec ->
+        List.fold_left
+            (fun vec var -> set vec var Coeff.z)
+            vec vars
+
+    let rename : V.t -> V.t -> t -> t
+        = fun fromX toY vec ->
+		let vec1 = set vec fromX Coeff.z in
+		let vec2 = set vec1 toY (get vec fromX) in
+		assert (Coeff.cmpz (get vec toY) = 0);
+        vec2
 end
 
 module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
@@ -544,6 +563,19 @@ module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
 				Coeff.add res (Coeff.mulr n m))
 			Coeff.z
 			q v
+
+    let project : V.t list -> t -> t
+        = fun vars vec ->
+        List.fold_left
+            (fun vec var -> set vec var Coeff.z)
+            vec vars
+
+    let rename : V.t -> V.t -> t -> t
+        = fun fromX toY vec ->
+		let vec1 = set vec fromX Coeff.z in
+		let vec2 = set vec1 toY (get vec fromX) in
+		assert (Coeff.cmpz (get vec toY) = 0);
+        vec2
 end
 
 module Rat = struct

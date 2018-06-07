@@ -375,11 +375,7 @@ module Cstr (Vec : Vector.Type) = struct
 
 	let rename : Vec.V.t -> Vec.V.t -> t -> t
 		= fun fromX toY c ->
-		let v = get_v c in
-		let v1 = Vec.set v fromX Vec.Coeff.z in
-		let v2 = Vec.set v1 toY (Vec.get v fromX) in
-		assert (Vec.Coeff.cmpz (Vec.get v toY) = 0);
-		{c with v = v2}
+		{c with v = Vec.rename fromX toY (get_v c)}
 
 	let rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
 		= fun f cstr ->

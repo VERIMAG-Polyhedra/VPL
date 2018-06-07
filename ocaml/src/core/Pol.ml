@@ -10,22 +10,31 @@ module Profile = Profile.Profile(struct let name = "Pol" end)
 
 type 'c t = {
 	eqs: 'c EqSet.t;
-	ineqs: 'c IneqSet.t;}
+	ineqs: 'c IneqSet.t;
+    point: Vector.Symbolic.Positive.t option;
+}
 
 let top: 'c t
 = {
 	eqs = EqSet.nil;
 	ineqs = IneqSet.nil;
+    point = Some Vector.Symbolic.Positive.nil;
 }
 
 let get_eqs (x : 'c t) = x.eqs
 let get_ineqs (x : 'c t) = x.ineqs
+let get_point (x : 'c t) = x.point
 
 let to_string: (Var.t -> string) -> 'c t -> string
 	= fun varPr p ->
 	if EqSet.isTop p.eqs && IneqSet.isTop p.ineqs
 	then "top"
-	else (EqSet.to_string varPr p.eqs) ^ (IneqSet.to_string varPr p.ineqs)
+	else Printf.sprintf "%s%s%s"
+        (EqSet.to_string varPr p.eqs)
+        (IneqSet.to_string varPr p.ineqs)
+        (match p.point with
+            | None -> "None"
+            | Some point -> Vector.Symbolic.Positive.to_string varPr point)
 
 let to_string_raw: 'c t -> string
 	= fun p -> to_string Var.to_string  p
@@ -42,7 +51,11 @@ let to_string_ext: 'c Cert.t -> (Var.t -> string) -> 'c t -> string
 		then " top"
 		else "\n" ^ (IneqSet.to_string_ext factory varPr p.ineqs)
 	in
-	Printf.sprintf "{\n\teqs =%s;\n\tineqs =%s\n}" estr istr
+    let pstr = match p.point with
+        | None -> "None"
+        | Some point -> Vector.Symbolic.Positive.to_string varPr point
+    in
+	Printf.sprintf "{\n\teqs = %s;\n\tineqs = %s;\n\tpoint = %s}" estr istr pstr
 
 let to_string_ext_raw: 'c Cert.t -> 'c t -> string
 	= fun factory p -> to_string_ext factory Var.to_string  p
@@ -249,10 +262,10 @@ let meetEq: 'c meetT -> 'c meetT -> bool
 type ('a,'c) mayBotT
 	= Ok of 'a | Bot of 'c
 
-let logOut: ('c logT, 'c) mayBotT -> 'c meetT
+let logOut: ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT -> 'c meetT
 	= function
 	| Bot ce -> Contrad ce
-	| Ok lp ->
+	| Ok (lp,point) ->
 		match lp.iset with
 		| IRed _ | IRw _ | IAdd (_, _) | IAddRw (_, _) -> assert false
 		| IMin iset ->
@@ -261,7 +274,8 @@ let logOut: ('c logT, 'c) mayBotT -> 'c meetT
 			| EMin eset ->
 				let p = {
 						eqs = eset;
-						ineqs = iset
+						ineqs = iset;
+                        point = point;
 					} in
 					Added p
 
@@ -321,14 +335,15 @@ let logrewriteIneqs: 'c Cert.t -> 'c logT -> ('c logT, 'c) mayBotT
 		| Bot ce -> Bot ce
 		| Ok ip -> Ok (logIset lp ip)
 
-let logIneqSetAddM: Var.t -> Scalar.Symbolic.t Rtree.t -> 'c logT -> ('c logT, 'c) mayBotT
-	= let doAdd: Var.t -> 'c logT -> 'c Cons.t list -> 'c IneqSet.t -> Scalar.Symbolic.t Rtree.t -> ('c logT, 'c) mayBotT
+let logIneqSetAddM: Var.t -> Scalar.Symbolic.t Rtree.t -> 'c logT -> ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT
+	= let doAdd: Var.t -> 'c logT -> 'c Cons.t list -> 'c IneqSet.t -> Scalar.Symbolic.t Rtree.t
+        -> ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT
 		= fun nvar lp l iset point ->
 		let iset' = IneqSet.addM nvar iset l point in
-		Ok (logIset lp (IMin iset'))
+		Ok (logIset lp (IMin iset'), Some point)
 	in
 	fun nvar point lp ->
-		let rec flatten: 'c Cons.t list -> 'c ipendingT -> ('c logT, 'c) mayBotT
+		let rec flatten: 'c Cons.t list -> 'c ipendingT -> ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT
 		= fun l -> function
 			| IRw _
 			| IAddRw (_, _) -> assert false
@@ -336,7 +351,7 @@ let logIneqSetAddM: Var.t -> Scalar.Symbolic.t Rtree.t -> 'c logT -> ('c logT, '
 			| IRed iset -> doAdd nvar lp l iset point
 			| IMin iset as ip ->
 				if List.length l = 0
-				then Ok {lp with iset = ip}
+				then Ok ({lp with iset = ip}, Some point)
 				else doAdd nvar lp l iset point
 	in
 	flatten [] lp.iset
@@ -532,7 +547,13 @@ let projectSub: 'c Cert.t -> Var.t -> 'c t -> Var.t -> 'c t
 				| Flags.Proj_PLP scalar_type -> IneqSet.pProj factory x p.ineqs scalar_type
 				| Flags.PHeuristic -> Pervasives.invalid_arg "Pol.projectSub"
 	in
-	{ineqs = ineqs; eqs = eqs;}
+    let point' = match p.point with
+        | None -> None
+        | Some point -> Some (Vector.Symbolic.Positive.project [x] point)
+    in
+	{ineqs = ineqs;
+     eqs = eqs;
+     point = point';}
 
 let projectMSubFM: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> 'c t
 	= fun factory nxtVar p l ->
@@ -546,10 +567,15 @@ let projectMSubFM: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> 'c t
 		| Some (e, x) ->
 			let ineqs1 = IneqSet.subst factory nxtVar eqs1 x e ineqs in
 			project1 eqs1 ineqs1
-		| None ->
+		| None -> begin
 			let ineqs1 = IneqSet.fmElimM factory nxtVar eqs1 msk ineqs
 			in
-			{ineqs = ineqs1; eqs = eqs1}
+            let point' = match p.point with
+                | None -> None
+                | Some point -> Some (Vector.Symbolic.Positive.project l point)
+            in
+			{ineqs = ineqs1; eqs = eqs1; point = point'}
+            end
 	in
 	project1 p.eqs p.ineqs
 
@@ -573,7 +599,13 @@ let projectMSubPLP: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> Flags.scalar -> 
 	let (eqs1, ineqs1) = findEq l p.eqs p.ineqs in
 	(* XXX: Comment actualiser les variables à projeter après réécriture des égalités?*)
 	let ineqs2 = IneqSet.pProjM factory l ineqs1 scalar_type in
-	{ineqs = ineqs2;eqs = eqs1}
+    let point' = match p.point with
+        | None -> None
+        | Some point -> Some (Vector.Symbolic.Positive.project l point)
+    in
+	{ineqs = ineqs2;
+     eqs = eqs1;
+     point = point';}
 
 
 let projectMSub: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> 'c t
@@ -619,7 +651,11 @@ let joinSetup: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
 	let vars =
 		Rtree.fold (fun _ a -> function None -> a | Some x -> x::a) [alpha] r
 	in
-	(varNxt4, {ineqs = ineqs; eqs = eqs}, vars, factory)
+    let point' = match p1.point, p2.point with
+        | Some point, _ | _, Some point -> Some point
+        | _,_ -> None
+    in
+	(varNxt4, {ineqs = ineqs; eqs = eqs; point = point'}, vars, factory)
 
 let fix_cmp: 'c Cert.t -> 'c Cons.t -> Cs.t list -> 'c Cons.t
 	= fun fac (c,cert) inputIneqs ->
@@ -635,8 +671,10 @@ let fix_cmp: 'c Cert.t -> 'c Cons.t -> Cs.t list -> 'c Cons.t
  * Splits the joined certificates into two lists of certificates.
  * Also relaxes the comparison sign of certificates when necessary.
  *)
-let split_certificates : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 IneqSet.t -> 'c2 IneqSet.t -> (('c1,'c2) Cons.discr_t) t -> 'c1 t * 'c2 t
-	= fun factory1 factory2 inputIneqs1 inputIneqs2 p ->
+let split_certificates : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> (('c1,'c2) Cons.discr_t) t -> 'c1 t * 'c2 t
+	= fun factory1 factory2 p1 p2 p ->
+    let inputIneqs1 = p1.ineqs
+    and inputIneqs2 = p2.ineqs in
 	let (ineqs1,ineqs2) =
     let inputIneqs = List.map Cons.get_c inputIneqs1 @ List.map Cons.get_c inputIneqs2 in
 	List.fold_left
@@ -649,13 +687,13 @@ let split_certificates : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 IneqSet.t -> 'c2 IneqSe
 		(fun (eqs1,eqs2) (v, (c, (cert1,cert2))) -> (v, (c, cert1))::eqs1, (v, (c, cert2))::eqs2)
 		([],[]) p.eqs
 	in
-	{eqs = eqs1 ; ineqs = ineqs1}, {eqs = eqs2 ; ineqs = ineqs2}
+	{eqs = eqs1 ; ineqs = ineqs1 ; point = p1.point}, {eqs = eqs2 ; ineqs = ineqs2 ; point = p2.point}
 
 let joinSub_classic: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 nxtVar p1 p2 ->
 	let (nxtVar1, p0, vars, factory) = joinSetup factory1 factory2 nxtVar p1 p2 in
 	let p = projectMSub factory nxtVar1 p0 vars in
-	split_certificates factory1 factory2 p1.ineqs p2.ineqs p
+	split_certificates factory1 factory2 p1 p2 p
 
 
 module Join_PLP = struct
@@ -670,16 +708,16 @@ module Join_PLP = struct
 			p.eqs
 
 	(* Version spéciale pour extract_implicit_eq*)
-	let logOut: ('c logT, 'c) mayBotT -> 'c t
+	let logOut: ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT -> 'c t
 		= function
 			| Bot _ -> Pervasives.failwith "Pol.join:extract_implicit_eq"
-			| Ok lp -> begin
+			| Ok (lp, point) -> begin
 				match lp.iset with
 				| IRed _ | IRw _ | IAdd (_, _) | IAddRw (_, _) -> assert false
 				| IMin iset ->
 					match lp.eset with
 					| EAdd _ -> assert false
-					| EMin eset -> {eqs = eset; ineqs = iset}
+					| EMin eset -> {eqs = eset; ineqs = iset ; point = point}
 			end
 
 	let extract_implicit_eq : 'c Cert.t -> Var.t -> 'c t -> 'c t
@@ -740,8 +778,8 @@ module Join_PLP = struct
 		let p1'_ineqs = remove_epsilon epsilon p1' |> filter_trivial
 		and p2'_ineqs = remove_epsilon epsilon p2' |> filter_trivial
 		in
-		(extract_implicit_eq factory1 nxtVar {ineqs = p1'_ineqs ; eqs = []},
-		 extract_implicit_eq factory2 nxtVar {ineqs = p2'_ineqs ; eqs = []})
+		(extract_implicit_eq factory1 nxtVar {ineqs = p1'_ineqs ; eqs = [] ; point = p1.point;},
+		 extract_implicit_eq factory2 nxtVar {ineqs = p2'_ineqs ; eqs = [] ; point = p2.point;})
 
 end
 
@@ -780,6 +818,7 @@ let joinSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 
 				eqs = List.map2
 					(fun (v, (cstr,_)) cert -> (v, (cstr,cert)))
 					eqs (Misc.sublist p2_from_p1 len_ineqs (List.length p2_from_p1));
+                point = p1.point
 			}
 		| NoIncl -> None
 	in
@@ -990,7 +1029,11 @@ let getLowerBound : 'c Cert.t -> 'c t -> Vec.t -> bndT * 'c option
 let rename: 'c Cert.t -> Var.t -> Var.t -> 'c t -> 'c t
 	= fun factory x y p -> {
 	eqs = EqSet.rename factory p.eqs x y;
-	ineqs = IneqSet.rename factory p.ineqs x y}
+	ineqs = IneqSet.rename factory p.ineqs x y;
+    point = (match p.point with
+        | None -> None
+        | Some point -> Some (Vector.Symbolic.Positive.rename x y point))
+    }
 
 (*
 let inter factory p1 p2 =
@@ -1111,6 +1154,7 @@ let to_unit : 'c t -> unit t
 		ineqs = List.map
 			(fun (cstr, _) -> (cstr,()))
 			(get_ineqs ph);
+        point = ph.point;
 	}
 
 
@@ -1127,13 +1171,17 @@ let minkowskiSetup : 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
 	let vars =
 		Rtree.fold (fun _ a -> function None -> a | Some x -> x::a) [] r
 	in
-	(varNxt4, {ineqs = ineqs; eqs = eqs}, vars, factory)
+    let point' = match p1.point, p2.point with
+        | Some point, _ | _, Some point -> Some point
+        | _,_ -> None
+    in
+	(varNxt4, {ineqs = ineqs; eqs = eqs; point = point'}, vars, factory)
 
 let minkowskiSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 nxtVar p1 p2 ->
 	let (nxtVar1, p0, vars, factory) = minkowskiSetup factory1 factory2 nxtVar p1 p2 in
 	let p = projectMSub factory nxtVar1 p0 vars in
-	split_certificates factory1 factory2 p1.ineqs p2.ineqs p
+	split_certificates factory1 factory2 p1 p2 p
 
 let minkowski : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 p1 p2 ->
@@ -1147,8 +1195,15 @@ let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
     let regions = IneqSet.get_regions_from_point factory p.ineqs point
     and eqs = List.map (fun (var, (cstr,_)) -> (var, (cstr, ()))) p.eqs
     in
-    List.map (fun reg -> {eqs = eqs ; ineqs = reg}) regions
+    List.map
+        (fun (ineqs,point) -> {
+            eqs = eqs;
+            ineqs = ineqs;
+            point = Some point;
+        })
+        regions
 
+(* TODO: faire une fonction Pol.get_point pour chercher un point si jamais p.point = None *)
 let get_regions : 'c Cert.t -> 'c t -> unit t list
     = fun factory p ->
 	Debug.log DebugTypes.Title (lazy "Getting regions");
