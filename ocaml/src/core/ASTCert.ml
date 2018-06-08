@@ -203,12 +203,11 @@ let rec rec_import (e: env) (access:'a -> Cs.t) (update: 'a -> dcstr -> 'b) (l: 
 let import (i: input) (access:'a -> Cs.t) (update: 'a -> dcstr -> 'b) (l: 'a list) =
   rec_import (get_env i) access update l []
 
-
 let import_pol (i: input) (p: 'a Pol.t) =
   let e = get_env i in
   let eqs = rec_import e (fun (_, (c,_)) -> c) (fun (a, (c,_)) cert -> (a,(c,cert))) p.Pol.eqs [] in
   let ineqs = rec_import e  (fun (c,_) -> c) (fun (c, _) cert -> (c, cert)) p.Pol.ineqs [] in
-  {Pol.eqs = eqs; Pol.ineqs = ineqs}
+  {Pol.eqs = eqs; Pol.ineqs = ineqs; Pol.point = p.Pol.point}
 
 
 (***********************************************)

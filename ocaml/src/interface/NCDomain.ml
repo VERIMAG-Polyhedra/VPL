@@ -216,7 +216,7 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
   		| NonBot p ->
   			let eqs = List.map (fun (v, (c,_)) -> (v, (c,()))) p.Pol.eqs
   			and ineqs = List.map (fun (c,_) -> (c,())) p.Pol.ineqs
-  			in Some {Pol.eqs = eqs ; Pol.ineqs = ineqs}
+  			in Some {Pol.eqs = eqs ; Pol.ineqs = ineqs; Pol.point = p.Pol.point}
 
 	let mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 		= fun _ f1 f2 ->
@@ -227,7 +227,8 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
 			and ineqs = Pol.get_ineqs pol in
 			NonBot {
 				Pol.eqs = List.mapi (fun i (v,(cstr,_)) -> (v, F.mkCons (f1 i cstr))) eqs;
-				Pol.ineqs = List.mapi (fun i (cstr,_) -> F.mkCons (f2 i cstr)) ineqs
+				Pol.ineqs = List.mapi (fun i (cstr,_) -> F.mkCons (f2 i cstr)) ineqs;
+                Pol.point = pol.Pol.point;
 			}
 
     let get_regions : t -> t list
@@ -269,6 +270,7 @@ module NCVPL_Cstr = struct
 					Pol.ineqs = List.map
 						(fun (cstr, _) -> Factory.Cstr.mkCons cstr)
 						(Pol.get_ineqs pol');
+                    Pol.point = pol'.Pol.point;
 					}
 
 	end

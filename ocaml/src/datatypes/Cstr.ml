@@ -556,3 +556,15 @@ module Float = struct
 		include Cstr(Vec)
 	end
 end
+
+module Symbolic = struct
+	module Positive = struct
+		module Vec = Vector.Symbolic.Positive
+		include Cstr(Vec)
+	end
+
+	module Int = struct
+		module Vec = Vector.Symbolic.Int
+		include Cstr(Vec)
+	end
+end

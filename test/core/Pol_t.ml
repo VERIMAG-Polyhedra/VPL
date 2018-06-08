@@ -42,7 +42,8 @@ let p (l: Cs.t list): Cs.t Pol.t =
 let p': (Var.t * Cs.t) list -> Cs.t list -> Cs.t Pol.t
 	= fun eqs ineqs -> {
 		Pol.eqs = List.map (fun (x, c) -> (x, mkCons c)) eqs;
-		Pol.ineqs = List.map mkCons ineqs}
+		Pol.ineqs = List.map mkCons ineqs;
+        Pol.point = None}
 
 let check_certificates : Cs.t Pol.t -> bool
 	= fun p ->
@@ -600,12 +601,14 @@ module Make_Tests (F : sig
 		"branch", true, {
 		Pol.eqs = [
 			(x, mkCons (eq [1, x] 3))];
-		Pol.ineqs = []
+		Pol.ineqs = [];
+        Pol.point = None;
 		}, {
 		Pol.eqs = [];
 		Pol.ineqs = [
 			mkCons (le [-1, x] 0);
-			mkCons (le [1, x] 3)]};
+			mkCons (le [1, x] 3)];
+        Pol.point = None;};
 
 		"unsat_eq", false, {
 		Pol.eqs = [
@@ -613,14 +616,16 @@ module Make_Tests (F : sig
 		Pol.ineqs = [
 			mkCons (le [-1, z] (-1));
 			mkCons (le [1, y] 0);
-			]
+			];
+        Pol.point = None;
 		}, {
 		Pol.eqs = [];
 		Pol.ineqs = [
 			mkCons (le [1, x] 0);
 			mkCons (le [-1, z] (-1));
 			mkCons (le [-1, x ; 1, y] (-1))
-			]};
+			];
+        Pol.point = None;};
 		(*
 		"sylvain_while2", true, {
 		Pol.eqs = [

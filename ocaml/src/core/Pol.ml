@@ -23,7 +23,6 @@ let top: 'c t
 
 let get_eqs (x : 'c t) = x.eqs
 let get_ineqs (x : 'c t) = x.ineqs
-let get_point (x : 'c t) = x.point
 
 let to_string: (Var.t -> string) -> 'c t -> string
 	= fun varPr p ->
@@ -1203,6 +1202,30 @@ let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
         })
         regions
 
+let get_point : 'c t -> Vector.Symbolic.Positive.t
+    = fun p ->
+    match p.point with
+        | Some point -> point
+        | None -> match Opt.getAsg_raw (List.map Cons.get_c p.ineqs) with
+            | None -> Pervasives.failwith "Pol.get_regions"
+            | Some point -> point
+
+let set_point : Vec.t -> 'c t -> 'c t
+    = fun point p ->
+    List.iter
+        (fun cstr ->
+            let cstr' = { cstr with
+                Cs.typ = (match Cs.get_typ cstr with | Cstr.Le -> Cstr.Lt | typ -> typ);
+            } in
+            if not (Cs.eval cstr' point)
+            then Pervasives.invalid_arg (Printf.sprintf "Pol.set_point: point %s does not satisfy constraint %s"
+                (Vec.to_string Var.to_string point)
+                (Cs.to_string Var.to_string cstr))
+        )
+        (get_cstr p)
+    ;
+    {p with point = Some (Vector.Symbolic.Positive.ofRat point)}
+
 (* TODO: faire une fonction Pol.get_point pour chercher un point si jamais p.point = None *)
 let get_regions : 'c Cert.t -> 'c t -> unit t list
     = fun factory p ->
@@ -1211,17 +1234,13 @@ let get_regions : 'c Cert.t -> 'c t -> unit t list
 			(to_string_raw p)))
 	;
     Profile.start "get_regions";
-    let point = match Opt.getAsg_raw (List.map Cons.get_c p.ineqs) with
-        | None -> Pervasives.failwith "Pol.get_regions"
-        | Some pl -> (Vec.M.map Vec.ofSymbolic pl)
+    let point = get_point p
+        |> Vec.M.map Vec.ofSymbolic
     in
     Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Normalization point generated: %s"
 			(Vec.to_string Vec.V.to_string point)))
 	;
-    let regions = IneqSet.get_regions_from_point factory p.ineqs point
-    and eqs = List.map (fun (var, (cstr,_)) -> (var, (cstr, ()))) p.eqs
-    in
-    let res = List.map (fun reg -> {eqs = eqs ; ineqs = reg}) regions in
+    let res = get_regions_from_point factory p point in
     Profile.stop "get_regions";
     res
 

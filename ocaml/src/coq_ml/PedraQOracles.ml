@@ -239,7 +239,7 @@ let import: 'c Cert.t -> unit Pol.t -> 'c list -> 'c Pol.t
   let (eqs, l0) = eqs_import lcf p.Pol.eqs l [] in
   let (ineqs, l1) = ineqs_import lcf p.Pol.ineqs l0 [] in
   assert (l1=[]);
-  {Pol.eqs = eqs; Pol.ineqs = ineqs}
+  {Pol.eqs = eqs; Pol.ineqs = ineqs ; Pol.point = p.Pol.point}
 
 (*** EXPORT certificates from backend representation
 **)
@@ -261,7 +261,7 @@ let export: 'c Pol.t -> (unit Pol.t) * ('c list)
 = fun p ->
   let (ineqs, l1) = ineqs_export p.Pol.ineqs [] [] in
   let (eqs, l2) = eqs_export p.Pol.eqs [] l1 in
-  ({Pol.eqs = eqs; Pol.ineqs = ineqs}, l2)
+  ({Pol.eqs = eqs; Pol.ineqs = ineqs; Pol.point = p.Pol.point}, l2)
 
 
 (**********************************************)

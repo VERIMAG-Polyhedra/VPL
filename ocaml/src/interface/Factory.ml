@@ -68,6 +68,7 @@ module Cstr = struct
         = fun p -> {
             Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mkCons cstr)) p.Pol.eqs;
             Pol.ineqs = List.map (fun (cstr,_) -> mkCons cstr) p.Pol.ineqs;
+            Pol.point = p.Pol.point;
         }
 
 	let check : t Pol.t -> bool
@@ -111,6 +112,7 @@ module Unit = struct
         = fun p -> {
             Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mkCons cstr)) p.Pol.eqs;
             Pol.ineqs = List.map (fun (cstr,_) -> mkCons cstr) p.Pol.ineqs;
+            Pol.point = p.Pol.point;
         }
 
 	let check : t Pol.t -> bool
@@ -150,6 +152,7 @@ module Farkas = struct
         = fun p -> {
             Pol.eqs = List.map (fun (v,(cstr,_)) -> (v,mkCons cstr)) p.Pol.eqs;
             Pol.ineqs = List.map (fun (cstr,_) -> mkCons cstr) p.Pol.ineqs;
+            Pol.point = p.Pol.point;
         }
 
 	let check : t Pol.t -> bool
