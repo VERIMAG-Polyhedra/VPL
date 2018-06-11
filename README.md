@@ -1,4 +1,4 @@
-# VPL (Verified Polyhedra Library) version 0.3
+# VPL (Verified Polyhedra Library)
 
 ## GENERAL INFORMATIONS
 
@@ -35,19 +35,19 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
         * `vpl-core`: the ocaml library
 
           ```
-                opam install vpl-core.0.3
+          opam install vpl-core
           ```
 
         * `coq-vpl`: the Coq library (only needed to get Coq proofs about VPL operators)
 
           ```
-	       opam install coq-vpl
+          opam install coq-vpl
           ```
 
         * `coq-vpltactic`: the [VplTactic](https://github.com/VERIMAG-Polyhedra/VplTactic) plugin for Coq (also install `coq-vpl` and `vpl-core`)
 
           ```
- 	       opam install coq-vpltactic
+          opam install coq-vpltactic
           ```
 
       In case of trouble with this `opam` install, you should read [this](https://github.com/VERIMAG-Polyhedra/opam-vpl/blob/master/README.md#using-the-vpl-on-a-vagrantvirtualbox-virtual-machine).
