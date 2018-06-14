@@ -237,6 +237,11 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
         | NonBot p ->
             Pol.get_regions F.factory p
             |> List.map (fun p -> NonBot (F.convert p))
+
+    let set_point : Vec.t -> t -> t
+        = fun point -> function
+        | Bottom _ as p -> p
+        | NonBot p -> NonBot (Pol.set_point point p)
 end
 
 let translate_cstr : Cs.t -> Vec.t -> Cs.t

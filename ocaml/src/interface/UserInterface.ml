@@ -220,10 +220,14 @@ module type Type = sig
             (** [get_regions p] returns the partition into regions of p. *)
             val get_regions : t -> t list
 
-            val size : t -> Scalar.Rat.t option
-
+            (** [split_in_half] returns the partition of [p] into two halfs (according to the greatest axis-aligned interval). *)
             val split_in_half : t -> t list
 
+            (** Sets up the normalization point used for PLP-based operators. *)
+            val set_point : Vector.Rat.Positive.t -> t -> t
+
+            (** Returns the size of the given polyhedron. *)
+            val size : t -> Scalar.Rat.t option
 		end
 
 		(** Defines operators in terms of the User datastructures. *)
@@ -310,8 +314,13 @@ module type Type = sig
             (** [get_regions p] returns the partition into regions of p. *)
             val get_regions : t -> t list
 
+            (** [split_in_half] returns the partition of [p] into two halfs (according to the greatest axis-aligned interval). *)
             val split_in_half : t -> t list
 
+            (** Sets up the normalization point used for PLP-based operators. *)
+            val set_point : Vector.Rat.Positive.t -> t -> t
+
+            (** Returns the size of the given polyhedron. *)
             val size : t -> Scalar.Rat.t option
 		end
 	end
@@ -874,13 +883,21 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 				lazy (get_regions_cert' p)
 				|> handle
 
+            let set_point : Vector.Rat.Positive.t -> t -> t
+				= let set_point' point p =
+                    mk (Names.mk ()) (I.set_point point p.value)
+                in
+                fun point p ->
+				lazy (set_point' point p)
+				|> handle
+
             let split_in_half : t -> t list
                 = let split_in_half' p =
                     let (rep, toVar) = match backend_rep p with
     					| Some (p',(ofVar, toVar)) ->
                             let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
                             (p', toVar')
-    					| _ -> Pervasives.failwith "get_regions"
+    					| _ -> Pervasives.failwith "split_in_half"
     				in
                     match Pol.split_in_half Factory.Unit.factory rep with
                     | None -> Pervasives.failwith "split_in_half: unbounded polyhedron"

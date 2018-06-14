@@ -59,6 +59,30 @@ let to_string_ext: 'c Cert.t -> (Var.t -> string) -> 'c t -> string
 let to_string_ext_raw: 'c Cert.t -> 'c t -> string
 	= fun factory p -> to_string_ext factory Var.to_string  p
 
+(*
+let get_point : 'c t -> Vector.Symbolic.Positive.t
+    = fun p ->
+    match p.point with
+        | Some point -> point
+        | None -> match Opt.getAsg_raw (List.map Cons.get_c p.ineqs) with
+            | None -> Pervasives.failwith "Pol.get_point"
+            | Some point -> point
+*)
+
+let get_point : 'c t -> Vector.Symbolic.Positive.t
+    = fun p ->
+    let ineqs = List.map Cons.get_c p.ineqs in
+    let params_set = Cs.getVars ineqs in
+    let params = Var.Set.elements params_set in
+    let horizon = Misc.max Var.cmp params
+        |> Var.next
+    in
+    match Splx.getPointInside_cone horizon (List.map Cons.get_c p.ineqs) with
+    | Some point -> point
+    | None -> match Opt.getAsg horizon (List.mapi (fun i cstr -> i, cstr) ineqs) with
+        | None -> failwith "Pol.get_point: Unexpected empty polyhedron"
+        | Some point -> point
+
 type 'c rel_t =
 | NoIncl
 | Incl of 'c list
@@ -770,8 +794,14 @@ module Join_PLP = struct
 				then Some epsilon
 				else None in
 			match !Flags.join with
-			| Flags.Join_PLP _ -> Join.join scalar_type factory1 factory2 eps_opt p1_cons p2_cons
-			| Flags.Join_fromRegions -> Join_RR.join factory1 factory2 eps_opt p1_cons p2_cons
+			| Flags.Join_PLP _ -> begin
+                let interior_point = match p1.point, p2.point with
+                    | Some point, _ | _, Some point -> point
+                    | _,_ -> get_point p1
+                in
+                Join.join scalar_type factory1 factory2 eps_opt interior_point p1_cons p2_cons
+            end
+			| Flags.Join_fromRegions -> Join_RR.join factory1 factory2 eps_opt (get_point p1) (get_point p2) p1_cons p2_cons
 			| _ -> Pervasives.failwith "Pol.joinSub_epsilon"
 		in
 		let p1'_ineqs = remove_epsilon epsilon p1' |> filter_trivial
@@ -1202,14 +1232,6 @@ let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
         })
         regions
 
-let get_point : 'c t -> Vector.Symbolic.Positive.t
-    = fun p ->
-    match p.point with
-        | Some point -> point
-        | None -> match Opt.getAsg_raw (List.map Cons.get_c p.ineqs) with
-            | None -> Pervasives.failwith "Pol.get_regions"
-            | Some point -> point
-
 let set_point : Vec.t -> 'c t -> 'c t
     = fun point p ->
     List.iter
@@ -1226,7 +1248,6 @@ let set_point : Vec.t -> 'c t -> 'c t
     ;
     {p with point = Some (Vector.Symbolic.Positive.ofRat point)}
 
-(* TODO: faire une fonction Pol.get_point pour chercher un point si jamais p.point = None *)
 let get_regions : 'c Cert.t -> 'c t -> unit t list
     = fun factory p ->
 	Debug.log DebugTypes.Title (lazy "Getting regions");

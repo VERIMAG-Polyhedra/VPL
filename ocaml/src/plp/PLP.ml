@@ -38,22 +38,12 @@ module type Type = sig
 
 	type t
 
-	type get_next_point_t = region_t -> t -> ExplorationPoint.t option * t
-
-	module RayTracing : sig
-		val get_next_point : get_next_point_t
-	end
-
-	module RegionTesting : sig
-		val get_next_point : get_next_point_t
-	end
-
 	val get_cert_default : 'c Cert.t -> 'c mapVar_t -> PSplx.t -> 'c
 
 	val get_no_cert : 'c Cert.t -> PSplx.t -> 'c
 
-	type config = {
-		get_next_point : get_next_point_t;
+    type config = {
+		add_region : Region.t option -> Region.t -> ExplorationPoint.t -> t -> t;
 		reg_t : region_t;
 		points : ExplorationPoint.t list;
 		stgy : PSplx.Objective.pivotStrgyT;
@@ -92,30 +82,6 @@ module PLP(Minimization : Min.Type) = struct
 		= fun factory _ ->
 		factory.Cert.top
 
-	(*
-	(** We test if exploration points belong to already discovered regions. *)
-	module RegionTesting = struct
-
-		let rec get_next_point_rec : region_t -> ExplorationPoint.t list -> mapRegs_t -> ExplorationPoint.t list
-			= fun reg_t todo regMap ->
-			match todo with
-			| [] -> []
-			| (ExplorationPoint.Point v) :: tl -> begin
-				if MapV.exists (fun _ reg -> Region.contains reg v) regMap
-				then get_next_point_rec reg_t tl regMap
-				else (ExplorationPoint.Point v) :: tl
-				end
-			| _ -> Pervasives.failwith "PLP.RegionTesting.get_next_point_rec"
-
-		let get_next_point : get_next_point_t
-			= fun reg_t plp ->
-			let plp = {plp with todo = get_next_point_rec reg_t plp.todo plp.regs} in
-			if plp.todo = []
-			then (None, plp)
-			else
-				(Some (List.hd plp.todo), plp)
-	end
-	*)
 	let standard : Region.t option -> Region.t -> ExplorationPoint.t -> t -> t
 			= fun origin_reg reg point plp ->
 			Debug.log DebugTypes.Normal (lazy "Adding new region to plp");

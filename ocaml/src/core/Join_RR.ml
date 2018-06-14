@@ -253,22 +253,18 @@ let join' : 'c1 Cert.t -> 'c2 Cert.t -> Vec.V.t option -> 'c1 regionsT -> 'c2 re
 
 (** Returns the convex hull of the given inequalities (no equality should be given).
     Computes the region partitioning of both polyhedra. *)
-let join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
-    = fun factory1 factory2 epsilon_opt p1 p2 ->
+let join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Vector.Symbolic.Positive.t -> Vector.Symbolic.Positive.t
+    -> 'c1 Cons.t list -> 'c2 Cons.t list
+    -> 'c1 Cons.t list * 'c2 Cons.t list
+    = fun factory1 factory2 epsilon_opt init_point1 init_point2 p1 p2 ->
     Debug.log DebugTypes.Title
         (lazy "Convex hull by Region Partitioning");
     Debug.log DebugTypes.MInput
         (lazy (Printf.sprintf "First polyhedron : %s\nSecond Polyhedron : %s"
             (Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p1 "\n")
             (Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p2 "\n")));
-    let ineqs1 = List.map (fun (cstr,_) -> cstr) p1
-    and ineqs2 = List.map (fun (cstr,_) -> cstr) p2 in
-    let init_point1 = match Opt.getAsg_raw ineqs1 with
-        | Some x -> Vector.Symbolic.Positive.toRat x
-        | None -> Pervasives.failwith "join: empty polyhedron p1"
-    and init_point2 = match Opt.getAsg_raw ineqs2 with
-        | Some x -> Vector.Symbolic.Positive.toRat x
-        | None -> Pervasives.failwith "join: empty polyhedron p2"
+    let init_point1 = Vector.Symbolic.Positive.toRat init_point1
+    and init_point2 = Vector.Symbolic.Positive.toRat init_point2
     in
     let regs1 = minimize_and_plp factory1 init_point1 p1
     and regs2 = minimize_and_plp factory2 init_point2 p2

@@ -210,6 +210,8 @@ module Polyhedron: NCInterface.PolyhedronDomain = struct
   	let minkowski _ _ = failwith "not_yet_implemented : minkowski"
 
 	let projectM _ _ = failwith "not_yet_implemented : projectM"
+
+    let set_point _ _ = failwith "not_yet_implemented : set_point"
 end
 
 

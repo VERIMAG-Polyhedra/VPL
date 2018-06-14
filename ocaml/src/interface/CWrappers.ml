@@ -32,11 +32,13 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   let projectM vars pol =
   match backend_rep pol with
-  | None -> Pervasives.failwith "translate"
+  | None -> Pervasives.failwith "projectM"
   | Some (p,(ofVar,toVar)) ->
     let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
     let vars' = List.map ofVar' vars in
   	{pol with pol = LHD.projectM vars' pol.pol}
+
+  let set_point point pol = auto_lifting (LHD.set_point point) pol
 
   let mapi b f1 f2 pol =
   match backend_rep pol with
@@ -166,6 +168,10 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
   let not_yet_implemented s =
     raise (CertcheckerConfig.CertCheckerFailure (Debugging.NYI, "makeZ " ^ s ^ " on Z"))
 
+  let auto_lifting : (LHD.t -> LHD.t) -> t -> t
+    = fun f poly ->
+    {poly with pol = f poly.pol}
+
   module Term = ZInterface.Term
 
   let is_bottom = FullDom.isBottom
@@ -218,17 +224,33 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
   	try Some (export_ZbndT (getItvMode LOW (import_ZTerm t) p).ZItv.low)
   	with Failure s when String.compare s "empty" = 0 -> None
 
-  let translate _ _ = not_yet_implemented "translate"
+  let mapi b f1 f2 pol =
+  match backend_rep pol with
+  | None -> Pervasives.failwith "map"
+  | Some (p,(ofVar,toVar)) ->
+  	 if b
+  	 then let (_,ofVar',toVar') = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
+		 let f' : (int -> Pol.Cs.t -> Pol.Cs.t) -> int -> Pol.Cs.t -> Pol.Cs.t
+		 	= fun f i cstr ->
+		 	Pol.Cs.rename_f toVar' cstr
+		 	|> f i
+		 	|> Pol.Cs.rename_f ofVar'
+		 in
+    	 auto_lifting (fun p -> LHD.mapi false (f' f1) (f' f2) p) pol
+    else
+    	 auto_lifting (fun p -> LHD.mapi false f1 f2 p) pol
 
-  let mapi _ _ _ _ = not_yet_implemented "mapi"
+  let minkowski p1 p2 =
+    {p1 with pol = LHD.minkowski p1.pol p2.pol}
 
-  let minkowski _ _ = not_yet_implemented "minkowski"
+  let get_regions p =
+    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions p.pol)
 
-  let get_regions _ = not_yet_implemented "get_regions"
+  let set_point point pol = auto_lifting (LHD.set_point point) pol
 
   let projectM vars pol =
   match backend_rep pol with
-  | None -> Pervasives.failwith "translate"
+  | None -> Pervasives.failwith "projectM"
   | Some (p,(ofVar,toVar)) ->
     let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
     let vars' = List.map ofVar' vars in

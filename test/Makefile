@@ -19,6 +19,10 @@ check:
 	$(OCB) Run_tests.byte
 	./_build/Run_tests.byte
 
+check_debug:
+	$(OCB) Run_tests.byte
+	./_build/Run_tests.byte -debug
+
 coq_update:
 	$(MAKE) -C ../coq DemoExtractTests.vo
 	./fix_extract.sh

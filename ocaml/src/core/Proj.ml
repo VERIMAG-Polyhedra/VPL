@@ -238,15 +238,15 @@ module Proj (Min : Min.Type) = struct
 					PLP.MapV.add col cons map)
 			 	(PLP.MapV.empty) conss
 		in
-		 fun factory flags xs cs ->
-		 if not flags.withCst then Pervasives.failwith "Sxproj.projectDicho: !withCst is unsupported"
-		 else
-		 	Debug.log DebugTypes.Title (lazy "Building Simplex Tableau");
-			let tab = projToTab factory flags xs cs in
-			Debug.log DebugTypes.Title (lazy "Reporting Projection");
-			let (l,regs) = explore factory flags flags.nBasicStrat tab (init_map cs tab) in
-  			(*check cs l (tab.PSplx.names);*)
-  			(l,regs)
+		fun factory flags xs cs ->
+		if not flags.withCst then Pervasives.failwith "Sxproj.projectDicho: !withCst is unsupported"
+		else
+            Debug.log DebugTypes.Title (lazy "Building Simplex Tableau");
+            let tab = projToTab factory flags xs cs in
+            Debug.log DebugTypes.Title (lazy "Reporting Projection");
+            let (l,regs) = explore factory flags flags.nBasicStrat tab (init_map cs tab) in
+            (*check cs l (tab.PSplx.names);*)
+            (l,regs)
 
 	let proj : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
   		= fun factory flags xs ineqs ->

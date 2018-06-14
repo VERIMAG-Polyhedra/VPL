@@ -165,6 +165,7 @@ module Build (Min : Min.Type) = struct
 		and cste = null_paramCoeff in
 		PLP.Objective.mk coeffs cste
 
+        (*
 	let get_init_point : V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> Cs.Vec.t
 		= fun params p1 p2 ->
 		let horizon = Misc.max V.cmp params
@@ -186,7 +187,7 @@ module Build (Min : Min.Type) = struct
 			in
 			Cs.Vec.divc (Cs.Vec.add x1 x2) (Scalar.Rat.of_float 2.)
 			end
-
+            *)
 	let build : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Cs.Vec.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> PSplx.t * (('c1,'c2) certT) PLP.mapVar_t
 		= fun factory1 factory2 epsilon_opt init_point p1 p2 ->
@@ -319,13 +320,10 @@ module Build (Min : Min.Type) = struct
 		= fun factory1 _ _ ->
 		C1 factory1.Cert.top
 
-	let join' : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list
+	let join' : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Vector.Symbolic.Positive.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> 'c1 Cons.t list * 'c2 Cons.t list
-		= fun factory1 factory2 epsilon_opt p1 p2 ->
-		let cs = List.map Cons.get_c p1 @ List.map Cons.get_c p2 in
-		let params_set = Cs.getVars cs in
-		let params = V.Set.elements params_set in
-		let init_point = get_init_point params p1 p2	in
+		= fun factory1 factory2 epsilon_opt init_point p1 p2 ->
+        let init_point = Vector.Symbolic.Positive.toRat init_point in
 		let (sx,map) = build factory1 factory2 epsilon_opt init_point p1 p2 in
 		let regs = PLP.run_classic sx (get_no_cert factory1 factory2) in
 		let regs_filtered = filter_trivial regs
@@ -333,15 +331,16 @@ module Build (Min : Min.Type) = struct
 		get_join_cert factory1 factory2 p1 p2 map regs_filtered
 
 	(** Returns the convex hull of the given inequalities (no equality should be given), and the next identifer. *)
-	let join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
-		= fun factory1 factory2 epsilon_opt p1 p2 ->
+	let join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Vector.Symbolic.Positive.t
+        -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
+		= fun factory1 factory2 epsilon_opt init_point p1 p2 ->
 		Debug.log DebugTypes.Title
 			(lazy "Convex hull");
 		Debug.log DebugTypes.MInput
 			(lazy (Printf.sprintf "First polyhedron : %s\nSecond Polyhedron : %s"
 				(Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p1 "\n")
 				(Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p2 "\n")));
-		let (conss1, conss2) = join' factory1 factory2 epsilon_opt p1 p2 in
+		let (conss1, conss2) = join' factory1 factory2 epsilon_opt init_point p1 p2 in
 		Debug.log DebugTypes.MOutput
 			(lazy (Printf.sprintf "Polyhedron1 : %s\nPolyhedron2 : %s"
 				(Misc.list_to_string (Cons.to_string_ext factory1 Cs.Vec.V.to_string) conss1 "\n")
@@ -383,33 +382,33 @@ module Heuristic = struct
 	module Float = Build(Min.Heuristic(Vector.Float.Positive))
 end
 
-let join : Flags.scalar -> 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list
+let join : Flags.scalar -> 'c1 Cert.t -> 'c2 Cert.t -> V.t option ->  Vector.Symbolic.Positive.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 	-> 'c1 Cons.t list * 'c2 Cons.t list
-	= fun scalar factory1 factory2 epsilon_opt p1 p2 ->
+	= fun scalar factory1 factory2 epsilon_opt init_point p1 p2 ->
 	Debug.log DebugTypes.Title (lazy "Building Convex Hull");
 	match !Flags.min with
 	| Flags.Raytracing Flags.Glpk ->	begin
 		match scalar with
-  		| Flags.Symbolic -> Raytracing.Glpk.Symbolic.join factory1 factory2 epsilon_opt p1 p2
-		| Flags.Float -> Raytracing.Glpk.Float.join factory1 factory2 epsilon_opt p1 p2
-		| Flags.Rat -> Raytracing.Glpk.Rat.join factory1 factory2 epsilon_opt p1 p2
+  		| Flags.Symbolic -> Raytracing.Glpk.Symbolic.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Float -> Raytracing.Glpk.Float.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Rat -> Raytracing.Glpk.Rat.join factory1 factory2 epsilon_opt init_point p1 p2
 		end
 	| Flags.Raytracing Flags.Splx -> begin
 		match scalar with
-  		| Flags.Symbolic -> Raytracing.Splx.Symbolic.join factory1 factory2 epsilon_opt p1 p2
-		| Flags.Float -> Raytracing.Splx.Float.join factory1 factory2 epsilon_opt p1 p2
-		| Flags.Rat -> Raytracing.Splx.Rat.join factory1 factory2 epsilon_opt p1 p2
+  		| Flags.Symbolic -> Raytracing.Splx.Symbolic.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Float -> Raytracing.Splx.Float.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Rat -> Raytracing.Splx.Rat.join factory1 factory2 epsilon_opt init_point p1 p2
 		end
 	| Flags.Classic -> begin
 		match scalar with
-  		| Flags.Symbolic -> Classic.Symbolic.join factory1 factory2 epsilon_opt p1 p2
-		| Flags.Float -> Classic.Float.join factory1 factory2 epsilon_opt p1 p2
-		| Flags.Rat -> Classic.Rat.join factory1 factory2 epsilon_opt p1 p2
+  		| Flags.Symbolic -> Classic.Symbolic.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Float -> Classic.Float.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Rat -> Classic.Rat.join factory1 factory2 epsilon_opt init_point p1 p2
 		end
 	| Flags.MHeuristic -> begin
 		match scalar with
-  		| Flags.Symbolic -> Heuristic.Symbolic.join factory1 factory2 epsilon_opt p1 p2
-		| Flags.Float -> Heuristic.Float.join factory1 factory2 epsilon_opt p1 p2
-		| Flags.Rat -> Heuristic.Rat.join factory1 factory2 epsilon_opt p1 p2
+  		| Flags.Symbolic -> Heuristic.Symbolic.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Float -> Heuristic.Float.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Rat -> Heuristic.Rat.join factory1 factory2 epsilon_opt init_point p1 p2
 		end
 	| _ -> Pervasives.failwith "Join.join"
