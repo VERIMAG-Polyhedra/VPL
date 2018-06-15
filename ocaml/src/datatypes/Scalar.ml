@@ -225,7 +225,7 @@ module Rat = struct
 	let to_float : t -> float
 		= fun v ->
         Z.to_float (Q.num v) /. Z.to_float (Q.den v)
-		    
+
 	let to_string = Q.to_string
 	let of_string = Q.of_string
 
@@ -372,7 +372,7 @@ module RelInt = struct
 
 	let abs = Z.abs
 	let neg = Z.neg
-	let inv x = Pervasives.failwith "Scalar.RelInt.inv"
+	let inv _ = Pervasives.failwith "Scalar.RelInt.inv"
 
 	let add = Z.add
 	let sub = Z.sub
@@ -385,7 +385,7 @@ module RelInt = struct
 			u
 			(Misc.range 0 exp)
 
-	let ofQ x = Pervasives.failwith "Scalar.RelInt.ofQ"
+	let ofQ _ = Pervasives.failwith "Scalar.RelInt.ofQ"
 	let toQ n = Rat.ofZ n u
 
 	let mk1 : int -> t
@@ -432,15 +432,15 @@ module RelInt = struct
 
 	let well_formed_nonnull n = not (isZ n)
 
-	let well_formed x = true
+	let well_formed _ = true
 
 	(** Multiplication by a rational. *)
 	let mulr : Q.t -> t -> t
-		= fun q n ->
+		= fun _ _ ->
 		Pervasives.failwith "Scalar.RelInt.mulr"
 
 	let divr : t -> Q.t -> t
-		= fun f q ->
+		= fun _ _ ->
 		Pervasives.failwith "Scalar.RelInt.divr"
 end
 
@@ -612,7 +612,7 @@ module Symbolic = struct
 
 	let well_formed x = Rat.well_formed (get_v x) && Rat.well_formed (get_d x)
 
-	let of_string x = print_endline "Scalar.Val.of_string : not implemented" ; z
+	let of_string _ = print_endline "Scalar.Val.of_string : not implemented" ; z
 
 	let toInt_round _ _ = Pervasives.failwith "Scalar.Symbolic.toInt_round : not implemented"
 
@@ -650,7 +650,7 @@ module MachineInt = struct
 			u
 			(Misc.range 0 exp)
 
-	let ofQ x = Pervasives.failwith "Scalar.RelInt.ofQ"
+	let ofQ _ = Pervasives.failwith "Scalar.RelInt.ofQ"
 	let toQ = Q.of_int
 
 	let mk1 n = n
@@ -680,13 +680,13 @@ module MachineInt = struct
 
 	let well_formed_nonnull n = not (isZ n)
 
-	let well_formed x = true
+	let well_formed _ = true
 
 	let mulr : Q.t -> t -> t
-		= fun q n ->
+		= fun _ _ ->
 		Pervasives.failwith "Scalar.MachineInt.mulr"
 
 	let divr : t -> Q.t -> t
-		= fun f q ->
+		= fun _ _ ->
 		Pervasives.failwith "Scalar.MachineInt.divr"
 end

@@ -12,12 +12,12 @@ type 'c op =
   | Hyp of Cs.t                 (* an hypothesis (from the inputs) *)
   | Top
   | Triv of Cstr.cmpT * Rat.t
-  | Add of 'c * 'c 
+  | Add of 'c * 'c
   | Mul of Rat.t * 'c           (* in [Mul n c], [n] must be non-negative except if [c] is an equality ! *)
   | Merge of 'c * 'c            (* merge two inequalities an an equality *)
-  | To_le of 'c                 (* relax as an non-strict inequality *) 
-      
-(* AST to build a "derived constraints" (e.g. a constraint included in some conjunction of input constraints) *) 
+  | To_le of 'c                 (* relax as an non-strict inequality *)
+
+(* AST to build a "derived constraints" (e.g. a constraint included in some conjunction of input constraints) *)
 type dcstr = {
   mutable nbusers: int;
   mutable id: int;
@@ -25,7 +25,7 @@ type dcstr = {
   def: dcstr op;
   mutable vardef: Var.t option;
 }
-  
+
 let get_def (c: dcstr): dcstr op = c.def
 let get_id (c: dcstr): int = c.id
 let get_vardef (c: dcstr) = c.vardef
@@ -41,7 +41,7 @@ type env = {
   mutable all: dcstr list;
   mutable roots: dcstr list
 }
-  
+
 (***********************************)
 (* pretty-printing of certificates *)
 
@@ -50,7 +50,7 @@ let printid out c =
   | Hyp _ -> Printf.fprintf out "h%d" c.id
   | Top -> Printf.fprintf out "top"
   | _ -> Printf.fprintf out "c%d" c.id
-  
+
 let rec printc out c =
   if c.id > 0 then
     printid out c
@@ -87,9 +87,9 @@ and raw_printc out c =
   | To_le c -> (
     Printf.fprintf out "! ";
     printc out c)
-  
 
- 
+
+
 (**********************************************)
 (* importing inputs (of Polyhedra operations) *)
 
@@ -111,14 +111,14 @@ let get_env (i: input): env =
   match !i with
   | Some e -> e
   | None -> raise Invalid_Input;;
-  
+
 let pmake_dcstr (i: input) (def: dcstr op) : dcstr =
   let e = get_env i in
   e.total <- e.total+1;
   let r = { nbusers = 0; id = 0; order = 0; def = def; vardef = None } in
   e.all <- r::e.all;
   r
-    
+
 let profiling_factory i = {
   Cert.name = "ASTCert Profiling Factory";
   Cert.top = top;
@@ -131,11 +131,11 @@ let profiling_factory i = {
   Cert.rename = (fun _ -> failwith "No rename in ASTCert LCF")
 }
 
-let basic_mul n c = 
+let basic_mul n c =
   if (Rat.equal Rat.u n) then c else make_dcstr(Mul(n,c))
 
 (* let mu = Rat.neg (Rat.u) *)
-    
+
 let smart_mul n c =
   assert ((Rat.cmpz n) <> 0);
   if (Rat.equal Rat.u n) then
@@ -186,12 +186,12 @@ let smart_factory = {
 let factory i =
   let e = get_env i in
   if e.total >= 0
-  then 
+  then
     profiling_factory i
   else
     smart_factory
 
-    
+
 let rec rec_import (e: env) (access:'a -> Cs.t) (update: 'a -> dcstr -> 'b) (l: 'a list) (acc_input: 'b list) =
   match l with
   | [] -> acc_input
@@ -203,17 +203,17 @@ let rec rec_import (e: env) (access:'a -> Cs.t) (update: 'a -> dcstr -> 'b) (l: 
 let import (i: input) (access:'a -> Cs.t) (update: 'a -> dcstr -> 'b) (l: 'a list) =
   rec_import (get_env i) access update l []
 
-    
+
 let import_pol (i: input) (p: 'a Pol.t) =
   let e = get_env i in
-  let eqs = rec_import e (fun (a, (c,_)) -> c) (fun (a, (c,_)) cert -> (a,(c,cert))) p.Pol.eqs [] in
+  let eqs = rec_import e (fun (_, (c,_)) -> c) (fun (a, (c,_)) cert -> (a,(c,cert))) p.Pol.eqs [] in
   let ineqs = rec_import e  (fun (c,_) -> c) (fun (c, _) cert -> (c, cert)) p.Pol.ineqs [] in
   {Pol.eqs = eqs; Pol.ineqs = ineqs}
 
 
 (***********************************************)
 (* exporting outputs (of Polyhedra operations) *)
-  
+
 let set_output input roots =
   let e = get_env input in
   if e.roots <> [] then raise Invalid_Input;
@@ -237,17 +237,17 @@ let set_output_fp_map f i p =
   let l0 = List.fold_left (fun l (x, (_, cert)) -> let cert = (f cert) in cert.vardef <- Some x; cert::l) [] (List.rev_append p.Pol.eqs []) in
   let l1 = List.fold_left (fun l (_, cert) -> (f cert)::l) l0 p.Pol.ineqs in
   set_output i l1
-    
-     
+
+
 let get_sons (n: 'c op) =
   match n with
   | Add (c1, c2) -> [| c1; c2 |]
   | Mul (_, c) -> [| c |]
   | Merge (c1, c2) -> [| c1; c2 |]
   | To_le c -> [| c |]
-  | _ -> [| |]      
+  | _ -> [| |]
 
-     
+
 let rec countusers c =
   if c.order = 0 then (
     c.order <- -1;
@@ -275,7 +275,7 @@ let register_name e c =
 let topological_sort e l =
   let q = Queue.create () in
   let inspect = inspect q in
-  List.iter inspect l; 
+  List.iter inspect l;
   while not (Queue.is_empty q) do
     let c = Queue.pop q in
     match c.def with
@@ -291,11 +291,11 @@ let topological_sort e l =
       Array.iter inspect sons
     )
   done
-    
+
 type output = {
   hyps: dcstr list; (* name of inputs. in the reverse ORDER than inputs !*)
   defs: dcstr list; (* intermediate definitions *)
-  res: dcstr list;  
+  res: dcstr list;
   numdefs: int;     (* = length defs *)
   usedhyps: int;    (* = number of hyps that are used *)
   used: int         (* number of derived constraints which are used *)
@@ -320,7 +320,7 @@ let export_env e =
     usedhyps = e.ndefs - ndefs;
     used = e.xused
   }
-       
+
 let extract_unused e =
   let l_unused = ref [] in
   let l_other = ref [] in
@@ -340,26 +340,26 @@ let extract_unused e =
         (if c.id = 0 then register_name e c);
         c::l)
       else l) [] (!l_other) in
-  (!l_unused, unused_hyps, l_shared)  
+  (!l_unused, unused_hyps, l_shared)
 
 let export (i: input) =
   let e = get_env i in
   i := None;
-  export_env e  
+  export_env e
 
 let print_defid out c =
   (if (c.id <> 0) then printid out c else Printf.fprintf out "_");
   Printf.fprintf out " := "
 
-    
-let print_hyps out l =     
+
+let print_hyps out l =
   List.iter
     (fun c ->
       print_defid out c;
       match c.def with
       | Hyp cs -> Printf.fprintf out "%s\n%!" (Cs.to_string Var.to_string cs)
       | _ -> assert false) l
-    
+
 let print_defs out l =
   List.iter (fun c ->
     print_defid out c;
@@ -411,5 +411,5 @@ let print_profiling out i =
     Printf.fprintf out "  NO unused derived constraint\n"
   ) else (
     Printf.fprintf out "  NO OTHER PROFILING INFO (i.e. smart input)\n"
-  );  
+  );
   Printf.fprintf out "-----\n\n%!";;

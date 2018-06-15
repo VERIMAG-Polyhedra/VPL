@@ -81,7 +81,7 @@ module BuildSx = struct
 		let (params, names) = build_params names cstrs in
 		let obj = objective params cstrs
 		and mat = [build_norm_from_point init_point cstrs] in
-		PLP.({PSplx.obj = obj ; PSplx.mat = mat ; PSplx.basis = [] ; PSplx.names = names})
+		{PSplx.obj = obj ; PSplx.mat = mat ; PSplx.basis = [] ; PSplx.names = names}
 end
 
 type 'c regionsT = {
@@ -110,17 +110,8 @@ let to_plp : 'c Cert.t -> Vec.t -> ('c Cons.t * Vec.t) list -> 'c regionsT
 			conss
 	in
 	fun factory x0 conss_points ->
-	(*Misc.list_to_string
-		(fun (c,v) -> Printf.sprintf "%s -> %s"
-			(Cs.to_string Cs.Vec.V.to_string c)
-			(Vec.to_string Vec.V.to_string v))
-		cstrs " ; "
-		|> print_endline;*)
-	let (conss,points) = List.split conss_points in
-	let config = PLP.std_config (*{PLP.std_config with
-		PLP.points = (List.map (fun v -> PLP.ExplorationPoint.Point v) points);
-		(*PLP.add_region = PLP.standard_test;*)
-	} *)in
+	let (conss,_) = List.split conss_points in
+	let config = PLP.std_config in
 	let mapVar = build_map conss in
 	let get_cert = PLP.get_cert_default factory mapVar in
 	let sx = BuildSx.build x0 (List.map Cons.get_c conss) in
@@ -170,7 +161,7 @@ module ReNormalize = struct
 		(* TODO faut il diviser tous les coefficients par le coefficient de la variable additionnelle? *)
 
 	let renormalize_vec : Vec.Coeff.t -> Vec.V.t -> Vec.t -> Vec.t -> Vec.t -> Vec.t
-		= fun denominator additional_var new_point polyhedron_face vec ->
+		= fun denominator _ new_point polyhedron_face vec ->
 		let lambda = Vec.Coeff.div (compute_numerator vec new_point) denominator in
 		Vec.add vec (Vec.mulc lambda polyhedron_face)
 

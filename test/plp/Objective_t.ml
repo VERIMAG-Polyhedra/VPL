@@ -1,17 +1,18 @@
 open Vpl
 
-module Test (Cs : Cstr.Rat.Type) = struct
+module Make_Tests (Cs : Cstr.Rat.Type) = struct
 	module Objective = Objective.Objective(Cs)
 	module ParamCoeff = Objective.ParamCoeff
 	module Poly = ParamCoeff.Poly
-	
+
 	let v = List.map Q.of_int
 
-	let elim_ts : T.testT
-	  = let chk : string * int * Tableau.Vector.t * Objective.t * Objective.t -> T.testT
+	let elim_ts : Test.t
+	  = fun () ->
+      let chk : string * int * Tableau.Vector.t * Objective.t * Objective.t -> (Test.stateT -> Test.stateT)
 		   = fun (nm, col, v, o, eobj) st ->
 		   let aobj = Objective.elim o v col in
-		   T.equals nm Objective.to_string Objective.equal eobj aobj st
+		   Test.equals nm Objective.to_string Objective.equal eobj aobj st
 		 in
 		 Poly.(
 		   [
@@ -24,19 +25,20 @@ module Test (Cs : Cstr.Rat.Type) = struct
 			 ParamCoeff.mkSparse 1 [] Cs.Vec.Coeff.z;
 			 ParamCoeff.mkSparse 1 [0, Cs.Vec.Coeff.u] Cs.Vec.Coeff.z
 		  ] (ParamCoeff.mkSparse 1 [] Cs.Vec.Coeff.z)
-		    ;		      
+		    ;
 		"neg", 0, v [-1; 0],
 		Objective.mk [ParamCoeff.mkCst Cs.Vec.Coeff.u] (ParamCoeff.mkCst Cs.Vec.Coeff.z),
 		Objective.mk [ParamCoeff.mkCst Cs.Vec.Coeff.z] (ParamCoeff.mkCst Cs.Vec.Coeff.z)
 		 ])
 		 |> List.map chk
-		 |> T.suite "elim"
+		 |> Test.suite "elim"
 
-	let add_col_ts : T.testT
-	  = let chk : string * ParamCoeff.t * int * Objective.t * Objective.t -> T.testT
+	let add_col_ts : Test.t
+	  = fun () ->
+       let chk : string * ParamCoeff.t * int * Objective.t * Objective.t -> (Test.stateT -> Test.stateT)
 		   = fun (nm, c, i, o, r) st ->
 		   let o' = Objective.add_col o c i in
-		   T.equals nm Objective.to_string Objective.equal r o' st
+		   Test.equals nm Objective.to_string Objective.equal r o' st
 		 in
 		 Poly.(
 		   [
@@ -55,16 +57,16 @@ module Test (Cs : Cstr.Rat.Type) = struct
 		  ] (ParamCoeff.mkCst Cs.Vec.Coeff.z)
 		 ])
 		 |> List.map chk
-		 |> T.suite "add_col"
-	(* XXX: mettre à jour 
-	let getPivotCol_ts : T.testT
+		 |> Test.suite "add_col"
+	(* XXX: mettre à jour
+	let getPivotCol_ts : Test.t
 	  = let to_vpl = List.nth [Cs.Vec.V.fromInt 1; Cs.Vec.V.fromInt 2] in
 		 let vpl_max = Cs.Vec.V.fromInt 3 in
-		 let chk : string * Objective.t * Context.t * Objective.choiceT -> T.testT
+		 let chk : string * Objective.t * Context.t * Objective.choiceT -> (Test.stateT -> Test.stateT)
 		   = fun (nm, o, cx, ch) st ->
 		   try
 		let ch' = Objective.getPivotCol to_vpl vpl_max Objective.Bland cx [] o in
-		T.equals nm Objective.choice_to_string Objective.choice_equal ch ch' st
+		Test.equals nm Objective.choice_to_string Objective.choice_equal ch ch' st
 		   with
 		Invalid_argument s ->
 		Printf.printf "%s: %s\n%s\n" nm (Objective.to_string o) s
@@ -117,22 +119,24 @@ module Test (Cs : Cstr.Rat.Type) = struct
 					 Context.GT0, ParamCoeff.mkSparse 2 [1, Cs.Vec.Coeff.u] Cs.Vec.Coeff.z]));
 		 ])
 		 |> List.map chk
-		 |> T.suite "getColPivot"
+		 |> Test.suite "getColPivot"
 	*)
-	let ts : T.testT
-	  = T.suite Cs.Vec.V.name [
-			  elim_ts;
-			  add_col_ts;
+	let ts : Test.t
+	  = fun () ->
+      Test.suite Cs.Vec.V.name [
+			  elim_ts();
+			  add_col_ts();
 			  (*getPivotCol_ts*)
 			]
 end
 
-module Positive = Test(Cstr.Rat.Positive)
+module Positive = Make_Tests(Cstr.Rat.Positive)
 
-module Int = Test(Cstr.Rat.Int)
+module Int = Make_Tests(Cstr.Rat.Int)
 
-let ts : T.testT
-	  = T.suite "Objective" [
-			  Positive.ts;
-			  Int.ts
-			]
+let ts : Test.t
+    = fun () ->
+    Test.suite "Objective" [
+	   Positive.ts();
+       Int.ts()
+	]

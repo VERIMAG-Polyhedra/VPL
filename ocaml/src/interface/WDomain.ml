@@ -6,7 +6,7 @@ module P = struct
 
 	(** Careful : addNLM is UNcertified. *)
 	let addNLM : t -> CP.t list -> t
-		= fun p cps ->
+		= fun _ _ ->
 		failwith "unimplemented"
 end
 

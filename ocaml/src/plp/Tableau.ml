@@ -4,7 +4,7 @@ module Print = struct
 		= fun pr l sep-> Misc.list_to_string pr l sep|> Pervasives.print_endline
 
 	(** get_width c returns the length of the string to_string c *)
-	let (get_width : Scalar.Rat.t -> int)
+	let get_width : Scalar.Rat.t -> int
 	= fun c ->
 	String.length (Scalar.Rat.to_string c);;
 
@@ -65,7 +65,7 @@ If the vector has size 0, then [Invalid_argument] is raised. *)
     = fun v a -> List.map (Q.mul a) v
 
 	(** [pretty_print v l] returns a string corresponding to a row of a matrix. Each column has a fixed width *)
-	let rec (pretty_print : t -> int list -> string)
+	let rec pretty_print : t -> int list -> string
 		= fun v l ->
 		match (v,l) with
 		| ([],_) | (_,[]) -> ""
@@ -75,12 +75,12 @@ If the vector has size 0, then [Invalid_argument] is raised. *)
 			else String.concat "" [Misc.string_repeat " " (nb_spaces/2) ; Q.to_string p ; Misc.string_repeat " " (nb_spaces/2) ; " | " ; pretty_print tail1 tail2];;
 
 	(** mult_vector v1 v2 returns the vector v1 x v2 *)
-	let rec (mul : t -> t -> t)
+	let mul : t -> t -> t
 		= fun v1 v2 ->
 		List.map2 (fun p1 p2 -> Scalar.Rat.mul p1 p2) v1 v2;;
 
 	(** add_vector v1 v2 adds v1 and v2! *)
-	let rec (add : t -> t -> t)
+	let add : t -> t -> t
 		= fun v1 v2 ->
 		List.map2 (fun p1 p2 -> Scalar.Rat.add p1 p2) v1 v2;;
 	end
@@ -161,7 +161,7 @@ module Matrix
     = fun row col m-> Vector.get col (getRow row m)
 
   (** get_col m i returns the ith column of the matrix m as a vector *)
-let rec(get_col : int -> t -> Vector.t)
+let rec get_col : int -> t -> Vector.t
 	= fun col m->
 	match m with
 	| [] -> []
@@ -185,8 +185,8 @@ let rec(get_col : int -> t -> Vector.t)
     end
 
 	(** add_row m v i adds the row vector v at the index i in m*)
-	let (add_row : t -> Vector.t -> int -> t)
-		= let rec(add_row_rec : t -> Vector.t -> int -> int -> t)
+	let add_row : t -> Vector.t -> int -> t
+		= let rec add_row_rec : t -> Vector.t -> int -> int -> t
 		= fun m v i k ->
 		if i = k then v :: (add_row_rec m v i (k+1))
 		else match m with
@@ -196,7 +196,7 @@ let rec(get_col : int -> t -> Vector.t)
 		add_row_rec m v i 0
 
 	(** add_col m v i adds the column vector v at the index i in m *)
-	let rec(add_col : t -> Vector.t -> int -> t)
+	let add_col : t -> Vector.t -> int -> t
 		= fun m v col ->
 		let len = List.length (List.nth m 0) in
 		if len = 0
@@ -204,25 +204,25 @@ let rec(get_col : int -> t -> Vector.t)
 		else List.map2 (fun vec coeff -> (Misc.sublist vec 0 col) @ [coeff] @ (Misc.sublist vec col len)) m v;;
 
 	(** get_width_column m i returns the width (nb of char) of the ith column of the matrix m *)
-	let (get_width_column : t -> int -> int)
+	let get_width_column : t -> int -> int
 		= fun m col->
 		let l = List.map (fun p -> Print.get_width p) (get_col col m) in
 		Misc.max compare l
 
 	(** get_width_column_vector m returns the list [width of col 1 ; width of col 2 ; ...] *)
-	let (get_width_column_vector : t -> int list)
+	let get_width_column_vector : t -> int list
 		= fun m ->
 		List.map (fun i -> get_width_column m i) (Misc.range 0 (nCols m));;
 
-	let rec (to_string : t -> int list -> string)
+	let rec to_string : t -> int list -> string
 		= fun m l ->
 		match m with
 		| [] -> ""
 		| v :: tail -> String.concat "" [Vector.pretty_print v l ; "\n" ; to_string tail l];;
 
 	(** rescale m i coeff returns the matrix m where the row i has been multiplied by coeff*)
-	let (rescale : t -> int -> Scalar.Rat.t -> t)
-		= let rec(rescale_rec : t -> int -> Scalar.Rat.t -> int -> t)
+	let rescale : t -> int -> Scalar.Rat.t -> t
+		= let rec rescale_rec : t -> int -> Scalar.Rat.t -> int -> t
 			= fun m row coeff k ->
 			match m with
 			| [] -> []
@@ -232,8 +232,8 @@ let rec(get_col : int -> t -> Vector.t)
 		rescale_rec m row coeff 0
 
 	(** add_multiple_of_row m row1 row2 coeff returns the matrix m where row1 has been added the row2 multiplied by coeff*)
-	let (add_multiple_of_row : t -> int -> int -> Scalar.Rat.t -> t)
-		= let rec(add_multiple_of_row_rec : t -> int -> Vector.t -> Scalar.Rat.t -> int -> t)
+	let add_multiple_of_row : t -> int -> int -> Scalar.Rat.t -> t
+		= let rec add_multiple_of_row_rec : t -> int -> Vector.t -> Scalar.Rat.t -> int -> t
 			= fun m row v coeff k ->
 			match m with
 			| [] -> []

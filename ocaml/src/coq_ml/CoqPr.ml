@@ -91,6 +91,6 @@ let rec exprPr: Ring_polynom_AddOnQ.coq_PExpr -> string
     | PEpow (p,_) -> Printf.sprintf "(%s)^?" (exprPr p)
     )
 
-let rec exprPr': Ring_polynom_AddOnQ.coq_PExpr -> char list
+let exprPr': Ring_polynom_AddOnQ.coq_PExpr -> char list
     = fun p ->
     exprPr p |> stringTr

@@ -1,6 +1,6 @@
 (** This module implements a minimizing simplex, with parametric objective function.
-It means that coefficients of the objective function are affine functions of parameters.  
-The given simplex tableau must respect these conditions: 
+It means that coefficients of the objective function are affine functions of parameters.
+The given simplex tableau must respect these conditions:
 {ul
 	{- Variables are nonnegative. No need to provide nonnegativity constraints, they are implicitly known. }
 	{- Constraints are nonstrict. }
@@ -16,7 +16,7 @@ module type Type = sig
 	module ParamCoeff = Objective.ParamCoeff
 	module Pivot : Objective.Pivot with module Vec = Vec
 	module Naming = Pivot.Naming
-	
+
 	type t
 	  = {
 	  obj : Objective.t;
@@ -24,9 +24,9 @@ module type Type = sig
 	  basis : int list;
 	  names : Naming.t
 	}
-	
+
 	val empty : t
-	
+
 	val get_obj : t -> Objective.t
 	val get_mat : t -> Tableau.Matrix.t
 	val get_basis : t -> int list
@@ -37,13 +37,13 @@ module type Type = sig
 	val nCols : t -> int
 	val nVars : t -> int
 	val nParams : t -> int
-	
+
 	val getVars : t -> Vec.V.t list
 	val getParams : t -> Vec.V.t list
-	
+
 	val obj_value : t -> ParamCoeff.t
 	val obj_value' : t -> Cs.t
-	
+
 	(** [getCurVal sx] returns the current value of the basic variables in [sx].
 	The value of the other variables is implicitly zero.  Each basic variable
 	is given its value as a pair (column number, value) *)
@@ -70,7 +70,7 @@ module type Type = sig
 	val addSlacks : int -> t -> t
 
 	val get_row_pivot : Tableau.Matrix.t -> int -> int
-	
+
 	(** [pivot sx row col] performs a pivot between [row] and [col]. *)
 	val pivot : t -> int -> int -> t
 
@@ -100,29 +100,29 @@ module type Type = sig
 		val push : Objective.pivotStrgyT -> Vec.t -> t -> t
 		val init_and_push : Objective.pivotStrgyT -> Vec.t -> t -> t option
 	end
-	
+
 	module Build : sig
 		module Poly = ParamCoeff.Poly
-		
+
 		(** [from_poly vars ineqs eqs obj] builds the parametric simplex tableau with constraints [ineqs @ eqs], objective [obj] and where simplex variables are in [vars].
 		@param ineqs represent polynomials of the form [p <= 0].*)
 		val from_poly : Poly.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> t
 	end
 end
-		
+
 module PSplx (Cs : Cstr.Rat.Type) = struct
-	
+
 	(* On fait un second foncteur pour forcer Cs et Vec à avoir le même type de variables *)
 	module PSplx(Vec : Vector.Type with module M = Cs.Vec.M) = struct
 		module type VecType = Vector.Type with module M = Cs.Vec.M
 		module Cs = Cs
 		module Vec = Vec
-		
+
 		module Objective = Objective.Objective(Cs)
 		module ParamCoeff = Objective.ParamCoeff
 		module Pivot = Objective.Pivot(Vec)
 		module Naming = Pivot.Naming
-		
+
 		type t
 		  = {
 		  obj : Objective.t;
@@ -130,14 +130,14 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 		  basis : int list;
 		  names : Naming.t
 		}
-		
-		let empty = { 
+
+		let empty = {
 			obj = Objective.empty;
 			mat = [];
 			basis = [];
 			names = Naming.empty;
 		}
-		
+
 		let get_obj : t -> Objective.t
 		  = fun sx -> sx.obj
 
@@ -161,30 +161,30 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 
 		let nParams : t -> int
 		  = fun sx -> Objective.nParams sx.obj
-		
+
 		let getParams : t -> Vec.V.t list
 			= fun sx ->
-			List.map 
+			List.map
 				(fun i -> Naming.to_user sx.names Naming.Param i |> fst)
 				(Misc.range 0 (nParams sx))
-		
+
 		let getVars : t -> Vec.V.t list
 			= fun sx ->
-			List.map 
+			List.map
 				(fun i -> Naming.to_user sx.names Naming.Var i |> fst)
 				(Misc.range 0 (nVars sx))
-				
+
 		let obj_value : t -> ParamCoeff.t
 		  = fun sx -> Objective.value sx.obj
-		
+
 		let obj_value' : t -> Cs.t
 			= fun sx ->
 			let pCoeff = sx |> get_obj |> Objective.value in
-			ParamCoeff.to_cstr 
+			ParamCoeff.to_cstr
 			(fun i -> Naming.to_user sx.names Naming.Param i
-				|> Pervasives.fst) 
-			ParamCoeff.LE0 pCoeff  
-			
+				|> Pervasives.fst)
+			ParamCoeff.LE0 pCoeff
+
 		let equal : t -> t -> bool
 		  = fun sx sx' ->
 		  Objective.equal sx.obj sx'.obj
@@ -253,14 +253,14 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 				 {sx0 with basis = get_basis sx0 @ gen l}
 			in
 			let width_columns = t_get_width_column_vector sx in
-			(String.concat "" 
+			(String.concat ""
 			(
 				["\n"]
-			@ (List.mapi 
+			@ (List.mapi
 				(fun i width_col->
 				 let s = Naming.to_string sx.names Naming.Var i in
-				 let nb_spaces = width_col - (String.length s) in 
-				if nb_spaces mod 2 = 1 
+				 let nb_spaces = width_col - (String.length s) in
+				if nb_spaces mod 2 = 1
 					then String.concat "" [Misc.string_repeat " " (nb_spaces/2) ; s ; Misc.string_repeat " " (nb_spaces/2 + 1) ; " | "]
 					else String.concat "" [Misc.string_repeat " " (nb_spaces/2) ; s ; Misc.string_repeat " " (nb_spaces/2) ; " | " ])
 				(Misc.sublist width_columns 0 ((List.length width_columns) - 1)))
@@ -268,7 +268,7 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 			@ [Objective.pretty_print (Naming.to_string sx.names Naming.Param) sx.obj width_columns ; "\n"]
 			@ (List.map (fun i -> String.concat "" [Misc.string_repeat "-" i ; " | "]) width_columns)
 			@ ["\n"]
-			@ (List.map2 
+			@ (List.map2
 				(fun vec var -> String.concat "" [(Tableau.Vector.pretty_print vec width_columns) ; Naming.to_string sx.names Naming.Var var; "\n"])
 					  sx.mat (get_basis sx))))
 
@@ -276,7 +276,7 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 		  = fun sx ->
 		  to_string sx
 		  |> Pervasives.print_endline
-	
+
 		let get_row_pivot : Tableau.Matrix.t -> int -> int
 		  = let bounds : Tableau.Matrix.t -> int -> Q.t option list
 				= fun m col ->
@@ -307,14 +307,14 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 			 else i
 
 		module Explore = struct
-		
+
 			module Obj = struct
 				include Objective.Pivot (Vec)
 			end
-	
+
 		 	let rec push' : Objective.pivotStrgyT -> Vec.t -> t -> t
 				= fun st point sx ->
-				Debug.log DebugTypes.Detail 
+				Debug.log DebugTypes.Detail
 					(lazy (Printf.sprintf "push' : \n%s"
 						(to_string sx)));
 			  	match Pivot.getPivotCol
@@ -326,7 +326,7 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 			  	| Objective.PivotOn i ->
 				  	pivot sx (get_row_pivot sx.mat i) i
 				  	|> push' st point
-			
+
 			let push : Objective.pivotStrgyT -> Vec.t -> t -> t
 				= fun st point sx ->
 				Debug.log DebugTypes.Title
@@ -337,18 +337,18 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 			  			(to_string sx)));
 			  	let res = push' st point sx in
 			  	Debug.exec res DebugTypes.MOutput (lazy (to_string res))
-				  	
+
 			module Init = struct
 
-				let a_value : Vec.V.t ref = ref Vec.V.u;; 
+				let a_value : Vec.V.t ref = ref Vec.V.u;;
 
 				let getReplacementForA : t -> int -> int
 					= fun sx row ->
 					let r = Tableau.Matrix.getRow row sx.mat in
 					let rowCoeffs = Misc.sublist r 0 (List.length r - 1) in
-					try 
-						let col = Misc.findi 
-							(fun a -> not (Scalar.Rat.equal Scalar.Rat.z a)) 
+					try
+						let col = Misc.findi
+							(fun a -> not (Scalar.Rat.equal Scalar.Rat.z a))
 							(List.tl rowCoeffs) in
 						col + 1
 					with Not_found -> Pervasives.failwith "t.a_still_in_basis"
@@ -392,7 +392,7 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 
 				let correction : t -> t option
 					= let removeRow : int -> t -> t
-						= let rec rm : int -> int * Tableau.Vector.t list -> Tableau.Vector.t -> int * Tableau.Vector.t list
+						= let rm : int -> int * Tableau.Vector.t list -> Tableau.Vector.t -> int * Tableau.Vector.t list
 					 		= fun r (i, l) v -> if i = r then (i + 1, l) else (i + 1, v :: l)
 				  		in
 						fun r sx ->
@@ -410,7 +410,7 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 							let v = Tableau.Matrix.getRow row sx.mat in
 							try
 								let col = Misc.findi (fun a -> not (Scalar.Rat.isZ a)) v in
-								if col > List.length v - 2 
+								if col > List.length v - 2
 								then None (* last column is the constant *)
 					 			else
 									{sx with
@@ -422,7 +422,7 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 							with Not_found ->
 								removeRow row sx |> chooseBasicVar row
 					in
-					fun sx -> 
+					fun sx ->
 					chooseBasicVar (List.length sx.basis) sx
 
 			  let (findFeasibleBasis : t -> Vec.t -> t option)
@@ -433,7 +433,7 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 					 if isFeasible sx then Some sx
 					 else
 				 let sx' =
-					buildInitFeasibilityPb sx 
+					buildInitFeasibilityPb sx
 					|> push Objective.Bland point
 				 in
 				 if not (obj_value sx' |> ParamCoeff.is_zero) then None
@@ -448,7 +448,7 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 					Some (buildFeasibleTab sx.obj sx')
 
 			end
-			  	
+
 			let init_and_push : Objective.pivotStrgyT -> Vec.t -> t -> t option
 				= fun st point sx ->
 				match Init.findFeasibleBasis sx point with
@@ -456,9 +456,9 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 					print_endline ("init -> unfeasible");
 					None
 					end
-				| Some sx -> 
+				| Some sx ->
 					Debug.exec (Some (push st point sx))
-						DebugTypes.Detail (lazy (to_string sx)) 
+						DebugTypes.Detail (lazy (to_string sx))
 		end
 
 		module Diag
@@ -483,10 +483,10 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 				List.for_all2 (fun i r -> Q.equal (Tableau.Vector.get i r) Q.one && chkOccur i sx) sx.basis sx.mat
 
 		end
-	
+
 		module Build = struct
 			module Poly = ParamCoeff.Poly
-		
+
 			let obj_buildOfPoly : Poly.t list -> Poly.t -> Objective.t * Naming.t
 			  = let module VSet = Set.Make (struct type varT = Poly.V.t type t = varT let compare = Poly.V.cmp end) in
 				 let gatherParams1 : Poly.t -> VSet.t
@@ -538,15 +538,15 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 				 fun n l a ->
 				 obj_buildOfPoly (List.sort (fun (i, _) (i', _) -> Pervasives.compare i i') l |> fill n 0) a
 
-			let rec obj_of_poly : Poly.t -> Poly.V.t list -> Objective.t * Naming.t
+			let obj_of_poly : Poly.t -> Poly.V.t list -> Objective.t * Naming.t
 			  = fun p l ->
 			  let lin = List.map (fun x -> Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x])) l in
-			  let cst = Poly.sub p 
-				(List.fold_left 
-					(fun p1 x -> Poly.add 
-						p1 
-						(Poly.mul 
-							(Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x])) 
+			  let cst = Poly.sub p
+				(List.fold_left
+					(fun p1 x -> Poly.add
+						p1
+						(Poly.mul
+							(Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x]))
 							(Poly.mk2 [([x], Scalar.Rat.u)])))
 				Poly.z l)
 			  |> Poly.mul Poly.negU in
@@ -557,9 +557,9 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 			  = fun p vars ->
 			  match vars with
 			  | [] -> [Scalar.Rat.neg (Poly.get_constant p)]
-			  | var :: tail -> let coeff = Poly.monomial_coefficient p (Poly.MonomialBasis.mk [var]) in 
+			  | var :: tail -> let coeff = Poly.monomial_coefficient p (Poly.MonomialBasis.mk [var]) in
 						coeff::(row_from_constraint p tail);;
-	
+
 			let from_poly : Poly.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> t
 			  = fun vars ineqs eqs obj ->
 			  if List.length vars + List.length ineqs < List.length ineqs + List.length eqs
@@ -576,11 +576,11 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 				names = Naming.mkVar vars nm
 					}
 					|> addSlacks (List.length ineqs)
-			
+
 			(*
 			(** Version for equalities only. *)
 			module Max = struct
-				
+
 				let cstr_to_vector : V.t list -> Cs.t -> Tableau.Vector.t
 					= fun variables cstr ->
 					match cstr.Cs.typ with
@@ -591,16 +591,16 @@ module PSplx (Cs : Cstr.Rat.Type) = struct
 							variables
 						@ [Cs.get_c cstr]
 					| _ -> Pervasives.failwith "Psplx.Build.Max.cstr_to_vector -> expected Eq"
-				
+
 				let cstrs_to_tableau : V.t list -> Cs.t -> Tableau.Vector.t list
 					= fun variables cstrs ->
 					List.map (cstr_to_vector variables) cstrs
-					
+
 				let max : Naming.t -> Cs.t list -> Objective.t -> Vec.t -> t
 					= fun cstrs obj point ->
-					
-					
-				
+
+
+
 			end
 			*)
 		end

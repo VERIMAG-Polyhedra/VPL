@@ -77,15 +77,15 @@ module Lift (T : Type) = struct
     let get_mode : linearizeContext -> mode
     	= fun lc ->
     	match lc.cmp with
-    	| NumC.Le | NumC.Lt -> UP
-    	| _ -> BOTH
+    	| NumC.Le | NumC.Lt -> DomainInterfaces.UP
+    	| _ -> DomainInterfaces.BOTH
 
     let rec translateAF : Term.t -> env -> Term.t
     	= let translate : Term.t -> Term.t -> D.N.t -> env -> Term.t
     		= fun t_aff t_interv c env->
     		let t_interv' = (D.BasicTerm.smartScalMul c t_interv)
     		|> Term.to_polynomial
-    		|> fun p -> choose_var p env BOTH
+    		|> fun p -> choose_var p env DomainInterfaces.BOTH
     		|> factorize in
     		D.BasicTerm.smartAdd
     			(D.BasicTerm.smartMul
@@ -96,7 +96,7 @@ module Lift (T : Type) = struct
     						(D.BasicTerm.Opp (D.BasicTerm.Cte c)))))
     			t_interv'
     	in
-        let rec translateAF_mul : Term.t -> env -> Term.t
+        let translateAF_mul : Term.t -> env -> Term.t
     		= fun t env ->
     		let t_aff = Term.get_affine_part t
             and t_interv = Term.get_interv_part t in
@@ -106,11 +106,11 @@ module Lift (T : Type) = struct
     		else t
     	in fun t env ->
     	match t with
-    	| D.BasicTerm.Mul(t1,t2) -> translateAF_mul t env
+    	| D.BasicTerm.Mul(_,_) -> translateAF_mul t env
     	| D.BasicTerm.Add(t1,t2) -> D.BasicTerm.smartAdd (translateAF t1 env) (translateAF t2 env)
     	| _ -> t
 
-    let rec factorize_affine : D.BasicTerm.term -> D.BasicTerm.term
+    let factorize_affine : D.BasicTerm.term -> D.BasicTerm.term
     	= let rec get_terms : D.BasicTerm.term -> (D.BasicTerm.term * D.BasicTerm.term) list
     		= fun t ->
     		match t with
@@ -123,7 +123,7 @@ module Lift (T : Type) = struct
     		| [] -> Term.zero
     		| (t_aff,t_itv) :: tl ->
     			let (l1,l2) = List.partition
-    				(fun (t'_aff,t'_itv) ->
+    				(fun (t'_aff,_) ->
                         P.equal (Term.to_polynomial t_aff) (Term.to_polynomial t'_aff))
     				tl in
     			D.BasicTerm.smartAdd
@@ -182,11 +182,11 @@ module OracleQ = Lift(DQ)
 let oracleZ : ASTerm.linearizeContext -> ASTerm.ZTerm.t ImpureConfig.Core.Base.imp
     = fun lc ->
     OracleZ.oracle {
-        nonaffine = lc.nonaffine;
-        env = lc.env;
-        affine = lc.affine;
-        source = lc.source;
-        cmp = lc.cmp;
+        OracleZ.nonaffine = lc.ASTerm.nonaffine;
+        OracleZ.env = lc.ASTerm.env;
+        OracleZ.affine = lc.ASTerm.affine;
+        OracleZ.source = lc.ASTerm.source;
+        OracleZ.cmp = lc.ASTerm.cmp;
     }
 
 let oracleQ = OracleQ.oracle

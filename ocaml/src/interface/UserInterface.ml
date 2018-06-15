@@ -3,7 +3,6 @@ It provides the Interface module (explained by module type Type).*)
 
 (**/**)
 open WrapperTraductors
-open CWrappers
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
@@ -223,6 +222,8 @@ module type Type = sig
 
             val size : t -> Scalar.Rat.t option
 
+            val split_in_half : t -> t list
+
 		end
 
 		(** Defines operators in terms of the User datastructures. *)
@@ -309,6 +310,8 @@ module type Type = sig
             (** [get_regions p] returns the partition into regions of p. *)
             val get_regions : t -> t list
 
+            val split_in_half : t -> t list
+
             val size : t -> Scalar.Rat.t option
 		end
 	end
@@ -348,13 +351,15 @@ let report : exn -> unit
 	in
 	fun e -> begin match e with
     | CertcheckerConfig.CertCheckerFailure (_,s) ->
-        Printf.sprintf "An exception was raised: %s"
+        Printf.sprintf "An exception was raised: %s\n%s"
 		(Printexc.to_string e)
+        (Printexc.get_backtrace ())
 		|> print_endline;
         print_endline s
     | _ ->
-	   Printf.sprintf "An exception was raised: %s"
+	   Printf.sprintf "An exception was raised: %s\n%s"
 		(Printexc.to_string e)
+        (Printexc.get_backtrace ())
 		|> print_endline
     end;
 	report e
@@ -505,7 +510,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 				next
 
 			let guassign: (Var.t list) -> Cond.t -> t -> string
-				= fun l cond p ->
+				= fun _ _ _ ->
 				let next = Names.mk() in
 				lazy (Printf.sprintf "guassign not implemented")
 				|> Record.write;
@@ -804,7 +809,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 					{(Cs.compl cstr) with Cs.typ = Cs.get_typ cstr}
 					in
 				let diff' = fun p1 p2 ->
-				let (rep1,rep2, toVar2) = match backend_rep p1, backend_rep p2 with
+				let (_, rep2, toVar2) = match backend_rep p1, backend_rep p2 with
 					| Some (p1',_), Some (p2', (ofVar2, toVar2)) ->
 						let (_,_,toVar2') = PedraQOracles.export_backend_rep (p2',(ofVar2,toVar2))
 						in
@@ -867,6 +872,30 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                 in
                 fun p ->
 				lazy (get_regions_cert' p)
+				|> handle
+
+            let split_in_half : t -> t list
+                = let split_in_half' p =
+                    let (rep, toVar) = match backend_rep p with
+    					| Some (p',(ofVar, toVar)) ->
+                            let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                            (p', toVar')
+    					| _ -> Pervasives.failwith "get_regions"
+    				in
+                    match Pol.split_in_half Factory.Unit.factory rep with
+                    | None -> Pervasives.failwith "split_in_half: unbounded polyhedron"
+                    | Some cstr ->
+                        let cond1 = [Pol.Cs.rename_f toVar cstr]
+                            |> Cond.of_cstrs
+                        and cond2 = [Pol.Cs.rename_f toVar (Pol.Cs.compl cstr)]
+                            |> Cond.of_cstrs
+                        in
+                        let p1 = assume cond1 p
+                        and p2 = assume cond2 p in
+                        [p1 ; p2]
+                in
+                fun p ->
+				lazy (split_in_half' p)
 				|> handle
 
             let size : t -> Scalar.Rat.t option

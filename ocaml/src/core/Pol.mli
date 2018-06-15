@@ -45,6 +45,9 @@ val bnd_to_string : bndT -> string
 val get_low: itvT -> bndT
 val get_up: itvT -> bndT
 
+(** Returns the length of the given interval, or None if it is unbounded. *)
+val length_itv : itvT -> Scalar.Rat.t option
+
 type cstT = S of Scalar.Rat.t | I of itvT
 
 (** The description of an assignment operation.
@@ -210,3 +213,7 @@ val get_regions : 'c Cert.t -> 'c t -> unit t list
 
 (** Returns an estimation of the size of the polyhedron. *)
 val size : 'c t -> Scalar.Rat.t option
+
+(** Returns the constraint on which the polyhedron must be split, if there is one.
+    This constraint splits the polyhedron in two halfs along the longuest axis-aligned interval. *)
+val split_in_half : 'c Cert.t -> 'c t -> Cs.t option

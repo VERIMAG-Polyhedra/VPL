@@ -238,9 +238,13 @@ let print : VPL.t -> unit
 	|> print_endline
 
 module Notations = struct
-	let (&&) pol1 pol2 = VPL.meet pol1 pol2 (** VPL.t && VPL.t **)
-	let (||) pol1 pol2 = VPL.join pol1 pol2 (** VPL.t || VPL.t **)
-	let (|-) a b =
+    (** VPL.t && VPL.t **)
+	let (&&) pol1 pol2 = VPL.meet pol1 pol2
+
+    (** VPL.t || VPL.t **)
+	let (||) pol1 pol2 = VPL.join pol1 pol2
+
+    let (|-) a b =
 		let var_list = (string_to_var_list b) in
 		Ident.addVars var_list ;
 		VPL.User.projectM var_list a (** VPL.t |- string **)

@@ -429,7 +429,7 @@ module Lift (D : Domain_T) = struct
     		| Add (x1,x2) -> D.Poly.add (to_polynomial x1) (to_polynomial x2)
       		| Opp x -> D.Poly.neg (to_polynomial x)
       		| Mul (x1,x2) -> D.Poly.mul (to_polynomial x1) (to_polynomial x2)
-      		| Annot (annot, x) -> to_polynomial x
+      		| Annot (_, x) -> to_polynomial x
             )
 
     	let rec to_string : t -> string
@@ -525,7 +525,7 @@ module Lift (D : Domain_T) = struct
         		tlist1 tlist2)
 
     	(* on ne translate que la variable qu'on garde*)
-    	let rec translate : D.Poly.Monomial.t -> D.Poly.V.t -> D.N.t -> D.BasicTerm.term * D.Poly.Monomial.t
+    	let translate : D.Poly.Monomial.t -> D.Poly.V.t -> D.N.t -> D.BasicTerm.term * D.Poly.Monomial.t
     		= fun m vToKeep coeff ->
             let (m,c) = D.Poly.Monomial.data m in
     		let l = Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.data m) vToKeep
@@ -547,8 +547,8 @@ module Lift (D : Domain_T) = struct
     	let get_affine_part : t -> t
     		= let rec get_affine_part_rec : t -> t option
     			= D.BasicTerm.(function
-    			| Var x -> None
-    			| Cte x -> None
+    			| Var _ -> None
+    			| Cte _ -> None
     			| Add (x1,x2) ->  (match (get_affine_part_rec x1, get_affine_part_rec x2) with
     				| (None, Some x) -> Some x
     				| (Some x, None) -> Some x
@@ -575,8 +575,8 @@ module Lift (D : Domain_T) = struct
     	let get_interv_part : t -> t
     		= let rec get_interv_part_rec : t -> t option
     			= D.BasicTerm.(function
-    			| Var x -> None
-    			| Cte x -> None
+    			| Var _ -> None
+    			| Cte _ -> None
     			| Add (x1,x2) ->  (match (get_interv_part_rec x1, get_interv_part_rec x2) with
     				| (None, Some x) -> Some x
     				| (Some x, None) -> Some x
@@ -658,14 +658,13 @@ module Lift (D : Domain_T) = struct
 
     	let rec apply : D.BasicTerm.t -> t list -> D.BasicTerm.t
     		= fun t aVarl ->
-    		D.BasicTerm.(match t with
-    		| Var x when mem (D.Poly.coqvar_to_var x) aVarl-> to_term (find (D.Poly.coqvar_to_var x) aVarl)
-    		| Opp x -> smartOpp (apply x aVarl)
-    		| Add (x1,x2) -> smartAdd (apply x1 aVarl) (apply x2 aVarl)
-      		| Mul (x1,x2) -> smartMul (apply x1 aVarl) (apply x2 aVarl)
-      		| Annot (annot, x) -> smartAnnot annot (apply x aVarl)
+    		match t with
+    		| D.BasicTerm.Var x when mem (D.Poly.coqvar_to_var x) aVarl-> to_term (find (D.Poly.coqvar_to_var x) aVarl)
+    		| D.BasicTerm.Opp x -> D.BasicTerm.smartOpp (apply x aVarl)
+    		| D.BasicTerm.Add (x1,x2) -> D.BasicTerm.smartAdd (apply x1 aVarl) (apply x2 aVarl)
+      		| D.BasicTerm.Mul (x1,x2) -> D.BasicTerm.smartMul (apply x1 aVarl) (apply x2 aVarl)
+      		| D.BasicTerm.Annot (annot, x) -> D.BasicTerm.smartAnnot annot (apply x aVarl)
       		| _ -> t
-            )
     end
 
     module Itv = struct
@@ -683,7 +682,7 @@ module Lift (D : Domain_T) = struct
     		| Add (x1,x2) -> D.NoneItv.add DomainInterfaces.BOTH (of_term x1 env) (of_term x2 env)
       		| Opp x -> D.NoneItv.opp (of_term x env)
       		| Mul (x1,x2) -> D.NoneItv.mul DomainInterfaces.BOTH (of_term x1 env) (of_term x2 env)
-      		| Annot (annot, x) -> of_term x env
+      		| Annot (_, x) -> of_term x env
             )
 
     	let low : t -> D.N.t option
@@ -728,7 +727,7 @@ module Lift (D : Domain_T) = struct
             in
     		List.map (fun x -> of_var env x |> range) l
     		|> List.combine l (*liste de paire (variable, range de l'intervalle)*)
-    		|> List.filter (fun (v,x) -> D.Poly.Coeff.le D.Poly.Coeff.z x) (* on ne garde que les ranges positives (les négatives étant des itv non bornés) *)
+    		|> List.filter (fun (_,x) -> D.Poly.Coeff.le D.Poly.Coeff.z x) (* on ne garde que les ranges positives (les négatives étant des itv non bornés) *)
             |> fun l ->
                 List.fold_left (* We take the max *)
                 (fun (var_max, max) (var,value) ->
@@ -759,7 +758,6 @@ module Lift (D : Domain_T) = struct
     		= fun itv ->
     			match (D.NoneItv.low itv, D.NoneItv.up itv) with
     			| (Some x1, Some x2) ->
-    				(*let a = x1 |> PedraQOracles.coqZToZ |> Scalar.RelInt.toInt |> Coeff.mk1 in *)
     				let b = D.Poly.n_to_coeff x2 in
     				if D.Poly.Coeff.lt b (D.Poly.Coeff.z) then x2 else x1
     			| _ -> Pervasives.failwith "Itv.get_translation_bound"

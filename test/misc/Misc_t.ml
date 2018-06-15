@@ -1,17 +1,18 @@
 open Vpl
 
-  let sublist_ts : T.testT
-  	= let chk (nm, l, b, e, el) = fun state ->
+  let sublist_ts : Test.t
+  	= fun () ->
+    let chk (nm, l, b, e, el) = fun state ->
   			let eq = (fun l l' ->
 		      try List.for_all2 (=) l l'
 		      with Invalid_argument _ -> false)
 		   in
 			let al = Misc.sublist l b e in
 			if eq el al  then
-				T.succeed state
+				Test.succeed state
 			else
 				let e = Printf.sprintf "[%s]"(String.concat ";" (List.map Pervasives.string_of_int l)) in
-				T.fail nm e state
+				Test.fail nm e state
 		in
       let tcs : (string * int list * int * int * int list) list
 	= [
@@ -20,9 +21,8 @@ open Vpl
 	"invalid1", [], 2, -1, [];
 	"invalid3", [0;1;2;3;4], 2, 1, []
       ] in
-      T.suite "sublist" (List.map chk tcs)
+      Test.suite "sublist" (List.map chk tcs)
 
-  let ts : T.testT
-    = [
-    sublist_ts
-  ] |> T.suite "Misc"
+  let ts : Test.t
+    = fun () ->
+    [ sublist_ts () ] |> Test.suite "Misc"

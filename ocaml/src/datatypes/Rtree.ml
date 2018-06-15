@@ -48,7 +48,7 @@ let map (f: 'n -> 'm) (rt0: 'n rtree_t) =
 		_map rt0
 
 let map_cut (f: 'n -> 'm) (nul: 'm -> bool) (rt0: 'n rtree_t) =
-	let cut : 'm rtree_t -> 'm -> 'm rtree_t -> 'm rtree_t 
+	let cut : 'm rtree_t -> 'm -> 'm rtree_t -> 'm rtree_t
 		= fun l m r ->
 		if nul m && l = Nil && r = Nil then
 			Nil
@@ -61,8 +61,8 @@ let map_cut (f: 'n -> 'm) (nul: 'm -> bool) (rt0: 'n rtree_t) =
 		| Sub (l, n, r) -> cut (_map l) (f n) (_map r)
 	in
 	_map rt0
-		
-	
+
+
 let rec fold_rec (f: V.t -> 'a -> 'n -> 'a) (a: 'a) (rt: 'n rtree_t) (v:V.t) : 'a =
 	match rt with
 	| Nil -> a
@@ -75,23 +75,23 @@ let rec fold2_rec (f: V.t -> 'a -> 'n -> 'm -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt
 	match rt1,rt2 with
 	| Nil,_ | _,Nil-> a
 	| Sub (l1, n, r1), Sub (l2,m,r2) -> fold2_rec f (fold2_rec f (f v a n m) l1 l2 (V.XO v)) r1 r2 (V.XI v)
-	
-let rec fold2 (f: V.t -> 'a -> 'n -> 'm -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt2: 'm rtree_t): 'a =
+
+let fold2 (f: V.t -> 'a -> 'n -> 'm -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt2: 'm rtree_t): 'a =
 	fold2_rec f a rt1 rt2 V.XH
 
 let rec fold2_opt_rec (f: V.t -> 'a -> 'n option -> 'm option -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt2: 'm rtree_t) (v:V.t) : 'a =
 	match rt1,rt2 with
 	| Nil, Nil -> f v a None None
-	| Nil, Sub (l2,m,r2) -> 
+	| Nil, Sub (l2,m,r2) ->
 		fold2_opt_rec f (fold2_opt_rec f (f v a None (Some m)) Nil l2 (V.XO v)) Nil r2 (V.XI v)
-	| Sub (l1, n, r1), Nil -> 	
+	| Sub (l1, n, r1), Nil ->
 		fold2_opt_rec f (fold2_opt_rec f (f v a (Some n) None) l1 Nil (V.XO v)) r1 Nil (V.XI v)
-	| Sub (l1, n, r1), Sub (l2,m,r2) -> 
+	| Sub (l1, n, r1), Sub (l2,m,r2) ->
 	fold2_opt_rec f (fold2_opt_rec f (f v a (Some n) (Some m)) l1 l2 (V.XO v)) r1 r2 (V.XI v)
-	
-let rec fold2_opt (f: V.t -> 'a -> 'n option -> 'm option -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt2: 'm rtree_t): 'a =
+
+let fold2_opt (f: V.t -> 'a -> 'n option -> 'm option -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt2: 'm rtree_t): 'a =
 	fold2_opt_rec f a rt1 rt2 V.XH
-	
+
 
 let rec find (f: 'a -> 'b option): 'a t -> (V.t * 'b) option = function
 	| Nil -> None
@@ -108,7 +108,7 @@ let rec find (f: 'a -> 'b option): 'a t -> (V.t * 'b) option = function
 		| Some (v, b) -> Some (V.XI v, b)
 		| None -> None
 
-let rec find2_rec : V.t -> (V.t -> 'm -> 'n -> 'b option) -> 'm t -> 'n t -> (V.t * 'b) option 
+let rec find2_rec : V.t -> (V.t -> 'm -> 'n -> 'b option) -> 'm t -> 'n t -> (V.t * 'b) option
 	= fun v f m n ->
 	match m,n with
 	| Nil,_ | _,Nil -> None
@@ -117,13 +117,13 @@ let rec find2_rec : V.t -> (V.t -> 'm -> 'n -> 'b option) -> 'm t -> 'n t -> (V.
 		| Some b -> Some (v, b)
 		| None ->
 		match find2_rec (V.XO v) f l1 l2 with
-		| Some b as r -> r
-		| None -> 
+		| Some _ as r -> r
+		| None ->
 		match find2_rec (V.XI v) f r1 r2 with
-		| Some b as r -> r
-		| None -> None	
+		| Some _ as r -> r
+		| None -> None
 
-let find2: (V.t -> 'm -> 'n -> 'b option) -> 'm t -> 'n t -> (V.t * 'b) option 
+let find2: (V.t -> 'm -> 'n -> 'b option) -> 'm t -> 'n t -> (V.t * 'b) option
 	= fun f m n ->
 	find2_rec V.XH f m n
 
@@ -141,7 +141,7 @@ let rec findPred pred =
 				| Some (x, n1) -> Some (V.XI x, n1)
 				| None -> None
 
-let rec findPred2_rec : V.t -> ('m -> 'n -> bool) -> 'm t -> 'n t -> (V.t * 'm * 'n) option 
+let rec findPred2_rec : V.t -> ('m -> 'n -> bool) -> 'm t -> 'n t -> (V.t * 'm * 'n) option
 	= fun v pred m n ->
 	match m,n with
 	| Nil,_ | _,Nil -> None
@@ -149,16 +149,16 @@ let rec findPred2_rec : V.t -> ('m -> 'n -> bool) -> 'm t -> 'n t -> (V.t * 'm *
 		if pred m n
 		then Some (v, m, n)
 		else match findPred2_rec (V.XO v) pred l1 l2 with
-			| Some b as r -> r
-			| None -> 
+			| Some _ as r -> r
+			| None ->
 			match findPred2_rec (V.XI v) pred r1 r2 with
-			| Some b as r -> r
-			| None -> None	
+			| Some _ as r -> r
+			| None -> None
 
-let findPred2: ('m -> 'n -> bool) -> 'm t -> 'n t -> (V.t * 'm * 'n) option 
+let findPred2: ('m -> 'n -> bool) -> 'm t -> 'n t -> (V.t * 'm * 'n) option
 	= fun pred m n ->
 	findPred2_rec V.XH pred m n
-												
+
 (* XXX: GC? *)
 let rec mskBuild1 : ('a -> bool) -> bool t -> 'a t -> bool t
 = fun pred m -> function
@@ -212,24 +212,24 @@ let rec merge_rec : V.t -> (V.t -> 'a option -> 'b option -> 'c option) -> 'a t 
 	| Nil, Nil -> Nil
 	| Nil, Sub (vl, vn, vr) -> begin
 		match f v None (Some vn) with
-		| None -> Nil 	
+		| None -> Nil
 		| Some c ->	Sub (merge_rec (V.XO v) f Nil vl, c, merge_rec (V.XI v) f Nil vr)
 		end
 	| Sub (tl, tn, tr), Nil -> begin
 		match f v (Some tn) None with
-		| None -> Nil 	
+		| None -> Nil
 		| Some c ->	Sub (merge_rec (V.XO v) f tl Nil, c, merge_rec (V.XI v) f tr Nil)
 		end
 	| Sub (tl, tn, tr), Sub (vl, vn, vr) -> begin
 		match f v (Some tn) (Some vn) with
-		| None -> Nil 
+		| None -> Nil
 		| Some c ->	Sub (merge_rec (V.XO v) f tl vl, c, merge_rec (V.XI v) f tr vr)
 		end
 
 let merge : (V.t -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
 	= fun f r1 r2 ->
 	merge_rec V.XH f r1 r2
-	
+
 let rec merge3_rec : V.t -> (V.t -> 'a option -> 'b option -> 'c option -> 'res option) -> 'a t -> 'b t -> 'c t -> 'res t
 	= fun v f r1 r2 r3 ->
 	match r1,r2,r3 with
@@ -273,18 +273,18 @@ let rec merge3_rec : V.t -> (V.t -> 'a option -> 'b option -> 'c option -> 'res 
 let merge3 : (V.t -> 'a option -> 'b option -> 'c option -> 'res option) -> 'a t -> 'b t -> 'c t -> 'res t
 	= fun f r1 r2 r3 ->
 	merge3_rec V.XH f r1 r2 r3
-	
+
 let rec for_all2 : ('m option -> 'n option -> bool) -> 'm rtree_t -> 'n rtree_t -> bool
 	= fun f m n ->
 	match m,n with
 	| Nil, Nil -> f None None
-	| Sub (l1,m,r1), Nil-> 
+	| Sub (l1,m,r1), Nil->
 		(f (Some m) None) && (for_all2 f l1 Nil) && (for_all2 f r1 Nil)
-	| Nil, Sub (l2, n, r2) -> 
+	| Nil, Sub (l2, n, r2) ->
 		(f None (Some n)) && (for_all2 f Nil l2) && (for_all2 f Nil r2)
-	| Sub (l1, m, r1), Sub (l2,n,r2) -> 
+	| Sub (l1, m, r1), Sub (l2,n,r2) ->
 		(f (Some m) (Some n)) && (for_all2 f l1 l2) && (for_all2 f r1 r2)
-		
+
 let rec equal : ('a -> 'a -> bool) -> 'a rtree_t -> 'a rtree_t -> bool
 	= fun cmp m1 m2 ->
 	match (m1,m2) with
@@ -296,4 +296,4 @@ let rec equal : ('a -> 'a -> bool) -> 'a rtree_t -> 'a rtree_t -> bool
 let rec size : 'a option rtree_t -> int
 	= function
 	| Nil -> 0
-	| Sub (l, m, r) -> (match m with Some _ -> 1 | None -> 0) + (size l) + (size r) 
+	| Sub (l, m, r) -> (match m with Some _ -> 1 | None -> 0) + (size l) + (size r)

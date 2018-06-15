@@ -1,15 +1,15 @@
 module type Type = sig
 	module Vec : Vector.Type
 	module V = Vec.V
-	
+
 	type typT = Param | Var | Slack
 
 	module Usr : sig
 		type t = typT * V.t
-		
+
 		val equal : t -> t -> bool
 	end
-	
+
 	type t
 
 	val empty : t
@@ -19,14 +19,14 @@ module type Type = sig
 
 	(** [alloc t x m] allocates [x] in the next available slot. *)
 	val alloc : typT -> V.t -> t -> t
-	
+
 	(** [allocAt t x i m] states that [x] is to be found at column
 	[i] in [m].  If [x] is already allocated or if there is already
 	something at this column, then [Invalid_argument] is raised.
 	If there is a gap between the last allocated index and [i],
 	[Invalid_argument] is raised as well. *)
 	val allocAt : typT -> V.t -> int -> t -> t
-	
+
 	(** [mkVar l m] treats all the elements of [l] as variables.
 	They are allocated in [m] consecutively and starting from 0.
 	If variables have already been allocated in [m], the function
@@ -40,24 +40,24 @@ module type Type = sig
 	The allocation of VPL variables coincidentally happens to match
 	that performed by [Context]. *)
 	val mkParam : V.t list -> t -> t
-	
+
 	(** [to_index m t x] returns the column which has been assigned
 	to variable or parameter (depending on [t]) [x].  If [x] is
 	not assigned to anything, then [Invalid_argument] is raised. *)
 	val to_index : t -> typT -> V.t -> int
-	
+
 	(** [to_user m t i] returns the user-provided variable, slack or
 	parameter (depending on [t]) of the given index. *)
 	val to_user : t -> typT -> int -> V.t * typT
-	
+
 	(** [to_vpl m i] returns the VPL representation of the
 	parameter at index [i]. *)
 	val to_vpl : t -> int -> V.t
-	
+
 	(** [vpl_max m] returns a [V.t] such that all parameters
 	are assigned strictly smaller [V.t]'s. *)
 	val vpl_max : t -> V.t
-	
+
 	(** [allocSlackShift x m] allocates [x] at index [0], shifting
 	all the variables and slack accordingly.  If [x] is already allocated,
 	[Invalid_argument] is raised. *)
@@ -67,18 +67,18 @@ module type Type = sig
 	variables as needed.  If [x] isn't already allocated, then
 	[Invalid_argument] is raised. *)
 	val freeSlackShift : V.t -> t -> t
-	
+
 end
 
 module Naming (Vec : Vector.Type) = struct
 	module Vec = Vec
 	module V = Vec.V
-	
+
 	type typT = Param | Var | Slack
-	
+
 	module Usr = struct
 		type t = typT * V.t
-		
+
 		let compareTyp : typT -> typT -> int
 			= fun t1 t2 ->
 			match (t1,t2) with
@@ -88,29 +88,29 @@ module Naming (Vec : Vector.Type) = struct
 			| Var, _ -> 1
 			| Param, Var -> -1
 			| Param, Slack -> 1
-			| Slack, Var -> -1 
-			| Slack, Param -> -1 
-			
+			| Slack, Var -> -1
+			| Slack, Param -> -1
+
 		let compare : t -> t -> int
 			= fun (t1,v1) (t2,v2) ->
 			let r = V.cmp v1 v2 in
 			if r = 0
 			then compareTyp t1 t2
 			else r
-			
+
 		let equal : t -> t -> bool
 			= fun (t1,u1) (t2,u2) -> u1 = u2 && t1 = t2
-	
+
 	end
-	
+
 	module UserMap = Map.Make (Usr)
-	
+
 	module PrivMap = Map.Make (struct type t = int let compare = Pervasives.compare end)
-	
+
 	type paramT = V.t
 	type varT = V.t
 	type slackT = V.t
-	
+
 	type t = {
 		nxtIdVar : int;
 		nxtIdParam : int;
@@ -133,7 +133,7 @@ module Naming (Vec : Vector.Type) = struct
 	  varMap = PrivMap.empty;
 	  paramMap = PrivMap.empty;
 	}
-	
+
 	let equal : t -> t -> bool
 		= fun m m' ->
 	  	UserMap.equal (=) m.usrMap m'.usrMap
@@ -144,13 +144,13 @@ module Naming (Vec : Vector.Type) = struct
 	  	&& V.equal m.nxtParam m'.nxtParam
 	  	&& V.equal m.nxtVar m'.nxtVar
 		&& V.equal m.nxtSlack m'.nxtSlack
-	
+
 	let new_max : V.t -> V.t -> V.t
 		= fun v1 v2 ->
 		if V.cmp v1 v2 > 0
 		then V.next v1
 		else V.next v2
-	
+
 	let alloc : typT -> V.t -> t -> t
 		= let allocParam : V.t -> t -> t
 			= fun x m ->
@@ -182,7 +182,7 @@ module Naming (Vec : Vector.Type) = struct
 			nxtSlack = new_max m.nxtSlack x
 		   }
 		in
-		fun t x m -> 
+		fun t x m ->
 		if UserMap.mem (t,x) m.usrMap
 		then Pervasives.invalid_arg "Naming.alloc"
 		else
@@ -190,10 +190,10 @@ module Naming (Vec : Vector.Type) = struct
 		   | Param -> allocParam x m
 		   | Var -> allocV x m
 			| Slack -> allocSlack x m
-	
+
 	let allocAt : typT -> V.t -> int -> t -> t
 		= fun t x i m ->
-	  	if UserMap.mem (t,x) m.usrMap 
+	  	if UserMap.mem (t,x) m.usrMap
 	  	 ||
 			(t = Var && (PrivMap.mem i m.varMap) )
 		 ||
@@ -210,15 +210,15 @@ module Naming (Vec : Vector.Type) = struct
 		then Pervasives.invalid_arg "Naming.allocSlackShift"
 		else
 			{m with
-		   usrMap = UserMap.mapi 
-		   	(fun (t,v) i -> if t = Var || t = Slack
+		   usrMap = UserMap.mapi
+		   	(fun (t,_) i -> if t = Var || t = Slack
 		   		then i+1
 		   		else i)
 		   	m.usrMap
 				|> UserMap.add (Slack,x) 0
 			;
-			varMap = PrivMap.fold 
-				(fun i x' -> PrivMap.add (i + 1) x') 
+			varMap = PrivMap.fold
+				(fun i x' -> PrivMap.add (i + 1) x')
 				m.varMap
 				(PrivMap.singleton 0 (Slack,x))
 			;
@@ -233,12 +233,12 @@ module Naming (Vec : Vector.Type) = struct
 			let id = UserMap.find (Slack,x) m.usrMap in
 			{m with
 			usrMap = UserMap.mapi
-				(fun (t,v) id' -> if t = Var || t = Slack && id' > id 
-					then id' - 1 
-					else id') 
+				(fun (t,_) id' -> if t = Var || t = Slack && id' > id
+					then id' - 1
+					else id')
 				m.usrMap
 	  			|> UserMap.remove (Slack,x)
-	  		;	
+	  		;
 			varMap = PrivMap.fold
 		 		(fun i x m' ->
 		 		if i = id then m'
@@ -249,13 +249,13 @@ module Naming (Vec : Vector.Type) = struct
 		 	;
 			nxtIdVar = m.nxtIdVar - 1;
 	   }
-	
+
 	let mkVar : V.t list -> t -> t
   		= fun l m ->
   		if V.cmp m.nxtVar V.u <> 0
   		then Pervasives.invalid_arg "Naming.mkVar"
   		else List.fold_left (fun m x -> alloc Var x m) m l
-	
+
 	let mkParam : V.t list -> t -> t
   		= fun l m ->
   		if V.cmp m.nxtParam V.u <> 0
@@ -279,23 +279,23 @@ module Naming (Vec : Vector.Type) = struct
      			if t = Param then (v,t)
      			else Pervasives.failwith "Naming.to_user:param"
      		else Pervasives.invalid_arg "Naming.to_user"
-     		
+
 	let user_to_string: typT -> V.t -> string
   		= fun t u ->
   		(match t with Param -> "p" | Var -> "d" | Slack -> "s") ^ V.to_string u
 
 	let to_string: t -> typT -> int -> string
   		= fun m t i ->
-  		try 
-  			let (v,t) = to_user m t i 
+  		try
+  			let (v,t) = to_user m t i
   			in user_to_string t v
   		with Invalid_argument _ -> "??"
 
 	let to_index: t -> typT -> V.t -> int
   		= fun m t x ->
-  		try 
+  		try
   			UserMap.find (t,x) m.usrMap
-  		with Not_found -> 
+  		with Not_found ->
   			Pervasives.failwith "Naming.to_index"
 
 (*
@@ -322,8 +322,8 @@ module Naming (Vec : Vector.Type) = struct
   		try
   			PrivMap.find i m.paramMap
   			|> Pervasives.snd
-  		with Not_found -> 
-  			Pervasives.failwith "Naming.to_index" 
+  		with Not_found ->
+  			Pervasives.failwith "Naming.to_index"
 
 	let vpl_max : t -> V.t
   		= fun m -> m.nxtParam

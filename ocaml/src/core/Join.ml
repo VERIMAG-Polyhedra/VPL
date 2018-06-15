@@ -103,7 +103,7 @@ module Build (Min : Min.Type) = struct
 		@
 		(* Si la contrainte concerne les constantes : -1, sinon 0*)
 		(match param with
-		| Some param -> [Scalar.Rat.z]
+		| Some _ -> [Scalar.Rat.z]
 		| None -> [Scalar.Rat.negU])
 		@
 		(List.map
@@ -115,7 +115,7 @@ module Build (Min : Min.Type) = struct
 		@
 		(* Si la contrainte concerne les constantes : 1, sinon 0*)
 		(match param with
-		| Some param -> [Scalar.Rat.z]
+		| Some _ -> [Scalar.Rat.z]
 		| None -> [Scalar.Rat.u])
 		@
 		[Scalar.Rat.z] (* constante de l'égalité*)
@@ -234,7 +234,7 @@ module Build (Min : Min.Type) = struct
 			List.fold_left
 				(fun r_cert (col,q) -> try
 					match PLP.MapV.find col map with
-					| (c, C1 cert) -> factory1.Cert.add r_cert (factory1.Cert.mul q cert)
+					| (_, C1 cert) -> factory1.Cert.add r_cert (factory1.Cert.mul q cert)
 					| (_,_) -> Pervasives.failwith "Join.get_join_cert.get_cert_p1"
 					with Not_found -> r_cert)
 				factory1.Cert.top
@@ -245,7 +245,7 @@ module Build (Min : Min.Type) = struct
 			List.fold_left
 				(fun r_cert (col,q) -> try
 					match PLP.MapV.find col map with
-					| (c, C2 cert) -> factory2.Cert.add r_cert (factory2.Cert.mul q cert)
+					| (_, C2 cert) -> factory2.Cert.add r_cert (factory2.Cert.mul q cert)
 					| (_,_) -> Pervasives.failwith "Join.get_join_cert.get_cert_p1"
 					with Not_found -> r_cert)
 				factory2.Cert.top
