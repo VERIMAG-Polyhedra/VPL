@@ -16,7 +16,7 @@ module Translation = struct
 		| Add (x1,x2) -> Poly.add (term_to_poly x1) (term_to_poly x2)
   		| Opp x -> Poly.mul (Poly.cste Coeff.negU) (term_to_poly x)
   		| Mul (x1,x2) -> Poly.mul (term_to_poly x1) (term_to_poly x2)
-  		| Annot (annot, x) -> term_to_poly x)
+  		| Annot (_, x) -> term_to_poly x)
 
   	let poly_to_term : Poly.t -> ASTerm.BasicQTerm.term
   		= fun pol ->

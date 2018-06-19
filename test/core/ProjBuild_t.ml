@@ -3,13 +3,13 @@ open Vpl
 module Cs = Cstr.Rat.Positive
 module Var = Var.Positive
 
-module Test (Min : Min.Type) = struct
-	
+module Make_Tests (Min : Min.Type) = struct
+
 	module Proj_ = Proj.Proj(Min)
 	module ProjBuild = Proj_.Build
 	module Objective = Proj_.PLP.Objective
 	module ParamCoeff = Proj_.PLP.ParamCoeff
-	
+
 	let var = Var.fromInt
 	let x = var 1 and y = var 2 and z = var 3
 
@@ -19,11 +19,12 @@ module Test (Min : Min.Type) = struct
 	module Norm
 	  = struct
 
-		 let buildTs : T.testT
-		   = let chk : string * Var.t list * Cs.t list * Tableau.Vector.t -> T.stateT -> T.stateT
+		 let buildTs : Test.t
+		  = fun () ->
+          let chk : string * Var.t list * Cs.t list * Tableau.Vector.t -> Test.stateT -> Test.stateT
 		  = fun (nm, xl, l, ev) state ->
 		  let av = ProjBuild.Norm.build (Var.Set.of_list xl) l in
-		  T.equals nm Tableau.Vector.to_string Tableau.Vector.equal ev av state
+		  Test.equals nm Tableau.Vector.to_string Tableau.Vector.equal ev av state
 		in
 		[
 		  "unbounded", [y],
@@ -31,17 +32,18 @@ module Test (Min : Min.Type) = struct
 		  [Q.of_ints ~-1 2; Q.of_ints ~-5 2; Q.minus_one]
 		]
 		|> List.map chk
-		|> T.suite "build"
+		|> Test.suite "build"
 
-		 let ts : T.testT
-		   = [
-	 	buildTs
-		   ] |> T.suite "Norm"
+		 let ts : Test.t
+		   = fun () -> [
+	 	buildTs()
+		   ] |> Test.suite "Norm"
 
 	end
 
-	let buildProjConsTs : T.testT
-	  = let eq : Tableau.Vector.t list -> Tableau.Vector.t list -> bool
+	let buildProjConsTs : Test.t
+	  = fun () ->
+      let eq : Tableau.Vector.t list -> Tableau.Vector.t list -> bool
 		   = fun l l' ->
 		   if List.length l <> List.length l' then false
 		   else List.for_all2 Tableau.Vector.equal l l'
@@ -51,10 +53,10 @@ module Test (Min : Min.Type) = struct
 		   List.map Tableau.Vector.to_string l
 		   |> String.concat "\n"
 		 in
-		 let chk : string * Var.t list * Cs.t list * Tableau.Vector.t list -> T.stateT -> T.stateT
+		 let chk : string * Var.t list * Cs.t list * Tableau.Vector.t list -> Test.stateT -> Test.stateT
 		   = fun (nm, xs, l, el) state ->
 		   let al = ProjBuild.buildProjCons xs l in
-		   T.equals nm pr eq el al state
+		   Test.equals nm pr eq el al state
 		 in
 		 [
 		   "sas12", [z], [
@@ -71,13 +73,14 @@ module Test (Min : Min.Type) = struct
 		   ]
 		 ]
 		 |> List.map chk
-		 |> T.suite "buildProjCons"
+		 |> Test.suite "buildProjCons"
 
-	let buildObjTs : T.testT
-	  = let chk : string * Var.t list * Cs.t list * Objective.t -> T.stateT -> T.stateT
+	let buildObjTs : Test.t
+	  = fun () ->
+      let chk : string * Var.t list * Cs.t list * Objective.t -> Test.stateT -> Test.stateT
 		   = fun (nm, xs, l, eo) state ->
 		   let ao = ProjBuild.buildObj false xs l in
-		   T.equals nm Objective.to_string Objective.equal eo ao state
+		   Test.equals nm Objective.to_string Objective.equal eo ao state
 		 in
 		 [
 		   "sas12", [x; y], [
@@ -99,53 +102,54 @@ module Test (Min : Min.Type) = struct
 				 ] (ParamCoeff.mkSparse 2 [] Q.zero)
 		 ]
 		 |> List.map chk
-		 |> T.suite "buildObj"
+		 |> Test.suite "buildObj"
 
-	let ts : T.testT
-	  = [
-	  Norm.ts;
-	  buildProjConsTs;
-	  buildObjTs
-	] |> T.suite Min.name
+	let ts : Test.t
+	  = fun () -> [
+	  Norm.ts();
+	  buildProjConsTs();
+	  buildObjTs()
+	] |> Test.suite Min.name
 end
 
 module Raytracing = struct
 	module Glpk = struct
 		module Rat = struct
 			module Min = Min.Glpk(Vector.Rat.Positive)
-			include Test(Min)
+			include Make_Tests(Min)
 		end
 
 		module Float = struct
 			module Min = Min.Glpk(Vector.Float.Positive)
-			include Test(Min)
+			include Make_Tests(Min)
 		end
 
 		module Symbolic = struct
 			module Min = Min.Glpk(Vector.Symbolic.Positive)
-			include Test(Min)
+			include Make_Tests(Min)
 		end
 	end
 	module Splx = struct
 		module Rat = struct
 			module Min = Min.Splx(Vector.Rat.Positive)
-			include Test(Min)
+			include Make_Tests(Min)
 		end
 
 		module Float = struct
 			module Min = Min.Splx(Vector.Float.Positive)
-			include Test(Min)
+			include Make_Tests(Min)
 		end
 
 		module Symbolic = struct
 			module Min = Min.Splx(Vector.Symbolic.Positive)
-			include Test(Min)
+			include Make_Tests(Min)
 		end
 	end
 end
 
-let ts : T.testT
-	= (
+let ts : Test.t
+	= fun () ->
+    List.map Test.run (
 		(if Wrapper.with_glpk then [
 			Raytracing.Glpk.Rat.ts;
 			Raytracing.Glpk.Float.ts;
@@ -153,4 +157,4 @@ let ts : T.testT
 		] else [])
 	@
 	[ Raytracing.Splx.Rat.ts; Raytracing.Splx.Float.ts; Raytracing.Splx.Symbolic.ts; ])
-	|> T.suite "ProjBuild"
+	|> Test.suite "ProjBuild"

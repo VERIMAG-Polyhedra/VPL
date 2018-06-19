@@ -123,10 +123,10 @@ module PLP(Minimization : Min.Type) = struct
 			let regs = MapV.add id reg plp.regs in
 			let new_points = extract_points reg id in
 			match point with
-			| ExplorationPoint.Point vec ->
+			| ExplorationPoint.Point _ as point ->
 				let todo = new_points @ (Add_Region.remove_point point plp.todo) in
 				{regs = regs ; todo = todo}
-			| ExplorationPoint.Direction (id, (cstr, pointToExplore)) as point ->
+			| ExplorationPoint.Direction (_, (cstr, _)) as point ->
 				let todo = match origin_reg with
 					| Some origin_reg ->
 						if Add_Region.should_explore_again origin_reg cstr reg

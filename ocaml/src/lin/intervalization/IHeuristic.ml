@@ -17,7 +17,7 @@ module Lift (T : Type) = struct
         -> (prophecy * P.V.t MapMonomial.t * (AnnotedVar.t list) MapMonomial.t * P.t)
 
 	let rec default : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun _ env mode mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.Default p -> begin
             match P.data p with
@@ -45,7 +45,7 @@ module Lift (T : Type) = struct
 		| _ -> Pervasives.failwith "Heuristic.default"
 
 	let varCte : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p _ _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.VarCte (mono,v) ->
             let (m,_) = M.data mono in
@@ -59,14 +59,14 @@ module Lift (T : Type) = struct
 		| _ -> Pervasives.failwith "Heuristic.varCte"
 
 	let multiplicity : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p _ _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.Multiplicity(l,v) ->
     		let mapNKeep' = List.fold_left
                 (fun map (mono,i) ->
                     let (m,_) = M.data mono in
                     let l' = try MapMonomial.find m map with Not_found -> [] in
-                    let l'' =  List.map (fun j -> AnnotedVar.Var v) (Misc.range 0 i) in
+                    let l'' =  List.map (fun _ -> AnnotedVar.Var v) (Misc.range 0 i) in
                 MapMonomial.add m (l'' @ l') map)
                 mapNKeep
     		l
@@ -74,7 +74,7 @@ module Lift (T : Type) = struct
 		| _ -> Pervasives.failwith "Heuristic.multiplicity"
 
 	let unboundedVarmode : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p _ _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.UnboundedVarmode(mono,v) ->
             let (m,_) = M.data mono in
@@ -83,28 +83,28 @@ module Lift (T : Type) = struct
 		| _ -> Pervasives.failwith "Heuristic.unboundedVarmode"
 
 	let greatestItv : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p _ _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.GreatestItv(mono,v) ->
             ([], MapMonomial.add (M.data mono |> fst) v mapKeep, mapNKeep, p)
 		| _ -> Pervasives.failwith "Heuristic.greatestItv"
 
 	let unboundedVar : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p _ _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.UnboundedVar(mono,v) ->
             ([], MapMonomial.add (M.data mono |> fst) v mapKeep, mapNKeep, p)
 		| _ -> Pervasives.failwith "Heuristic.unboundedVar"
 
 	let linearMonomial : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p _ _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.LinearMonomial (mono,v) ->
             ([], MapMonomial.add (M.data mono |> fst) v mapKeep, mapNKeep, p)
 		| _ -> Pervasives.failwith "Heuristic.linearMonomial"
 
 	let centerZero : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p env _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.CenterZero mono ->
             let (m,_) = M.data mono in
@@ -130,7 +130,7 @@ module Lift (T : Type) = struct
 		| _ -> Pervasives.failwith "Heuristic.centerZero"
 
 	let translation : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p env _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.Translation mono ->
             let (m,_) = M.data mono in
@@ -151,14 +151,14 @@ module Lift (T : Type) = struct
 		| _ -> Pervasives.failwith "Heuristic.screwed"
 
 	let monomialCte : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p _ _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.MonomialCte mono ->
 			([Term.of_monomial mono], mapKeep, mapNKeep, P.sub_monomial p (M.data mono |> fst))
 		| _ -> Pervasives.failwith "Heuristic.monomialCte"
 
 	let firstUnbounded : t
-		= fun p env mode mapKeep mapNKeep pat ->
+		= fun p _ _ mapKeep mapNKeep pat ->
 		match pat with
 		| Pattern.FirstUnbounded (mono,v) ->
             ([], MapMonomial.add (M.data mono |> fst) v mapKeep, mapNKeep, p)

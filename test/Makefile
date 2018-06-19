@@ -1,8 +1,8 @@
-TEST = -I core -I datatypes -I lin -I plp -I coq_extracted
+TEST = -I core -I datatypes -I lin -I plp -I coq_extracted -I misc
 
 INCLUDES = $(TEST)
 
-USE_VPL = 
+USE_VPL =
 #-cflags '-I ../ocaml/_build/src' -lflags '-I ../ocaml/_build/src vpl.cmxa'
 
 OCB_FLAGS = -use-ocamlfind $(INCLUDES)
@@ -16,8 +16,8 @@ clean:
 	$(OCB) -clean
 
 check:
-	$(OCB) All_t.native
-	./_build/All_t.native
+	$(OCB) Run_tests.byte
+	./_build/Run_tests.byte
 
 coq_update:
 	$(MAKE) -C ../coq DemoExtractTests.vo

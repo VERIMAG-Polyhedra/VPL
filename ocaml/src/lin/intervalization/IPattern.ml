@@ -70,7 +70,7 @@ module Lift (T : Type) = struct
 
 	(* Marque une variable 'to_keep' *)
 	let unboundedVar : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p env _ mapKeep mapNKeep ->
 		try let m = List.find
 			(fun mono ->
                 let (m',_) = M.data mono in
@@ -102,9 +102,9 @@ module Lift (T : Type) = struct
 
 	(* Marque une variable 'to_interv' *)
     let unboundedVarmode : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p env mode _ mapNKeep ->
 		match mode with
-		| BOTH -> None
+		| DomainInterfaces.BOTH -> None
 		| _ -> begin try
 				let mono = List.find (* premier cas *)
     				(fun mono ->
@@ -123,9 +123,9 @@ module Lift (T : Type) = struct
                         in
                         let mono' = M.mk m'' c' in
     					match mode with
-    					| UP -> not (Misc.sign_changing mono' v env)
-    					| LOW -> Misc.sign_changing mono' v env
-    					| BOTH -> Pervasives.failwith "IPattern.unboundedVarmode"
+    					| DomainInterfaces.UP -> not (Misc.sign_changing mono' v env)
+    					| DomainInterfaces.LOW -> Misc.sign_changing mono' v env
+    					| DomainInterfaces.BOTH -> Pervasives.failwith "IPattern.unboundedVarmode"
                     )
     				(P.data p)
 				in
@@ -157,9 +157,9 @@ module Lift (T : Type) = struct
                     in
                     let mono' = M.mk m'' c' in
 					match mode with
-					| UP -> Misc.sign_changing mono' v env
-					| LOW -> not (Misc.sign_changing mono' v env)
-					| BOTH -> Pervasives.failwith "IPattern.unboundedVarmode"
+					| DomainInterfaces.UP -> Misc.sign_changing mono' v env
+					| DomainInterfaces.LOW -> not (Misc.sign_changing mono' v env)
+					| DomainInterfaces.BOTH -> Pervasives.failwith "IPattern.unboundedVarmode"
                 )
 				(P.data p)
 				in
@@ -178,7 +178,7 @@ module Lift (T : Type) = struct
 
 	(* Marque une variable 'to_keep' *)
 	let greatestItv : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p env _ mapKeep mapNKeep ->
 		try
             let mono = List.find
 			(fun mono ->
@@ -201,7 +201,7 @@ module Lift (T : Type) = struct
 
 	(* Marque une variable 'to_interv' *)
 	let varCte : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p env _ _ mapNKeep ->
 		try
             let mono = List.find
                 (fun mono ->
@@ -240,7 +240,7 @@ module Lift (T : Type) = struct
                 (fun i mono -> i + (get_monomial_multiplicity (M.data mono |> fst) v))
                 0 (P.data p)
 		in
-        fun p env mode mapKeep mapNKeep ->
+        fun p _ _ _ mapNKeep ->
 		try
             let v =
     			let p' = List.map
@@ -253,11 +253,11 @@ module Lift (T : Type) = struct
     			List.map
                     (fun v -> (v,get_multiplicity p' v))
                     (p' |> P.get_vars)
-    			|> List.fast_sort (fun (v1,i1) (v2,i2) -> Pervasives.compare i1 i2)
+    			|> List.fast_sort (fun (_,i1) (_,i2) -> Pervasives.compare i1 i2)
     			|> List.rev
     			|> fun l -> match l with
     				| [] | [_] -> Pervasives.raise Not_found
-    				| (v1,i1) :: (v2,i2) :: tl -> if i1 > i2 then v1 else Pervasives.raise Not_found
+    				| (v1,i1) :: (_,i2) :: _ -> if i1 > i2 then v1 else Pervasives.raise Not_found
             in
             let l = List.map
                 (fun mono ->
@@ -272,7 +272,7 @@ module Lift (T : Type) = struct
 
 	(* Marque une variable 'to_keep' *)
 	let linearMonomial : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p _ _ mapKeep mapNKeep ->
 		try
             let mono = List.find
                 (fun mono ->
@@ -291,7 +291,7 @@ module Lift (T : Type) = struct
 	(* Supprime un monôme qui est constant
 		A utiliser de paire avec centerZero qui risque de générer des monômes constants *)
 	let monomialCte : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p _ _ _ _ ->
 		try
             let mono = (List.find M.isConstant (P.data p))
 			in Some (MonomialCte mono)
@@ -299,7 +299,7 @@ module Lift (T : Type) = struct
 
 	(* Réécrit le polynôme *)
 	let centerZero : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p _ _ mapKeep _ ->
 		try
             let mono =
                 List.find
@@ -310,7 +310,7 @@ module Lift (T : Type) = struct
 
 	(* Réécrit le polynôme *)
 	let translation : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p env _ mapKeep _ ->
 		try
             let mono = List.find
 			(fun mono ->
@@ -331,7 +331,7 @@ module Lift (T : Type) = struct
 		KILL THEM ALL!!
 		Utile pour gagner du temps *)
 	let screwed : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p env _ mapKeep mapNKeep ->
 		if List.exists
 			(fun mono ->
                 let (m',_) = M.data mono in
@@ -345,7 +345,7 @@ module Lift (T : Type) = struct
 
 	(* Marque une variable 'to_keep' *)
 	let firstUnbounded : matcher
-		= fun p env mode mapKeep mapNKeep ->
+		= fun p env _ mapKeep mapNKeep ->
 		try
             let mono = List.find
                 (fun mono ->

@@ -249,82 +249,82 @@ termexclimationpt_term_attribute64:
 | attribute { (pd_attribute $1, ($1)::[]) }
 
 termexclimationpt_term_attribute64:
-| attribute termexclimationpt_term_attribute64 { let (p, ( l1 )) = $2 in (pd_attribute $1, ($1)::(l1)) }
+| attribute termexclimationpt_term_attribute64 { let (_, ( l1 )) = $2 in (pd_attribute $1, ($1)::(l1)) }
 
 termexiststerm_term_sortedvar62:
 | sortedvar { (pd_sortedvar $1, ($1)::[]) }
 
 termexiststerm_term_sortedvar62:
-| sortedvar termexiststerm_term_sortedvar62 { let (p, ( l1 )) = $2 in (pd_sortedvar $1, ($1)::(l1)) }
+| sortedvar termexiststerm_term_sortedvar62 { let (_, ( l1 )) = $2 in (pd_sortedvar $1, ($1)::(l1)) }
 
 termforallterm_term_sortedvar60:
 | sortedvar { (pd_sortedvar $1, ($1)::[]) }
 
 termforallterm_term_sortedvar60:
-| sortedvar termforallterm_term_sortedvar60 { let (p, ( l1 )) = $2 in (pd_sortedvar $1, ($1)::(l1)) }
+| sortedvar termforallterm_term_sortedvar60 { let (_, ( l1 )) = $2 in (pd_sortedvar $1, ($1)::(l1)) }
 
 termletterm_term_varbinding58:
 | varbinding { (pd_varbinding $1, ($1)::[]) }
 
 termletterm_term_varbinding58:
-| varbinding termletterm_term_varbinding58 { let (p, ( l1 )) = $2 in (pd_varbinding $1, ($1)::(l1)) }
+| varbinding termletterm_term_varbinding58 { let (_, ( l1 )) = $2 in (pd_varbinding $1, ($1)::(l1)) }
 
 termqualidterm_term_term56:
 | term { (pd_term $1, ($1)::[]) }
 
 termqualidterm_term_term56:
-| term termqualidterm_term_term56 { let (p, ( l1 )) = $2 in (pd_term $1, ($1)::(l1)) }
+| term termqualidterm_term_term56 { let (_, ( l1 )) = $2 in (pd_term $1, ($1)::(l1)) }
 
 sortidsortmulti_sort_sort44:
 | sort { (pd_sort $1, ($1)::[]) }
 
 sortidsortmulti_sort_sort44:
-| sort sortidsortmulti_sort_sort44 { let (p, ( l1 )) = $2 in (pd_sort $1, ($1)::(l1)) }
+| sort sortidsortmulti_sort_sort44 { let (_, ( l1 )) = $2 in (pd_sort $1, ($1)::(l1)) }
 
 sexprinparen_sexpr_sexpr41:
 | cur_position { ($1, []) }
 
 sexprinparen_sexpr_sexpr41:
-| sexpr sexprinparen_sexpr_sexpr41 { let (p, ( l1 )) = $2 in (pd_sexpr $1, ($1)::(l1)) }
+| sexpr sexprinparen_sexpr_sexpr41 { let (_, ( l1 )) = $2 in (pd_sexpr $1, ($1)::(l1)) }
 
 idunderscoresymnum_identifier_numeral33:
 | cur_position NUMERAL { ($1, ($2)::[]) }
 
 idunderscoresymnum_identifier_numeral33:
-| cur_position NUMERAL idunderscoresymnum_identifier_numeral33 { let (p, ( l1 )) = $3 in ($1, ($2)::(l1)) }
+| cur_position NUMERAL idunderscoresymnum_identifier_numeral33 { let (_, ( l1 )) = $3 in ($1, ($2)::(l1)) }
 
 commands_commands_command30:
 | cur_position { ($1, []) }
 
 commands_commands_command30:
-| command commands_commands_command30 { let (p, ( l1 )) = $2 in (pd_command $1, ($1)::(l1)) }
+| command commands_commands_command30 { let (_, ( l1 )) = $2 in (pd_command $1, ($1)::(l1)) }
 
 commandgetvalue_command_term24:
 | term { (pd_term $1, ($1)::[]) }
 
 commandgetvalue_command_term24:
-| term commandgetvalue_command_term24 { let (p, ( l1 )) = $2 in (pd_term $1, ($1)::(l1)) }
+| term commandgetvalue_command_term24 { let (_, ( l1 )) = $2 in (pd_term $1, ($1)::(l1)) }
 
 commanddefinefun_command_sortedvar15:
 | cur_position { ($1, []) }
 
 commanddefinefun_command_sortedvar15:
-| sortedvar commanddefinefun_command_sortedvar15 { let (p, ( l1 )) = $2 in (pd_sortedvar $1, ($1)::(l1)) }
+| sortedvar commanddefinefun_command_sortedvar15 { let (_, ( l1 )) = $2 in (pd_sortedvar $1, ($1)::(l1)) }
 
 commanddeclarefun_command_sort13:
 | cur_position { ($1, []) }
 
 commanddeclarefun_command_sort13:
-| sort commanddeclarefun_command_sort13 { let (p, ( l1 )) = $2 in (pd_sort $1, ($1)::(l1)) }
+| sort commanddeclarefun_command_sort13 { let (_, ( l1 )) = $2 in (pd_sort $1, ($1)::(l1)) }
 
 commanddefinesort_command_symbol11:
 | cur_position { ($1, []) }
 
 commanddefinesort_command_symbol11:
-| symbol commanddefinesort_command_symbol11 { let (p, ( l1 )) = $2 in (pd_symbol $1, ($1)::(l1)) }
+| symbol commanddefinesort_command_symbol11 { let (_, ( l1 )) = $2 in (pd_symbol $1, ($1)::(l1)) }
 
 attributevalsexpr_attributevalue_sexpr5:
 | cur_position { ($1, []) }
 
 attributevalsexpr_attributevalue_sexpr5:
-| sexpr attributevalsexpr_attributevalue_sexpr5 { let (p, ( l1 )) = $2 in (pd_sexpr $1, ($1)::(l1)) }
+| sexpr attributevalsexpr_attributevalue_sexpr5 { let (_, ( l1 )) = $2 in (pd_sexpr $1, ($1)::(l1)) }

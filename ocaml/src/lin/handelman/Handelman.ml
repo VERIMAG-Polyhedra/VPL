@@ -59,7 +59,7 @@ module Handelman (Minimization : Min.Type) = struct
 				(v,config)
 
 		let init_and_exec : 'c HPol.t ->  config -> PSplx.t -> (PSplx.t -> 'c) -> t option
-			= fun ph config sx get_cert ->
+			= fun ph config sx _ ->
 			let (point,config) = choose_init_point ph config in
 			if InitSx.init point config sx
 			then
@@ -174,7 +174,7 @@ module Handelman (Minimization : Min.Type) = struct
 			 fun n l a ->
 			 obj_buildOfPoly (List.sort (fun (i, _) (i', _) -> Pervasives.compare i i') l |> fill n 0) a
 
-		let rec obj_of_poly : Poly.t -> Poly.V.t list -> Obj.t * Naming.t
+		let obj_of_poly : Poly.t -> Poly.V.t list -> Obj.t * Naming.t
 		  = fun p l ->
 		  let lin = List.map (fun x -> Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x])) l in
 		  let cst = Poly.sub p
@@ -227,7 +227,7 @@ module Handelman (Minimization : Min.Type) = struct
 			= fun p variables ->
 			match p with
 			| [] -> []
-			| (vlist,coeff) :: tail -> let mlist = get_non_linear_monomials_rec tail variables in
+			| (vlist,_) :: tail -> let mlist = get_non_linear_monomials_rec tail variables in
 				let vlist2 = List.filter (fun x -> List.mem x variables) vlist in
 					if not (List.mem (Poly.MonomialBasis.mk vlist2) mlist) && List.length vlist2 > 1
 						then (Poly.MonomialBasis.mk vlist2) :: mlist
@@ -409,7 +409,7 @@ module Handelman (Minimization : Min.Type) = struct
 		fun cstrs his cert ->
 		let iCmp_ins = iCmp cstrs his in
 		List.fold_left
-			(fun cmp (i,q) -> Cs.cmpAdd cmp (iCmp_ins i))
+			(fun cmp (i,_) -> Cs.cmpAdd cmp (iCmp_ins i))
 			Cstr.Le
 			cert
 

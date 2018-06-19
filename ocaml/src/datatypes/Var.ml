@@ -226,8 +226,8 @@ module String = struct
 		then Pervasives.invalid_arg "Var.fromInt"
 		else "x" ^ (string_of_int x)
 
-	let toPos x = Pervasives.failwith "Var.String.toPos: unimplemented"
-	let fromPos x = Pervasives.failwith "Var.String.fromPos: unimplemented"
+	let toPos _ = Pervasives.failwith "Var.String.toPos: unimplemented"
+	let fromPos _ = Pervasives.failwith "Var.String.fromPos: unimplemented"
 
 	let to_string x = x
 
@@ -236,9 +236,9 @@ module String = struct
 
 	let plp_print = to_string
 
-	let fromLeft x = Pervasives.failwith "Var.String.fromLeft : uninplemented"
+	let fromLeft _ = Pervasives.failwith "Var.String.fromLeft : uninplemented"
 
-	let fromRight x = Pervasives.failwith "Var.String.fromRight : uninplemented"
+	let fromRight _ = Pervasives.failwith "Var.String.fromRight : uninplemented"
 
 	(* XXX: ou -1? *)
 	let u : t
@@ -246,8 +246,7 @@ module String = struct
 
 	(** [next v] returns [v+1]. *)
 	let next : t -> t
-		= fun v ->
-		Pervasives.failwith "Var.String.next : uninplemented"
+		= fun x -> toInt x |> (+) 1 |> fromInt
 
 	module Set
 	  = Set.Make (struct type varT = t type t = varT let compare = cmp end)

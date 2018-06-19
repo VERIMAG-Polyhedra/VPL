@@ -1,30 +1,10 @@
+module Cstr_BE = Cstr
 open ASAtomicCond
-open ASCond
 open ASTerm
-open BinNums
-open ConsSet
-open CoqAddOn
-open CstrC
-open CstrLCF
-open Datatypes
 open Debugging
-open DomainFunctors
 open DomainInterfaces
-open ImpureConfig
-open Itv
-open LinTerm
-open LinearizeBackend
-open List0
-open MSetPositive
-open Map_poly
 open NumC
-open PedraQBackend
 open ProgVar
-open QArith_base
-open Qcanon
-open Ring_polynom_AddOnQ
-open String0
-open PedraQ
 open WrapperTraductors
 
 module CQAffTerm = LinTerm.QAffTerm
@@ -183,18 +163,18 @@ module Lift (LHD: QInterface.LowLevelDomain) = struct
 
     let affAssumeEq aft a =
         let (vec,cste) = export_QAffTerm aft in
-        let cstr = Pol.Cs.mk2 Eq vec (Scalar.Rat.neg cste) in
-        LHD.assume [EQ, Term.of_cstr cstr] a
+        let cstr = Pol.Cs.mk2 Cstr_BE.Eq vec (Scalar.Rat.neg cste) in
+        LHD.assume [Cstr_BE.EQ, Term.of_cstr cstr] a
 
     let affAssumeLe aft a =
         let (vec,cste) = export_QAffTerm aft in
-        let cstr = Pol.Cs.mk2 Le vec (Scalar.Rat.neg cste) in
-        LHD.assume [LE, Term.of_cstr cstr] a
+        let cstr = Pol.Cs.mk2 Cstr_BE.Le vec (Scalar.Rat.neg cste) in
+        LHD.assume [Cstr_BE.LE, Term.of_cstr cstr] a
 
     let affAssumeLt aft a =
         let (vec,cste) = export_QAffTerm aft in
-        let cstr = Pol.Cs.mk2 Lt vec (Scalar.Rat.neg cste) in
-        LHD.assume [LT, Term.of_cstr cstr] a
+        let cstr = Pol.Cs.mk2 Cstr_BE.Lt vec (Scalar.Rat.neg cste) in
+        LHD.assume [Cstr_BE.LT, Term.of_cstr cstr] a
 
     let affAssumeGt aft a =
         affAssumeLt (CQAffTerm.opp aft) a
@@ -545,12 +525,11 @@ module Lift (LHD: QInterface.LowLevelDomain) = struct
 
     let assumeOp sic cmp0 te aft ti a =
     let env0 = mitv_find (get_variables a te) in
-    let lc : Oracle.linearizeContext = { nonaffine = te;
-      env = env0;
-      affine = aft;
-      source = ti;
-      cmp =
-    cmp0 }
+    let lc : Oracle.linearizeContext = { Oracle.nonaffine = te;
+      Oracle.env = env0;
+      Oracle.affine = aft;
+      Oracle.source = ti;
+      Oracle.cmp = cmp0 }
     in
     let te0 =
     (fun mode l a -> if (Debugging.traceCmp INFO mode) then (print_string (CoqPr.charListTr l); print_newline()); a)

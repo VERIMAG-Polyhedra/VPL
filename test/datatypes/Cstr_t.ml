@@ -1,6 +1,6 @@
 open Vpl
 
-module Test (Cs : Cstr.Type) = struct
+module Make_Tests (Cs : Cstr.Type) = struct
 	let x = Cs.Vec.V.fromInt 1
 	let y = Cs.Vec.V.fromInt 2
 	let z = Cs.Vec.V.fromInt 3
@@ -25,11 +25,11 @@ module Test (Cs : Cstr.Type) = struct
 	let v iv = Cs.Vec.mk (List.map (fun (i, v) -> (Cs.Vec.Coeff.mk1 i, v)) iv)
 
 	(* Cs.eval *)
-	let evalTs: T.testT
-	=
+	let evalTs: Test.t
+	= fun () ->
 		let chk (name, c, p, r) = fun state ->
 			if r = Cs.eval c p then
-				T.succeed state
+				Test.succeed state
 			else
 				let err =
 					if r then
@@ -37,7 +37,7 @@ module Test (Cs : Cstr.Type) = struct
 					else
 						(Cs.Vec.to_string varPr p) ^ " satisfies " ^ (Cs.to_string varPr c)
 				in
-				T.fail name err state
+				Test.fail name err state
 		in
 		let tcs = [
 			"unit_le0", le [1, x] 2, v [1, x], true;
@@ -45,11 +45,11 @@ module Test (Cs : Cstr.Type) = struct
 			"le0", le [1, x] 2, v [1, x; 2, y], true;
 			"eq0", eq [1, x] 2, v [2, x; 2, y], true;
 		] in
-		T.suite "eval" (List.map chk tcs)
+		Test.suite "eval" (List.map chk tcs)
 
 	(* Cs.compl *)
-	let complOkTs: T.testT
-	=
+	let complOkTs: Test.t
+	= fun () ->
 		let chk (name, c, inpts, outpts) = fun state ->
 			let cbar: Cs.t = Cs.compl c in
 			let r_in = List.fold_left
@@ -59,85 +59,88 @@ module Test (Cs : Cstr.Type) = struct
 				(fun r pt -> r && not (Cs.eval cbar pt)) true outpts
 			in
 			if r_in && r_out then
-				T.succeed state
+				Test.succeed state
 			else
 				let err: string = (Cs.to_string varPr cbar) ^ ": " ^
 					(if r_in then "in ok" else "bad in") ^ ", " ^
 					(if r_out then "out ok" else "bad out")
 				in
-				T.fail name err state
+				Test.fail name err state
 		in
 		let tcs = [
 			"simple0", le [1, x] 1, [v [2, x]; v [2, x; 1, y]], [v [1, x]]
 		] in
-		T.suite "ok" (List.map chk tcs)
+		Test.suite "ok" (List.map chk tcs)
 
-	let complKoTs: T.testT
-	=
+	let complKoTs: Test.t
+	= fun () ->
 		let chk (name, c) = fun state ->
 			try
 				let _ = Cs.compl c in
-				T.fail name "no exception raised" state
+				Test.fail name "no exception raised" state
 			with
-			| Invalid_argument "Cstr.compl" -> T.succeed state
-			| _ -> T.fail name "unexpected exception raised" state
+			| Invalid_argument s when s = "Cstr.compl" -> Test.succeed state
+			| _ -> Test.fail name "unexpected exception raised" state
 		in
 		let tcs = [
 			"simple0", eq [1, x] 1
 		] in
-		T.suite "ko" (List.map chk tcs)
+		Test.suite "ko" (List.map chk tcs)
 
-	let complTs: T.testT
-	= T.suite "compl" [complOkTs; complKoTs]
+	let complTs: Test.t
+	   = fun () ->
+       Test.suite "compl" [complOkTs(); complKoTs()]
 
 	(* Cs.split *)
-	let splitOkTs: T.testT
-	=
+	let splitOkTs: Test.t
+	= fun () ->
 		let chk (t, c) = fun state ->
 			let (c1, c2) = Cs.split c in
 			if Cs.equalSyn (Cs.add c1 c2) (le [] 0) then
-				T.succeed state
+				Test.succeed state
 			else
 				let e = "c1: " ^ (Cs.to_string varPr c1) ^ "\nc2: " ^ (Cs.to_string varPr c2) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"0", eq [1, x] 1;
 			"1", eq [3, x; 4, y] 2
 		] in
-		T.suite "ok" (List.map chk tcs)
+		Test.suite "ok" (List.map chk tcs)
 
-	let splitKoTs: T.testT
-	=
+	let splitKoTs: Test.t
+	= fun () ->
 		let chk (name, c) = fun state ->
 			try
 				let _ = Cs.split c in
-				T.fail name "no exception raised" state
+				Test.fail name "no exception raised" state
 			with
-			| Invalid_argument "Cstr.split" -> T.succeed state
-			| _ -> T.fail name "unexpected exception raised" state
+			| Invalid_argument s when s = "Cstr.split" -> Test.succeed state
+			| _ -> Test.fail name "unexpected exception raised" state
 		in
 		let tcs = [
 			"0", le [1, x] 0
 		] in
-		T.suite "ko" (List.map chk tcs)
+		Test.suite "ko" (List.map chk tcs)
 
-	let splitTs: T.testT
-	= T.suite "split" [splitOkTs; splitKoTs]
+	let splitTs: Test.t
+	   = fun () ->
+       Test.suite "split" [splitOkTs(); splitKoTs()]
 
 	(* Cs.inclSyn *)
-	let isInclSynTs =
+	let isInclSynTs: Test.t
+    = fun () ->
 		let chk (t, c1, c2, r) = fun state ->
 			if r then
 				if Cs.inclSyn c1 c2 then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail t "no implication" state
+					Test.fail t "no implication" state
 			else
 				if not (Cs.inclSyn c1 c2) then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail t "implication" state
+					Test.fail t "implication" state
 		in
 		let tcs = [
 			"ideq0", eq [1, x] 1, eq [1, x] 1, true;
@@ -210,28 +213,28 @@ module Test (Cs : Cstr.Type) = struct
 			"c1contrad0", le [] (-1), le [1, x] 1, false;
 			"c1trivial0", le [] 1, le [1, x] 1, false
 		] in
-		T.suite "isInclSyn" (List.map chk tcs)
+		Test.suite "isInclSyn" (List.map chk tcs)
 
 	(* Cs.equal *)
-	let isEqTs: T.testT
-	=
+	let isEqTs: Test.t
+	= fun () ->
 		let chkRes (name, r, c1, c2) = fun state ->
 			let r1 = Cs.equal c1 c2 in
 			if r = r1 then
-				T.succeed state
+				Test.succeed state
 			else
 				let err = (if r then "not equal" else "equal") ^
 					"\nc1: " ^ (Cs.to_string varPr c1) ^ "\nc2: " ^ (Cs.to_string varPr c2)
 				in
-				T.fail name err state
+				Test.fail name err state
 		in
 		let chkSym (name, _, c1, c2) = fun state ->
 			let r1 = Cs.equal c1 c2 in
 			let r2 = Cs.equal c2 c1 in
 			if r1 = r2 then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name "not symmetric" state
+				Test.fail name "not symmetric" state
 		in
 		let tcs = [
 			"triv0", true, eq [] 0, eq [] 0;
@@ -252,26 +255,26 @@ module Test (Cs : Cstr.Type) = struct
 			"cst0", false, eq [1, x] 1, eq [1, y] 1;
 			"cst1", false, eq [1, x] 1, eq [1, y] 0
 		] in
-		T.suite "isEq" [
-			T.suite "res" (List.map chkRes tcs);
-			T.suite "sym" (List.map chkSym tcs)
+		Test.suite "isEq" [
+			Test.suite "res" (List.map chkRes tcs);
+			Test.suite "sym" (List.map chkSym tcs)
 		]
 
 	(* Cs.incl *)
-	let isInclTs: T.testT
-	=
+	let isInclTs: Test.t
+	= fun () ->
 		let chk (t, c1, c2, r) = fun state ->
 			let r1 = Cs.incl c1 c2 in
 			if r then
 				if  r1 then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail t "no implication" state
+					Test.fail t "no implication" state
 			else
 				if not r1 then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail t "implication" state
+					Test.fail t "implication" state
 		in
 		let tcs = [
 			"ideq0", eq [1, x] 1, eq [1, x] 1, true;
@@ -329,16 +332,16 @@ module Test (Cs : Cstr.Type) = struct
 			"c1contrad0", le [] (-1), le [1, x] 1, false;
 			"c1trivial0", le [] 1, le [1, x] 1, false
 		] in
-		T.suite "isIncl" (List.map chk tcs)
+		Test.suite "isIncl" (List.map chk tcs)
 
 	(* Cs.tellProp *)
-	let tellPropTs: T.testT
-	=
+	let tellPropTs: Test.t
+	= fun () ->
 		let chk (name, c, r) = fun state ->
 			if r = Cs.tellProp c then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name "not equal" state
+				Test.fail name "not equal" state
 		in
 		let tcs = [
 			"eq0", eq [] 1, Cs.Contrad;
@@ -359,27 +362,29 @@ module Test (Cs : Cstr.Type) = struct
 			"lt4", lt [1, x] 1, Cs.Nothing;
 			"lt5", lt [1, x] 0, Cs.Nothing
 		] in
-		T.suite "tellProp" (List.map chk tcs)
+		Test.suite "tellProp" (List.map chk tcs)
 
-	let ts: T.testT
-	= T.suite Cs.Vec.Coeff.name [evalTs; complTs; splitTs; isInclSynTs; isEqTs; isInclTs; tellPropTs]
+    let ts: Test.t
+        = fun () ->
+        List.map Test.run [evalTs; complTs; splitTs; isInclSynTs; isEqTs; isInclTs; tellPropTs]
+        |> Test.suite Cs.Vec.Coeff.name
 end
 
 module Rat = struct
 
-	module Test (Cstr : Cstr.Rat.Type) = struct
-		include Test(Cstr)
-		
+	module Make_Tests (Cstr : Cstr.Rat.Type) = struct
+		include Make_Tests(Cstr)
+
 		(* Cs.elim *)
-		let elimNoElimTs: T.testT
-		=
+		let elimNoElimTs: Test.t
+		= fun () ->
 			let chk (name, c1, c2) = fun state ->
 				try
 					let _ = Cstr.elim c1 c2 x in
-					T.fail name "Cs.NoElim not raised" state
+					Test.fail name "Cs.NoElim not raised" state
 				with
-				| Cstr.NoElim -> T.succeed state
-				| _ -> T.fail name "unexpected exception raised" state
+				| Cstr.NoElim -> Test.succeed state
+				| _ -> Test.fail name "unexpected exception raised" state
 			in
 			let tcs = [
 				"eqnil0", eq [] 0, eq [] 0;
@@ -397,17 +402,17 @@ module Rat = struct
 				"eqleone0", eq [1, z] 0, le [1, y] 0;
 				"eqleone1", eq [1, y] 0, le [1, z] 0
 			] in
-			T.suite "noElim" (List.map chk tcs)
+			Test.suite "noElim" (List.map chk tcs)
 
-		let elimCannotElimTs: T.testT
-		=
+		let elimCannotElimTs: Test.t
+		= fun () ->
 			let chk (name, c1, c2) = fun state ->
 				try
 					let _ = Cstr.elim c1 c2 x in
-					T.fail name "Cs.CannotElim not raised" state
+					Test.fail name "Cs.CannotElim not raised" state
 				with
-				| Cstr.CannotElim -> T.succeed state
-				| _ -> T.fail name "unexpected exception raised" state
+				| Cstr.CannotElim -> Test.succeed state
+				| _ -> Test.fail name "unexpected exception raised" state
 			in
 			let tcs = [
 				"eqone0", eq [1, x] 0, eq [] 0;
@@ -437,28 +442,28 @@ module Rat = struct
 				"le4", le [1, x; 1, y] 0, le [1, x; 1, y] 0;
 				"le5", le [1, x; -1, y] 0, le [1, x; 1, y] 0
 			] in
-			T.suite "cannotElim" (List.map chk tcs)
+			Test.suite "cannotElim" (List.map chk tcs)
 
-		let elimOkTs: T.testT
-		=
-			let chkRes (name, c1, c2) = fun state -> 
+		let elimOkTs: Test.t
+		= fun () ->
+			let chkRes (name, c1, c2) = fun state ->
 				let (c, _, _) = Cstr.elim c1 c2 x in
 				let a = Cstr.Vec.get (Cstr.get_v c) x in
 				if Cstr.Vec.Coeff.cmpz a = 0 then
-					T.succeed state
+					Test.succeed state
 				else
-					T.fail name "x has non-zero coefficient" state
+					Test.fail name "x has non-zero coefficient" state
 			in
 			let chkCoef (name, c1, c2) = fun state ->
 				let (c, x1, x2) = Cstr.elim c1 c2 x in
 				let c' = Cstr.add (Cstr.mulc x1 c1) (Cstr.mulc x2 c2) in
 				if Cstr.equalSyn c c' then
-					T.succeed state
+					Test.succeed state
 				else
 					let e = "bad coefficients\n" ^
 						"x1 = " ^ (Cstr.Vec.Coeff.to_string x1) ^ ", x2 = " ^ (Cstr.Vec.Coeff.to_string x2)
 					in
-					T.fail name e state
+					Test.fail name e state
 			in
 			let tcs = [
 				"eqeq0", eq [1, x; 1, y] 0, eq [1, x] 1;
@@ -482,42 +487,47 @@ module Rat = struct
 				"lele6", le [-1, x] 1, le [2, x; 1, y] 0;
 				"lele7", le [-1, x; 1, z] 1, le [1, x; 1, y] 0;
 			] in
-			T.suite "ok" [
-				T.suite "res" (List.map chkRes tcs);
-				T.suite "coef" (List.map chkCoef tcs)
+			Test.suite "ok" [
+				Test.suite "res" (List.map chkRes tcs);
+				Test.suite "coef" (List.map chkCoef tcs)
 			]
 
-		let elimTs: T.testT
-		= T.suite "elim" [elimCannotElimTs; elimNoElimTs; elimOkTs]
+		let elimTs: Test.t
+		= fun () ->
+        Test.suite "elim" [elimCannotElimTs(); elimNoElimTs(); elimOkTs()]
 
-		let ts : T.testT
-			= T.suite Cstr.Vec.Coeff.name [evalTs; complTs; elimTs; splitTs ; isInclSynTs; isEqTs; isInclTs; tellPropTs]
+		let ts : Test.t
+			=  fun () ->
+            List.map Test.run [evalTs; complTs; elimTs; splitTs ; isInclSynTs; isEqTs; isInclTs; tellPropTs]
+            |> Test.suite Cstr.Vec.Coeff.name
 	end
-	
-	module Positive = Test(Cstr.Rat.Positive)
-	
-	module Int = Test(Cstr.Rat.Int)
-	
-	let ts : T.testT
-			= T.suite "Rat" [Positive.ts ; Int.ts] 
+
+	module Positive = Make_Tests(Cstr.Rat.Positive)
+
+	module Int = Make_Tests(Cstr.Rat.Int)
+
+	let ts : Test.t
+		= fun () -> Test.suite "Rat" [Positive.ts() ; Int.ts()]
 end
 
 module Float = struct
 	module Cstr = Cstr.Float
-	
+
 	module Positive = struct
 		module Cstr = Cstr.Positive
-		include Test(Cstr)
+		include Make_Tests(Cstr)
 	end
-	
+
 	module Int = struct
 		module Cstr = Cstr.Int
-		include Test(Cstr)
+		include Make_Tests(Cstr)
 	end
-	
-	let ts : T.testT
-		= T.suite "Float" [Positive.ts ; Int.ts] 
+
+	let ts : Test.t
+		= fun () ->
+        Test.suite "Float" [Positive.ts() ; Int.ts()]
 end
 
-let ts : T.testT
-	= T.suite "Cstr" [Rat.ts ; Float.ts]
+let ts : Test.t
+	= fun () ->
+    Test.suite "Cstr" [Rat.ts() ; Float.ts()]

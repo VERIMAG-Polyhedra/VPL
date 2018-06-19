@@ -1,21 +1,21 @@
 open Vpl
 
-module Test (Coeff : Scalar.Type) = struct
+module Make_Tests (Coeff : Scalar.Type) = struct
 	type sign_t = P | Z | N
 
 	let sign a = if a < 0 then N else if a > 0 then P else Z
 	let pr = function P -> "P" | Z -> "Z" | N -> "N"
 
 	(* Coeff.cmp *)
-	let cmpTs: T.testT
-	=
+	let cmpTs: Test.t
+	   = fun () ->
 		let chk (t, n1, n2, s) = fun state ->
 			let r = sign (Coeff.cmp n1 n2) in
 			if r = s then
-				T.succeed state
+				Test.succeed state
 			else
 				let e = "Coeff.cmp " ^ (Coeff.to_string n1) ^ " " ^ (Coeff.to_string n2) ^ ": " ^ (pr r) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"zz0", Coeff.z, Coeff.z, Z;
@@ -37,18 +37,18 @@ module Test (Coeff : Scalar.Type) = struct
 			"pn0", Coeff.mk1 2, Coeff.mk1 (-2), P;
 			"np0", Coeff.mk1 (-2), Coeff.mk1 2, N
 		] in
-		T.suite "cmp" (List.map chk tcs)
+		Test.suite "cmp" (List.map chk tcs)
 
 	(* Coeff.cmpz *)
-	let cmpzTs: T.testT
-	=
+	let cmpzTs: Test.t
+	   = fun () ->
 		let chk (t, n, s) = fun state ->
 			let r = sign (Coeff.cmpz n) in
 			if r = s then
-				T.succeed state
+				Test.succeed state
 			else
 				let e = "Coeff.cmpz " ^ (Coeff.to_string n) ^ ": " ^ (pr r) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"z", Coeff.z, Z;
@@ -58,26 +58,26 @@ module Test (Coeff : Scalar.Type) = struct
 			"p1", Coeff.mk 10 2, N;
 			"n0", Coeff.mk1 (-4), P
 		] in
-		T.suite "cmpz" (List.map chk tcs)
+		Test.suite "cmpz" (List.map chk tcs)
 
 	(* Coeff.neg *)
-	let negTs: T.testT
-	=
+	let negTs: Test.t
+	   = fun () ->
 		let chk_res (t, n1, n2) = fun state ->
 			let r = Coeff.neg n1 in
 			if Coeff.cmp n2 r = 0 then
-				T.succeed state
+				Test.succeed state
 			else
 				let e = "Coeff.neg " ^ (Coeff.to_string n1) ^ " = " ^ (Coeff.to_string r) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let chk_comp (t, n1, _) = fun state ->
 			let r = Coeff.neg (Coeff.neg n1) in
 			if Coeff.cmp n1 r = 0 then
-				T.succeed state
+				Test.succeed state
 			else
 				let e = "Coeff.neg (Coeff.neg " ^ (Coeff.to_string n1) ^ ") = " ^ (Coeff.to_string r) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"z", Coeff.z, Coeff.z;
@@ -87,40 +87,40 @@ module Test (Coeff : Scalar.Type) = struct
 			"n0", Coeff.negU, Coeff.u;
 			"n1", Coeff.mk1 (-15), Coeff.mk1 15
 		] in
-		T.suite "neg" [
-			T.suite "res" (List.map chk_res tcs);
-			T.suite "comp" (List.map chk_comp tcs)
+		Test.suite "neg" [
+			Test.suite "res" (List.map chk_res tcs);
+			Test.suite "comp" (List.map chk_comp tcs)
 		]
 
 	(* Coeff.inv *)
 	(*
-	let invKoTs: T.testT
+	let invKoTs: Test.t
 	= fun state ->
 		let r = Coeff.inv Coeff.z in
 		if not (Coeff.isReal r) then
-			T.succeed state
+			Test.succeed state
 		else
 			let e = "Coeff.inv Coeff.z = " ^ (Coeff.to_string r) in
-			T.fail "ko" e state
+			Test.fail "ko" e state
 	*)
 
-	let invOkTs: T.testT
-	=
+	let invOkTs: Test.t
+	   = fun () ->
 		let chk_res (t, n1, n2) = fun state ->
 			let n = Coeff.inv n1 in
 			if Coeff.cmp n2 n = 0 then
-				T.succeed state
+				Test.succeed state
 			else
 				let e = "Coeff.inv " ^ (Coeff.to_string n1) ^ " = " ^ (Coeff.to_string n) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let chk_comp (t, n1, _) = fun state ->
 			let n = Coeff.inv (Coeff.inv n1) in
 			if Coeff.cmp n1 n = 0 then
-				T.succeed state
+				Test.succeed state
 			else
 				let e = "Coeff.inv (Coeff.inv " ^ (Coeff.to_string n1) ^ ") = " ^ (Coeff.to_string n) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"u0", Coeff.u, Coeff.u;
@@ -128,35 +128,36 @@ module Test (Coeff : Scalar.Type) = struct
 			"p0", Coeff.mk1 2, Coeff.mk 2 1;
 			"n0", Coeff.mk1 (-2), Coeff.mk 2 (-1)
 		] in
-		T.suite "ok" [
-			T.suite "res" (List.map chk_res tcs);
-			T.suite "comp" (List.map chk_comp tcs)
+		Test.suite "ok" [
+			Test.suite "res" (List.map chk_res tcs);
+			Test.suite "comp" (List.map chk_comp tcs)
 		]
 
 	(* DM note: invKoTs does a divide by zero in F# *)
-	let invTs: T.testT
-	= T.suite "inv" [(* invKoTs; *) invOkTs]
+	let invTs: Test.t
+	   =  fun () ->
+       Test.suite "inv" [(* invKoTs; *) invOkTs ()]
 
 	(* Coeff.add *)
-	let addTs: T.testT
-	=
+	let addTs: Test.t
+	   = fun () ->
 		let chk_res (t, n1, n2, n) = fun state ->
 			let r = Coeff.add n1 n2 in
 			if Coeff.cmp n r = 0 then
-				T.succeed state
+				Test.succeed state
 			else
 				let e = (Coeff.to_string n1) ^ " + " ^ (Coeff.to_string n2) ^ " = " ^ (Coeff.to_string r) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let chk_sym (t, n1, n2, _) = fun state ->
 			let r1 = Coeff.add n1 n2 in
 			let r2 = Coeff.add n2 n1 in
 			if Coeff.cmp r1 r2 = 0 then
-				T.succeed state
+				Test.succeed state
 			else
 				let e1 = (Coeff.to_string n1) ^ " + " ^ (Coeff.to_string n2) ^ " = " ^ (Coeff.to_string r1) in
 				let e2 = (Coeff.to_string n2) ^ " + " ^ (Coeff.to_string n1) ^ " = " ^ (Coeff.to_string r2) in
-				T.fail t (e1 ^ ", " ^ e2) state
+				Test.fail t (e1 ^ ", " ^ e2) state
 		in
 		let tcs = [
 			"zz", Coeff.z, Coeff.z, Coeff.z;
@@ -168,31 +169,31 @@ module Test (Coeff : Scalar.Type) = struct
 			"n1", Coeff.negU, Coeff.u, Coeff.z;
 			"n2", Coeff.mk1 (-5), Coeff.u, Coeff.mk1 (-4)
 		] in
-		T.suite "add" [
-			T.suite "res" (List.map chk_res tcs);
-			T.suite "sym" (List.map chk_sym tcs)
+		Test.suite "add" [
+			Test.suite "res" (List.map chk_res tcs);
+			Test.suite "sym" (List.map chk_sym tcs)
 		]
 
 	(* Coeff.mult *)
-	let multTs: T.testT
-	=
+	let multTs: Test.t
+	   = fun () ->
 		let chk_res (t, n1, n2, n) = fun state ->
 			let r = Coeff.mul n1 n2 in
 			if Coeff.cmp n r = 0 then
-				T.succeed state
-			else	
+				Test.succeed state
+			else
 				let e = (Coeff.to_string n1) ^ " + " ^ (Coeff.to_string n2) ^ " = " ^ (Coeff.to_string r) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let chk_sym (t, n1, n2, _) = fun state ->
 			let r1 = Coeff.mul n1 n2 in
 			let r2 = Coeff.mul n2 n1 in
 			if Coeff.cmp r1 r2 = 0 then
-				T.succeed state
-			else	
+				Test.succeed state
+			else
 				let e1 = (Coeff.to_string n1) ^ " + " ^ (Coeff.to_string n2) ^ " = " ^ (Coeff.to_string r1) in
 				let e2 = (Coeff.to_string n2) ^ " + " ^ (Coeff.to_string n1) ^ " = " ^ (Coeff.to_string r2) in
-				T.fail t (e1 ^ ", " ^ e2) state
+				Test.fail t (e1 ^ ", " ^ e2) state
 		in
 		let tcs = [
 			"z0", Coeff.z, Coeff.z, Coeff.z;
@@ -209,22 +210,22 @@ module Test (Coeff : Scalar.Type) = struct
 			"n2", Coeff.mk1 (-5), Coeff.mk1 5, Coeff.mk1 (-25);
 			"n2", Coeff.mk1 (-5), Coeff.mk1 (-5), Coeff.mk1 25
 		] in
-		T.suite "mult" [
-			T.suite "res" (List.map chk_res tcs);
-			T.suite "sym" (List.map chk_sym tcs)
+		Test.suite "mult" [
+			Test.suite "res" (List.map chk_res tcs);
+			Test.suite "sym" (List.map chk_sym tcs)
 		]
 
 	(* Coeff.div *)
 	(*
-	let divKoTs: T.testT
+	let divKoTs: Test.t
 	=
 		let chk (t, n, d) = fun state ->
 			let r = Coeff.div n d in
 			if not (Coeff.isReal r) then
-				T.succeed state
-			else			
+				Test.succeed state
+			else
 				let e = (Coeff.to_string r) ^ "is real" in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"zz", Coeff.z, Coeff.z;
@@ -233,18 +234,18 @@ module Test (Coeff : Scalar.Type) = struct
 			"p0", Coeff.mk1 2, Coeff.z;
 			"n0", Coeff.mk1 (-5), Coeff.z
 		] in
-		T.suite "ko" (List.map chk tcs)
+		Test.suite "ko" (List.map chk tcs)
 	*)
 
-	let divOkTs: T.testT
-	=
+	let divOkTs: Test.t
+	   = fun () ->
 		let chk (t, n, d, r) = fun state ->
 			let r1 = Coeff.div n d in
 			if Coeff.cmp r r1 = 0 then
-				T.succeed state
-			else	
+				Test.succeed state
+			else
 				let e = "Coeff.div " ^ (Coeff.to_string n) ^ " " ^ (Coeff.to_string d) ^ " = " ^ (Coeff.to_string r1) in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"u0", Coeff.z, Coeff.u, Coeff.z;
@@ -260,37 +261,41 @@ module Test (Coeff : Scalar.Type) = struct
 			"n1", Coeff.mk1 4, Coeff.mk1 (-2), Coeff.mk1 (-2);
 			"n2", Coeff.mk1 (-4), Coeff.mk1 (-2), Coeff.mk1 2
 		] in
-		T.suite "ok" (List.map chk tcs)
+		Test.suite "ok" (List.map chk tcs)
 
 	(* DM NOTE: divide by zero crashes F# *)
-	let divTs: T.testT
-	= T.suite "div" [(*divKoTs; *) divOkTs]
+	let divTs: Test.t
+	   =  fun () ->
+       Test.suite "div" [(*divKoTs; *) divOkTs ()]
 
-	let ts: T.testT
-	= T.suite Coeff.name [cmpTs; cmpzTs; negTs; invTs; addTs; multTs; divTs]
+	let ts: Test.t
+	   = fun () ->
+       List.map Test.run [cmpTs; cmpzTs; negTs; invTs; addTs; multTs; divTs]
+       |> Test.suite Coeff.name
 end
 
 module Rat = struct
-	include Test(Scalar.Rat)
+	include Make_Tests(Scalar.Rat)
 end
 module Symbolic = struct
-	include Test(Scalar.Symbolic)
+	include Make_Tests(Scalar.Symbolic)
 	(* test suite for Splx.Symbolic *)
 
 	(* Scalar.Symbolic.z *)
-	let zTs: T.testT
-	= fun state ->
+	let zTs: Test.t
+	= fun () ->
+        fun state ->
 		let z1 = Scalar.Symbolic.z in
 		let z2 = Scalar.Symbolic.ofRat Scalar.Rat.z in
 		if Scalar.Symbolic.cmp z1 z2 = 0 then
-			T.succeed state
+			Test.succeed state
 		else
 			let e = (Scalar.Symbolic.to_string z1) ^ " <> " ^ (Scalar.Symbolic.to_string z2) in
-			T.fail "z" e state
+			Test.fail "z" e state
 
 	(* Scalar.Symbolic.cmp *)
-	let cmpTs: T.testT
-	=
+	let cmpTs: Test.t
+	   = fun () ->
 		let eq = 0 in
 		let lt = -1 in
 		let gt = 1 in
@@ -304,12 +309,12 @@ module Symbolic = struct
 				| _, _ -> false
 			in
 			if r then
-				T.succeed state
+				Test.succeed state
 			else
 				let to_s i = if i = 0 then "=" else if i < 0 then "<" else ">" in
 				let e = (Scalar.Symbolic.to_string v1) ^ " (expected: " ^ (to_s er) ^
 					", actual: " ^ (to_s ar) ^ ")" in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"z", Scalar.Symbolic.z, Scalar.Symbolic.z, eq;
@@ -326,16 +331,16 @@ module Symbolic = struct
 			"-12", Scalar.Symbolic.ofRat Scalar.Rat.negU, Scalar.Symbolic.ofRat (Scalar.Rat.mk1 2), lt;
 			"2-1", Scalar.Symbolic.ofRat (Scalar.Rat.mk1 2), Scalar.Symbolic.ofRat Scalar.Rat.negU, gt
 		] in
-		T.suite "cmp" (List.map chk tcs)
+		Test.suite "cmp" (List.map chk tcs)
 
 	(* Scalar.Symbolic.hasDelta *)
-	let hasDeltaTs: T.testT
-	=
+	let hasDeltaTs: Test.t
+	   = fun () ->
 		let chk (t, res, v) = fun state ->
 			if Scalar.Symbolic.hasDelta v = res then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail t "not equal" state
+				Test.fail t "not equal" state
 		in
 		let tcs = [
 			"z", false, Scalar.Symbolic.z;
@@ -354,17 +359,17 @@ module Symbolic = struct
 			"no0", false, Scalar.Symbolic.adddelta (Scalar.Symbolic.ndelta Scalar.Rat.u);
 			"no1", false, Scalar.Symbolic.subdelta (Scalar.Symbolic.pdelta Scalar.Rat.u)
 		] in
-		T.suite "hasDelta" (List.map chk tcs)
+		Test.suite "hasDelta" (List.map chk tcs)
 
 	(* Scalar.Symbolic.mulr *)
-	let mulrTs: T.testT
-	=
+	let mulrTs: Test.t
+	   = fun () ->
 		let chk (t, ar, er) = fun state ->
 			if Scalar.Symbolic.cmp ar er = 0 then
-				T.succeed state
+				Test.succeed state
 			else
 				let estr = "ar = " ^ (Scalar.Symbolic.to_string ar) ^ ", er = " ^ (Scalar.Symbolic.to_string er) in
-				T.fail t estr state
+				Test.fail t estr state
 		in
 		let tcs = [
 			"z", Scalar.Symbolic.mulr Scalar.Rat.u Scalar.Symbolic.z, Scalar.Symbolic.z;
@@ -378,21 +383,21 @@ module Symbolic = struct
 				Scalar.Symbolic.add (Scalar.Symbolic.pdelta (Scalar.Rat.mk1 2))
 					(Scalar.Symbolic.pdelta Scalar.Rat.z);
 		] in
-		T.suite "mulr" (List.map chk tcs)
-		
+		Test.suite "mulr" (List.map chk tcs)
+
 	(* Scalar.Symbolic.adddelta *)
-	let adddeltaTs: T.testT
-	=
+	let adddeltaTs: Test.t
+	   = fun () ->
 		let chk (t, i, o) = fun state ->
 			let r = Scalar.Symbolic.adddelta i in
 			if Scalar.Symbolic.cmp o r = 0 then
-				T.succeed state
+				Test.succeed state
 			else
 				let e =
 					"expected: " ^ (Scalar.Symbolic.to_string o) ^
 					", got: " ^ (Scalar.Symbolic.to_string r)
 				in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"z", Scalar.Symbolic.z, Scalar.Symbolic.pdelta Scalar.Rat.z;
@@ -402,21 +407,21 @@ module Symbolic = struct
 			"deltas", Scalar.Symbolic.pdelta Scalar.Rat.u,
 				Scalar.Symbolic.add (Scalar.Symbolic.pdelta Scalar.Rat.u) (Scalar.Symbolic.pdelta Scalar.Rat.z)
 		] in
-		T.suite "adddelta" (List.map chk tcs)
+		Test.suite "adddelta" (List.map chk tcs)
 
 	(* Scalar.Symbolic.subdelta *)
-	let subdeltaTs: T.testT
-	=
+	let subdeltaTs: Test.t
+	   = fun () ->
 		let chk (t, i, o) = fun state ->
 			let r = Scalar.Symbolic.subdelta i in
 			if Scalar.Symbolic.cmp o r = 0 then
-				T.succeed state
+				Test.succeed state
 			else
 				let e =
 					"expected: " ^ (Scalar.Symbolic.to_string o) ^
 					", got: " ^ (Scalar.Symbolic.to_string r)
 				in
-				T.fail t e state
+				Test.fail t e state
 		in
 		let tcs = [
 			"z", Scalar.Symbolic.z, Scalar.Symbolic.ndelta Scalar.Rat.z;
@@ -426,15 +431,18 @@ module Symbolic = struct
 			"deltas", Scalar.Symbolic.ndelta Scalar.Rat.u,
 				Scalar.Symbolic.add (Scalar.Symbolic.ndelta Scalar.Rat.u) (Scalar.Symbolic.ndelta Scalar.Rat.z)
 		] in
-		T.suite "subdelta" (List.map chk tcs)
-	
-	let ts: T.testT
-	= T.suite Scalar.Symbolic.name [cmpTs; cmpzTs; negTs; invTs; addTs; multTs; divTs ; zTs; hasDeltaTs; mulrTs; adddeltaTs; subdeltaTs]
+		Test.suite "subdelta" (List.map chk tcs)
+
+	let ts: Test.t
+	   = fun () ->
+       List.map Test.run [cmpTs; cmpzTs; negTs; invTs; addTs; multTs; divTs ; zTs; hasDeltaTs; mulrTs; adddeltaTs; subdeltaTs]
+       |> Test.suite Scalar.Symbolic.name
 end
 
 module Float = struct
-	include Test(Scalar.Float)
+	include Make_Tests(Scalar.Float)
 end
 
-let ts: T.testT
-	= T.suite "Scalar" [Rat.ts ; Symbolic.ts ; Float.ts]
+let ts: Test.t
+	= fun () ->
+    Test.suite "Scalar" [Rat.ts() ; Symbolic.ts() ; Float.ts()]

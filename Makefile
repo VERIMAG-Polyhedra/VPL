@@ -3,6 +3,9 @@ all: vpl
 vpl: setup
 	$(MAKE) -C ocaml/
 
+dev: setup_dev
+	$(MAKE) -C ocaml/
+
 setup:
 	cd ocaml; cp -f _oasis_no_glpk _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
 
@@ -12,10 +15,14 @@ vpl_glpk: setup_glpk
 setup_glpk:
 	cd ocaml; cp -f _oasis_glpk _oasis; cp -f src/Wrapper_glpk.ml src/Wrapper.ml; oasis setup
 
+setup_dev:
+	cd ocaml; cp -f _oasis_no_glpk_dev _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
+
 clean:
 	$(MAKE) -C ocaml/ clean
 	$(MAKE) -C test/ clean
 	rm -f ocaml/setup.data ocaml/setup.log
+	rm -f ocaml/src/*.mllib ocaml/src/*.mlpack ocaml/src/*.mldylib
 
 to_opam:
 	cd ocaml

@@ -3,13 +3,13 @@ open Vpl
 module Positive = struct
 	module V = Var.Positive
 	(* V.next *)
-	let nextTs: T.testT
-	=
+	let nextTs: Test.t
+        = fun () ->
 		let chk (name, var, expected) = fun state ->
 			if V.next var = expected then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name "not equal" state
+				Test.fail name "not equal" state
 		in
 		let tcs: (string * V.t * V.t) list = [
 		"nil", V.XH, V.XO V.XH;
@@ -20,17 +20,17 @@ module Positive = struct
 		"rec1", V.XI (V.XI (V.XI (V.XI V.XH))),
 			V.XO (V.XO (V.XO (V.XO (V.XO V.XH))));
 		] in
-		T.suite "next" (List.map chk tcs)
+		Test.suite "next" (List.map chk tcs)
 
 	(* V.cmp *)
-	let cmpTs: T.testT
-	=
+	let cmpTs: Test.t
+	   = fun () ->
 		let chk (name, ans, x1, x2) = fun state ->
 			let res = V.cmp x1 x2 in
 			if ans = res then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name (string_of_int res) state
+				Test.fail name (string_of_int res) state
 		in
 		let tcs = [
 			"eq0", 0, V.XH, V.XH;
@@ -53,11 +53,11 @@ module Positive = struct
 			"gt3", 1, V.XO (V.XI V.XH), V.XO (V.XO V.XH);
 			"gt4", 1, V.XO (V.XO (V.XI V.XH)), V.XO (V.XO V.XH)
 		] in
-		T.suite "cmp" (List.map chk tcs)
+		Test.suite "cmp" (List.map chk tcs)
 
 	(* V.horizon *)
-	let horizonTs
-	=
+	let horizonTs : Test.t
+	   = fun () ->
 		let a = V.XH in
 		let b = V.next a in
 		let c = V.next b in
@@ -73,9 +73,9 @@ module Positive = struct
 		let chk (name, h, vars) state =
 			let h1 = V.horizon (V.Set.of_list vars) in
 			if h = h1 then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name "not equal" state
+				Test.fail name "not equal" state
 		in
 		let tcs = [
 			"empty", a, [];
@@ -85,7 +85,7 @@ module Positive = struct
 			"ordered1", l, [a; d; j; k];
 			"gen0", j, [b; a; g; i; c]
 		] in
-		T.suite "horizon" (List.map chk tcs)
+		Test.suite "horizon" (List.map chk tcs)
 
 	let intConvTcs = [
 		"one", 1, V.XH;
@@ -95,32 +95,36 @@ module Positive = struct
 	]
 
 	(* V.toInt *)
-	let toIntTs: T.testT
-	= (* XXX: test the overflow case *)
+	let toIntTs: Test.t
+	   =  fun () ->
+       (* XXX: test the overflow case *)
 		let chk (name, i, p) = fun state ->
 			let res = V.toInt p in
 			if i = res then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name "not equal" state
+				Test.fail name "not equal" state
 		in
-		T.suite "toInt" (List.map chk intConvTcs)
+		Test.suite "toInt" (List.map chk intConvTcs)
 
 	(* V.fromInt *)
-	let fromIntTs: T.testT
-	=
+	let fromIntTs: Test.t
+	   = fun () ->
 		let chk (name, i, p) state =
 			let res = V.fromInt i in
 			if res = p then
-				T.succeed state
+				Test.succeed state
 			else
-				T.fail name "not equal" state
+				Test.fail name "not equal" state
 		in
-		T.suite "fromInt" (List.map chk intConvTcs)
+		Test.suite "fromInt" (List.map chk intConvTcs)
 
-	let ts: T.testT
-	= T.suite Var.Positive.name [nextTs; cmpTs; horizonTs; toIntTs; fromIntTs]
+	let ts: Test.t
+	   = fun () ->
+       List.map Test.run [nextTs ; cmpTs ; horizonTs ; toIntTs ; fromIntTs]
+       |> Test.suite Var.Positive.name
 end
 
-let ts : T.testT
-		= T.suite "Var" [Positive.ts]
+let ts : Test.t
+	= fun () ->
+    Test.suite "Var" [Positive.ts ()]

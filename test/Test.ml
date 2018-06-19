@@ -33,7 +33,7 @@ let stateZ: stateT
 	ignCnt = 0;
 }
 
-type testT = stateT -> stateT
+type t = unit -> stateT -> stateT
 
 let succeed: stateT -> stateT
 = fun state -> {state with tcCnt = state.tcCnt + 1}
@@ -49,10 +49,22 @@ let fail: string -> string -> stateT -> stateT
 let skip: stateT -> stateT
 = fun s -> {s with ignCnt = s.ignCnt + 1}
 
-let suite: string -> testT list -> testT
+let suite: string -> (stateT -> stateT) list -> (stateT -> stateT)
 = fun name tcs ->
 	fun state ->
-		let nState = List.fold_left (fun st tc -> tc st) {state with path = name::state.path} tcs in
+		let nState = List.fold_left
+            (fun st tc ->
+                try tc st with e -> begin
+                Printf.sprintf "Exception raised during test suite %s : %s"
+                    name
+                    (Printexc.to_string e)
+                |> print_endline;
+                failwith "Exception"(*
+                    {st with ignCnt = st.ignCnt + 1}*)
+                end)
+            {state with path = name::state.path}
+            tcs
+        in
 		{nState with path = state.path}
 
 let equals : string -> ('a -> string) -> ('a -> 'a -> bool) -> 'a -> 'a -> stateT -> stateT
@@ -60,7 +72,6 @@ let equals : string -> ('a -> string) -> ('a -> 'a -> bool) -> 'a -> 'a -> state
   if eq e a
   then succeed state
   else fail nm (Printf.sprintf "expected %s, but got %s\n" (pr e) (pr a)) state
-  (*
-let run: testT -> string
-= fun t -> prState (t stateZ)
-*)
+
+let run: t -> (stateT -> stateT)
+    = fun tc -> tc ()

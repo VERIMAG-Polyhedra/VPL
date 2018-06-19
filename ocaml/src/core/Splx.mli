@@ -2,9 +2,9 @@
 The basis for the algorithm comes from the article "Integrating simplex with DPLL(T)"
 published by Bruno Dutertre and Leonardo de Moura in 2006 as
 an SRI International technical report.
-The interface of this module needs a fair amount of user-friendliness. 
+The interface of this module needs a fair amount of user-friendliness.
 
-{e Remarks}. This module works only with variables of {!module:Var.Positive}. 
+{e Remarks}. This module works only with variables of {!module:Var.Positive}.
 Its implementation directly depends on the data structure {!module:Rtree}. *)
 
 (**
@@ -82,10 +82,10 @@ module Witness : sig
 	It describes a linear combination of the constraints of the problem yielding a
 	trivially contradictory constraint.*)
 	type t = (int * Scalar.Rat.t) list
-	
+
 	(** Pretty-print a value of type [t]. *)
 	val to_string : t -> string
-	
+
 	val equal : t -> t -> bool
 end
 

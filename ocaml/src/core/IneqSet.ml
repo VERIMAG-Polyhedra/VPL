@@ -133,13 +133,15 @@ let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 				(Cs.get_c c2)
 				(Scalar.Rat.mul r (Cs.get_c c1))
 			in
-			if Scalar.Rat.lt cste Scalar.Rat.z
+            if Cs.get_typ c2 = Cstr.Lt && Scalar.Rat.equal r Scalar.Rat.u && Scalar.Rat.equal cste Scalar.Rat.z
+            then cert1
+			else if Scalar.Rat.lt cste Scalar.Rat.z
 			then factory.Cert.mul r cert1
 			else
-				let cste_cert = factory.Cert.triv (Cs.get_typ c2) cste
+                let cste_cert = factory.Cert.triv (Cs.get_typ c2) cste
 				in
 				factory.Cert.mul r cert1
-					|> factory.Cert.add cste_cert
+				|> factory.Cert.add cste_cert
 		in
 		match Cs.get_typ c1, Cs.get_typ c2 with
 		| Cstr.Lt, Cstr.Le -> factory.Cert.to_le cert
@@ -444,7 +446,7 @@ let isRed: Splx.t -> int -> bool
 	let sx' = Splx.compl sx i in
 	match Splx.check sx' with
 	| Splx.IsOk _ -> false
-	| Splx.IsUnsat w -> true
+	| Splx.IsUnsat _ -> true
 
 module RmRedAux = struct
 
@@ -519,7 +521,7 @@ let inclSyn: 'c t -> 'c Cons.t -> bool
 	= fun s c ->
 	match List.filter (fun c' -> Cons.implies c' c) s with
 	| [] -> false
-	| [c'] -> true
+	| [_] -> true
 	| _ -> failwith "IneqSet.addM"
 
 (** [rmSynRed2 s l] removes syntactically redundant constraints from the union
@@ -530,7 +532,7 @@ let rmRedSyn: 'c t -> 'c Cons.t list -> 'c t
 		if inclSyn s c
 		then s
 		else
-			let (s1, s2) = List.partition (fun c' -> Cons.implies c c') s in
+			let (_, s2) = List.partition (fun c' -> Cons.implies c c') s in
 			c::s2
 	in
 	fun s l -> List.fold_left rm1 [] (s @ l)

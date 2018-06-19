@@ -47,11 +47,11 @@ module Stat = struct
 
 	let to_string : unit -> string
 		= fun () ->
-		Printf.sprintf ("PLP stats : \n\tnb_regions = %i
-			\n\tnumber of redundancies (in region representations) = %i
-			\n\tnumber of true boundaries = %i
-			\n\t -> redundancy ratio = %f
-			\n\tnumber of corrections = %i
+		Printf.sprintf ("PLP stats : \n\tnb_regions = %i\
+			\n\tnumber of redundancies (in region representations) = %i\
+			\n\tnumber of true boundaries = %i\
+			\n\t -> redundancy ratio = %f\
+			\n\tnumber of corrections = %i\
 			\n\ratio of subdivisions = %f")
 			!nb_regions
 			(Pervasives.fst !ratio_redundancy)
@@ -204,7 +204,7 @@ module PLP(Minimization : Min.Type) = struct
 			let get_null_basic_variables : PSplx.t -> int list
 				= fun sx ->
 				Misc.fold_left_i
-					(fun i res (col_number, value) ->
+					(fun i res (_, value) ->
 						if Scalar.Rat.isZ value
 						then i :: res
 						else res)
@@ -295,7 +295,7 @@ module PLP(Minimization : Min.Type) = struct
 						let b = Basis.pivot sx.PSplx.basis pivot in
 						if do_pivot b basiss
 						then
-							let ((leaving_var_row, leaving_var), entering_var) = pivot in
+							let ((leaving_var_row, _), entering_var) = pivot in
 							Debug.log DebugTypes.Detail
 								(lazy(Printf.sprintf "Pivoting on %s" (pivot_to_string pivot)));
 							let sx' = PSplx.pivot sx leaving_var_row entering_var in
@@ -320,7 +320,7 @@ module PLP(Minimization : Min.Type) = struct
 		let extract : PSplx.t -> Cs.t list
 		  	= fun sx ->
 		  	Objective.foldi
-			 	(fun i c l ->
+			 	(fun _ c l ->
 			  		(ParamCoeff.to_cstr
 					(Naming.to_vpl sx.PSplx.names)
 					ParamCoeff.GT0 c)
@@ -780,8 +780,8 @@ module PLP(Minimization : Min.Type) = struct
 				(* Updating the exploration point list*)
 				let todo' = List.fold_left
 					(fun res -> function
-						| ExplorationPoint.Point v as x -> x :: res
-						| ExplorationPoint.Direction (id,(cstr,b)) as x ->
+						| ExplorationPoint.Point _ as x -> x :: res
+						| ExplorationPoint.Direction (id,(cstr,_)) as x ->
 							if id = id_adj && (Cs.equal cstr cstr_adj)(* XXX: equal?*)
 							then res
 							else x :: res)
@@ -946,8 +946,8 @@ module PLP(Minimization : Min.Type) = struct
 				(* Updating the exploration point list*)
 				let todo' = List.fold_left
 					(fun res -> function
-						| ExplorationPoint.Point v as x -> x :: res
-						| ExplorationPoint.Direction (id,(cstr,b)) as x ->
+						| ExplorationPoint.Point _ as x -> x :: res
+						| ExplorationPoint.Direction (id,(cstr,_)) as x ->
 							if id = id_adj && (Cs.equal cstr cstr_adj)(* XXX: equal?*)
 							then res
 							else x :: res)
@@ -973,7 +973,7 @@ module PLP(Minimization : Min.Type) = struct
 				| ((ExplorationPoint.Point vec) as ep) :: tl ->
 					match Point_in_Region.in_region ep plp with
 					| None -> {plp with todo = ep :: tl}
-					| Some reg -> begin
+					| Some _ -> begin
 						(Debug.log DebugTypes.Detail
 						(lazy (Printf.sprintf "Exploration point %s lies within an already discovered region"
 						(Vec.to_string Vec.V.to_string vec)));
@@ -1117,7 +1117,11 @@ module PLP(Minimization : Min.Type) = struct
 		  	Debug.log DebugTypes.Normal
 		  		(lazy("Exec on the point " ^ (Vec.to_string V.to_string pointToExplore)));
 		  	Profile.start "LP" ;
-		 	let sx' = Explore.push st pointToExplore sx in
+            let sx' = try Explore.push st pointToExplore sx with ex -> begin
+                Profile.stop "LP" ;
+                raise ex
+                end
+            in
 		 	Profile.stop "LP" ;
 		 	Debug.log DebugTypes.Normal
 		  		(lazy("Found solution " ^ (PSplx.obj_value sx' |> PSplx.ParamCoeff.to_string)));
@@ -1136,7 +1140,11 @@ module PLP(Minimization : Min.Type) = struct
 		let exec : region_t -> Objective.pivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
 		  	= fun reg_t st sx pointToExplore ->
 		  	Profile.start "exec";
-		  	let res = exec' reg_t st sx pointToExplore in
+		  	let res = try exec' reg_t st sx pointToExplore with ex -> begin
+                Profile.stop "exec" ;
+                raise ex
+                end
+            in
 		  	Profile.stop "exec";
 		  	res
 	end
@@ -1202,7 +1210,7 @@ module PLP(Minimization : Min.Type) = struct
 			Misc.pop ExplorationPoint.equal points point
 
 		let do_not_add : Region.t -> ExplorationPoint.t -> t -> t
-			= fun reg explorationPoint plp ->
+			= fun _ explorationPoint plp ->
 			Debug.log DebugTypes.Normal (lazy "Region not added");
 			{plp with todo = (remove_point explorationPoint plp.todo)}
 
@@ -1218,13 +1226,13 @@ module PLP(Minimization : Min.Type) = struct
 	module InitSx = struct
 		(** Leads to a feasible parametric simplex tableau. *)
 		let init_sx : Objective.pivotStrgyT -> PSplx.t -> Vec.t -> PSplx.t option
-			= fun st sx point ->
+			= fun _ sx point ->
 			Debug.log DebugTypes.Normal
 				(lazy(Printf.sprintf "PLP initialization with point = %s"
 					(Vec.to_string Vec.V.to_string point)));
 		  	match Explore.Init.findFeasibleBasis sx point with
 		  	| None -> Debug.exec None DebugTypes.Normal (lazy "Problem Unsat")
-		  	| Some sx as r -> Debug.exec r DebugTypes.Normal (lazy "Problem Sat")
+		  	| Some _ as r -> Debug.exec r DebugTypes.Normal (lazy "Problem Sat")
 
 		(** Returns true if the input simplex tableau is feasible, and initializes variable sx with it.*)
 		let init : Vec.t -> config -> PSplx.t -> bool
@@ -1384,7 +1392,7 @@ module PLP(Minimization : Min.Type) = struct
 			(v,config)
 
 	let init_and_exec : config -> PSplx.t -> (PSplx.t -> 'c) -> t option
-		= fun config sx get_cert ->
+		= fun config sx _ ->
 		let (point,config) = choose_init_point sx config in
 		if InitSx.init point config sx
 		then

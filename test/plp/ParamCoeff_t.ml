@@ -1,26 +1,27 @@
 open Vpl
 
-module Test(Cs : Cstr.Rat.Type) = struct
+module Make_Tests(Cs : Cstr.Rat.Type) = struct
 
 	module ParamCoeff = ParamCoeff.ParamCoeff(Cs)
-	
+
 	let x = Cs.Vec.V.fromInt 1
 	let y = Cs.Vec.V.fromInt 2
 	let z = Cs.Vec.V.fromInt 3
 	let t = Cs.Vec.V.fromInt 4
-	
-	let equalTs : T.testT
-	  = let chk : string * bool * ParamCoeff.t * ParamCoeff.t -> T.stateT -> T.stateT
+
+	let equalTs : Test.t
+	  = fun () ->
+      let chk : string * bool * ParamCoeff.t * ParamCoeff.t -> Test.stateT -> Test.stateT
 		   = fun (nm, r, c, c') state ->
-		   if r = ParamCoeff.equal c c' 
-		   then T.succeed state
+		   if r = ParamCoeff.equal c c'
+		   then Test.succeed state
 		   else
 			let e = Printf.sprintf "%s: %s is not equal to %s"
 							 nm
 							 (ParamCoeff.to_string c)
 							 (ParamCoeff.to_string c')
 			in
-			T.fail nm e state
+			Test.fail nm e state
 		 in
 		 [
 		   "zero", true,
@@ -48,12 +49,13 @@ module Test(Cs : Cstr.Rat.Type) = struct
 		   {ParamCoeff.lin = [Scalar.Rat.z]; ParamCoeff.cst = Scalar.Rat.z}
 		 ]
 		 |> List.map chk
-		 |> T.suite "equal"
+		 |> Test.suite "equal"
 
-	let mkSparsesucceedTs : T.testT
-	  = let chk : string * ParamCoeff.t * ParamCoeff.t -> T.stateT -> T.stateT
+	let mkSparsesucceedTs : Test.t
+	  = fun () ->
+       let chk : string * ParamCoeff.t * ParamCoeff.t -> Test.stateT -> Test.stateT
 		   = fun (nm, c, c') state ->
-		   T.equals nm ParamCoeff.to_string ParamCoeff.equal c' c state
+		   Test.equals nm ParamCoeff.to_string ParamCoeff.equal c' c state
 		 in
 		 [
 		   "zero", ParamCoeff.mkCst Scalar.Rat.z,
@@ -88,16 +90,17 @@ module Test(Cs : Cstr.Rat.Type) = struct
 		    ParamCoeff.cst = Scalar.Rat.z}
 		 ]
 		 |> List.map chk
-		 |> T.suite "succeed"
+		 |> Test.suite "succeed"
 
-	let mkSparseFailureTs : T.testT
-	  = let chk : string * int * (int * Scalar.Rat.t) list * Scalar.Rat.t -> T.stateT -> T.stateT
+	let mkSparseFailureTs : Test.t
+	  = fun () ->
+      let chk : string * int * (int * Scalar.Rat.t) list * Scalar.Rat.t -> Test.stateT -> Test.stateT
 		   = fun (nm, i, l, a) state ->
 		   try
 		Pervasives.ignore (ParamCoeff.mkSparse i l a);
 		let e = Printf.sprintf "%s: expected Invalid_argument" nm in
-			T.fail nm e state
-		   with Invalid_argument _ -> T.succeed state
+			Test.fail nm e state
+		   with Invalid_argument _ -> Test.succeed state
 		 in
 		 [
 		   "zero", 0, [0, Scalar.Rat.u], Scalar.Rat.z
@@ -113,10 +116,11 @@ module Test(Cs : Cstr.Rat.Type) = struct
 		   "duplicate_same", 1, [0, Scalar.Rat.u; 0, Scalar.Rat.u], Scalar.Rat.z
 		 ]
 		 |> List.map chk
-		 |> T.suite "failure"
+		 |> Test.suite "failure"
 
-	let mkSparseTs : T.testT
-	  = [mkSparsesucceedTs; mkSparseFailureTs] |> T.suite "mkSparse"
+	let mkSparseTs : Test.t
+	  = fun () ->
+      [mkSparsesucceedTs(); mkSparseFailureTs()] |> Test.suite "mkSparse"
 
 	let paramCoeffPolyTcs : (string * (Cs.Vec.V.t -> int) *
 					(int -> Cs.Vec.V.t) * int *
@@ -147,35 +151,38 @@ module Test(Cs : Cstr.Rat.Type) = struct
 	  ParamCoeff.Poly.mk2_cste [([z],Scalar.Rat.u) ; ([t],Scalar.Rat.mk1 2)] Scalar.Rat.u
 	]
 
-	let ofPolyTs : T.testT
-	  = let chk : string * (Cs.Vec.V.t -> int) *
+	let ofPolyTs : Test.t
+	  = fun () ->
+      let chk : string * (Cs.Vec.V.t -> int) *
 			(int -> Cs.Vec.V.t) * int *
-			  ParamCoeff.t * ParamCoeff.Poly.t -> T.stateT -> T.stateT
+			  ParamCoeff.t * ParamCoeff.Poly.t -> Test.stateT -> Test.stateT
 		   = fun (nm, tr, _, i, c, p) state ->
 		   let c' = ParamCoeff.ofPoly tr i p in
-		   T.equals nm ParamCoeff.to_string ParamCoeff.equal c c' state
+		   Test.equals nm ParamCoeff.to_string ParamCoeff.equal c c' state
 		 in
 		 paramCoeffPolyTcs
 		 |> List.map chk
-		 |> T.suite "ofPoly"
+		 |> Test.suite "ofPoly"
 
-	let toPolyTs : T.testT
-	  = let chk : string * (Cs.Vec.V.t -> int) *
+	let toPolyTs : Test.t
+	  = fun () ->
+      let chk : string * (Cs.Vec.V.t -> int) *
 			(int -> Cs.Vec.V.t) * int *
-			  ParamCoeff.t * ParamCoeff.Poly.t -> T.stateT -> T.stateT
+			  ParamCoeff.t * ParamCoeff.Poly.t -> Test.stateT -> Test.stateT
 		   = fun (nm, _, tr, _, c, p) state ->
 		   let p' = ParamCoeff.toPoly tr c in
-		   T.equals nm ParamCoeff.Poly.to_string ParamCoeff.Poly.equal p p' state
+		   Test.equals nm ParamCoeff.Poly.to_string ParamCoeff.Poly.equal p p' state
 		 in
 		 paramCoeffPolyTcs
 		 |> List.map chk
-		 |> T.suite "toPoly"
+		 |> Test.suite "toPoly"
 
-	let addTs : T.testT
-	  = let chk : string * ParamCoeff.t * ParamCoeff.t * ParamCoeff.t -> T.stateT -> T.stateT
+	let addTs : Test.t
+	  = fun () ->
+      let chk : string * ParamCoeff.t * ParamCoeff.t * ParamCoeff.t -> Test.stateT -> Test.stateT
 		   = fun (nm, c1, c2, c) state ->
 		   let c' = ParamCoeff.add c1 c2 in
-		   T.equals nm ParamCoeff.to_string ParamCoeff.equal c c' state
+		   Test.equals nm ParamCoeff.to_string ParamCoeff.equal c c' state
 		 in
 		 [
 		   "zero",
@@ -209,13 +216,14 @@ module Test(Cs : Cstr.Rat.Type) = struct
 		   ParamCoeff.mkSparse 2 [0, Scalar.Rat.mk1 2; 1, Scalar.Rat.u] Scalar.Rat.z
 		 ]
 		 |> List.map chk
-		 |> T.suite "add"
+		 |> Test.suite "add"
 
-	let mulTs : T.testT
-	  = let chk : string * Scalar.Rat.t * ParamCoeff.t * ParamCoeff.t -> T.stateT -> T.stateT
+	let mulTs : Test.t
+	  = fun () ->
+      let chk : string * Scalar.Rat.t * ParamCoeff.t * ParamCoeff.t -> Test.stateT -> Test.stateT
 		   = fun (nm, a, c, c') state ->
 		   let c'' = ParamCoeff.mul a c in
-		   T.equals nm ParamCoeff.to_string ParamCoeff.equal c' c'' state
+		   Test.equals nm ParamCoeff.to_string ParamCoeff.equal c' c'' state
 		 in
 		 [
 		   "zero", Scalar.Rat.z,
@@ -239,13 +247,14 @@ module Test(Cs : Cstr.Rat.Type) = struct
 		   ParamCoeff.mkSparse 1 [0, Scalar.Rat.mk1 2] (Scalar.Rat.mk1 4)
 		 ]
 		 |> List.map chk
-		 |> T.suite "mul"
+		 |> Test.suite "mul"
 
-	let is_constant_ts : T.testT
-	  = let chk : string * bool * ParamCoeff.t -> T.stateT -> T.stateT
+	let is_constant_ts : Test.t
+	  = fun () ->
+      let chk : string * bool * ParamCoeff.t -> Test.stateT -> Test.stateT
 		   = fun (nm, r, c) state ->
 		   let r' = ParamCoeff.is_constant c in
-		   T.equals nm Pervasives.string_of_bool (=) r r' state
+		   Test.equals nm Pervasives.string_of_bool (=) r r' state
 		 in
 		 [
 			 "zero_no_param", true, ParamCoeff.mkCst Scalar.Rat.z;
@@ -257,13 +266,14 @@ module Test(Cs : Cstr.Rat.Type) = struct
 			 "params", false, ParamCoeff.mkSparse 2 [0, Scalar.Rat.u; 1, Scalar.Rat.negU] Scalar.Rat.u
 		 ]
 		 |> List.map chk
-		 |> T.suite "is_constant"
+		 |> Test.suite "is_constant"
 
-	let eval_ts : T.testT
-	=	let chk : string * Q.t * ParamCoeff.t * (int -> Q.t) -> T.stateT -> T.stateT
+	let eval_ts : Test.t
+	= fun () ->
+    let chk : string * Q.t * ParamCoeff.t * (int -> Q.t) -> Test.stateT -> Test.stateT
 		=	fun (nm, r, c, f) state ->
 			let r' = ParamCoeff.eval c f in
-			T.equals nm Q.to_string Q.equal r r' state
+			Test.equals nm Q.to_string Q.equal r r' state
 		in
 		[
 			"no_param", Q.one, ParamCoeff.mkCst Q.one, List.nth [];
@@ -271,10 +281,11 @@ module Test(Cs : Cstr.Rat.Type) = struct
 			"one_param_cst", Q.of_int 3, ParamCoeff.mk [Q.one] Q.one, List.nth [Q.of_int 2]
 		]
 		|> List.map chk
-		|> T.suite "eval"
+		|> Test.suite "eval"
 
-	let ts : T.testT
-	  = [
+	let ts : Test.t
+	  = fun () ->
+      List.map Test.run [
 	  equalTs;
 	  mkSparseTs;
 	  ofPolyTs;
@@ -283,15 +294,15 @@ module Test(Cs : Cstr.Rat.Type) = struct
 	  mulTs;
 	  is_constant_ts;
 		eval_ts
-	] |> T.suite Cs.Vec.V.name
+	] |> Test.suite Cs.Vec.V.name
 end
 
-module Positive = Test(Cstr.Rat.Positive)
+module Positive = Make_Tests(Cstr.Rat.Positive)
 
-module Int = Test(Cstr.Rat.Int)
+module Int = Make_Tests(Cstr.Rat.Int)
 
-let ts : T.testT
-	  = [
-	  Positive.ts;
-	  Int.ts
-	] |> T.suite "ParamCoeff"
+let ts : Test.t
+	  = fun () -> [
+	  Positive.ts();
+	  Int.ts()
+	] |> Test.suite "ParamCoeff"

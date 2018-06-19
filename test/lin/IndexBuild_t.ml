@@ -5,11 +5,12 @@ let mkl l = List.map Index.Int.mk l
 
 module Liste = struct
 
-	let components_ts : T.testT
-		 = let chk : string * Index.Int.t * IndexBuild.Liste.t -> T.testT
+	let components_ts : Test.t
+		= fun () ->
+        let chk : string * Index.Int.t * IndexBuild.Liste.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, ind, eil) state ->
 		let ail = IndexBuild.Liste.components ind in
-		T.equals nm IndexBuild.Liste.to_string IndexBuild.Liste.equal eil ail state
+		Test.equals nm IndexBuild.Liste.to_string IndexBuild.Liste.equal eil ail state
 		   in
 		   let tcs : (string * Index.Int.t * IndexBuild.Liste.t) list
 		= [
@@ -19,13 +20,14 @@ module Liste = struct
 			 "decreasing", mk [3;1;0], mkl [[0;1;0] ; [1;0;0] ; [1;0;0] ; [1;0;0]] ;
 			 "any", mk [1;2;1], mkl [[1;0;0] ; [0;1;0] ; [0;1;0] ; [0;0;1]] ;
 		  ] in
-		   T.suite "components" (List.map chk tcs)
+		   Test.suite "components" (List.map chk tcs)
 
-	let get_preds_ts : T.testT
-		 = let chk : string * Index.Int.t * IndexBuild.Liste.t -> T.testT
+	let get_preds_ts : Test.t
+		= fun () ->
+        let chk : string * Index.Int.t * IndexBuild.Liste.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, ind, eil) state ->
 		let ail = IndexBuild.Liste.get_preds ind in
-		T.equals nm IndexBuild.Liste.to_string IndexBuild.Liste.equal eil ail state
+		Test.equals nm IndexBuild.Liste.to_string IndexBuild.Liste.equal eil ail state
 		   in
 		   let tcs : (string * Index.Int.t * IndexBuild.Liste.t) list
 		= [
@@ -36,13 +38,14 @@ module Liste = struct
 			 "any size 3", mk [1;2;1], mkl [[0;0;1] ; [0;1;0] ; [0;1;1] ; [0;2;0] ; [0;2;1] ; [1;0;0] ; [1;0;1] ; [1;1;0] ; [1;1;1] ; [1;2;0]]  ;
 			 "any size 4", mk [1;0;2;1], mkl [[0;0;0;1] ; [0;0;1;1] ; [0;0;2;1] ; [1;0;0;0] ; [1;0;1;0] ; [1;0;1;1] ; [1;0;0;1] ; [1;0;2;0] ; [0;0;1;0] ; [0;0;2;0]] ;
 		  ] in
-		   T.suite "get_preds" (List.map chk tcs)
+		   Test.suite "get_preds" (List.map chk tcs)
 
-	let le_ts : T.testT
-		 = let chk : string * int * int * IndexBuild.Liste.t -> T.testT
+	let le_ts : Test.t
+		= fun () ->
+        let chk : string * int * int * IndexBuild.Liste.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, dim, val_max, eil) state ->
 		let ail = IndexBuild.Liste.le dim val_max in
-		T.equals nm IndexBuild.Liste.to_string IndexBuild.Liste.equal eil ail state
+		Test.equals nm IndexBuild.Liste.to_string IndexBuild.Liste.equal eil ail state
 		   in
 		   let tcs : (string * int * int * IndexBuild.Liste.t) list
 		= [
@@ -51,14 +54,14 @@ module Liste = struct
 			 "dim 2", 2, 3, mkl [[1;0];[2;0];[3;0];[0;1];[0;2];[0;3];[1;1];[1;2];[2;1]] ;
 			 "dim 3", 3, 2, mkl [[1;0;0];[0;1;0];[0;0;1];[1;1;0];[1;0;1];[0;1;1];[2;0;0];[0;2;0];[0;0;2]]
 		  ] in
-		   T.suite "le" (List.map chk tcs)
+		   Test.suite "le" (List.map chk tcs)
 
-	let ts : T.testT
-		= [
-	    components_ts ;
-		 get_preds_ts ;
-		 le_ts
-	  	] |> T.suite "Liste"
+	let ts : Test.t
+		= fun () -> [
+	     components_ts() ;
+		 get_preds_ts() ;
+		 le_ts()
+	  	] |> Test.suite "Liste"
 end
 
 module Map = struct
@@ -76,13 +79,14 @@ module Map = struct
 					(Index.Int.sumI (IndexBuild.MapI.find i map))))
 			)
 			il
-	let compute_ts : T.testT
-		= let chk : string * IndexBuild.Liste.t -> T.testT
+	let compute_ts : Test.t
+		= fun () ->
+        let chk : string * IndexBuild.Liste.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, il) state ->
 		let map = IndexBuild.Map.compute il in
 			if check_map map il
-			then T.succeed state
-			else T.fail nm (Printf.sprintf "map check failed : from index list %s\nmap : %s\n"
+			then Test.succeed state
+			else Test.fail nm (Printf.sprintf "map check failed : from index list %s\nmap : %s\n"
 				(IndexBuild.Liste.to_string il)
 				(IndexBuild.Map.to_string map)) state
 		   in
@@ -96,17 +100,18 @@ module Map = struct
 			 "redundancy", mkl [[7;1;0;2;0] ; [0;0;3;0;2] ; [7;1;0;2;0]] ;
 			 "longer", mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]]
 		  ] in
-		   T.suite "compute" (List.map chk tcs)
+		   Test.suite "compute" (List.map chk tcs)
 
 	let init_map = IndexBuild.Map.compute (mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]])
 
-	let compute_list_from_map_ts : T.testT
-		= let chk : string * IndexBuild.Liste.t * IndexBuild.Map.t -> T.testT
+	let compute_list_from_map_ts : Test.t
+		= fun () ->
+        let chk : string * IndexBuild.Liste.t * IndexBuild.Map.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, il, map) state ->
 		let map = IndexBuild.Map.compute_list_from_map il map in
 			if check_map map il
-			then T.succeed state
-			else T.fail nm (Printf.sprintf "map check failed : from index list %s\nmap : %s\n"
+			then Test.succeed state
+			else Test.fail nm (Printf.sprintf "map check failed : from index list %s\nmap : %s\n"
 				(IndexBuild.Liste.to_string il)
 				(IndexBuild.Map.to_string map)) state
 		   in
@@ -121,15 +126,16 @@ module Map = struct
 			 "longer", mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]], init_map ;
 			 "no map", mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]], IndexBuild.MapI.empty
 		  ] in
-		   T.suite "compute_list_from_map" (List.map chk tcs)
+		   Test.suite "compute_list_from_map" (List.map chk tcs)
 
-	let compute_from_map_ts : T.testT
-		= let chk : string * Index.Int.t * IndexBuild.Map.t -> T.testT
+	let compute_from_map_ts : Test.t
+		= fun () ->
+        let chk : string * Index.Int.t * IndexBuild.Map.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, ind, map) state ->
 		let (il,map) = IndexBuild.Map.compute_from_map ind map in
 			if check_map map [ind] && (Index.Int.one_coeff_nn ind || Index.Int.equal ind (Index.Int.sumI (il)))
-			then T.succeed state
-			else T.fail nm (Printf.sprintf "map check failed : from index %s\nmap : %s\n"
+			then Test.succeed state
+			else Test.fail nm (Printf.sprintf "map check failed : from index %s\nmap : %s\n"
 				(Index.Int.to_string ind)
 				(IndexBuild.Map.to_string map)) state
 		   in
@@ -140,18 +146,18 @@ module Map = struct
 			 "one nonnull coeff", mk [0;2;0], init_map ;
 			 "no map", mk [2;3], IndexBuild.MapI.empty
 		  ] in
-		   T.suite "compute_from_map" (List.map chk tcs)
+		   Test.suite "compute_from_map" (List.map chk tcs)
 
-	let ts : T.testT
-		= [
-	   	compute_ts;
-	   	compute_list_from_map_ts;
-	   	compute_from_map_ts
-	  	] |> T.suite "Map"
+	let ts : Test.t
+		= fun () -> [
+	   	 compute_ts();
+	   	 compute_list_from_map_ts();
+	   	 compute_from_map_ts()
+	  	] |> Test.suite "Map"
 end
 
-let ts : T.testT
-		= [
-		 Liste.ts;
-		 Map.ts
-	  	] |> T.suite "IndexBuild"
+let ts : Test.t
+		= fun () -> [
+		 Liste.ts();
+		 Map.ts()
+	  	] |> Test.suite "IndexBuild"

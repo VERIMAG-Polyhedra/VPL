@@ -1,5 +1,4 @@
 open WrapperTraductors
-open CWrappers
 
 (* lifting de PedraQ.FullDom *)
 module PedraQWrapper: QInterface.HighLevelDomain = struct
@@ -25,7 +24,7 @@ module PedraQWrapper: QInterface.HighLevelDomain = struct
 
     let rename x y = rename (import_certvar x) (import_certvar y)
 
-    let meet p1 p2 =
+    let meet _ _ =
       not_yet_implemented "meet"
 
     let assign l p =
@@ -104,7 +103,7 @@ module PedraZWrapper: ZInterface.HighLevelDomain = struct
 
     let rename x y = rename (import_certvar x) (import_certvar y)
 
-    let meet p1 p2 =
+    let meet _ _ =
       not_yet_implemented "meet"
 
     let join = FullDom.join

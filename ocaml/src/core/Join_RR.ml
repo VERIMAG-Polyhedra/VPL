@@ -66,7 +66,7 @@ let get_join_cert : 'c1 Cert.t -> 'c2 Cert.t ->  'c1 regionsT  -> 'c2 regionsT
         List.fold_left
             (fun r_cert (col,q) -> try
                 match PLP.MapV.find col map with
-                | (c, C1 cert) -> factory1.Cert.add r_cert (factory1.Cert.mul q cert)
+                | (_, C1 cert) -> factory1.Cert.add r_cert (factory1.Cert.mul q cert)
                 | (_,_) -> Pervasives.failwith "Join.get_join_cert.get_cert_p1"
                 with Not_found -> r_cert)
             factory1.Cert.top
@@ -77,7 +77,7 @@ let get_join_cert : 'c1 Cert.t -> 'c2 Cert.t ->  'c1 regionsT  -> 'c2 regionsT
         List.fold_left
             (fun r_cert (col,q) -> try
                 match PLP.MapV.find col map with
-                | (c, C2 cert) -> factory2.Cert.add r_cert (factory2.Cert.mul q cert)
+                | (_, C2 cert) -> factory2.Cert.add r_cert (factory2.Cert.mul q cert)
                 | (_,_) -> Pervasives.failwith "Join.get_join_cert.get_cert_p1"
                 with Not_found -> r_cert)
             factory2.Cert.top

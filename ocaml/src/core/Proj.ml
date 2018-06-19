@@ -149,7 +149,7 @@ module Proj (Min : Min.Type) = struct
 	(* XXX: Is it necessary to add the trivial constraint at the end? *)
 	let projToTab : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> PSplx.t
 		= fun factory flags xs l ->
-		if !Flags.sum_lambda_1 
+		if !Flags.sum_lambda_1
 		then print_endline "Caution : sum_lambda = true in the projection by PLP";
 		let cstrs = List.map Pervasives.fst l in
 		let bndSet = Cs.getVars cstrs in
@@ -219,7 +219,7 @@ module Proj (Min : Min.Type) = struct
 			(sols, regions)
 		in
 		let explore : 'c Cert.t -> projFlagsT -> PLP.Objective.pivotStrgyT -> PSplx.t -> 'c PLP.mapVar_t -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
-			= fun factory flags strgy tab map ->
+			= fun factory _ strgy tab map ->
 			let config = {PLP.std_config with
 				PLP.reg_t = (if !Flags.sum_lambda_1 then PLP.NCone else PLP.Cone);
 				stgy = strgy;}
