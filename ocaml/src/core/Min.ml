@@ -910,14 +910,14 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
             Debug.log DebugTypes.Detail (lazy "Launching minimization of the C++ polyhedron");
 			Wrapper.minimize poly;
             Debug.log DebugTypes.Detail (lazy "Minimization done");
-			let cstrs' = Misc.fold_right_i
-				(fun i cstr res ->
+			let cstrs' = Misc.fold_left_i
+				(fun i res cstr ->
 					if Wrapper.is_true poly i
-					then cstr :: res
+					then (i, cstr) :: res
 					else res)
-				cstrs []
-			|> List.mapi
-				(fun i cstr ->
+				[] cstrs
+			|> List.map
+				(fun (i,cstr) ->
 				let witness = get_witness poly vars i in
 				(cstr,witness))
 			in
