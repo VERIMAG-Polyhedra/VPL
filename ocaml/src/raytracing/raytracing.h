@@ -47,8 +47,7 @@ public:
   std::vector<int> GetIntersections(const Ray& ray, int currIdx) ;
   bool CheckRedundant(const int currIdx, std::vector<int>& headIdx) ;
   double GetDistanceInverse(const int currIdx, const double consDirect) ;
-  static double GetDistanceInverse(const Point& point, const Vector& cons, 
-      double constant, const Ray& ray) ;
+  static double GetDistanceInverse(const Vector& cons, const Ray& ray, double eva) ;
   static double GetDistance(const Point& point, const Vector& cons, 
       double constant, const Ray& ray) ;
   void RayHitting() ;
@@ -58,7 +57,8 @@ private:
   std::vector<int> GetAllMetCons(Vector distanceVec, int currIdx) ;
   std::vector<int> GetSortedCons(Vector distanceVec, int currIdx) ;
   Distance GetIrrdDistance(const Vector& disVec) ; 
-  bool Farkas(int currIdx) ;
+  Vector CalWitnessPoint(const Ray& ray, int currIdx) ;
+  bool Farkas(int currIdx, const Ray& ray) ;
   Polyhedron* _polyptr ;
   const Point* _start_point ;
   Vector _evaluate ;

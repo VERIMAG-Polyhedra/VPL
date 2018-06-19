@@ -568,8 +568,8 @@ bool Polyhedron::IsOpen() const {
   Vector obj(_variable_num) ;
   obj.setOnes() ;
   GlpkInterface glpkInter1, glpkInter2 ;
-  bool res1 = glpkInter1.Simplex(*this, obj, false, false, GLP_MAX, false) ;
-  bool res2 = glpkInter2.Simplex(*this, obj, false, false, GLP_MIN, false) ;
+  bool res1 = glpkInter1.Simplex(*this, -obj, false, false, false) ;
+  bool res2 = glpkInter2.Simplex(*this, obj, false, false, false) ;
   return ! (res1 && res2) ;
 }
 
@@ -656,7 +656,7 @@ std::vector<Point> Polyhedron::GetWitness() {
  * TODO These functions need to be changed (remove the output and provide functions
  * to show the result...)
 *******************************************************************************/
-bool Polyhedron::GetExactSolution(int objdir) {
+bool Polyhedron::GetExactSolution() {
   int colNum = get_variable_num() ;
   Vector obj(colNum) ;
   // Eigen random matrix doesn't work well, so use std
@@ -666,17 +666,18 @@ bool Polyhedron::GetExactSolution(int objdir) {
   for (int j = 0; j < colNum; ++ j) {
     obj(j) = dis(gen) ;
   }
-  return GetExactSolution(obj, objdir) ;
+  return GetExactSolution(obj) ;
 }
 
-bool Polyhedron::GetExactSolution(const Vector& obj, int objdir) {
+bool Polyhedron::GetExactSolution(const Vector& obj) {
   int rowNum = get_constraint_num() ;
   int colNum = get_variable_num() ;
   if (rowNum < colNum) {
     std::cerr << "Cannot solve linear equation (multiple solutions)." << std::endl ;
   }
   GlpkInterface glpkInter ;
-  bool glpkRes = glpkInter.Simplex(*this, obj, false, false, objdir) ;
+  // minimize the obj
+  bool glpkRes = glpkInter.Simplex(*this, obj, false, false) ;
   if (glpkRes == false) {
     std::cout << "Polyhedron::GetExactSolution(): LP has no optimal solution." << std::endl << std::endl ;
     return false ;
@@ -752,6 +753,9 @@ bool Polyhedron::GetExactSolution(const Vector& obj, int objdir) {
   for (int i = 0; i < (int) nonbasic.size(); ++ i) { 
     currIdx = nonbasic[i] ;
     state = glpkInter.GetVariState(currIdx) ;
+    // we only use minimize in our program
+    // max obj is min - obj
+    /*
     if (objdir == GLP_MAX) {
       if (state == GLP_NF && newObj.at(0, currIdx) == zero) {
         continue ;
@@ -767,7 +771,7 @@ bool Polyhedron::GetExactSolution(const Vector& obj, int objdir) {
         return false ;
       }
     }
-    else {
+    else {*/
       if (state == GLP_NF && newObj.at(0, currIdx) == zero) {
         continue ;
       }
@@ -781,7 +785,7 @@ bool Polyhedron::GetExactSolution(const Vector& obj, int objdir) {
         std::cerr << "Incorrect simplex result." << std::endl ; 
         return false ;
       }
-    }
+    //}
   }
   std::cout << "The simplex result is correct." << std::endl ;
   return true ; 

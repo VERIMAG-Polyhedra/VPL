@@ -318,21 +318,16 @@ bool GlpkInterface::Sat(const Polyhedron& poly, int idx, double threshold) {
 
 /*******************************************************************************
  * Solve LP with glpk simplex 
+ * Minimize the objective. If miximization is needed, use -obj.
  * @para poly the polyhedron to be solved
  * @para obj the objective function
  * @para variNonNeg true if all the decision variables are non-negative
  * @para askFeasible true if just a feasible solution is needed
- * @para objdir GLP_MAX or GLP_MIN
  * @return true if the feasible/optimal solution exists 
 *******************************************************************************/
 bool GlpkInterface::Simplex(const Polyhedron& poly, const Vector& obj, 
-    bool variNonNeg, bool askFeasible, int objdir, bool getBasis) {
-  if (objdir == GLP_MAX) {
-    glp_set_obj_dir(_glp, GLP_MAX) ;
-  }
-  else {
+    bool variNonNeg, bool askFeasible, bool getBasis) {
     glp_set_obj_dir(_glp, GLP_MIN) ;
-  }
   int consNum = poly.get_constraint_num() ;
   int variNum = poly.get_variable_num() ;
   glp_add_rows(_glp, consNum) ; 
