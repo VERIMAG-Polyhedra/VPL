@@ -36,6 +36,9 @@ public:
 
   double static GetDotProductThreshold(const Vector& vec1, const Vector& vec2) ;
   double static GetDotProductThreshold(int size, double norm1, double norm2) ;
+
+  RMatrix static GetBlock(const RMatrix& matrix, 
+      int startRow, int startCol, int rowNum, int colNum) ;
 } ;
 
 #endif

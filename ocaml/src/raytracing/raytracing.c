@@ -165,7 +165,7 @@ std::vector<int> Raytracing::GetIntersections(const Ray& ray, int currIdx) {
   log_mtx_raytracing.unlock() ; 
 #endif
 
-  double threshold, currNorm ;
+  double threshold, currNorm, currDistance = -1, sndDistance = -1 ;
   for (int i = 0; i < consNum; ++ i) {
     //if (_check_inclusion && i >= _start_idx) continue ;
     if (currIdx == i) continue ;
@@ -173,7 +173,7 @@ std::vector<int> Raytracing::GetIntersections(const Ray& ray, int currIdx) {
     currNorm = _polyptr->get_coefficients().row(i).norm() ;
     threshold = Tool::GetDotProductThreshold(variNum, currNorm, 1) ;
     if ( Double::IsLessEq(consDirect, 0.0, threshold) ) continue ;
-    double currDistance = GetDistanceInverse(i, consDirect) ;
+    currDistance = GetDistanceInverse(i, consDirect) ;
 
 #ifdef DEBUGINFO_RAYTRACING
   log_mtx_raytracing.lock() ; 
@@ -182,17 +182,27 @@ std::vector<int> Raytracing::GetIntersections(const Ray& ray, int currIdx) {
   log_mtx_raytracing.unlock() ; 
 #endif
 
-    // the threshold 1e-6 will not effect the result
-    if ( Double::IsLessEq(currIdxDis, currDistance, 1e-6) ) {
+    // the threshold 1e-10 will not effect the result
+    if ( Double::IsLessEq(currIdxDis, currDistance, 1e-10) ) {
       head.push_back(i) ;
+    }
+    else if (currDistance > sndDistance) {
+      sndDistance = currDistance ;
     }
   }
   if (head.size() == 0) {
     std::vector<int> singleVec ;
     singleVec.push_back(currIdx) ;
     if (_get_witness) {
+      double newDis ;
+      if (sndDistance == -1) {
+        newDis =  (1/currIdxDis + 1) ;
+      }
+      else {
+        newDis = (1/currIdxDis + 1/sndDistance) / 2 ;
+      }
       Vector witness = _start_point->get_coordinates() +
-          ray.get_direction() * (1 / currIdxDis + 1) ;
+          ray.get_direction() *  newDis ;
       _polyptr->AddWitnessPoint(currIdx, witness) ;
 
 #ifdef DEBUGINFO_RAYTRACING
@@ -232,6 +242,20 @@ double Raytracing::GetDistanceInverse(const int currIdx, const double consDirect
   return res ;
 }
 
+/*******************************************************************************
+ * eva = constant - cons * point.get_coordinates().transpose() ;
+ * Be attention: if necessary, check the point is not on the boundaries.
+*******************************************************************************/
+double Raytracing::GetDistanceInverse(const Vector& cons,
+    const Ray& ray, double eva) {
+  double den = ray.get_direction() * cons.transpose() ;
+  double threshold = Tool::GetDotProductThreshold(cons.size(), cons.norm(), 1) ;
+  if ( Double::AreEqual(den, 0, threshold) ) {
+    return 0 ;
+  }
+  return den/eva ;
+}
+/*
 double Raytracing::GetDistanceInverse(const Point& point, const Vector& cons, 
       double constant, const Ray& ray) {
   double den = ray.get_direction() * cons.transpose() ;
@@ -242,6 +266,7 @@ double Raytracing::GetDistanceInverse(const Point& point, const Vector& cons,
   double num = constant - cons * point.get_coordinates().transpose() ;
   return den/num ;
 }
+*/
 
 /*******************************************************************************
  * Use it when we know the den is not 0
@@ -322,7 +347,7 @@ bool Raytracing::CheckRedundant(const int currIdx, std::vector<int>& headIdx) {
   log_mtx_raytracing.unlock() ; 
 #endif
 
-            return Farkas(currIdx) ; 
+            return Farkas(currIdx, currRay) ; 
           } 
           headIdx.push_back( currInter[i] ) ;
         }
@@ -338,7 +363,8 @@ bool Raytracing::CheckRedundant(const int currIdx, std::vector<int>& headIdx) {
   // It should NOT reach here. Just in case.
   std::cout << "raytracing cannot determine the current constraint" 
       << std::endl ;
-  return Farkas(currIdx) ;
+  std::terminate() ;
+  //return Farkas(currIdx) ;
 }
 
 /*******************************************************************************
@@ -453,6 +479,9 @@ std::vector<int> Raytracing::GetSortedCons(Vector distanceVec, int currIdx) {
   return newVec ;
 } 
 
+/*******************************************************************************
+ * Calculate the distance for obtaining the witness point in the first phase
+*******************************************************************************/
 Distance Raytracing::GetIrrdDistance(const Vector& disVec) {
   Distance distance ;
   double maxVal = 0.0, minVal = 0.0 ;
@@ -524,6 +553,39 @@ Distance Raytracing::GetIrrdDistance(const Vector& disVec) {
 
   return  distance ;
 }
+
+/*******************************************************************************
+ * Calculate the witness point in the second phase
+*******************************************************************************/
+Vector Raytracing::CalWitnessPoint(const Ray& ray, int currIdx) {
+  int consNum = _polyptr->get_constraint_num() ;
+  int variNum = _polyptr->get_variable_num() ;
+  double product = _polyptr->get_coefficients().row(currIdx)
+      * ray.get_direction().transpose() ;
+  double currIdxDis = GetDistanceInverse(currIdx, product) ;
+  double threshold, currNorm, consDirect, currDistance, sndDistance = -1 ;
+  for (int i = 0; i < consNum; ++ i) {
+    if (currIdx == i) continue ;
+    currNorm = _polyptr->get_coefficients().row(i).norm() ;
+    threshold = Tool::GetDotProductThreshold(variNum, currNorm, 1) ;
+    consDirect = _polyptr->get_coefficients().row(i)
+        * ray.get_direction().transpose() ;
+    if ( Double::IsLessEq(consDirect, 0.0, threshold) ) continue ;
+    currDistance = GetDistanceInverse(i, consDirect) ;
+    if (currDistance > sndDistance) {
+      sndDistance = currDistance ;
+    }
+  }
+  double newDis ;
+  if (sndDistance != -1) {
+    newDis = (1/currIdxDis + 1/sndDistance) / 2 ; 
+  }
+  else {
+    newDis = 1/currIdxDis + 1 ;
+  }
+  return _start_point->get_coordinates() + ray.get_direction() * newDis ;
+}
+
 
 /*******************************************************************************
  * Gets the maximum value of each column, and return the coressponding index of
@@ -615,7 +677,7 @@ bool Raytracing::HasInclusion() const {
  * @para currIdx the index of the constraint to be tested
  * @return true if the current constraint is redundant 
 ********************************************************************************/
-bool Raytracing::Farkas(int currIdx) {
+bool Raytracing::Farkas(int currIdx, const Ray& ray) {
   int consNum = _polyptr->get_constraint_num() ;
   int variNum = _polyptr->get_variable_num() ;
   int lpConsNum = variNum + 1 ;
@@ -663,30 +725,8 @@ bool Raytracing::Farkas(int currIdx) {
 
   // add witness point
   if (_get_witness && res == false) {
-
-    // TODO in this case we shouldn't add a witness point,
-    // otherwise it will become strange
-    Vector empty(0) ;
-    _polyptr->AddWitnessPoint( currIdx, empty ) ;
-    /*
-    Vector currCons = _polyptr->get_coefficients().row(currIdx) ;
-    Ray ray(currCons) ;
-    double constant = _polyptr->GetConstant(currIdx) ;
-    double num = constant - _start_point->get_coordinates() * currCons.transpose() ;
-    double den = ray.get_direction() * currCons.transpose() ;
-    double distance = num / den ;
-    Vector witness = _start_point->get_coordinates() +
-        ray.get_direction() * (distance + 1) ;
+    Vector witness = CalWitnessPoint(ray, currIdx) ; 
     _polyptr->AddWitnessPoint(currIdx, witness) ;
-
-#ifdef DEBUGINFO_RAYTRACING
-  log_mtx_raytracing.lock() ; 
-  std::cout << "Farkas: add a witness for " << currIdx
-      << " : " << witness << std::endl ;
-  log_mtx_raytracing.unlock() ; 
-#endif
-  */
-
   }
 
   return res ;

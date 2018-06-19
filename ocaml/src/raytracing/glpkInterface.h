@@ -29,7 +29,7 @@ public:
       double epsilon = _epsilon) ;
   static bool Sat(const Polyhedron& poly, int idx, double threshold = _threshold) ;
   bool Simplex(const Polyhedron& poly, const Vector& obj, 
-      bool variNonNeg = false, bool askFeasible = false, int objdir = GLP_MIN,
+      bool variNonNeg = false, bool askFeasible = false,
       bool getBasis = true) ;
   double get_simplex_optimal() ;
   void GetBasis() ;

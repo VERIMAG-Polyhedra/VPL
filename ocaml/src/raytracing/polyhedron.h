@@ -94,8 +94,8 @@ public:
   //void SetWitnessRay(int idx, const Vector& rayDirect) ;
   //Vector GetWitnessRay(int idx) const ;
   std::vector<Point> GetWitness() ;
-  bool GetExactSolution(int objdir) ;
-  bool GetExactSolution(const Vector& obj, int objdir) ;
+  bool GetExactSolution() ;
+  bool GetExactSolution(const Vector& obj) ;
   // inline functions 
   int get_variable_num() const {
     return _variable_num ;
