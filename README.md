@@ -14,92 +14,123 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 
 1. __From [opam](https://opam.ocaml.org/)__
 
-    1. External Dependencies
+    First, add the following repository in your opam system:
 
-        * [glpk](https://www.gnu.org/software/glpk/)
-            __required version >= 4.61__
+        opam repo add vpl https://raw.githubusercontent.com/VERIMAG-Polyhedra/opam-vpl/master
 
-        * [eigen](http://eigen.tuxfamily.org/)
-           (automatically installed by depexts on debian or ubuntu)
-           _debian package libeigen3-dev_
-           __tested with version 3.3.3__
+    Then, install the following packages (depending on your needs):
 
-    2. Installation
+    * `vpl-core`: the ocaml library
 
-        First, add the following repository in your opam system:
+      ```
+      opam install vpl-core
+      ```
 
-            opam repo add vpl https://raw.githubusercontent.com/VERIMAG-Polyhedra/opam-vpl/master
+    * `coq-vpl`: the Coq library (only needed to get Coq proofs about VPL operators)
 
-        Then, install the following packages (depending on your needs):
+      ```
+      opam install coq-vpl
+      ```
 
-        * `vpl-core`: the ocaml library
+    * `coq-vpltactic`: the [VplTactic](https://github.com/VERIMAG-Polyhedra/VplTactic) plugin for Coq (also install `coq-vpl` and `vpl-core`)
 
-          ```
-          opam install vpl-core
-          ```
+      ```
+      opam install coq-vpltactic
+      ```
 
-        * `coq-vpl`: the Coq library (only needed to get Coq proofs about VPL operators)
-
-          ```
-          opam install coq-vpl
-          ```
-
-        * `coq-vpltactic`: the [VplTactic](https://github.com/VERIMAG-Polyhedra/VplTactic) plugin for Coq (also install `coq-vpl` and `vpl-core`)
-
-          ```
-          opam install coq-vpltactic
-          ```
-
-      In case of trouble with this `opam` install, you should read [this](https://github.com/VERIMAG-Polyhedra/opam-vpl/blob/master/README.md#using-the-vpl-on-a-vagrantvirtualbox-virtual-machine).
+  In case of trouble with this `opam` install, you should read [this](https://github.com/VERIMAG-Polyhedra/opam-vpl/blob/master/README.md#using-the-vpl-on-a-vagrantvirtualbox-virtual-machine).
 
 2. __From sources__
 
-    1. Dependencies
+    The VPL can use a C++ parallel algorithm to minimize the representation of polyhedra.
+    This feature requires several dependencies.
+    If you are not interested in this feature or do not want to install dependencies, a "vanilla" VPL can be installed (see point 1. below).
 
-       The VPL requires the following packages:
+    1. __Without C++ dependencies__
+        1. _Dependencies_
 
-       * [ocaml](http://caml.inria.fr/ocaml/index.en.html)
-          __required version >= 4.02.3__
+           The VPL requires the following packages:
 
-       * [zarith](https://forge.ocamlcore.org/projects/zarith)
-          _available in OPAM_
-          __tested with version 1.4.1__
+           * [ocaml](http://caml.inria.fr/ocaml/index.en.html)
+              __required version >= 4.02.3__
 
-       * [glpk](https://www.gnu.org/software/glpk/)
-          __required version >= 4.61__
+           * [zarith](https://forge.ocamlcore.org/projects/zarith)
+              _available in OPAM_
+              __tested with version 1.4.1__
 
-       * [eigen](http://eigen.tuxfamily.org/)
-          _debian package libeigen3-dev_
-          __tested with version 3.3.3__
+        2. _Compiling the VPL_
 
-       * [coq](https://coq.inria.fr/)
-          (mandatory only if you want to re-extract files from Coq)
-          _available in OPAM_
-          __required version 8.7__ (use coq-vpl.0.2 for coq 8.6)
+           (Optional) To re-extract from the coq files, simply run at the root directory
 
-          __NB__ the `ocaml/src/extracted/` directory already contains extracted files from Coq.
+                make coq_extract
 
-    2. Compiling the VPL
+           To compile the VPL, simply run from the root directory
 
-       (Optional) To re-extract from the coq files, simply run at the root directory
+                make vpl
 
-            make coq_extract
+           Tests can be run by typing
 
-       To compile the VPL, simply run from the root directory
+                make check
 
-            make vpl
+           Finally, to install the library with ocamlfind, type
 
-       Tests can be run by typing
+                make install
 
-            make check
+           To uninstall the library from ocamlfind, run
 
-       Finally, to install the library with ocamlfind, type
+                make uninstall
 
-            make install
+    2. __With C++ dependencies__
+        1. _Dependencies_
 
-       To uninstall the library from ocamlfind, run
+           The VPL requires the following packages:
 
-            make uninstall
+           * [ocaml](http://caml.inria.fr/ocaml/index.en.html)
+              __required version >= 4.02.3__
+
+           * [zarith](https://forge.ocamlcore.org/projects/zarith)
+              _available in OPAM_
+              __tested with version 1.4.1__
+
+           * [glpk](https://www.gnu.org/software/glpk/)
+              __required version >= 4.61__
+
+           * [eigen](http://eigen.tuxfamily.org/)
+              _debian package libeigen3-dev_
+              __tested with version 3.3.3__
+
+           * [flint](http://www.flintlib.org/)
+              _debian package libflint-dev_
+              __tested with version 2.5.2__
+
+           * [coq](https://coq.inria.fr/)
+              (mandatory only if you want to re-extract files from Coq)
+              _available in OPAM_
+              __required version 8.7__ (use coq-vpl.0.2 for coq 8.6)
+
+              __NB__ the `ocaml/src/extracted/` directory already contains extracted files from Coq.
+
+        2. _Compiling the VPL_
+
+           (Optional) To re-extract from the coq files, simply run at the root directory
+
+                make coq_extract
+
+           To compile the VPL, simply run from the root directory
+
+                make vpl_glpk
+
+           Tests can be run by typing
+
+                make check
+
+           Finally, to install the library with ocamlfind, type
+
+                make install
+
+           To uninstall the library from ocamlfind, run
+
+                make uninstall
 
 
 ## Using the VPL
