@@ -2,6 +2,7 @@ module type Type = sig
 	module Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M
 
 	(** [minimize x cstrs] removes the redundancies in the list of constraints [cstrs].
+        @param cstrs is the list of constraints to minimize. Syntactic redundancies should have been removed previously. 
 		@param x is a point that should lie in the interior of the polyhedron defined by [cstrs].
 		This function attach to each returned constraint [cstr] a point that violates only [cstr].
 		When possible, this point does not saturate the completentary of [cstr]. *)
