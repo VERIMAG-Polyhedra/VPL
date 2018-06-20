@@ -16,7 +16,7 @@ setup_glpk:
 	cd ocaml; cp -f _oasis_glpk _oasis; cp -f src/Wrapper_glpk.ml src/Wrapper.ml; oasis setup
 
 setup_dev:
-	cd ocaml; cp -f _oasis_no_glpk_dev _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
+	cd ocaml; cp -f _oasis_dev _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
 
 clean:
 	$(MAKE) -C ocaml/ clean
