@@ -34,9 +34,17 @@ extern "C" value set_coeff(value poly, value i_cons_, value i_var_, value coeff_
   CAMLreturn(Val_unit);
 }
 
+extern "C" value set_constant(value poly, value i_cons_, value coeff_){
+  CAMLparam3(poly, i_cons_, coeff_);
+  int i_cons = Int_val(i_cons_);
+  double coeff = Double_val(coeff_);
+  ((Polyhedron*) poly)->SetConstant(i_cons, coeff);
+  CAMLreturn(Val_unit);
+}
+
 extern "C" value minimize(value poly){
   CAMLparam1(poly);
-  ((Polyhedron*) poly)->Minimize();
+  ((Polyhedron*) poly)->Minimize(true); //boolean  = get_witness
   CAMLreturn(Val_unit);
 }
 
@@ -66,7 +74,7 @@ extern "C" value get_witness_coeff(value poly, value id_, value var_){
 extern "C" value set_central_point_coeff(value poly, value var_, value coeff_){
   CAMLparam3(poly, var_, coeff_);
   Polyhedron* poly2 = (Polyhedron*) poly;
-  Point p = poly2->get_central_point ();
+  Point p = poly2->get_internal_point ();
   int var = Int_val(var_);
   double coeff = Double_val(coeff_);
   if (p.IsEmpty()) {
@@ -75,9 +83,9 @@ extern "C" value set_central_point_coeff(value poly, value var_, value coeff_){
     coord(var) = coeff;
     p.set_coordinates(coord);
   } else {
-    p.set_coefficient(var, coeff);
+    p.SetCoordinate(var, coeff);
   }
-  poly2->set_central_point (p);
+  poly2->set_internal_point (p);
   CAMLreturn(Val_unit);
 }
 
@@ -172,7 +180,7 @@ extern "C" value set_central_point_coeff(Polyhedron* poly, value var_, value coe
 	else
 		p.set_coefficient(var, coeff);
 	poly->set_central_point (p);
-	
+
 	CAMLreturn(Val_unit);
 }
 */

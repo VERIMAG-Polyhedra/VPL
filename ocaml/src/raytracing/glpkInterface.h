@@ -14,22 +14,43 @@
 #include <eigen3/Eigen/Dense>
 #include "polyhedron.h"
 
+#ifdef DEBUGINFO_RAYTRACING
+#include <mutex>
+extern std::mutex log_mtx_raytracing;
+#endif
+
 class GlpkInterface {
 public:
-  GlpkInterface () ;
-  ~GlpkInterface () ;
-  static Point GetCentralPoint (const Polyhedron& poly) ;
-  Point GetSatPoint (const std::vector<int>& headIdx, const Polyhedron& poly) ;
-  static bool Sat (const Polyhedron& poly, int idx) ;
-  bool Simplex (const Polyhedron& poly, const VectorZ& obj, int objdir = GLP_MAX) ;
-  void GetBasis () ;
-  const std::vector<int>& get_basic_idx () ; 
-  std::vector<int> GetNonbasicIdx () ;
-  int GetVariState (int idx) ;
+  GlpkInterface() ;
+  ~GlpkInterface() ;
+  static Point GetCentralPoint(Polyhedron& poly) ;
+  static Point GetSatPoint(Polyhedron& poly, double epsilon = _epsilon) ;
+  Point GetIrddWitness(const std::vector<int>& headIdx, const Polyhedron& poly,
+      double epsilon = _epsilon) ;
+  static bool Sat(const Polyhedron& poly, int idx, double threshold = _threshold) ;
+  bool Simplex(const Polyhedron& poly, const Vector& obj, 
+      bool variNonNeg = false, bool askFeasible = false,
+      bool getBasis = true) ;
+  double get_simplex_optimal() ;
+  void GetBasis() ;
+  const std::vector<int>& get_basic_idx() ; 
+  const std::vector<int>& get_non_basic_idx() ;
+  int GetVariState(int idx) ;
+  double GetVariVal(int idx) ;
+  int GetRowNum() ;
+  int GetColNum() ;
+  static double get_threshold() {
+    return _threshold ;
+  }
 private:
-  const double _epsilon ;  
+  static double _epsilon ;  
+  static double _threshold ;  
   glp_prob* _glp ;
   std::vector<int> _basic_idx ;
+  std::vector<int> _non_basic_idx ;
+  double _simplex_optimal ;
+  Vector _first_constraint ;
+  int _currIdx ;
 } ;
 
 #endif
