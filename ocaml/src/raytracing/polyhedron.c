@@ -6,30 +6,51 @@
 #include <iostream>
 #include <utility>
 #include <random>
+#include <cmath>
+#include <fstream>
 #include "raytracing.h"
-#include "double.h"
 #include "glpkInterface.h"
 
-Polyhedron::Polyhedron (int consNum, int variNum) 
-  : _constraint_num(consNum), _variable_num(variNum), _is_minimized(false) {
-  _coefficients = Matrix::Zero(consNum, variNum) ;
-  _constants = Vector::Zero(consNum) ;
-  _active_table.resize(consNum, REDUNDANT) ;
-  _operators.resize(consNum) ;
-  _witness_ray2.resize(variNum, consNum) ;
+Polyhedron::Polyhedron() 
+  : _redundant_num(-1), _zero_num(-1),
+  _generator_num(-1), _id(-1), _is_minimized(false) 
+{}
+
+void Polyhedron::SetSize(int consNum, int variNum) {
+  _constraint_num = consNum ;
+  _variable_num = variNum ; 
+  _coefficients.resize(consNum, variNum) ;
+  _constants.resize(consNum) ;
+  _active_table.resize(consNum, ConstraintState::redundant) ;
+  _operators.resize(consNum, ConstraintOperator::lesseq) ;
+  _witness_point.resize(consNum) ;
+}
+
+Polyhedron::Polyhedron(int consNum, int variNum) 
+  : _constraint_num(consNum), _variable_num(variNum),
+  _redundant_num(-1), _zero_num(-1), _generator_num(-1),
+  _id(-1), _is_minimized(false) {
+  _coefficients.resize(consNum, variNum) ;
+  _constants.resize(consNum) ;
+  _active_table.resize(consNum, ConstraintState::redundant) ;
+  _operators.resize(consNum, ConstraintOperator::lesseq) ;
+  _witness_point.resize(consNum) ;
 }
 
 /*******************************************************************************
  * Set the polyhedron to initial state. You can reset the constraints, but the
- * original ones will not be delete.
+ * original ones will not be deleted.
 *******************************************************************************/
-void Polyhedron::Init () {
+void Polyhedron::Init() {
   _is_minimized = false ;
   _active_table.clear() ;
-  _active_table.resize(_constraint_num, REDUNDANT) ;  
-  _central_point.Clear() ;
-  _witness_ray1.clear() ;
+  _active_table.resize(_constraint_num, ConstraintState::redundant) ;  
+  _internal_point.Clear() ;
   _witness_point.clear() ;
+  _redundant_num = -1 ;
+  _zero_num = -1 ;
+  _generator_num = -1 ;
+  _id = -1 ;
 }
 
 /*******************************************************************************
@@ -37,70 +58,111 @@ void Polyhedron::Init () {
  * the corresponding value in _active_table as false
  * @return true if minimize successful
 *******************************************************************************/
-bool Polyhedron::Minimize () {
-  GetDuplicateIdx() ; 
+bool Polyhedron::Minimize(bool getWitness) {
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "Raytracing minimization starts." << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
   if ( IsEmpty() ) {
-    std::cerr << "Minimization failed. The polyhedron is empty." << std::endl ;
+    std::cerr << "Minimization failed. There is no constraints." << std::endl ;
     std::terminate() ;
   }
   if (_is_minimized) {
     return true ;
   }
-  if ( _central_point.IsEmpty() ) {
-    set_central_point( GlpkInterface::GetCentralPoint(*this) ) ;
-    // set_central_point( ClpInterface::GetCentralPoint(*this) ) ;
-    if(_central_point.IsEmpty()) {
-      std::cerr << "Minimization failed. Cannot find a point inside the polyhedra" << std::endl ;
+  // start to  minimize
+  if ( _internal_point.IsEmpty() ) {
+
+  set_internal_point( GlpkInterface::GetCentralPoint(*this) ) ;
+    if ( _internal_point.IsEmpty() ) {
+      set_internal_point( GlpkInterface::GetSatPoint(*this) ) ;
+    }
+    if(_internal_point.IsEmpty()) {
+      std::cerr << "Minimization failed. Cannot find a point interior the polyhedra" << std::endl ;
       return false ;
     }
   }
-  Raytracing raytrace(*this, _central_point) ;
-  raytrace.RayHittingMatrixTwoDir() ; 
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "Found interior point: " << _internal_point << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
+  Raytracing raytrace(*this, _internal_point, getWitness) ;
+  raytrace.RayHitting() ; 
   raytrace.Determine() ;
   _is_minimized = true ;
+  _redundant_num = GetInactiveIdx().size() ;
+
   return true ;
 }
 
 /*******************************************************************************
  * Minimization without raytracing.
+ * TODO this function should be abandoned or remove the threshod in Sat()
 *******************************************************************************/
-void Polyhedron::MinimizeSimple () {
-  GetDuplicateIdx() ;
+void Polyhedron::MinimizeSimple() {
   std::vector<bool> res(_constraint_num) ;
   // #pragma omp parallel for
   for (int i = 0; i < _constraint_num; ++ i) {
-    if (_active_table[i] == DUPLICATED) continue ;
     res[i] = GlpkInterface::Sat(*this, i) ;
     if (res[i] == true) {
       Activate(i) ;       
     }
   }  
-
   _is_minimized = true ;
 }
 
 /*******************************************************************************
  * Gets the minimized polyhedron. If the polyhedron is not minimized, minimize
- * it first.
+ * it first. Copy all the reasonal data of the original polyhedron.
  * @return the minimized polyhedron
 *******************************************************************************/
-Polyhedron Polyhedron::GetMinimizedPoly () {
+Polyhedron Polyhedron::GetMinimizedPoly(bool getWitness) {
   if (! _is_minimized) {
-    Minimize() ;
+    Minimize(getWitness) ;
   }
   std::vector<int> indexVec = GetActiveIdx() ; 
   Polyhedron miniPoly = GetSubPoly(indexVec) ;
-
+  miniPoly.set_internal_point(_internal_point) ;
+  int consNum = miniPoly.get_constraint_num() ;
+  for (int i = 0; i < consNum; ++ i) {
+    miniPoly._active_table[i] = ConstraintState::irredundant ;
+    miniPoly._witness_point[i] = _witness_point[ indexVec[i] ] ;
+  }
+  miniPoly._is_minimized = true ;
+  // TODO need to do something here?
+  /*
+  int currIdx ;
+  Vector currRay ;
+  if (newWitness) {
+    for (int i = 0; i < consNum; ++ i) {
+      currRay = miniPoly.get_coefficients().row(i).transpose() ;
+      currRay.normalize() ;
+      miniPoly._witness_ray.col(i) = currRay ;
+    }
+  }
+  else {
+    for (int i = 0; i < consNum; ++ i) {
+      currIdx = indexVec[i] ;
+      miniPoly._witness_ray.col(i) = _witness_ray.col(currIdx) ;
+    }
+  }
+  */
   return miniPoly ;
 }
 
 /*******************************************************************************
  * Creates a polyhedron which contains a subset of constraints of the current
- * polyhedron.
+ * polyhedron. Just copy the constraints.
  * @para index the index of the constraints in the subset
  * @return the new polyhedron contains the subset of constraints 
 *******************************************************************************/
-Polyhedron Polyhedron::GetSubPoly (const std::vector<int>& indexVec) {
+Polyhedron Polyhedron::GetSubPoly(const std::vector<int>& indexVec) {
   int consNum = indexVec.size() ;
   int variNum = get_variable_num() ;
   Polyhedron newPoly(consNum, variNum) ;
@@ -111,8 +173,75 @@ Polyhedron Polyhedron::GetSubPoly (const std::vector<int>& indexVec) {
       newPoly.SetCoef( i, j, GetCoef(currIdx, j) ) ;
     }
     newPoly.SetConstant( i, GetConstant(currIdx) ) ;
+    newPoly.SetOperator( i, GetOperator(currIdx) ) ;
   }
+  newPoly._zero_num = _zero_num ;
   return newPoly ;
+}
+
+/*******************************************************************************
+ * Compare two constraints in lexico order. 
+ * cons1 and cons2 containts the coefficients of variables and also the constant
+ * @return CmpOperator::greater if cons1 > cons2 
+*******************************************************************************/
+CmpOperator Polyhedron::CmpConstraint(const Vector& cons1, const Vector& cons2) {
+  CmpOperator res = CmpOperator::equal ;
+  for (int j = 0; j < cons1.size(); ++ j) {
+    if ( cons1(j) > cons2(j) ) {
+      res = CmpOperator::greater ;
+      break ;
+    }
+    else if ( cons1(j) < cons2(j) ) {
+      res = CmpOperator::less ;
+      break ;
+    }
+  }
+  return res ;
+}
+
+/*******************************************************************************
+ * Selection sorting 
+*******************************************************************************/
+void Polyhedron::SortMatrix(Matrix& m) {
+  int consNum = m.rows() ;
+  int minIdx ;
+  Vector tmpVec ;
+  for (int i = 0; i < consNum; ++ i) {
+    minIdx = i ;
+    for (int k = i+1; k < consNum; ++ k) { 
+      if (CmpConstraint( m.row(minIdx), m.row(k) ) == CmpOperator::greater) {
+        minIdx = k ;
+      } 
+    }
+    if (minIdx != i) {
+      tmpVec = m.row(i) ;
+      m.row(i) = m.row(minIdx) ;
+      m.row(minIdx) = tmpVec ;
+    }
+  } 
+}
+
+/*******************************************************************************
+ * Checks equality by sorting in lexico order. 
+ * @para poly the polyhedron to compare
+ * @return true if the two polyhedra are equal
+*******************************************************************************/
+bool Polyhedron::IsEqualTo(const Polyhedron& poly) {
+  if ( get_coefficients().size() != poly.get_coefficients().size() ) {
+    return false ;
+  }
+
+  int consNum = poly.get_constraint_num() ;
+  int variNum = poly.get_variable_num() ;
+  Vector tmpVec(variNum+1) ;
+  Matrix matrix1(consNum, variNum+1), matrix2(consNum, variNum+1) ;
+  matrix1.block(0, 0, consNum, variNum) = get_coefficients() ;
+  matrix1.col(variNum) = get_constants().transpose() ;
+  matrix2.block(0, 0, consNum, variNum) = poly.get_coefficients() ;
+  matrix2.col(variNum) = poly.get_constants().transpose() ;
+  SortMatrix(matrix1) ; 
+  SortMatrix(matrix2) ;
+  return matrix1 == matrix2 ;
 }
 
 /*******************************************************************************
@@ -128,7 +257,7 @@ Polyhedron Polyhedron::GetSubPoly (const std::vector<int>& indexVec) {
  * we check if poly is included in *this.
  * @return true if poly is included in the current polyhedron 
 *******************************************************************************/
-bool Polyhedron::Include (const Polyhedron& poly) {
+bool Polyhedron::Include(Polyhedron& poly) {
   if ( get_variable_num() != poly.get_variable_num() ) {
     std::cerr << "Caonnt check inclusion. Polyhedra are not in the same environment." 
       << std::endl ;
@@ -136,34 +265,97 @@ bool Polyhedron::Include (const Polyhedron& poly) {
   }
   const int consNumP1 = poly.get_constraint_num() ;
   const int consNumP2 = get_constraint_num() ;
+  if ( poly.get_internal_point().IsEmpty() ) {
+    poly.set_internal_point( GlpkInterface::GetCentralPoint(poly) ) ;
+  }
+
   // check if x is inside P2
   for (int i = 0; i < consNumP2; ++ i) {
-    if (Satisfy(poly.get_central_point(), i) == false) {
+    if (Satisfy(poly.get_internal_point(), i) == false) {
       return false ;
     }
   } 
-  // No need to remove duplicated constraints here, 
-  // as duplicate constraints are treated as redundant 
   Polyhedron newPoly = Combine(poly) ;
-  // Need to use the central point of the new polyhedron to do raytracing, otherwise
-  // the central point may be too closed to some constraints and cause raytracing
-  // cannot determine if the constraints are redundant.
-  newPoly.set_central_point( GlpkInterface::GetCentralPoint(newPoly) ) ;
-  if(newPoly._central_point.IsEmpty()) {
-    std::cerr << "Cannot check inclusion. Cannot find a point inside the polyhedra" << std::endl ;
+  newPoly.set_internal_point( poly.get_internal_point() ) ;
+  if(newPoly._internal_point.IsEmpty()) {
+    std::cerr << "Cannot check inclusion. Cannot find a point inside the polyhedra" 
+      << std::endl ;
     std::terminate() ;
   }
-  Raytracing raytrace( newPoly, newPoly._central_point ) ;
+  Raytracing raytrace(newPoly, newPoly._internal_point, false) ;
   // check constraints of P2  
-  raytrace.RayHittingMatrixTwoDir(true, consNumP1) ;    
-  if (raytrace.HasInclusion() == false) {
-    return false ;
-  }
-  raytrace.Determine(true, consNumP1) ;
-  if (raytrace.HasInclusion() == false) {
-    return false ;
-  }
+  raytrace.SetInclusion(consNumP1) ; 
+  
+//auto start = std::chrono::steady_clock::now() ;
 
+  raytrace.RayHitting() ;    
+  if (raytrace.HasInclusion() == false) {
+    return false ;
+  }
+/*
+auto end = std::chrono::steady_clock::now() ;
+std::chrono::duration<double> diff = (end - start) * 1000 ;
+std::cout << "First part: " << diff.count() << " ms" << std::endl ;
+start = std::chrono::steady_clock::now() ;
+*/
+  raytrace.Determine() ;
+/*
+end = std::chrono::steady_clock::now() ;
+diff = (end - start) * 1000 ;
+std::cout << "Second part: " << diff.count() << " ms" << std::endl ;
+*/
+
+  if (raytrace.HasInclusion() == false) {
+    return false ;
+  }
+  
+  return true ;
+}
+
+/*******************************************************************************
+ * Checks inclusion with Farkas's lemma. 
+ * @para poly the polyhedron which may be included in the current one, i.e. here
+ * we check if poly is included in *this.
+ * @return true if poly is included in the current polyhedron 
+*******************************************************************************/
+bool Polyhedron::IncludeStandard(Polyhedron& poly) {
+  int consNum = poly.get_constraint_num() ;
+  int variNum = poly.get_variable_num() ;
+  for (int i = 0; i < _constraint_num; ++ i) {
+    // constraints in matrix are Cx + b >= 0
+    // aij, bi are coeff of poly, pij,qi are coeff of *this, the LP is:
+    // a11 ... an1 0             pj1
+    // ... ... ... .   lambda =  ...
+    // a1n ... ann 0             pjn
+    // b1  ...  bn 1             qj
+    Polyhedron simplexPoly(variNum+1, consNum+1) ;
+    simplexPoly._coefficients.block(0, 0, variNum, consNum) = 
+        - poly.get_coefficients().transpose() ; 
+    simplexPoly._coefficients.row(variNum).head(consNum) = poly.get_constants() ;
+    simplexPoly._coefficients.col(consNum).head(variNum).setZero() ;
+    simplexPoly._coefficients(variNum, consNum) = 1.0 ;
+    simplexPoly._constants.head(variNum) = - get_coefficients().row(i).transpose() ;
+    simplexPoly._constants(variNum) = GetConstant(i) ;
+    for (int p = 0; p < variNum+1; ++ p) {
+      simplexPoly.SetOperator(p, ConstraintOperator::equal) ;
+    }
+    Vector obj(consNum+1) ;
+    obj.setZero() ;
+    GlpkInterface glpkInter ;
+
+//auto start = std::chrono::steady_clock::now() ;
+
+    bool simplexRes = glpkInter.Simplex(simplexPoly, obj, true, true, false) ;
+/*
+auto end = std::chrono::steady_clock::now() ;
+std::chrono::duration<double> diff = (end - start) * 1000 ;
+std::cout << "Glpk part: " << diff.count() << " ms" << std::endl ;
+*/
+    if (simplexRes == false) {
+//std::cout << "stand call glpk: " << i+1 << " times" << std::endl ;
+      return false ;
+    }
+  }
   return true ;
 }
 
@@ -173,144 +365,162 @@ bool Polyhedron::Include (const Polyhedron& poly) {
  * @para poly the polyhedron to be put at the beginning
  * @return the new polyhedron contains all constraints 
 *******************************************************************************/
-Polyhedron Polyhedron::Combine (const Polyhedron& poly) {
+Polyhedron Polyhedron::Combine(const Polyhedron& poly) {
   int consNum1 = poly.get_constraint_num() ;
   int consNum2 = get_constraint_num() ;
   int variNum = get_variable_num() ;
   Polyhedron newPoly(consNum1+consNum2, variNum) ;
-  for (int i = 0; i < consNum1; ++ i) {
-    for (int j = 0; j < variNum; ++ j) {
-      newPoly.SetCoef( i, j, poly.GetCoef(i,j) ) ;
-    }
-    newPoly.SetConstant( i, poly.GetConstant(i) ) ;
-  }
-  for (int i = 0; i < consNum2; ++ i) {
-    for (int j = 0; j < variNum; ++ j) {
-      newPoly.SetCoef( consNum1+i, j, GetCoef(i,j) ) ;
-    }
-    newPoly.SetConstant( consNum1+i, GetConstant(i) ) ;
-  }
-
+  newPoly._coefficients.block(0, 0, consNum1, variNum) = poly.get_coefficients() ;
+  newPoly._coefficients.block(consNum1, 0, consNum2, variNum) = get_coefficients() ;
+  newPoly._constants.head(consNum1) = poly.get_constants() ;
+  newPoly._constants.tail(consNum2) = get_constants() ;
   return newPoly ;
 }
 
 /*******************************************************************************
- * Checks if a constraint satisfy a point.
+ * Checks if a point satisfies the constraint.
  * @para point the point to be satisfied 
  * @para index the index of the constraint to be checked
- * @return true if the constraint satisfy the point
+ * @para strict true when the point should not be on the boundary
+ * @return true if the point satisfies the constraint
 *******************************************************************************/
-bool Polyhedron::Satisfy (const Point& point, int index) {
-  double res = point.get_coordinates().dot(get_coefficients().row(index) ) ; 
-  if ( Double::IsLessEq(res, GetConstant(index)) ) {
-    return true ;
+bool Polyhedron::Satisfy(const Point& point, int index, bool strict) const {
+  if ( point.IsEmpty() ) {
+    std::cerr << "Satisfy() failed. Point is empty." << std::endl ;
+    std::terminate() ;
+  }
+  double res = point.get_coordinates() * get_coefficients().row(index).transpose()  ;
+  double threshold = Tool::GetDotProductThreshold( point.get_coordinates(),
+      get_coefficients().row(index) ) ;
+
+#ifdef DEBUGINFO_RAYTRACING
+  log_mtx_raytracing.lock() ; 
+  std::cout << "test: dot product: " << res << " const: " << GetConstant(index) << std::endl ;
+  log_mtx_raytracing.unlock() ; 
+#endif
+
+  if (strict) {
+    if( Double::IsLessThan(res, GetConstant(index), threshold) ) {
+      return true ;
+    }
+  } 
+  else {
+    if( Double::IsLessEq(res, GetConstant(index), threshold) ) {
+      return true ;
+    }
   }
   return false ;
 }
 
 /*******************************************************************************
+ * Checks if a point is inside a polyhedron.
+ * @para point the point to be satisfied 
+ * @para strict true when the point should not be on the boundary
+ * @return true if the point is inside the polyhedron
+*******************************************************************************/
+bool Polyhedron::Satisfy(const Point& point, bool strict) const {
+  if ( point.IsEmpty() ) {
+    std::cerr << "Satisfy() failed. Point is empty." << std::endl ;
+    std::terminate() ;
+  }
+  bool sat = true ;
+  for (int i = 0; i < get_constraint_num(); ++ i) {
+    sat = Satisfy(point, i, strict) ;
+    if (sat == false) break ;
+  }
+  return sat ;
+}
+
+/*******************************************************************************
+ * Checks if a point satisfies the constraint.
+ * @para point the point to be satisfied 
+ * @para index the index of the constraint to be checked
+ * @para strict true when the point should not be on the boundary
+ * @return the index of the constraint if the point is on the boundary,
+ * otherwise returns inside or outside 
+*******************************************************************************/
+int Polyhedron::PointOnBoundary(const Point& point) const {
+  if ( point.IsEmpty() ) {
+    std::cerr << "Satisfy() failed. Point is empty." << std::endl ;
+    std::terminate() ;
+  }
+  int sat = PointPos::inside ;
+  double res, threshold ;
+  for (int i = 0; i < get_constraint_num(); ++ i) {
+    res = point.get_coordinates() * get_coefficients().row(i).transpose()  ;
+    threshold = Tool::GetDotProductThreshold( point.get_coordinates(),
+        get_coefficients().row(i) ) ;
+    if ( Double::AreEqual(res, GetConstant(i), threshold) ) {
+      sat = i ;
+      // don't break
+    }
+    if ( Double::IsLessThan(GetConstant(i), res, threshold) ) {
+      return PointPos::outside ;
+    }
+  }
+  return sat ;
+}
+
+/*******************************************************************************
  * Gets the index of duplicated constriants and set the corresponding index
  * in _active_table as 2.
+ * @return the index of the polyhedron does not contain 
+ * duplicated and zero constraints
 *******************************************************************************/
-void Polyhedron::GetDuplicateIdx () {
-  bool dup = false ;
+std::vector<int> Polyhedron::GetDuplicateIdx() {
+  bool dup ;
+  std::vector<int> polyIdx ;
+  if ( ! get_coefficients().row(0).isZero() ) {
+    polyIdx.push_back(0) ;
+  }
   for (int i = 1; i < _constraint_num; ++ i) {
+    dup = false ;
+    if ( get_coefficients().row(i).isZero() ) {
+      continue ;
+    }
     for (int k = i-1; k >= 0; -- k) {
-      dup = ConstraintsEq(i, k) ;
-      if (dup == true) {
-        _active_table[i] = DUPLICATED ;
+      if ( GetConstant(i) == GetConstant(k)
+          && get_coefficients().row(i) == get_coefficients().row(k) ) {
+
+#ifdef DEBUGINFO_RAYTRACING
+  std::cout << "Constraint " << i << " is duplicated" << std::endl ;
+#endif
+
+        dup = true ;
         break ;
       }
     }
-  }
-}
-
-/*******************************************************************************
- * @para idx1 the index of the first constraint
- * @para idx2 the index of the second constraint
- * @return true if two constraints are equal
-*******************************************************************************/
-bool Polyhedron::ConstraintsEq (int idx1, int idx2) {
-  int variIdx2 = -1 ;
-  // find the first not zero coefficient
-  for (int j = 0; j < _variable_num; ++ j) {
-    if (variIdx2 == -1 && _coefficients(idx2, j) != 0) {
-      variIdx2 = j ;
-      break ;
+    if (! dup) {
+      polyIdx.push_back(i) ;
     }
   }
-  double temp12 = _coefficients(idx1, variIdx2) ; // may be zero
-  double temp22 = _coefficients(idx2, variIdx2) ; // not zero
-  // double check
-  double lamda = temp12 / temp22 ; 
-  for (int j = 0; j < _variable_num; ++ j) {
-    if (! Double::AreEqual(_coefficients(idx1, j), _coefficients(idx2, j) * lamda) ) {
-      return false ;
-    }
+  return polyIdx ;
+}
+
+std::vector<int> Polyhedron::GetActiveIdx() const {
+  if (! _is_minimized) {
+    std::cerr << "Cannot get the active index. The polyhedron is not minimized." 
+        << std::endl ;
+    std::terminate() ;
   }
-  if (! Double::AreEqual( _constants(idx1), _constants(idx2) * lamda) ) {
-    return false ;
-  }
-
-  return true ;
-}
-
-int Polyhedron::get_variable_num () const {
-  return _variable_num ;
-}
-void Polyhedron::set_variable_num (int num) {
-  _variable_num = num ;
-}
-
-int Polyhedron::get_constraint_num () const {
-  return _constraint_num ;
-}
-void Polyhedron::set_constraint_num (int num) {
-  _constraint_num = num ;  
-}
-
-int Polyhedron::get_redundant_num () const {
-  return _redundant_num ;
-}
-void Polyhedron::set_redundant_num (int num) {
-  _redundant_num = num ;
-} 
-
-int Polyhedron::get_zero_num () const {
-  return _zero_num ;
-}
-void Polyhedron::set_zero_num (int num) {
-  _zero_num = num ;
-} 
-
-int Polyhedron::get_generator_num () const {
-  return _generator_num ;
-}
-void Polyhedron::set_generator_num (int num) {
-  _generator_num = num ;
-} 
-
-int Polyhedron::get_id () const {
-  return _id ;
-}
-void Polyhedron::set_id (int id) {
-  _id = id ;
-}
-
-std::vector<int> Polyhedron::GetActiveIdx () {
   std::vector<int> idxVec ;
   for (int i = 0; i < (int)_active_table.size(); ++ i) {
-    if (_active_table[i] == IRREDUNDANT) {
+    if (_active_table[i] == ConstraintState::irredundant) {
       idxVec.push_back(i) ; 
     } 
   }
   return idxVec ;
 }
 
-std::vector<int> Polyhedron::GetInactiveIdx () {
+std::vector<int> Polyhedron::GetInactiveIdx() const {
+  if (! _is_minimized) {
+    std::cerr << "Cannot get the inactive index. The polyhedron is not minimized." 
+        << std::endl ;
+    std::terminate() ;
+  }
   std::vector<int> idxVec ;
   for (int i = 0; i < (int)_active_table.size(); ++ i) {
-    if (_active_table[i] != IRREDUNDANT) {
+    if (_active_table[i] != ConstraintState::irredundant) {
       idxVec.push_back(i) ; 
     } 
   }
@@ -318,14 +528,13 @@ std::vector<int> Polyhedron::GetInactiveIdx () {
 }
 
 /*******************************************************************************
- * _active_table[i] is 2 if the constraint i is duplicated, 1 if it is 
- * irredundant, 0 if it is redundant but not duplicated.
+ * _active_table[i] is 1 if it is irredundant, 0 if it is redundant.
  * @return true if the constrinat is irredundant
  * Note: this functions may be not thread safe
 *******************************************************************************/
-bool Polyhedron::IsActive (int consIdx) const {
+bool Polyhedron::IsActive(int consIdx) const {
   bool ret ;
-  if (_active_table[consIdx] == IRREDUNDANT) {
+  if (_active_table[consIdx] == ConstraintState::irredundant) {
     ret = true ;
   }
   else
@@ -335,78 +544,49 @@ bool Polyhedron::IsActive (int consIdx) const {
   return ret ;
 }
 
-void Polyhedron::set_central_point(const Point& point) {
-  _central_point = point ;
-}
-
-Point Polyhedron::get_central_point () const {
-  return _central_point ;
-}
-
-Vector Polyhedron::GetConstraint (int consIdx) const {
-  return _coefficients.row(consIdx) ;
-}
- 
-void Polyhedron::SetConstraint (int consIdx, const Vector& cons) {
-  _coefficients.row(consIdx) = cons ;
-}
-
-double Polyhedron::GetConstant (int consIdx) const {
-  return _constants(consIdx) ;
-} 
-
-void Polyhedron::SetConstant (int consIdx, double val) {
-  _constants(consIdx) = val ;
-}
-
-int Polyhedron::GetOperator (int consIdx) const {
-  return _operators[consIdx] ;
-}
-
-std::string Polyhedron::GetOperatorStr (int consIdx) const {
-  int op = _operators[consIdx] ;
-  if (op == 0) return "<" ;
-  else if (op == 1) return "<=" ;
-  else if (op == 2) return "=" ;
+std::string Polyhedron::GetOperatorStr(int consIdx) const {
+  ConstraintOperator op = _operators[consIdx] ;
+  if (op == ConstraintOperator::less) return "<" ;
+  else if (op == ConstraintOperator::lesseq) return "<=" ;
+  else if (op == ConstraintOperator::equal) return "=" ;
   else return "" ;
 }
-
-void Polyhedron::SetOperator (int consIdx, int val) {
-  _operators[consIdx] = val ;
-}
-
-double Polyhedron::GetCoef (int consIdx, int variIdx) const {
-  return _coefficients(consIdx, variIdx) ;
-}
-
-void Polyhedron::SetCoef (int consIdx, int variIdx, double val) {
-  _coefficients(consIdx, variIdx) = val ;
-}
-
 
 /*******************************************************************************
  * @return true if the polyhedron is empty
 *******************************************************************************/
-bool Polyhedron::IsEmpty () const {
+bool Polyhedron::IsEmpty() const {
   if (_coefficients.size() == 0)
     return true ;
   return false ;
 }
   
 /*******************************************************************************
+ * @return true if the polyhedron is open
+*******************************************************************************/
+bool Polyhedron::IsOpen() const {
+  Vector obj(_variable_num) ;
+  obj.setOnes() ;
+  GlpkInterface glpkInter1, glpkInter2 ;
+  bool res1 = glpkInter1.Simplex(*this, -obj, false, false, false) ;
+  bool res2 = glpkInter2.Simplex(*this, obj, false, false, false) ;
+  return ! (res1 && res2) ;
+}
+
+/*******************************************************************************
  * @return true if the polyhedron is minimized
 *******************************************************************************/
-bool Polyhedron::IsMinimized () const {
+bool Polyhedron::IsMinimized() const {
   return _is_minimized ;
 }
 
 /*******************************************************************************
  * Prints the index of the avtivate constraints
 *******************************************************************************/
-void Polyhedron::PrintActiveIdx () const {
+void Polyhedron::PrintActiveIdx() const {
   std::cout<< "The index of the activate constraints are: " << std::endl ;
   for (int i = 0; i < (int)_active_table.size(); ++ i) {
-    if (_active_table[i] == IRREDUNDANT) {
+    if (_active_table[i] == ConstraintState::irredundant) {
       std::cout << i << " " ;
     } 
   }
@@ -416,22 +596,21 @@ void Polyhedron::PrintActiveIdx () const {
 /*******************************************************************************
  * Prints the constraints to the terminal
 *******************************************************************************/
-void Polyhedron::Print () const {
-  std::cout << "The constraints are (in form [coefficients <op> constant]):" << std::endl ;
-  std::cout << "Begin" << std::endl ;
+void Polyhedron::Print() const {
+  std::cout << _constraint_num << " constraints in " << _variable_num  
+      << " dimension (in form [coefficients <op> constant]):" << std::endl ;
   for (int i = 0; i < _constraint_num; ++ i) {
     for (int j = 0; j < _variable_num; ++ j) {
       std::cout << _coefficients(i, j) << " " ;
     }
     std::cout << " " << GetOperatorStr(i) << " " << _constants[i] << std::endl ;
   }
-  std::cout << "End" << std::endl ;
 }
 
 /*******************************************************************************
  * Prints the {idx}th constraint to the terminal
 *******************************************************************************/
-void Polyhedron::PrintConstraint (int idx) const {
+void Polyhedron::PrintConstraint(int idx) const {
   std::cout << get_coefficients().row(idx) << " "
     << GetConstant(idx) << std::endl ;
 }
@@ -441,19 +620,21 @@ void Polyhedron::PrintConstraint (int idx) const {
  * @para i the index of the constraint.
  * @para rayDirect the ray direction
 *******************************************************************************/
-void Polyhedron::SetWitnessRay(int consIdx, int rayIdx) {
-  _witness_ray1.insert( std::pair<int, int>(consIdx, rayIdx) ) ;
-}
-
+/*
 void Polyhedron::SetWitnessRay(int idx, const Vector& rayDirect) {
-  _witness_ray2.col(idx) = rayDirect ;
+  _witness_ray.col(idx) = rayDirect ;
 }
-
+Vector Polyhedron::GetWitnessRay(int idx) const {
+  return _witness_ray.col(idx) ; 
+}
+*/
 /*******************************************************************************
  * Compute the witness points if it has not been computed, otherwise return
  * the witness points.
+ * @para simple if simple is false, the witness point should only satisfy its
+ * corresponding constraint and violate the others.
 *******************************************************************************/
-std::vector<Point> Polyhedron::GetWitness () {
+std::vector<Point> Polyhedron::GetWitness() {
   if ( ! _witness_point.empty() ) {
     return _witness_point ;
   } 
@@ -462,73 +643,150 @@ std::vector<Point> Polyhedron::GetWitness () {
   }
   std::vector<int> activeVec = GetActiveIdx() ; 
   int consNum = activeVec.size() ;
-  Matrix rayMatrix(get_variable_num(), consNum) ;
-  Matrix consMatrix( consNum, get_variable_num() ) ;
-  Vector constantVec( consNum ) ;
+  std::vector<Point> witness ;  
   for (int i = 0; i < consNum; ++ i) {
-    int currIdx = activeVec[i] ;
-    consMatrix.row(i) = get_coefficients().row(currIdx) ;
-    constantVec(i) = GetConstant(currIdx) ;
-    auto it1 = _witness_ray1.find(currIdx) ; 
-    if ( it1 != _witness_ray1.end() ) {
-      double res = get_coefficients().row(currIdx) 
-        * _coefficients.row(it1->second).transpose() ; 
-      // for two direction ray
-      if ( Double::IsLessThan(res, 0.0) ) {
-        rayMatrix.col(i) = -get_coefficients().row(it1->second) ; 
-      }  
-      else {
-        rayMatrix.col(i) = get_coefficients().row(it1->second) ; 
-      }
-      rayMatrix.col(i).normalize() ;
-    }
-    else {  
-      rayMatrix.col(i) = std::move( _witness_ray2.col(currIdx) ) ;
+    witness.push_back( _witness_point[ activeVec[i] ] ) ;
+  }
+  return witness ;
+}
+
+/*******************************************************************************
+ * Computes the exact rational solution with Flint
+ * @return true if the LP has optimal solution
+ * TODO These functions need to be changed (remove the output and provide functions
+ * to show the result...)
+*******************************************************************************/
+bool Polyhedron::GetExactSolution() {
+  int colNum = get_variable_num() ;
+  Vector obj(colNum) ;
+  // Eigen random matrix doesn't work well, so use std
+  std::random_device rd ;
+  std::mt19937_64 gen( rd() ) ;
+  std::uniform_int_distribution<> dis(-50, 50) ;
+  for (int j = 0; j < colNum; ++ j) {
+    obj(j) = dis(gen) ;
+  }
+  return GetExactSolution(obj) ;
+}
+
+bool Polyhedron::GetExactSolution(const Vector& obj) {
+  int rowNum = get_constraint_num() ;
+  int colNum = get_variable_num() ;
+  if (rowNum < colNum) {
+    std::cerr << "Cannot solve linear equation (multiple solutions)." << std::endl ;
+  }
+  GlpkInterface glpkInter ;
+  // minimize the obj
+  bool glpkRes = glpkInter.Simplex(*this, obj, false, false) ;
+  if (glpkRes == false) {
+    std::cout << "Polyhedron::GetExactSolution(): LP has no optimal solution." << std::endl << std::endl ;
+    return false ;
+  }
+  glpkInter.GetBasis() ;
+  // get constraints matrix from eigen
+  // The matrix is:
+  //       col1  col2  ...  coln - row1    row2  ...  rown <= constant
+  // row1  coef  coef       coef    -1       0           0         c   
+  // row2  coef  coef       coef    0       -1           0         c
+  // rown  coef  coef       coef    0       0           -1         c
+  RMatrix matrix(rowNum, colNum+rowNum+1) ;
+  int tmp ;
+  double curr ;
+  for (int i = 0; i < rowNum; ++ i) {
+    for (int j = 0; j < colNum; ++ j) {
+      curr = GetCoef(i, j) ;
+      tmp = curr > 0 ? curr + 0.5 : curr - 0.5 ;
+      matrix.at(i, j) = std::move(tmp) ;
     }
   }
-  Matrix normMatrix = consMatrix * rayMatrix ;
-  Vector evaluate = constantVec - 
-    consMatrix * get_central_point().get_coordinates() ;
-  Matrix evaMatrix = evaluate.rowwise().replicate(consNum) ; 
-  Matrix distanceMatrix = normMatrix.cwiseQuotient(evaMatrix) ; 
-
-  for (int j = 0; j < distanceMatrix.cols(); ++ j) {
-    double maxVal = -1 ;
-    double sndMaxVal = -1 ; 
-    int maxIdx = -1 ;
-    double currVal ;
-    for (int i = 0; i < distanceMatrix.rows(); ++ i) {
-      currVal = distanceMatrix(i, j) ;
-      if ( Double::IsLessThan(0.0, currVal) ) {
-        if ( Double::IsLessThan(maxVal, currVal) ) {
-          maxVal = currVal ;
-          maxIdx = i ;
-        }
-      }
-    }
-    for (int i = 0; i < distanceMatrix.rows(); ++ i) {
-      if (i == maxIdx) continue ; 
-      currVal = distanceMatrix(i, j) ;
-      if ( Double::IsLessThan(0.0, currVal) ) {
-        if ( Double::IsLessThan(sndMaxVal, currVal) ) {
-          sndMaxVal = currVal ;
-        }
-      }
-    }
-    // the witness point is at: central_point + distance * direction
-    Vector witness ;
-    if ( Double::AreEqual(sndMaxVal, -1.0) ) {
-      // did't meet a second constraint, use distant to the constraint + 1 
-      witness = get_central_point().get_coordinates() 
-        + (1 / maxVal + 1) * rayMatrix.col(j) ; 
+  for (int i = 0; i < rowNum; ++ i) {
+    matrix.at(i, colNum+i) = -1 ;
+    curr = GetConstant(i) ;
+    tmp = curr > 0 ? curr + 0.5 : curr - 0.5 ;
+    matrix.at(i, colNum+rowNum) = std::move(tmp) ;
+  }
+  // set objective function
+  RMatrix objMatrix(1, colNum+rowNum+1) ; 
+  for (int j = 0; j < colNum+rowNum+1; ++ j) {
+    if (j < colNum) {
+      // now objective coeff are int, cast double to int
+      // TODO maybe change this
+      tmp = obj(j) > 0 ? obj(j) + 0.5 : obj(j) - 0.5 ;
+      objMatrix.at(0, j) = tmp ;
     }
     else {
-      // the middle of first and second met constraint 
-      witness = get_central_point().get_coordinates() 
-        + ( (1 / maxVal + 1 / sndMaxVal) / 2 ) * rayMatrix.col(j) ;
+      objMatrix.at(0, j) = 0 ;
     }
-    _witness_point.push_back( Point(witness) ) ;
   }
-
-  return _witness_point ;
+  // solve linear equation
+  std::vector<int> basic = glpkInter.get_basic_idx() ; 
+  RMatrix coeff(rowNum, rowNum) ;
+  RMatrix constant(rowNum, 1) ;
+  for (int i = 0; i < rowNum; ++ i) {
+    for(int j = 0; j < rowNum; ++ j) {
+      coeff.at(i, j) = matrix.at( i, basic[j] ) ;
+    }
+    constant.at(i, 0) = matrix.at(i, rowNum+colNum) ;
+  }
+  RMatrix exactPoint( coeff.solve_dixon(constant) ) ; 
+  RNumber exactRes ;
+  exactRes.integer(0) ;
+  for (int i = 0; i < (int)basic.size(); ++ i) {
+    if (basic[i] < colNum) {
+      exactRes += exactPoint.at(i, 0) * objMatrix.at(0, basic[i]) ;
+    }
+  }
+  std::cout << "Glpk solution is: " << glpkInter.get_simplex_optimal() << std::endl ; 
+  std::cout << "The exact solution is: " << exactRes << std::endl ;
+  // check the result
+  RMatrix objCoeff((int)basic.size(), 1) ;
+  for (int i = 0; i < (int)basic.size(); ++ i) {
+    objCoeff.at(i, 0) = objMatrix.at(0, basic[i]) ;
+  }
+  RMatrix lamda( coeff.transpose().solve_dixon(objCoeff) );  
+  //RMatrix newObj(lamda.transpose() * matrix - objMatrix) ; 
+  RMatrix newObj(objMatrix - lamda.transpose() * matrix) ; 
+  std::vector<int> nonbasic = glpkInter.get_non_basic_idx() ; 
+  RNumber zero ;
+  zero.set_zero() ;
+  int currIdx, state ;
+  for (int i = 0; i < (int) nonbasic.size(); ++ i) { 
+    currIdx = nonbasic[i] ;
+    state = glpkInter.GetVariState(currIdx) ;
+    // we only use minimize in our program
+    // max obj is min - obj
+    /*
+    if (objdir == GLP_MAX) {
+      if (state == GLP_NF && newObj.at(0, currIdx) == zero) {
+        continue ;
+      }
+      else if (state == GLP_NL && newObj.at(0, currIdx) <= zero) {
+        continue ;
+      }
+      else if (state == GLP_NU && newObj.at(0, currIdx) >= zero) {
+        continue ;
+      }
+      else {
+        std::cerr << "Incorrect simplex result." << std::endl ; 
+        return false ;
+      }
+    }
+    else {*/
+      if (state == GLP_NF && newObj.at(0, currIdx) == zero) {
+        continue ;
+      }
+      else if (state == GLP_NL && newObj.at(0, currIdx) >= zero) {
+        continue ;
+      }
+      else if (state == GLP_NU && newObj.at(0, currIdx) <= zero) {
+        continue ;
+      }
+      else {
+        std::cerr << "Incorrect simplex result." << std::endl ; 
+        return false ;
+      }
+    //}
+  }
+  std::cout << "The simplex result is correct." << std::endl ;
+  return true ; 
 }

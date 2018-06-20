@@ -3,7 +3,7 @@ let datatypes =
     Test.prState "Datatypes" (Test.suite "Datatypes" tcs Test.stateZ)
 
 let plp =
-    let tcs = List.map Test.run [Tableau_t.ts ; ParamCoeff_t.ts ; Objective_t.ts; PSplx_t.ts (*; Min_t.ts*)] in
+    let tcs = List.map Test.run [Tableau_t.ts ; ParamCoeff_t.ts ; Objective_t.ts; PSplx_t.ts ; Min_t.ts] in
     Test.prState "PLP" (Test.suite "PLP" tcs Test.stateZ)
 
 let misc = Test.prState "MISC"

@@ -10,13 +10,9 @@
 
 class Double {
 public:
-  static bool IsLessThan(double d1, double d2) ;
-
-  static bool AreEqual(double d1, double d2) ;
-  
-  static bool IsLessEq(double d1, double d2) ;
-private:
-  const static double _epsilon ;
+  static bool IsLessThan(double d1, double d2, double epsilon) ;
+  static bool AreEqual(double d1, double d2, double epsilon) ;
+  static bool IsLessEq(double d1, double d2, double epsilon) ;
 } ;
 
 #endif

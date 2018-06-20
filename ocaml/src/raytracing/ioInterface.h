@@ -13,20 +13,19 @@
 
 class IoInterface {
 public:
-  IoInterface () ;
+  IoInterface() ;
   std::vector<Polyhedron> LoadPolyhedra (const char* filepath) ; 
-  int get_poly_num () ;
-  int get_cons_num () ;
-  int get_redundant_num () ;
-  int get_vari_num () ;
-  int get_zero_num () ;
+  static void WritePoly(const std::string& filepath, const Polyhedron& poly) ;
+  int get_cons_num() ;
+  int get_vari_num() ;
+  int get_zero_num() ;
+  int get_redundancy() ;
 private:
   std::string _filename ;
-  int _poly_num ;
   int _cons_num ;
-  int _redundant_num ;
   int _vari_num ;
   int _zero_num ;
+  int _redundancy ;
 } ;
 
 #endif

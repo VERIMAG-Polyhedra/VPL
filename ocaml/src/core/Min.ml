@@ -2,6 +2,7 @@ module type Type = sig
 	module Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M
 
 	(** [minimize x cstrs] removes the redundancies in the list of constraints [cstrs].
+        @param cstrs is the list of constraints to minimize. Syntactic redundancies should have been removed previously. 
 		@param x is a point that should lie in the interior of the polyhedron defined by [cstrs].
 		This function attach to each returned constraint [cstr] a point that violates only [cstr].
 		When possible, this point does not saturate the completentary of [cstr]. *)
@@ -863,9 +864,11 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
 
 	let set_coeffs : Wrapper.polyhedron -> Cs.Vec.V.t list -> int -> Cs.t -> unit
   		= fun poly vars i_cstr cstr ->
+        Wrapper.set_constant poly i_cstr (Cs.Vec.Coeff.to_float cstr.Cs.c);
 		List.iter
 			(fun (var,coeff) ->
 				let i_var = Misc.findi (Cs.Vec.V.equal var) vars in
+                Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Setting coefficient %i of constraint %i" i_var i_cstr));
 				Wrapper.set_coeff poly i_cstr i_var (Cs.Vec.Coeff.to_float coeff))
 			(Cs.Vec.toList cstr.Cs.v)
 
@@ -896,21 +899,26 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
 		let vars = Cs.getVars cstrs
 			|> Cs.Vec.V.Set.elements
 		in
+        Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Creating a C++ polyhedron with %i constraints and %i variables"
+            (List.length cstrs) (List.length vars)));
 		let poly = Wrapper.mk (List.length cstrs) (List.length vars) in
-    List.iteri (set_coeffs poly vars) cstrs;
-    set_central_point poly vars point;
+        List.iteri (set_coeffs poly vars) cstrs;
+        Debug.log DebugTypes.Detail (lazy "Setting central point");
+        set_central_point poly vars point;
 		if Wrapper.is_empty(poly)
 		then [] (* XXX: que faire dans ce cas?*)
 		else begin
+            Debug.log DebugTypes.Detail (lazy "Launching minimization of the C++ polyhedron");
 			Wrapper.minimize poly;
-			let cstrs' = Misc.fold_right_i
-				(fun i cstr res ->
+            Debug.log DebugTypes.Detail (lazy "Minimization done");
+			let cstrs' = Misc.fold_left_i
+				(fun i res cstr ->
 					if Wrapper.is_true poly i
-					then cstr :: res
+					then (i, cstr) :: res
 					else res)
-				cstrs []
-			|> List.mapi
-				(fun i cstr ->
+				[] cstrs
+			|> List.map
+				(fun (i,cstr) ->
 				let witness = get_witness poly vars i in
 				(cstr,witness))
 			in

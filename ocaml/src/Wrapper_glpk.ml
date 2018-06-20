@@ -8,6 +8,8 @@ external rm : polyhedron -> unit = "delete_poly"
 
 external set_coeff : polyhedron -> int -> int -> float -> unit = "set_coeff"
 
+external set_constant : polyhedron -> int -> float -> unit = "set_constant"
+
 external minimize : polyhedron -> unit = "minimize"
 
 external is_empty : polyhedron -> bool = "is_empty"

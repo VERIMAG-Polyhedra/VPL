@@ -8,6 +8,8 @@ let rm : polyhedron -> unit = fun _ -> failwith "GLPK required for C++ raytracin
 
 let set_coeff : polyhedron -> int -> int -> float -> unit = fun _ _ _ _ -> failwith "GLPK required for C++ raytracing (set_coeff)"
 
+let set_constant : polyhedron -> int -> float -> unit = fun _ _ _ -> failwith "GLPK required for C++ raytracing (set_constant)"
+
 let minimize : polyhedron -> unit = fun _ -> failwith "GLPK required for C++ raytracing (minimize)"
 
 let is_empty : polyhedron -> bool = fun _ -> failwith "GLPK required for C++ raytracing (is_empty)"

@@ -247,6 +247,17 @@ let chk (nm, s, l, r)
 		iset [
 			le [1, x] 1;
 			le [1, y] 1];
+
+    "raytracing_bug", iset [
+        Cs.mk Cstr.Le [Scalar.Rat.of_string "1/2" |> Cs.Vec.Coeff.ofQ, x] (Cs.Vec.Coeff.mk1 1);
+        Cs.mk Cstr.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ);
+        Cs.mk Cstr.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ);
+        le [2, x] 1],
+        [],
+        iset [
+            Cs.mk Cstr.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ);
+            le [2, x] 1;
+            ];
 	] in
 	Test.suite "addM" (List.map chk tcs)
 
