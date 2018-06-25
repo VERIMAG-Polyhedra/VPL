@@ -548,6 +548,7 @@ module Lift (LHD: QInterface.LowLevelDomain) = struct
         | Flags.Intervalization | Flags.Both -> begin
             let ti = c.QAtomicCond.right in
             let te,aft = CQTerm.affineDecompose ti in
+            (*
             let a' = match te with
                 | CQTerm.Cte c0 ->
                   (if QNum.isZero c0
@@ -558,6 +559,18 @@ module Lift (LHD: QInterface.LowLevelDomain) = struct
             if !Flags.lin = Flags.Both
             then LHD.assume [export_cmpT c.QAtomicCond.cmpOp, export_QTerm c.QAtomicCond.right] a'
             else a'
+            *)
+            match te with
+                | CQTerm.Cte c0 -> begin
+                    if QNum.isZero c0
+                    then affAssume c.QAtomicCond.cmpOp aft a
+                    else
+                        let a' = assumeOp false c.QAtomicCond.cmpOp te aft ti a in
+                        if !Flags.lin = Flags.Both
+                        then LHD.assume [export_cmpT c.QAtomicCond.cmpOp, export_QTerm c.QAtomicCond.right] a'
+                        else a'
+                    end
+                | _ -> assumeOp false c.QAtomicCond.cmpOp te aft ti a
         end
         | Flags.Handelman -> LHD.assume [export_cmpT c.QAtomicCond.cmpOp, export_QTerm c.QAtomicCond.right] a
 (*
