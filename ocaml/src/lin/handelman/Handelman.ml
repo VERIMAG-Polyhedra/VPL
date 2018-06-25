@@ -364,14 +364,15 @@ module Handelman (Minimization : Min.Type) = struct
 		let objective = Poly.get_affine_part flin variables in
 		Debug.log DebugTypes.Normal
 			(lazy("Objective = " ^ (Poly.to_string objective)));
-		let normalization = match Norm.get ph his_p objective f with
+		(*let normalization = match Norm.get ph his_p objective f with
 		| Some (n, _) -> begin
 			Debug.log DebugTypes.Normal
 				(lazy ("Normalization : " ^ (Poly.to_string n)));
 			Some n
 			end
 		| None -> None
-		in
+		in*)
+        let normalization = None in
 		try
 		begin
 			let sx = Build.from_poly lpvars simplex_inequalities simplex_equalities objective normalization in

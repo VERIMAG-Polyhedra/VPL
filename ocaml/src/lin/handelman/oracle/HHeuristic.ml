@@ -97,7 +97,7 @@ let rec (default : t)
 						in Q.mul Q.minus_one (Q.div c c') in
 				let (bI,bounds) = (match HLP.run pn.Pneuma.lp pn.Pneuma.ph pn.Pneuma.sx pn.Pneuma.vl mon with
 					| (Some bI,bounds) -> HOtypes.Debug.exec (bI,bounds)
-						DebugTypes.Detail (lazy("extractEvenPowers : LP succeed"))
+						DebugTypes.Detail (lazy("powerLTOne : LP succeed"))
 					| (None,_) -> Pervasives.raise Not_found) in
 				HOtypes.Debug.log DebugTypes.Detail
 					(lazy("Result LP = " ^ (Misc.list_to_string Index.Rat.to_string bI " ; ")));
@@ -179,7 +179,9 @@ let rec (default : t)
 				(Index.Int.data idm') pn.Pneuma.vl
 				|> Poly.MonomialBasis.mk
 			in
-			let p' = Poly.mk [Poly.Monomial.mk m' c] in
+            (* we compute the opposite coefficient because we want to build c*m', not to cancel c*m'. Since of_pattern tries to cancel monomials, wa ask to cancel -c*m'. *)
+            let opposite_coeff = Scalar.Rat.neg c in
+			let p' = Poly.mk [Poly.Monomial.mk m' opposite_coeff] in
 			let pn' = {pn with Pneuma.p = p'} in
 			let pn' = of_pattern pn' (matching_custom pn' matching_order_nl) in
 			let hil = updateHi (MapP.find p' pn'.Pneuma.mapP) id in
