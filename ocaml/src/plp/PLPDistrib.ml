@@ -5,118 +5,46 @@ module Cons = PLPCore.Cons
 module Debug = DebugTypes.Debug(struct let name = "PLPDistrib" end)
 
 module PLP(Minimization : Min.Type) = struct
-	
+
 	include PLPPlot.Plot(Minimization)
-	
-	type explorationPoint = int * Boundary.t
-	
+
+    (** index of the process in the list of processes.*)
+    type process_idT = int
+    type global_region_idT = int
+    type local_region_idT = int
+
 	(*XXX : le parsing ne fonctionne pas quand il n'y a pas de paramètres *)
 	module Distributed = struct
-		(*
-		(** index of the process in the list of processes.*)
-		type process_idT = int
-		type global_region_idT = int
-		type local_region_idT = int
-		
-		module MapId = Map.Make(struct type t = int let compare = Pervasives.compare end)
-		
-		(** Associates a local region id to a global region id (key). *)
-		type map_process_regionT = local_region_idT MapId.t
-	
-		(** Associates a map_process_regionT to a process id(key). *)
-		type mapIdT = map_process_regionT MapId.t
-		
-		(** Associates to a processus id the number of points it has left to explore. *)
-		type mapWorkT = int MapId.t
-		
-		type t = {
-			regs : mapRegs_t; (** associates global region id to regions. *)
-			mapId : mapIdT;
-			mapWork : mapWorkT;
-			todo : explorationPoint list;
-		}
-		
-		let empty = {
-			regs = MapV.empty;
-			mapId = MapId.empty;
-			mapWork = MapId.empty;
-			todo = []
-		}
-		(*
-		let to_string : unit () -> string
-			= fun () ->
-			Printf.sprintf "Current result : \n\t%s\n\t%s\n\t%s\n\t%s"
-			()
-		*)
-		let result : t ref = ref empty 
-		
-		let set_work : process_idT -> int -> unit
-			= fun pr_id work ->
-			result := {!result with mapWork = MapId.add pr_id work !result.mapWork}
-		
-		let get_work : process_idT -> int
-			= fun pr_id ->
-			try MapId.find pr_id !result.mapWork
-			with Not_found -> 0	
-			
-		let add_work : process_idT -> int -> unit
-			= fun pr_id work ->
-			let prev_work = get_work pr_id in
-			result := {!result with mapWork = MapId.add pr_id (work + prev_work) !result.mapWork}
-		
-		let mapWork_to_string : unit -> string
-			= fun () ->
-			Misc.list_to_string 
-				(fun (process_id,work) -> Printf.sprintf "(%i -> %i)" process_id work) 
-				(MapId.bindings !result.mapWork) " ; "
-						
-		(** Returns the local id of the region identified globally as [glob_id] in processus [pr_id]. *)
-		let get_region_id : process_idT -> global_region_idT -> local_region_idT 
-			= fun pr_id glob_id ->
-			try
-				let map = MapId.find pr_id !result.mapId in
-				try
-					MapId.find glob_id map
-				with Not_found -> Pervasives.failwith "PLP.get_id : region not found"
-			with Not_found -> Pervasives.failwith "PLP.get_id : process not found"
-		
-		(** Set the local id of the region identified globally as [glob_id] in processus [pr_id] as [loc_id]. *)
-		let set_region_id : process_idT -> global_region_idT -> local_region_idT -> unit
-			= fun pr_id glob_id loc_id ->
-			let map = MapId.add glob_id loc_id 
-				(try MapId.find pr_id !result.mapId
-				with Not_found -> MapId.empty)
-			in
-			result := {!result with mapId = MapId.add pr_id map !result.mapId}	
-			
-		module Print = struct
-		
+        open Mpi
+
+        module Print = struct
+
 			let vector : Vec.V.t list -> Vec.t -> string
-				= fun params vec -> 
+				= fun params vec ->
 				String.concat " "
-				(List.map 
+				(List.map
 					(fun param ->
 						Vec.get vec param |> Vec.Coeff.plp_print)
 				params)
-		
+
 			let paramCoeff : int -> ParamCoeff.t -> string
 				= fun nParams p ->
-				let lin_str = 
+				let lin_str =
 					if nParams = 0
 					then "0"
 					else String.concat " " (List.map Q.to_string p.ParamCoeff.lin)
-				in 
+				in
 				Printf.sprintf "%s %s"
 					lin_str
 					(Q.to_string p.ParamCoeff.cst)
-		
+
 			let obj : int -> Objective.t -> string
 				= fun nParams obj ->
 				Printf.sprintf "%s\n%s"
 					(String.concat "\n" (List.map (paramCoeff nParams) obj.Objective.lin))
 					((paramCoeff nParams) obj.Objective.cst)
-		
-			(** Format : 
+
+			(** Format :
 			s n_vars n_params
 			basis
 			variables
@@ -139,10 +67,10 @@ module PLP(Minimization : Min.Type) = struct
 				(String.concat " " (List.map Vec.V.plp_print vars))
 				(String.concat " " (List.map Vec.V.plp_print params))
 				((obj (PSplx.nParams sx)) sx.PSplx.obj)
-				(String.concat "\n" (List.map 
+				(String.concat "\n" (List.map
 					(fun v -> String.concat " " (List.map Q.to_string v))
 					sx.PSplx.mat))
-		
+
 			let cstr : Vec.V.t list -> Cs.t -> string
 				= fun params cstr ->
 				let vec = Cs.get_v cstr in
@@ -151,7 +79,7 @@ module PLP(Minimization : Min.Type) = struct
 						(List.map (fun v -> Cs.Vec.get vec v |> Scalar.Rat.to_string)
 							params))
 				(Cs.get_c cstr |> Scalar.Rat.to_string)
-			
+
 			let boundary : Vec.V.t list -> Boundary.t -> string
 				= fun params (c,point) ->
 				Printf.sprintf "%s\n%s"
@@ -160,49 +88,58 @@ module PLP(Minimization : Min.Type) = struct
 
 			let region : Region.t -> string
 				= fun reg ->
-				let params = PSplx.getParams reg.Region.sx in
-				match reg.Region.r with
-				| [] -> Printf.sprintf "%s\n%sno boundaries\n"
-					(vector params reg.Region.point)
-					(sx reg.Region.sx)
-				| _ :: _ -> Printf.sprintf "%s\n%sboundaries\n%s\n"
-					(vector params reg.Region.point)
-					(sx reg.Region.sx)
-					(String.concat "\n" (List.map (boundary params) reg.Region.r))
-		
-			(** format : 
+				match reg.Region.sx with
+                | Some tab -> begin
+                    let params = PSplx.getParams tab in
+        			match reg.Region.r with
+        			| [] -> Printf.sprintf "%s\n%sno boundaries\n"
+        				(vector params reg.Region.point)
+        				(sx tab)
+        			| _ :: _ -> Printf.sprintf "%s\n%sboundaries\n%s\n"
+        				(vector params reg.Region.point)
+        				(sx tab)
+        				(String.concat "\n" (List.map (fun (b,_) -> boundary params b) reg.Region.r))
+                    end
+                | None -> Pervasives.failwith "PLPDistrib.region: unexpected None sx"
+			(** format :
 			p id_region
 			cstr
 			pointOtherSide *)
-			let explorationPoint : Vec.V.t list -> explorationPoint -> string
-				= fun params (id, (c, pointOtherSide)) ->
-				Printf.sprintf "exp %i\n%s\n%s"
-					id
-					(cstr params c)
-					(vector params pointOtherSide)
-			
-			let explorationPoints : Vec.V.t list -> explorationPoint list -> string
+			let explorationPoint : Vec.V.t list -> ExplorationPoint.t -> string
+				= fun params ->
+                function
+                | ExplorationPoint.Direction (id, (c, pointOtherSide)) ->
+                    Printf.sprintf "exp %i\n%s\n%s"
+    					id
+    					(cstr params c)
+    					(vector params pointOtherSide)
+    			| ExplorationPoint.Point point ->
+                    Printf.sprintf "exp %s"
+                        (vector params point)
+
+
+			let explorationPoints : Vec.V.t list -> ExplorationPoint.t list -> string
 				= fun params points ->
 				match points with
 				| [] -> "no point"
 				| _ :: _ ->  String.concat "\n" (List.map (explorationPoint params) points)
 		end
-	
+
 		module Parse = struct
-	
-			let paramCoeff : Q.t list -> int -> ParamCoeff.t 
+
+			let paramCoeff : Q.t list -> int -> ParamCoeff.t
 				= fun coeffs dimParam ->
-				ParamCoeff.mk 
+				ParamCoeff.mk
 					(Misc.sublist coeffs 0 dimParam)
 					(List.nth coeffs dimParam)
-	
+
 			let obj : Q.t list list -> int -> int -> Objective.t
 				= fun coeffs dimVar dimParam ->
 				Objective.mk
 					(List.map (fun x -> paramCoeff x dimParam) (Misc.sublist coeffs 0 dimVar))
 					(paramCoeff (List.nth coeffs dimVar) dimParam)
-		
-			
+
+
 			let point :  Naming.t -> (Q.t * Q.t) list -> Vec.t
 				= fun names coeffs ->
 				List.mapi
@@ -213,28 +150,28 @@ module PLP(Minimization : Min.Type) = struct
 						(v, Naming.to_vpl names i))
 					coeffs
 					|> Vec.mk
-							
+
 			let to_sx : PLPBuild.DescSx.t -> PSplx.t
 				= fun d ->
 				let rangeVar = Misc.range 0 d.PLPBuild.DescSx.dimVar in
 				let rangeParam = Misc.range 0 d.PLPBuild.DescSx.dimParam in
 				let obj = obj d.PLPBuild.DescSx.obj d.PLPBuild.DescSx.dimVar d.PLPBuild.DescSx.dimParam in
 				let names = List.fold_left
-					(fun names i -> 
+					(fun names i ->
 						let v = List.nth d.PLPBuild.DescSx.vars i |> Vec.V.fromInt in
 						Naming.allocAt Naming.Var v i names)
 					Naming.empty
 					rangeVar
 				in
 				let names = List.fold_left
-					(fun names i -> 
+					(fun names i ->
 						let v = List.nth d.PLPBuild.DescSx.params i |> Vec.V.fromInt in
 						Naming.allocAt Naming.Param v i names)
 					names
 					rangeParam
 				in
 				{PSplx.obj=obj ; PSplx.mat = d.PLPBuild.DescSx.mat ; PSplx.basis = d.PLPBuild.DescSx.basis ; PSplx.names = names}
-		
+
 			let sx : string -> PLPBuild.DescSx.t
 				= fun s ->
 				try
@@ -243,70 +180,314 @@ module PLP(Minimization : Min.Type) = struct
 					prerr_endline ("parsing error from string\n" ^ s);
 				 	failwith "Parsing error"
 					end
-			
-					
+
+
 			let cstr : Naming.t -> Q.t list -> Cs.t
 				= fun names coeffs ->
 				let vec = List.map
 					(fun i -> (List.nth coeffs i,	Naming.to_vpl names i))
-					(Misc.range 0 ((List.length coeffs)-1)) 
+					(Misc.range 0 ((List.length coeffs)-1))
 				in
 				let cst = List.nth coeffs ((List.length coeffs)-1)
 				in
 				Cs.lt vec cst
-		
-			let region : PLPBuild.DescReg.t -> Region.t * int
+
+			let region : PLPBuild.DescReg.t -> Region.t
 				= fun reg ->
 				let sx = to_sx reg.PLPBuild.DescReg.sx in
 				let pointInside = point sx.PSplx.names reg.PLPBuild.DescReg.point in
 				let bnds = List.map
-					(fun (cstr_coeffs,point_coeffs) -> 
+					(fun (cstr_coeffs,point_coeffs) ->
 						let cstr = cstr sx.PSplx.names cstr_coeffs in
 						let point = point sx.PSplx.names point_coeffs in
-						(cstr,point))
+						((cstr,point), None))
 					reg.PLPBuild.DescReg.bnds
 				in
-				({Region.sx = sx ; Region.point = pointInside ; Region.r = bnds}, reg.PLPBuild.DescReg.id)
-			
-			let explorationPoint : Naming.t -> int * Q.t list * (Q.t * Q.t) list -> explorationPoint
+				{
+                    Region.sx = Some sx ;
+                    Region.point = pointInside ;
+                    Region.r = bnds ;
+                    Region.id = reg.PLPBuild.DescReg.id
+                }
+
+			let explorationPoint : Naming.t -> int * Q.t list * (Q.t * Q.t) list -> ExplorationPoint.t
 				= fun names (id,c,p)  ->
 				let c = cstr names c in
 				let p = point names p in
-				(id,(c,p)) 
-				
-			let slave : PLPBuild.DescSlave.t -> int * int * Region.t * explorationPoint list
+				ExplorationPoint.Direction (id,(c,p))
+
+			let slave : PLPBuild.DescSlave.t -> int * Region.t * ExplorationPoint.t list
 				= fun slave ->
-				let (reg,id) = region slave.PLPBuild.DescSlave.reg in
-				let names = reg.Region.sx.PSplx.names in
-				let explorationPoints = List.map (explorationPoint names) slave.PLPBuild.DescSlave.pointsToExplore in
-				(slave.PLPBuild.DescSlave.remaining_work, id, reg, explorationPoints)
+				let reg = region slave.PLPBuild.DescSlave.reg in
+                match reg.Region.sx with
+                | Some tab ->
+    				let names = tab.PSplx.names in
+    				let explorationPoints = List.map (explorationPoint names) slave.PLPBuild.DescSlave.pointsToExplore in
+    				(slave.PLPBuild.DescSlave.remaining_work, reg, explorationPoints)
+                | None -> Pervasives.failwith "PLPDistrib.slave: unexpected None sx"
 		end
-		
+
+        module Slave = struct
+            let res_slave : t ref = ref empty
+
+        	let print : unit -> unit
+        		= fun () ->
+        		Printf.sprintf "current_result :\ntodo = %s"
+        			(Misc.list_to_string ExplorationPoint.to_string !res_slave.todo " ; ")
+        		|> prerr_endline
+
+            let adjust_points : ExplorationPoint.t list -> ExplorationPoint.t list
+        		= fun points ->
+        		List.fold_left
+        			(fun res point ->
+                        match point with
+                        | ExplorationPoint.Direction (id, point) ->
+                            let new_point = Next_Point.RayTracing.adjust Cone (id, point) !res_slave.regs in
+                            new_point :: res
+                        | _ -> Pervasives.failwith "PLPDistrib.Slave.adjust_points: unexpected point"
+                    )
+        			[]
+        			points
+
+            module Write = struct
+
+        		let work_to_string : unit -> string
+        			= fun () ->
+        			Printf.sprintf "todo %i"
+        				(List.length !res_slave.todo)
+
+        		(** format :
+        		region
+        		explorationsPoints
+        		remaining_work*)
+        		let send : int -> ExplorationPoint.t list -> unit
+        			= fun id points ->
+        			let reg = MapV.find id !res_slave.regs in
+                    match reg.Region.sx with
+                    | None -> Pervasives.failwith "send: unexpected None sx"
+                    | Some sx -> begin
+            			let params = PSplx.getParams sx in
+            			let s = Printf.sprintf "problem\nregion %i\n%s%s\n%s\n"
+            				id
+            				(Print.region reg)
+            				(Print.explorationPoints params points)
+            				(work_to_string())
+            			in
+            			Printf.sprintf "\nSLAVE WRITING \n%s\n\n" s
+            				|>	prerr_endline;
+            			print_string s;
+            			print_endline "w"
+                    end
+
+        		let ask_for_work : unit -> unit
+        			= fun () ->
+        			prerr_endline "slave asking for work";
+        			print_endline "Done";
+        			print_endline "w"
+
+        	end
+
+            module FirstStep = struct
+
+        		let random_point : Vec.V.t list -> Vec.t
+        			= fun params ->
+        			List.map (fun v -> Scalar.Rat.mk (Random.int(1000)) (Random.int(1000)+1) |> Vec.Coeff.ofQ
+        				, v)
+        				params
+        				|> Vec.mk
+
+        		let init : Objective.pivotStrgyT -> PSplx.t -> (ExplorationPoint.t list * local_region_idT) option
+        			= fun st sx ->
+        			let point = random_point (PSplx.getParams sx) in
+        		  	match Exec.exec Cone st sx point with
+        		 	| None -> None
+        		  	| Some reg -> begin
+        		  		(* taken from add_region*)
+        		  		let id = get_fresh_id() in
+        				let regs = MapV.add id reg MapV.empty in
+        				(* XXX:  vérifier les points rendus! (voir addRegion)*)
+        				let todo = extract_points reg id in
+        				res_slave := {!res_slave with regs = regs};
+        				let todo' = adjust_points todo in
+        				Some (todo', id)
+        		  	end
+
+        		let run : string -> unit
+        			= fun s ->
+        			let sx = Parse.sx s
+        				|> Parse.to_sx
+        			in
+        			match init Objective.Bland sx with
+        			| None -> ()
+        			| Some (points, id) -> Write.send id points
+        	end
+
+            module Read = struct
+
+        		let region_already_known : Region.t -> int option
+        			= fun reg ->
+        			let i = ref 0 in
+        			let b = MapV.exists (fun id reg' -> if Region.equal reg reg'
+        				then (i := id ; true)
+        				else false)
+        			(!res_slave.regs)
+        			in
+        			if b
+        			then Some !i
+        			else None
+
+        		let replace_id : global_region_idT -> local_region_idT -> unit
+        			= fun glob_id loc_id ->
+        			if loc_id <> glob_id
+        			then begin
+        				let map = MapV.add glob_id (MapV.find loc_id !res_slave.regs) !res_slave.regs
+        				and todo = List.map
+        					(function
+                                | ExplorationPoint.Direction (id, p) ->
+                                    if id = loc_id
+                                    then ExplorationPoint.Direction (glob_id,p)
+                                    else ExplorationPoint.Direction (id,p)
+                                | ExplorationPoint.Point _ as point -> point)
+        					!res_slave.todo
+        				in
+        				res_slave := {regs = map ; todo = todo}
+        			end
+
+        		let parse_problem : string -> unit
+        			= fun s ->
+        			let (_, reg, points) = PLPParser.problem PLPLexer.token (Lexing.from_string s)
+        				|> Parse.slave
+        			in
+                    let glob_id = reg.id in
+        			begin
+        			match region_already_known reg with
+        			| Some loc_id -> replace_id glob_id loc_id
+        			| None -> ()
+        			end;
+        			let regs = MapV.add glob_id reg !res_slave.regs in
+        			let todo = points @ !res_slave.todo in
+        			res_slave := {regs = regs ; todo = todo}
+
+        		let parse_points : string -> unit
+        			= fun s ->
+        			let points = PLPParser.points PLPLexer.token (Lexing.from_string s)
+        			|> List.map (fun (loc_reg_id, cstr, point) ->
+        				let names = (MapV.find loc_reg_id !res_slave.regs).Region.sx.PSplx.names in
+        				Distributed.Parse.explorationPoint names (loc_reg_id, cstr, point))
+        			in
+        			let todo = points @ !res_slave.todo in
+        			res_slave := {!res_slave with todo = todo}
+
+        		let run : string -> unit
+        			= fun s ->
+        			if String.compare (String.sub s 0 7) "problem" = 0
+        			then parse_problem s
+        			else if String.compare (String.sub s 0 6) "points" = 0
+        				then parse_points s
+        				else failwith "PLPSlave.Read.run"
+        	end
+        end
+
+
+
+		module MapId = Map.Make(struct type t = int let compare = Pervasives.compare end)
+
+		(** Associates a local region id to a global region id (key). *)
+		type map_process_regionT = local_region_idT MapId.t
+
+		(** Associates a map_process_regionT to a process id(key). *)
+		type mapIdT = map_process_regionT MapId.t
+
+		(** Associates to a processus id the number of points it has left to explore. *)
+		type mapWorkT = int MapId.t
+
+		type t = {
+			regs : mapRegs_t; (** associates global region id to regions. *)
+			mapId : mapIdT;
+			mapWork : mapWorkT;
+			todo : ExplorationPoint.t list;
+		}
+
+		let empty = {
+			regs = MapV.empty;
+			mapId = MapId.empty;
+			mapWork = MapId.empty;
+			todo = []
+		}
+
+		(*
+		let to_string : unit () -> string
+			= fun () ->
+			Printf.sprintf "Current result : \n\t%s\n\t%s\n\t%s\n\t%s"
+			()
+		*)
+		let result : t ref = ref empty
+
+		let set_work : process_idT -> int -> unit
+			= fun pr_id work ->
+			result := {!result with mapWork = MapId.add pr_id work !result.mapWork}
+
+		let get_work : process_idT -> int
+			= fun pr_id ->
+			try MapId.find pr_id !result.mapWork
+			with Not_found -> 0
+
+		let add_work : process_idT -> int -> unit
+			= fun pr_id work ->
+			let prev_work = get_work pr_id in
+			result := {!result with mapWork = MapId.add pr_id (work + prev_work) !result.mapWork}
+
+		let mapWork_to_string : unit -> string
+			= fun () ->
+			Misc.list_to_string
+				(fun (process_id,work) -> Printf.sprintf "(%i -> %i)" process_id work)
+				(MapId.bindings !result.mapWork) " ; "
+
+		(** Returns the local id of the region identified globally as [glob_id] in processus [pr_id]. *)
+		let get_region_id : process_idT -> global_region_idT -> local_region_idT
+			= fun pr_id glob_id ->
+			try
+				let map = MapId.find pr_id !result.mapId in
+				try
+					MapId.find glob_id map
+				with Not_found -> Pervasives.failwith "PLP.get_id : region not found"
+			with Not_found -> Pervasives.failwith "PLP.get_id : process not found"
+
+		(** Set the local id of the region identified globally as [glob_id] in processus [pr_id] as [loc_id]. *)
+		let set_region_id : process_idT -> global_region_idT -> local_region_idT -> unit
+			= fun pr_id glob_id loc_id ->
+			let map = MapId.add glob_id loc_id
+				(try MapId.find pr_id !result.mapId
+				with Not_found -> MapId.empty)
+			in
+			result := {!result with mapId = MapId.add pr_id map !result.mapId}
+
+        (*
 		module Processes = struct
-		
+
 			type com = {
 				pid : int;
 				in_ch : Pervasives.in_channel;
 				in_fd : Unix.file_descr;
 				out_ch : Pervasives.out_channel;
 				p1_exit : Unix.file_descr;
-				p2_ent : Unix.file_descr} 
-		
+				p2_ent : Unix.file_descr}
+
 			let pipes : com list ref
 				= ref []
-				
+
 			let print : unit -> unit
 				= fun () ->
 				Debug.log DebugTypes.Detail
 					(lazy (Printf.sprintf "Processes : \n%s"
 						(String.concat " ; "
-							(List.map (fun com -> string_of_int com.pid) !pipes) 
+							(List.map (fun com -> string_of_int com.pid) !pipes)
 						)))
-			
+
 			let close : unit -> unit
 				= fun () ->
 				List.iter
-					(fun com -> 
+					(fun com ->
 						Debug.log DebugTypes.Normal
 							(lazy ("Fermeture du processus " ^ (string_of_int com.pid)));
 						Unix.kill com.pid Sys.sigkill;
@@ -316,14 +497,14 @@ module PLP(Minimization : Min.Type) = struct
 						Unix.close com.p2_ent)
 					!pipes;
 				pipes := []
-		
-		
-			let obj_path : string Pervasives.ref 
+
+
+			let obj_path : string Pervasives.ref
 				= Pervasives.ref "/home/amarecha/verasco/vpl2/"
-		
+
 			let n_processes : int Pervasives.ref
 				= Pervasives.ref 1
-		
+
 			let create_process : unit -> unit
 				= fun () ->
 				begin
@@ -332,25 +513,25 @@ module PLP(Minimization : Min.Type) = struct
 					Pervasives.set_binary_mode_in in_ch false;
 					let out_ch = Unix.out_channel_of_descr p1_ent in
 					Pervasives.set_binary_mode_out out_ch false;
-					let pid = Unix.create_process 
-						(!obj_path ^ "PLPSlave.native") 
-						[|(!obj_path ^ "PLPSLave.native")|] 
+					let pid = Unix.create_process
+						(!obj_path ^ "PLPSlave.native")
+						[|(!obj_path ^ "PLPSLave.native")|]
 						p1_exit p2_ent Unix.stderr in
 					Debug.log DebugTypes.Normal
 						(lazy ("Création du processus " ^ (string_of_int pid)));
-					pipes := !pipes @ 
-						[{pid=pid ; 
-						  in_ch=in_ch ; 
-						  in_fd = p2_exit; 
-						  out_ch=out_ch ; 
-						  p1_exit=p1_exit ; 
+					pipes := !pipes @
+						[{pid=pid ;
+						  in_ch=in_ch ;
+						  in_fd = p2_exit;
+						  out_ch=out_ch ;
+						  p1_exit=p1_exit ;
 						  p2_ent = p2_ent}]
 				end
-					
+
 			let create : unit -> unit
-				= fun () -> 
+				= fun () ->
 				List.iter (fun _ -> create_process()) (Misc.range 0 !n_processes)
-			
+
 			let write : com -> string -> unit
 				= fun com s ->
 				(* écriture dans le pipe *)
@@ -360,7 +541,7 @@ module PLP(Minimization : Min.Type) = struct
 				(* marque de fin de communication : 'w' *)
 				output_string com.out_ch (s ^ "w\n");
 				Pervasives.flush com.out_ch
-		
+
 		(*
 			let read : com -> string
 				= fun com ->
@@ -371,7 +552,7 @@ module PLP(Minimization : Min.Type) = struct
 				  		let s' = (input_line com.in_ch) in
 				  		try let _ = String.index s' 'w' in
 				  			Pervasives.raise End_of_file
-				  		with Not_found -> 
+				  		with Not_found ->
 				  			s := !s ^ s' ^ "\n"
 				  	done;!s
 				with End_of_file -> begin
@@ -381,15 +562,15 @@ module PLP(Minimization : Min.Type) = struct
 						|> print_endline;
 					!s
 					end
-				end 
+				end
 			*)
-			
+
 			let read_char : Unix.file_descr -> char
-				= fun fd -> 
+				= fun fd ->
 				let by = Bytes.create 1 in
 				let _ = Unix.read fd by 0 1 in
 				String.get (Bytes.to_string by) 0
-			
+
 			let read : com -> string
 				= fun com ->
 				begin
@@ -405,16 +586,16 @@ module PLP(Minimization : Min.Type) = struct
 				  		else s := !s ^ (String.make 1 c)
 				  	done;!s
 				with End_of_file -> !s
-				end 
-			
+				end
+
 			let nb_message_read : int ref = ref 0
-			
-			type resT = 
-				| AskForWork of process_idT 
+
+			type resT =
+				| AskForWork of process_idT
 				| NewRegion of process_idT * (int * local_region_idT * Region.t * explorationPoint list)
-			
+
 			let is_reading : process_idT ref = ref (-1)
-			
+
 			let treat_string  : string -> process_idT -> resT
 				= fun s process_id ->
 				if String.compare s "Done\n" = 0
@@ -422,16 +603,16 @@ module PLP(Minimization : Min.Type) = struct
 					Debug.log DebugTypes.Detail
 						(lazy (Printf.sprintf "process %i is asking for work" process_id));
 					AskForWork process_id
-				end 
+				end
 				else begin
 					Debug.log DebugTypes.Detail
 						(lazy (Printf.sprintf "received from process %i region :\n%s" process_id s));
-					NewRegion 
-						(process_id, 
+					NewRegion
+						(process_id,
 						 PLPParser.problem PLPLexer.token (Lexing.from_string s)
 						 	|> Parse.slave)
 				end
-				
+
 			(* problème avec select : lorsqu'on lit sur le input_channel, comme il est bufferisé, on peut lire plus que souhaité. *)
 			let rec wait_res : unit -> resT
 				= fun () ->
@@ -445,19 +626,19 @@ module PLP(Minimization : Min.Type) = struct
 					then begin
 						is_reading := -1;
 						wait_res()
-					end 
+					end
 					else treat_string s !is_reading
 				end
-				else begin	
+				else begin
 					(* Waits for something to be readable in any input channel.
 					-1 means no timeout *)
 					Debug.log DebugTypes.Detail (lazy "Selecting");
-					let (readables,_,_) = Unix.select 
+					let (readables,_,_) = Unix.select
 						(List.map (fun com -> com.in_fd) !pipes)
 						[] [] (-1.) in
-		
+
 					nb_message_read := !nb_message_read + 1;
-				
+
 					let readable = List.hd readables in
 					let process_id = Misc.findi (fun com -> com.in_fd = readable) !pipes in
 					(*is_reading := process_id;*)
@@ -470,9 +651,9 @@ module PLP(Minimization : Min.Type) = struct
 				let com = List.hd !pipes in
 				let s = read com in
 				*)
-				
+
 		end
-		
+
 		(** Returns a fresh id for a new region.
 		Ids given by master are negative. *)
 		let get_id : unit -> int
@@ -480,15 +661,15 @@ module PLP(Minimization : Min.Type) = struct
 			let id = !reg_id in
 			reg_id := id - 1;
 			id
-		
+
 		let region_already_known : Region.t -> bool
 			= fun reg ->
 			MapV.exists (fun _ reg' -> Region.equal reg reg') (!result.regs)
 
-		let add_region : process_idT -> (int * local_region_idT * Region.t * explorationPoint list) 
+		let add_region : process_idT -> (int * local_region_idT * Region.t * explorationPoint list)
 			-> (global_region_idT * explorationPoint list) option
 			(* explorationPoints talk about the new region. Put the global id instead of the local one. *)
-			= let update_explorationPoints : global_region_idT -> explorationPoint list -> explorationPoint list 
+			= let update_explorationPoints : global_region_idT -> explorationPoint list -> explorationPoint list
 				= fun glob_id points ->
 				List.map (fun (_,p) -> (glob_id, p)) points
 			in
@@ -502,19 +683,19 @@ module PLP(Minimization : Min.Type) = struct
 			else begin
 				result := {!result with regs = MapV.add glob_id reg !result.regs};
 				(* Setting region ids*)
-				List.iteri 
-					(fun i com -> 
+				List.iteri
+					(fun i com ->
 						if i = sender_process_id
 						then set_region_id i glob_id loc_id
 						else set_region_id i glob_id glob_id)
 					!Processes.pipes;
 				Some (glob_id, update_explorationPoints glob_id explorationPoints)
-			end	 
-		
+			end
+
 		let set_explorationPoint : process_idT -> explorationPoint -> explorationPoint
 			= fun process_id (glob_id, p) ->
 			(get_region_id process_id glob_id, p)
-		
+
 		(** Gives the first point of todo to the process. *)
 		let giveWork : process_idT -> Processes.com -> unit
 			= fun pr_id com ->
@@ -527,17 +708,17 @@ module PLP(Minimization : Min.Type) = struct
 				Printf.sprintf "points\n%s\n"
 				(Print.explorationPoint params (set_explorationPoint pr_id (glob_id, p)))
 				|> Processes.write com
-			end 
-				
+			end
+
 		let saveWork : global_region_idT -> explorationPoint list -> unit
 			= fun glob_id points ->
-			result := {!result with 
-				todo = !result.todo @ 
+			result := {!result with
+				todo = !result.todo @
 				(List.map
-					(fun (loc_id, p) -> glob_id, p) 
+					(fun (loc_id, p) -> glob_id, p)
 					points)
 			}
-			
+
 		(** Propagate the new region (glob_id) to every process, except the sender. *)
 		let propagateRegion : global_region_idT -> process_idT -> unit
 			= fun glob_id sender_process ->
@@ -549,32 +730,32 @@ module PLP(Minimization : Min.Type) = struct
 				loc_id
 				(Print.region reg)
 			in
-			List.iteri (fun process_id' com -> 
+			List.iteri (fun process_id' com ->
 				if process_id' <> sender_process
 				then Processes.write com (str process_id'))
 				!Processes.pipes
-		
+
 		let init : PSplx.t -> unit
 			= fun sx ->
 			let s = Print.sx sx in
 			Debug.log DebugTypes.Normal
 				(lazy (Printf.sprintf "Initializing with string\n%s" s));
-			List.iter (fun com -> Processes.write com s) !Processes.pipes 
-		
+			List.iter (fun com -> Processes.write com s) !Processes.pipes
+
 		let stop : unit -> bool
 			= fun () ->
 			print_endline (mapWork_to_string());
 			!result.todo = []
 			&&	(MapId.for_all (fun _ work -> work = 0) !result.mapWork)
-			
+
 		let distrib_work : unit -> unit
 			= fun () ->
 			List.iteri giveWork !Processes.pipes
-		
+
 		let asking_for_work : process_idT -> unit
 			= fun process_id ->
 			set_work process_id 0
-				
+
 		(* must be done at least once after initialization *)
 		let rec steps : (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
 			= fun get_cert ->
@@ -592,13 +773,13 @@ module PLP(Minimization : Min.Type) = struct
 					end
 				| Processes.AskForWork process_id -> begin
 					asking_for_work process_id;
-					giveWork process_id (List.nth !Processes.pipes process_id) 
+					giveWork process_id (List.nth !Processes.pipes process_id)
 					end
 			end;
 			if stop()
 			then get_results {regs = !result.regs ; todo = []} get_cert
 			else steps get_cert
-		
+
 		let init_state : unit -> unit
 			= fun () ->
 			(Processes.n_processes := match !Flags.distributed_plp with
@@ -609,7 +790,7 @@ module PLP(Minimization : Min.Type) = struct
 			Processes.nb_message_read := 0;
 			Processes.close();
 			Processes.is_reading := -1
-		
+
 		let run : Objective.pivotStrgyT -> PSplx.t -> (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
 			= fun st sx get_cert ->
 			init_state();
