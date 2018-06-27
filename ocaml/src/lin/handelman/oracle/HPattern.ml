@@ -53,9 +53,9 @@ let powerLTOne : matcher
 			Some (PowerLTOne m)
 	with Not_found -> None
 
-let matching_order : matcher list = [default] (*[alreadyIn ; extractEvenPowers ; linearMonomial ; powerLTOne ; default]*)
+let matching_order : matcher list = [alreadyIn ; extractEvenPowers ; linearMonomial ; powerLTOne ; default]
 
-let matching_order_nl : matcher list = [default] (*[alreadyIn ; powerLTOne ; default]*)
+let matching_order_nl : matcher list = [alreadyIn ; powerLTOne ; default]
 
 let rec(matching_custom : Pneuma.t -> matcher list -> t)
 		= fun pn l ->
