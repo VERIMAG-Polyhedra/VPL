@@ -17,11 +17,11 @@ sx : SX Z Z EOL basis variables parameters cs MATRIX EOL cs {PLPBuild.DescSx.mk 
 ;
 points : POINTS EOL explorationPoints EOF {$3}
 ;
-point : 
+point :
   nb nb EOL {[($1, $2)]}
 | nb nb point {($1,$2) :: $3}
 ;
-basis : 
+basis :
   EOL {[]}
 | Z basis {$1 :: $2}
 ;
@@ -29,11 +29,11 @@ variables : basis {$1}
 ;
 parameters : basis {$1}
 ;
-boundaries: 
+boundaries:
   cons point {[($1,$2)]}
 | cons point boundaries {($1,$2) :: $3}
 ;
-frontiers : 
+frontiers :
 	NO_FRONTIERS EOL {[]}
 | 	FRONTIERS EOL boundaries {$3}
 ;
@@ -49,9 +49,11 @@ nb:
   Z {Q.make $1 Z.one}
 | Z SLASH Z {Q.make $1 $3}
 ;
-explorationPoint: EXPLORATION_POINT Z EOL cons point {(Z.to_int $2,$4,$5)}
+explorationPoint:
+  EXPLORATION_POINT Z EOL cons point {(Z.to_int $2,$4,$5)}
+| EXPLORATION_POINT point {(0,[],$2)}
 ;
-explorationPoints: 
+explorationPoints:
 | NO_POINT EOL {[]}
 | explorationPoint {[$1]}
 | explorationPoint explorationPoints {$1 :: $2}
