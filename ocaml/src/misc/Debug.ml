@@ -5,6 +5,8 @@ let modules : ((module Type) * color) list = [
     (module Join.Debug), Magenta;
     (module Proj.Debug), Magenta;
     (module PLPCore.Debug), Red;
+    (module PLPDistrib.DebugMaster), Green;
+    (module PLPDistrib.DebugSlave), White;
     (module MinLP.Debug), Green;
     (module Handelman.Debug), Magenta;
     (module HOtypes.Debug), White;
@@ -39,6 +41,11 @@ let enable : unit -> unit
         let module M = (val m : Type) in
         M.enable DebugTypes.([Title ; MInput ; MOutput]))
         modules
+
+let enable_one : (module Type) -> unit
+    = fun m ->
+    let module M = (val m : Type) in
+    M.enable_all ()
 
 let disable : unit -> unit
  = fun () ->

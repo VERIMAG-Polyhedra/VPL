@@ -707,7 +707,7 @@ module PLP(Minimization : Min.Type) = struct
 				in
 				Debug.log DebugTypes.Detail (lazy(Printf.sprintf "evals = %s"
 					(eval_to_string evals)));
-				try
+				try begin
 					(* XXX: que se passe t-il si i n'est pas 0? *)
 					let i = Misc.findi (List.exists (fun ((_,cstr'),_) -> Cs.equal cstr cstr')) evals in
 					let evals =
@@ -738,7 +738,7 @@ module PLP(Minimization : Min.Type) = struct
 							(lazy (Printf.sprintf "The next exploration point will be %s"
 								(Vec.to_string Vec.V.to_string x)));
 						ExplorationPoint.Direction(id, (cstr, x))
-				with Not_found -> Pervasives.failwith "PLP.adjust"
+				end with Not_found -> Pervasives.failwith "PLP.adjust"
 
 			let adjust' : region_t -> (int * Boundary.t) -> mapRegs_t -> ExplorationPoint.t
 				= fun reg_t (id, (cstr, pointOtherSide)) regMap ->

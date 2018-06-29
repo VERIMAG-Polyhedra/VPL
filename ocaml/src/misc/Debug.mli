@@ -7,6 +7,9 @@ For readability, each module is associated to a color, available only in on-the-
 (** Enables debug traces for all modules. *)
 val enable : unit -> unit
 
+(** Enables all levels for the given module *)
+val enable_one : (module DebugTypes.Type) -> unit
+
 (** Disables debug traces for all modules. *)
 val disable : unit -> unit
 

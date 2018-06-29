@@ -2,7 +2,8 @@ module Cs = PLPCore.Cs
 module EqSet = PLPCore.EqSet
 module Cons = PLPCore.Cons
 
-module Debug = DebugTypes.Debug(struct let name = "PLPDistrib" end)
+module DebugMaster = DebugTypes.Debug(struct let name = "PLP_Master" end)
+module DebugSlave = DebugTypes.Debug(struct let name = "PLP_Slave" end)
 
 module PLP(Minimization : Min.Type) = struct
 
@@ -19,6 +20,10 @@ module PLP(Minimization : Min.Type) = struct
         (* TODO : ne pas oublier de l'initialiser !*)
         let params : Vec.V.t list ref = ref []
         let naming : Naming.t ref = ref Naming.empty
+
+        let getRank : unit -> Mpi.rank
+            = fun () ->
+            Mpi.comm_rank Mpi.comm_world
 
         module Print = struct
 
@@ -251,10 +256,11 @@ module PLP(Minimization : Min.Type) = struct
 
         	let print : unit -> unit
         		= fun () ->
-        		Printf.sprintf "current_result :\ntodo = %s"
-        			(Misc.list_to_string ExplorationPoint.to_string !res_slave.todo " ; ")
-        		|> prerr_endline
+                DebugSlave.log DebugTypes.Normal
+                    (lazy (Printf.sprintf "current_result :\ntodo = %s"
+        			(Misc.list_to_string ExplorationPoint.to_string !res_slave.todo " ; ")))
 
+                    (*
             let adjust_points : ExplorationPoint.t list -> ExplorationPoint.t list
         		= fun points ->
         		List.map
@@ -264,6 +270,24 @@ module PLP(Minimization : Min.Type) = struct
                             new_point
                         | p -> p)
         			points
+
+                    *)
+
+            let adjust_points : ExplorationPoint.t list -> ExplorationPoint.t list
+        		= fun points ->
+        		List.fold_left
+        			(fun points -> function
+                        | ExplorationPoint.Direction (id, point) -> begin
+                            try
+                                let new_point = Next_Point.RayTracing.adjust Cone (id, point) !res_slave.regs in
+                                new_point :: points
+                            with Next_Point.RayTracing.Adjacent _ -> points (* TODO: apply adjacency ?*)
+                            end
+                        | ExplorationPoint.Point p as point ->
+                            if MapV.exists (fun _ reg -> Region.contains reg p) !res_slave.regs
+                            then points
+                            else point :: points)
+        			[] points
 
             module Write = struct
 
@@ -285,15 +309,16 @@ module PLP(Minimization : Min.Type) = struct
         				(Print.explorationPoints points)
         				(work_to_string())
         			in
-        			Printf.sprintf "\nSLAVE WRITING \n%s\n\n" s
-        				|>	prerr_endline;
+                    DebugSlave.log DebugTypes.Normal
+                        (lazy (Printf.sprintf "\nSlave %i sending region\n" (getRank())));
+                    DebugSlave.log DebugTypes.Detail (lazy s);
         			Mpi.send s 0 0 Mpi.comm_world
 
         		let ask_for_work : unit -> unit
         			= fun () ->
-        			prerr_endline "slave asking for work";
-        			print_endline "Done";
-        			print_endline "w"
+                    DebugSlave.log DebugTypes.Normal
+                        (lazy (Printf.sprintf "Slave %i asking for work" (getRank())));
+            		Mpi.send "Done" 0 0 Mpi.comm_world
 
         	end
 
@@ -321,7 +346,10 @@ module PLP(Minimization : Min.Type) = struct
         				let todo = extract_points reg id in
         				res_slave := {!res_slave with regs = regs};
         				let todo' = adjust_points todo in
-        				Some (todo', id)
+                        let len = List.length todo' in
+                        res_slave := {!res_slave with todo = Misc.sublist todo' 0 (len/2)};
+                        let to_send = Misc.sublist todo' (len/2) len in
+        				Some (to_send, id)
         		  	end
 
         		let run : string -> unit
@@ -401,24 +429,41 @@ module PLP(Minimization : Min.Type) = struct
 
         		let step : unit -> (ExplorationPoint.t list * local_region_idT) option
         			= fun () ->
+                    DebugSlave.log DebugTypes.Detail
+                        (lazy (Printf.sprintf "Slave %i checking exploration" (getRank())));
         			match !res_slave.todo with
-        			| [] -> None
-                    | ExplorationPoint.Point _ :: tl -> Pervasives.failwith "PLPDistrib.step: Unexpected point"
+        			| [] -> begin
+                        DebugSlave.log DebugTypes.Detail
+                            (lazy (Printf.sprintf "Slave %i has nothing to explore" (getRank())));
+                        None
+                        end
+                    | ExplorationPoint.Point _ :: tl -> begin
+                        DebugSlave.log DebugTypes.Detail
+                            (lazy (Printf.sprintf "Slave %i stops" (getRank())));
+                        Pervasives.failwith "PLPDistrib.step: Unexpected point"
+                        end
         			| ExplorationPoint.Direction (id_region, (cstr, point)) :: tl ->
                         match (MapV.find id_region !res_slave.regs).Region.sx with
                         | None -> Pervasives.failwith "PLPDistrib.step: unexpected None sx"
                         | Some sx -> begin
+                            DebugSlave.log DebugTypes.Detail
+                                (lazy (Printf.sprintf "Slave %i launching an exploration" (getRank())));
             				match Exec.exec Cone Objective.Bland sx point with
             			 	| None -> None
             			  	| Some reg -> begin
-            			  		(* taken from add_region*)
-            			  		let id = get_fresh_id() in
-            					let regs = MapV.add id reg !res_slave.regs in
-            					res_slave := {regs = regs ; todo = List.tl !res_slave.todo};
-            					let todo = [ExplorationPoint.Direction (id_region, (cstr, point))] @ (extract_points reg id)
-                                    |> adjust_points
-                                in
-            					Some (todo, id)
+                                if Read.region_already_known reg <> None
+                                then None
+                                else
+                			  		(* taken from add_region*)
+                			  		let id = get_fresh_id() in
+                					let regs = MapV.add id reg !res_slave.regs in
+                					res_slave := {regs = regs ; todo = List.tl !res_slave.todo};
+                					let points = [ExplorationPoint.Direction (id_region, (cstr, point))] @ (extract_points reg id) in
+                                    let todo = adjust_points points in
+                                    let len = List.length todo in
+                                    res_slave := {!res_slave with todo = todo @ (Misc.sublist todo 0 (len/2))};
+                                    let to_send = Misc.sublist todo (len/2) len in
+                					Some (to_send, id)
             			  	end
                         end
 
@@ -432,14 +477,25 @@ module PLP(Minimization : Min.Type) = struct
 
             let read_wait: unit -> string
                 = fun () ->
-                Mpi.(receive any_source any_tag comm_world)
+                DebugSlave.log DebugTypes.Normal
+                    (lazy (Printf.sprintf "Slave %i waiting for work" (getRank())));
+                let s = Mpi.(receive 0 any_tag comm_world) in
+                DebugSlave.log DebugTypes.Detail
+                    (lazy (Printf.sprintf "Slave %i received string\n%s" (getRank()) s));
+                s
 
-            (** If there is something to read in stdin, read it. Otherwise, returns None. *)
+            (** If there is something to read, read it. Otherwise, returns None. *)
             let read : unit -> string option
             	= fun () ->
-                match Mpi.(iprobe any_source any_tag comm_world) with
+                DebugSlave.log DebugTypes.Normal
+                    (lazy (Printf.sprintf "Slave %i checking mails" (getRank())));
+                let res = match Mpi.(iprobe 0 any_tag comm_world) with
                 | None -> None
                 | Some (_,_) -> Some (read_wait ())
+                in
+                DebugSlave.log DebugTypes.Normal
+                    (lazy (Printf.sprintf "Slave %i done checking mails" (getRank())));
+                res
 
             let rec more_whip : unit -> unit
             	= fun () ->
@@ -465,12 +521,10 @@ module PLP(Minimization : Min.Type) = struct
 
             let first_whip: unit -> unit
             	= fun () ->
-                Printf.sprintf "Slave %i rises" (Mpi.comm_rank Mpi.comm_world)
-                |> print_endline ;
+                DebugSlave.log DebugTypes.Normal
+                    (lazy (Printf.sprintf "Slave %i rises" (getRank())));
             	let s = read_wait() in
             	FirstStep.run s;
-            	let s = read_wait() in
-            	Read.run s;
             	more_whip()
 
         end
@@ -758,6 +812,14 @@ module PLP(Minimization : Min.Type) = struct
 			= fun reg ->
 			MapV.exists (fun _ reg' -> Region.equal reg reg') (!result.regs)
 
+        (** Returns a fresh id for a new region.
+ 		Ids given by master are negative. *)
+ 		let get_fresh_id : unit -> int
+            = fun () ->
+ 			let id = !reg_id in
+ 			reg_id := id - 1;
+ 			id
+
 		let add_region : Mpi.rank -> (int * Region.t * ExplorationPoint.t list)
 			-> (global_region_idT * ExplorationPoint.t list) option
 			(* explorationPoints talk about the new region. Put the global id instead of the local one. *)
@@ -769,12 +831,13 @@ module PLP(Minimization : Min.Type) = struct
                         | p -> p)
                     points
 			in
-			fun sender_process_id (_, reg, explorationPoints) ->
+			fun sender_process_id (remaining_work, reg, explorationPoints) ->
+            set_work sender_process_id remaining_work;
 			let glob_id = get_fresh_id() in
             let loc_id = reg.Region.id in
 			if region_already_known reg
 			then begin
-				Debug.log DebugTypes.Normal (lazy "Region already known");
+				DebugMaster.log DebugTypes.Normal (lazy "Region already known");
 				None
 			end
 			else begin
@@ -795,14 +858,32 @@ module PLP(Minimization : Min.Type) = struct
                 ExplorationPoint.Direction (get_region_id process_id glob_id, p)
             | p -> p
 
-		(** Gives the first point of todo to the process. *)
+		(** Gives a fraction of todo to the process. *)
 		let giveWork : Mpi.rank -> unit
 			= fun pr_id ->
 			if get_work pr_id = 0 && !result.todo <> []
-			then begin
+			then begin(*
+                let len_todo = List.length !result.todo in
+                let n_slaves = Mpi.comm_size Mpi.comm_world - 1 in
+                let ratio = 1 in (*(len_todo/n_slaves) in*)
+                let work = Misc.sublist !result.todo 0 ratio in
+                result := {!result with todo = Misc.sublist !result.todo ratio len_todo};
+                set_work pr_id ratio;
+                let msg = List.map
+                    (function
+                    | ExplorationPoint.Point _ as point -> Printf.sprintf "points\n%s\n"
+                        (Print.explorationPoint point)
+                    | ExplorationPoint.Direction (glob_id, p) -> Printf.sprintf "points\n%s\n"
+                        (set_explorationPoint pr_id (ExplorationPoint.Direction (glob_id, p))
+                        |> Print.explorationPoint)
+                    ) work
+                |> String.concat "\n"
+                in
+                Mpi.send msg pr_id 0 Mpi.comm_world*)
+                let work = List.hd !result.todo in
                 result := {!result with todo = List.tl !result.todo};
                 set_work pr_id 1;
-                let msg = match List.hd !result.todo with
+                let msg = match work with
                     | ExplorationPoint.Point _ as point -> Printf.sprintf "points\n%s\n"
                         (Print.explorationPoint point)
                     | ExplorationPoint.Direction (glob_id, p) -> Printf.sprintf "points\n%s\n"
@@ -838,18 +919,19 @@ module PLP(Minimization : Min.Type) = struct
 			in
 			List.iter
                 (fun process_id' ->
-				if process_id' <> sender_process
-				then Mpi.send (str process_id') process_id' 0 Mpi.comm_world
-                )
+    				if process_id' <> sender_process
+    				then Mpi.send (str process_id') process_id' 0 Mpi.comm_world)
 				(get_slave_ranks())
 
 		let init : PSplx.t -> unit
 			= fun sx ->
-			let s = Print.sx sx in
-			Debug.log DebugTypes.Normal
-				(lazy (Printf.sprintf "Initializing with string\n%s" s));
-			Mpi.broadcast s 0 Mpi.comm_world;
-            ()
+			let msg = Print.sx sx in
+			DebugMaster.log DebugTypes.Normal
+				(lazy (Printf.sprintf "Initializing with string\n%s" msg));
+			(*Mpi.broadcast s 0 Mpi.comm_world;*)
+            List.iter
+                (fun rank -> Mpi.send msg rank 0 Mpi.comm_world)
+				(get_slave_ranks())
 
 		let stop : unit -> bool
 			= fun () ->
@@ -868,18 +950,18 @@ module PLP(Minimization : Min.Type) = struct
         type resT =
             | AskForWork of Mpi.rank
             | NewRegion of Mpi.rank * (int * Region.t * ExplorationPoint.t list)
-                (* remaining_work, region, points *)
+                (* (node_rank, (remaining_work, region, points)) *)
 
         let treat_string  : string -> Mpi.rank -> resT
             = fun s process_id ->
-            if String.compare s "Done\n" = 0
+            if String.compare s "Done" = 0
             then begin
-                Debug.log DebugTypes.Detail
+                DebugMaster.log DebugTypes.Detail
                     (lazy (Printf.sprintf "process %i is asking for work" process_id));
                 AskForWork process_id
             end
             else begin
-                Debug.log DebugTypes.Detail
+                DebugMaster.log DebugTypes.Detail
                     (lazy (Printf.sprintf "received from process %i region :\n%s" process_id s));
                 NewRegion
                     (process_id,
@@ -895,7 +977,7 @@ module PLP(Minimization : Min.Type) = struct
 		(* must be done at least once after initialization *)
 		let rec steps : (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
 			= fun get_cert ->
-			Debug.log DebugTypes.Normal (lazy "Steps");
+			DebugMaster.log DebugTypes.Normal (lazy "Steps");
 			begin
 				match wait_res() with
 				| NewRegion (process_id, slave_result) -> begin
@@ -933,10 +1015,7 @@ module PLP(Minimization : Min.Type) = struct
     				init sx
     			end;
                 steps get_cert
-            else begin
-                Slave.first_whip();
-                Pervasives.failwith "I died"
-            end
+            else Pervasives.failwith "I'm slave, no master!"
 
 	end
 
