@@ -260,19 +260,6 @@ module PLP(Minimization : Min.Type) = struct
                     (lazy (Printf.sprintf "current_result :\ntodo = %s"
         			(Misc.list_to_string ExplorationPoint.to_string !res_slave.todo " ; ")))
 
-                    (*
-            let adjust_points : ExplorationPoint.t list -> ExplorationPoint.t list
-        		= fun points ->
-        		List.map
-        			(function
-                        | ExplorationPoint.Direction (id, point) ->
-                            let new_point = Next_Point.RayTracing.adjust Cone (id, point) !res_slave.regs in
-                            new_point
-                        | p -> p)
-        			points
-
-                    *)
-
             let adjust_points : ExplorationPoint.t list -> ExplorationPoint.t list
         		= fun points ->
         		List.fold_left
@@ -451,19 +438,21 @@ module PLP(Minimization : Min.Type) = struct
             				match Exec.exec Cone Objective.Bland sx point with
             			 	| None -> None
             			  	| Some reg -> begin
+                                res_slave := {!res_slave with todo = List.tl !res_slave.todo};
                                 if Read.region_already_known reg <> None
                                 then None
-                                else
+                                else begin
                 			  		(* taken from add_region*)
                 			  		let id = get_fresh_id() in
                 					let regs = MapV.add id reg !res_slave.regs in
-                					res_slave := {regs = regs ; todo = List.tl !res_slave.todo};
+                					res_slave := {!res_slave with regs = regs};
                 					let points = [ExplorationPoint.Direction (id_region, (cstr, point))] @ (extract_points reg id) in
                                     let todo = adjust_points points in
                                     let len = List.length todo in
                                     res_slave := {!res_slave with todo = todo @ (Misc.sublist todo 0 (len/2))};
                                     let to_send = Misc.sublist todo (len/2) len in
                 					Some (to_send, id)
+                                end
             			  	end
                         end
 
@@ -603,207 +592,6 @@ module PLP(Minimization : Min.Type) = struct
 			in
 			result := {!result with mapId = MapId.add pr_id map !result.mapId}
 
-        (*
-		module Processes = struct
-
-			type com = {
-				pid : int;
-				in_ch : Pervasives.in_channel;
-				in_fd : Unix.file_descr;
-				out_ch : Pervasives.out_channel;
-				p1_exit : Unix.file_descr;
-				p2_ent : Unix.file_descr}
-
-			let pipes : com list ref
-				= ref []
-
-			let print : unit -> unit
-				= fun () ->
-				Debug.log DebugTypes.Detail
-					(lazy (Printf.sprintf "Processes : \n%s"
-						(String.concat " ; "
-							(List.map (fun com -> string_of_int com.pid) !pipes)
-						)))
-
-			let close : unit -> unit
-				= fun () ->
-				List.iter
-					(fun com ->
-						Debug.log DebugTypes.Normal
-							(lazy ("Fermeture du processus " ^ (string_of_int com.pid)));
-						Unix.kill com.pid Sys.sigkill;
-						Pervasives.close_in com.in_ch;
-						Pervasives.close_out com.out_ch;
-						Unix.close com.p1_exit;
-						Unix.close com.p2_ent)
-					!pipes;
-				pipes := []
-
-
-			let obj_path : string Pervasives.ref
-				= Pervasives.ref "/home/amarecha/verasco/vpl2/"
-
-			let n_processes : int Pervasives.ref
-				= Pervasives.ref 1
-
-			let create_process : unit -> unit
-				= fun () ->
-				begin
-					let (p1_exit,p1_ent) = Unix.pipe() and (p2_exit,p2_ent) = Unix.pipe() in
-					let in_ch = Unix.in_channel_of_descr p2_exit in
-					Pervasives.set_binary_mode_in in_ch false;
-					let out_ch = Unix.out_channel_of_descr p1_ent in
-					Pervasives.set_binary_mode_out out_ch false;
-					let pid = Unix.create_process
-						(!obj_path ^ "PLPSlave.native")
-						[|(!obj_path ^ "PLPSLave.native")|]
-						p1_exit p2_ent Unix.stderr in
-					Debug.log DebugTypes.Normal
-						(lazy ("Création du processus " ^ (string_of_int pid)));
-					pipes := !pipes @
-						[{pid=pid ;
-						  in_ch=in_ch ;
-						  in_fd = p2_exit;
-						  out_ch=out_ch ;
-						  p1_exit=p1_exit ;
-						  p2_ent = p2_ent}]
-				end
-
-			let create : unit -> unit
-				= fun () ->
-				List.iter (fun _ -> create_process()) (Misc.range 0 !n_processes)
-
-			let write : com -> string -> unit
-				= fun com s ->
-				(* écriture dans le pipe *)
-				Debug.log DebugTypes.Detail
-					(lazy (Printf.sprintf "Writing for slave %i message\n%s"
-						com.pid s));
-				(* marque de fin de communication : 'w' *)
-				output_string com.out_ch (s ^ "w\n");
-				Pervasives.flush com.out_ch
-
-		(*
-			let read : com -> string
-				= fun com ->
-				begin
-				let s = ref "" in
-				try
-				  	while true; do
-				  		let s' = (input_line com.in_ch) in
-				  		try let _ = String.index s' 'w' in
-				  			Pervasives.raise End_of_file
-				  		with Not_found ->
-				  			s := !s ^ s' ^ "\n"
-				  	done;!s
-				with End_of_file -> begin
-					let len = String.length !s in
-					let truc = Pervasives.pos_in com.in_ch in
-					Printf.sprintf "number of char read : %i, position : %i" len truc
-						|> print_endline;
-					!s
-					end
-				end
-			*)
-
-			let read_char : Unix.file_descr -> char
-				= fun fd ->
-				let by = Bytes.create 1 in
-				let _ = Unix.read fd by 0 1 in
-				String.get (Bytes.to_string by) 0
-
-			let read : com -> string
-				= fun com ->
-				begin
-				let s = ref "" in
-				try
-				  	while true; do
-				  		let c = read_char com.in_fd in
-				  		if c = 'w'
-				  		then begin
-				  			let _ = read_char com.in_fd in (* on saute le \n qui suit*)
-				  			Pervasives.raise End_of_file
-				  		end
-				  		else s := !s ^ (String.make 1 c)
-				  	done;!s
-				with End_of_file -> !s
-				end
-
-			let nb_message_read : int ref = ref 0
-
-			type resT =
-				| AskForWork of Mpi.rank
-				| NewRegion of Mpi.rank * (int * local_region_idT * Region.t * explorationPoint list)
-
-			let is_reading : Mpi.rank ref = ref (-1)
-
-			let treat_string  : string -> Mpi.rank -> resT
-				= fun s process_id ->
-				if String.compare s "Done\n" = 0
-				then begin
-					Debug.log DebugTypes.Detail
-						(lazy (Printf.sprintf "process %i is asking for work" process_id));
-					AskForWork process_id
-				end
-				else begin
-					Debug.log DebugTypes.Detail
-						(lazy (Printf.sprintf "received from process %i region :\n%s" process_id s));
-					NewRegion
-						(process_id,
-						 PLPParser.problem PLPLexer.token (Lexing.from_string s)
-						 	|> Parse.slave)
-				end
-
-			(* problème avec select : lorsqu'on lit sur le input_channel, comme il est bufferisé, on peut lire plus que souhaité. *)
-			let rec wait_res : unit -> resT
-				= fun () ->
-				if !is_reading >= 0
-				then begin(* was reading some input channel*)
-					Debug.log DebugTypes.Detail (lazy ("Reading again from " ^ (string_of_int !is_reading)));
-					let com = List.nth !pipes !is_reading in
-					let s = read com in
-					Debug.log DebugTypes.Detail (lazy ("Read " ^ s));
-					if String.compare s "" = 0
-					then begin
-						is_reading := -1;
-						wait_res()
-					end
-					else treat_string s !is_reading
-				end
-				else begin
-					(* Waits for something to be readable in any input channel.
-					-1 means no timeout *)
-					Debug.log DebugTypes.Detail (lazy "Selecting");
-					let (readables,_,_) = Unix.select
-						(List.map (fun com -> com.in_fd) !pipes)
-						[] [] (-1.) in
-
-					nb_message_read := !nb_message_read + 1;
-
-					let readable = List.hd readables in
-					let process_id = Misc.findi (fun com -> com.in_fd = readable) !pipes in
-					(*is_reading := process_id;*)
-					let com = List.nth !pipes process_id in
-					let s = read com in
-					treat_string s process_id
-				end
-				(*
-				let process_id = 0 in
-				let com = List.hd !pipes in
-				let s = read com in
-				*)
-
-		end
-
-		(** Returns a fresh id for a new region.
-		Ids given by master are negative. *)
-		let get_id : unit -> int
-			= fun () ->
-			let id = !reg_id in
-			reg_id := id - 1;
-			id
-        *)
-
         let get_slave_ranks : unit -> Mpi.rank list
             = fun () ->
             Misc.range 1 (Mpi.comm_size Mpi.comm_world)
@@ -862,13 +650,14 @@ module PLP(Minimization : Min.Type) = struct
 		let giveWork : Mpi.rank -> unit
 			= fun pr_id ->
 			if get_work pr_id = 0 && !result.todo <> []
-			then begin(*
+			then begin
                 let len_todo = List.length !result.todo in
                 let n_slaves = Mpi.comm_size Mpi.comm_world - 1 in
-                let ratio = 1 in (*(len_todo/n_slaves) in*)
+                let ratio = max 1 (len_todo/n_slaves) in
                 let work = Misc.sublist !result.todo 0 ratio in
                 result := {!result with todo = Misc.sublist !result.todo ratio len_todo};
                 set_work pr_id ratio;
+                (*
                 let msg = List.map
                     (function
                     | ExplorationPoint.Point _ as point -> Printf.sprintf "points\n%s\n"
@@ -880,6 +669,18 @@ module PLP(Minimization : Min.Type) = struct
                 |> String.concat "\n"
                 in
                 Mpi.send msg pr_id 0 Mpi.comm_world*)
+                List.iter
+                    (fun work -> let msg = match work with
+                        | ExplorationPoint.Point _ as point -> Printf.sprintf "points\n%s\n"
+                            (Print.explorationPoint point)
+                        | ExplorationPoint.Direction (glob_id, p) -> Printf.sprintf "points\n%s\n"
+                            (set_explorationPoint pr_id (ExplorationPoint.Direction (glob_id, p))
+                            |> Print.explorationPoint)
+                    in
+                    Mpi.send msg pr_id 0 Mpi.comm_world
+                    )
+                    work
+                (*
                 let work = List.hd !result.todo in
                 result := {!result with todo = List.tl !result.todo};
                 set_work pr_id 1;
@@ -891,7 +692,7 @@ module PLP(Minimization : Min.Type) = struct
                         |> Print.explorationPoint)
                 in
                 Mpi.send msg pr_id 0 Mpi.comm_world
-
+                *)
 			end
 
 
@@ -936,6 +737,8 @@ module PLP(Minimization : Min.Type) = struct
 		let stop : unit -> bool
 			= fun () ->
 			print_endline (mapWork_to_string());
+            Printf.sprintf "Work left to do : %i" (List.length !result.todo)
+                |> print_endline;
 			!result.todo = []
 			&&	(MapId.for_all (fun _ work -> work = 0) !result.mapWork)
 
