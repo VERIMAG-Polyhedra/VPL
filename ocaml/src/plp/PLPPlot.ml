@@ -1,204 +1,204 @@
 let str_to_ieq =
-"def to_ieq(poly, ring, variables):\
-	monomials = [ring(1)] + [ring(x) for x in variables]\
-	return [poly.monomial_coefficient(m) for m in monomials]\
+"def to_ieq(poly, ring, variables):\n\
+\tmonomials = [ring(1)] + [ring(x) for x in variables]\n\
+\treturn [poly.monomial_coefficient(m) for m in monomials]\n\
 "
 
 let str_projection =
-"#PROJECTION\
-def standard_basis_vector(n, i):\
-    assert i>=0\
-    assert i<n\
-    return vector(QQ, [0,]*i + [1] + [0,]*(n-i-1))\
-\
-def monomial_image(m,variables,nb_var):\
-    try:\
-        return standard_basis_vector(nb_var,variables.index(str(m)))\
-    except ValueError:\
-        return vector(QQ, nb_var)\
-\
-#Projète le polyèdre suivant la variable\
-# variables doit contenir la liste des variables, y compris celle qui va être projetée\
-#P doit avoir la même dimension que variables\
-def proj(P,variable, variables, ring, nb_dim):\
-	monomials = [ring(x) for x in variables]\
-	vertices = P.vertices()\
-	i = variables.index(variable)\
-	new_variables = variables[0:i] + variables[i+1:]\
-	nb_var = len(variables) -1\
-	projection = matrix(QQ, [monomial_image(m,new_variables,nb_var) for m in monomials])\
-	proj_vertices = [(v.vector()*projection)[0:len(new_variables)] for v in vertices]\
-	return Polyhedron(vertices = proj_vertices)\
-\
-#On va projeter toutes les variables sauf variable pour obtenir l'intervalle de variable\
-def get_itv_from_poly(P,variable,variables,ring, nb_dim):\
-	i = variables.index(variable)\
-	new_variables = variables[0:i] + variables[i+1:] #on enlève variable de variables\
-	variables_inter = variables\
-	for v in new_variables:	#on parcourt toutes les variables sauf variable\
-		P = proj(P,v,variables_inter,ring, nb_dim)\
-		i = variables_inter.index(v)\
-		variables_inter = variables_inter[0:i] + variables_inter[i+1:]\
-	vertices = P.vertices_list()\
-	if len(vertices) == 0:\
-		return []\
-	if len(vertices) == 1:\
-		return [int(vertices[0][0]), int(vertices[0][0])]\
-	return [int(min(vertices[0][0],vertices[1][0])),int(max(vertices[0][0],vertices[1][0]))]\
+"#PROJECTION\n\
+def standard_basis_vector(n, i):\n\
+\tassert i>=0\n\
+\tassert i<n\n\
+\treturn vector(QQ, [0,]*i + [1] + [0,]*(n-i-1))\n\
+\n\
+def monomial_image(m,variables,nb_var):\n\
+\ttry:\n\
+\t\treturn standard_basis_vector(nb_var,variables.index(str(m)))\n\
+\texcept ValueError:\n\
+\t\treturn vector(QQ, nb_var)\n\
+\n\
+#Projète le polyèdre suivant la variable\n\
+# variables doit contenir la liste des variables, y compris celle qui va être projetée\n\
+#P doit avoir la même dimension que variables\n\
+def proj(P,variable, variables, ring, nb_dim):\n\
+\tmonomials = [ring(x) for x in variables]\n\
+\tvertices = P.vertices()\n\
+\ti = variables.index(variable)\n\
+\tnew_variables = variables[0:i] + variables[i+1:]\n\
+\tnb_var = len(variables) -1\n\
+\tprojection = matrix(QQ, [monomial_image(m,new_variables,nb_var) for m in monomials])\n\
+\tproj_vertices = [(v.vector()*projection)[0:len(new_variables)] for v in vertices]\n\
+\treturn Polyhedron(vertices = proj_vertices)\n\
+\n\
+#On va projeter toutes les variables sauf variable pour obtenir l'intervalle de variable\n\
+def get_itv_from_poly(P,variable,variables,ring, nb_dim):\n\
+\ti = variables.index(variable)\n\
+\tnew_variables = variables[0:i] + variables[i+1:] #on enlève variable de variables\n\
+\tvariables_inter = variables\n\
+\tfor v in new_variables:\t#on parcourt toutes les variables sauf variable\n\
+\t\tP = proj(P,v,variables_inter,ring, nb_dim)\n\
+\t\ti = variables_inter.index(v)\n\
+\t\tvariables_inter = variables_inter[0:i] + variables_inter[i+1:]\n\
+\tvertices = P.vertices_list()\n\
+\tif len(vertices) == 0:\n\
+\t\treturn []\n\
+\tif len(vertices) == 1:\n\
+\t\treturn [int(vertices[0][0]), int(vertices[0][0])]\n\
+\treturn [int(min(vertices[0][0],vertices[1][0])),int(max(vertices[0][0],vertices[1][0]))]\n\
 "
 
 let str_plot_polyhedra =
-"# polyhedra = polyhedron list\
-def plot_polyhedra(polyhedra, nb_dim):\
-	if len(polyhedra) > 0:\
-		if nb_dim == 1:\
-			couleur = color(polyhedra[0])\
-			to_plot = polyhedra[0].projection().render_line_1d()\
-			for i in range(1,len(polyhedra)):\
-				couleur = color(polyhedra[i])\
-				to_plot += polyhedra[i].projection().render_line_1d()\
-\
-		if nb_dim == 2:\
-			couleur = color(polyhedra[0])\
-			to_plot = polyhedra[0].projection().render_outline_2d(color = couleur)\
-			for i in range(1,len(polyhedra)):\
-				couleur = color(polyhedra[i])\
-				to_plot += polyhedra[i].projection().render_outline_2d(color = couleur)\
-\
-		if nb_dim == 3:\
-			couleur = color(polyhedra[0])\
-			to_plot = polyhedra[0].projection().render_wireframe_3d(color = couleur)\
-			for i in range(1,len(polyhedra)):\
-				couleur = color(polyhedra[i])\
-				to_plot += polyhedra[i].projection().render_wireframe_3d(color = couleur)\
-		return to_plot\
+"# polyhedra = polyhedron list\n\
+def plot_polyhedra(polyhedra, nb_dim):\n\
+\tif len(polyhedra) > 0:\n\
+\t\tif nb_dim == 1:\n\
+\t\t\tcouleur = color(polyhedra[0])\n\
+\t\t\tto_plot = polyhedra[0].projection().render_line_1d()\n\
+\t\t\tfor i in range(1,len(polyhedra)):\n\
+\t\t\t\tcouleur = color(polyhedra[i])\n\
+\t\t\t\tto_plot += polyhedra[i].projection().render_line_1d()\n\
+\n\
+\t\tif nb_dim == 2:\n\
+\t\t\tcouleur = color(polyhedra[0])\n\
+\t\t\tto_plot = polyhedra[0].projection().render_outline_2d(color = couleur)\n\
+\t\t\tfor i in range(1,len(polyhedra)):\n\
+\t\t\t\tcouleur = color(polyhedra[i])\n\
+\t\t\t\tto_plot += polyhedra[i].projection().render_outline_2d(color = couleur)\n\
+\n\
+\t\tif nb_dim == 3:\n\
+\t\t\tcouleur = color(polyhedra[0])\n\
+\t\t\tto_plot = polyhedra[0].projection().render_wireframe_3d(color = couleur)\n\
+\t\t\tfor i in range(1,len(polyhedra)):\n\
+\t\t\t\tcouleur = color(polyhedra[i])\n\
+\t\t\t\tto_plot += polyhedra[i].projection().render_wireframe_3d(color = couleur)\n\
+\t\treturn to_plot\n\
 "
 let str_plot_polynomial =
-"\
-def plot_polynomial(f, ranges, parameters):\
-	var(' '.join(parameters))\
-	if len(parameters) == 1:\
-		to_plot = plot(f,ranges[0][0],ranges[0][1])\
-\
-	if len(parameters) == 2:\
-		to_plot = plot3d(f,(parameters[0], ranges[0][0],ranges[0][1]),(parameters[1], ranges[1][0],ranges[1][1]), color = 'green', opacity=0.2)\
-	return to_plot\
+"\n\
+def plot_polynomial(f, ranges, parameters):\n\
+\tvar(' '.join(parameters))\n\
+\tif len(parameters) == 1:\n\
+\t\tto_plot = plot(f,ranges[0][0],ranges[0][1])\n\
+\n\
+\tif len(parameters) == 2:\n\
+\t\tto_plot = plot3d(f,(parameters[0], ranges[0][0],ranges[0][1]),(parameters[1], ranges[1][0],ranges[1][1]), color = 'green', opacity=0.2)\n\
+\treturn to_plot\n\
 "
 
 let str_color =
-"#Color handling\
-colors = []\
-color_bind = []\
-\
-def bind_color(x):\
-	if color_bind.count(x) == 0:\
-		color_bind.append(x)\
-\
-def def_colors():\
-	import random\
-	random.seed(425)\
-	r = lambda: random.random()\
-	for i in range(0,len(color_bind)):\
-		colors.append((r(),r(),r()))\
-\
-def color(x):\
-	return colors[color_bind.index(x)]\
+"#Color handling\n\
+colors = []\n\
+color_bind = []\n\
+\n\
+def bind_color(x):\n\
+\tif color_bind.count(x) == 0:\n\
+\t\tcolor_bind.append(x)\n\
+\n\
+def def_colors():\n\
+\timport random\n\
+\trandom.seed(425)\n\
+\tr = lambda: random.random()\n\
+\tfor i in range(0,len(color_bind)):\n\
+\t\tcolors.append((r(),r(),r()))\n\
+\n\
+def color(x):\n\
+\treturn colors[color_bind.index(x)]\n\
 "
 
 let str_color_from_polyhedra =
-"#polyhedra : polyhedron list\
-def color_from_polyhedra(polyhedra):\
-	for p in polyhedra:\
-		bind_color(p)\
-	def_colors()\
+"#polyhedra : polyhedron list\n\
+def color_from_polyhedra(polyhedra):\n\
+\tfor p in polyhedra:\n\
+\t\tbind_color(p)\n\
+\tdef_colors()\n\
 "
 
 let str_plot_regions =
-"def plot_regions(regions, nb_dim):\
-	if len(regions) > 0:\
-		if nb_dim == 1:\
-			couleur = color(regions[0][1])\
-			to_plot = regions[0][0].projection().render_line_1d()\
-			for i in range(1,len(regions)):\
-				couleur = color(regions[i][1])\
-				to_plot += regions[i][0].projection().render_line_1d()\
-\
-		if nb_dim == 2:\
-			couleur = color(regions[0][1])\
-			to_plot = regions[0][0].projection().render_fill_2d(color = couleur)\
-			for i in range(1,len(regions)):\
-				couleur = color(regions[i][1])\
-				to_plot += regions[i][0].projection().render_fill_2d(color = couleur)\
-\
-		if nb_dim == 3:\
-			couleur = color(regions[0][1])\
-			to_plot = regions[0][0].projection().render_solid_3d(color = couleur, alpha = 0.7)\
-			for i in range(1,len(regions)):\
-				couleur = color(regions[i][1])\
-				to_plot += regions[i][0].projection().render_solid_3d(color = couleur, alpha = 0.7)\
-		return to_plot\
+"def plot_regions(regions, nb_dim):\n\
+\tif len(regions) > 0:\n\
+\t\tif nb_dim == 1:\n\
+\t\t\tcouleur = color(regions[0][1])\n\
+\t\t\tto_plot = regions[0][0].projection().render_line_1d()\n\
+\t\t\tfor i in range(1,len(regions)):\n\
+\t\t\t\tcouleur = color(regions[i][1])\n\
+\t\t\t\tto_plot += regions[i][0].projection().render_line_1d()\n\
+\n\
+\t\tif nb_dim == 2:\n\
+\t\t\tcouleur = color(regions[0][1])\n\
+\t\t\tto_plot = regions[0][0].projection().render_fill_2d(color = couleur)\n\
+\t\t\tfor i in range(1,len(regions)):\n\
+\t\t\t\tcouleur = color(regions[i][1])\n\
+\t\t\t\tto_plot += regions[i][0].projection().render_fill_2d(color = couleur)\n\
+\n\
+\t\tif nb_dim == 3:\n\
+\t\t\tcouleur = color(regions[0][1])\n\
+\t\t\tto_plot = regions[0][0].projection().render_solid_3d(color = couleur, alpha = 0.7)\n\
+\t\t\tfor i in range(1,len(regions)):\n\
+\t\t\t\tcouleur = color(regions[i][1])\n\
+\t\t\t\tto_plot += regions[i][0].projection().render_solid_3d(color = couleur, alpha = 0.7)\n\
+\t\treturn to_plot\n\
 "
 
 let str_def_regions =
-"#arbre = liste de [region, solution]\
-def regions_from_tree(arbre, ring, variables, nb_dim):\
-	regions = []\
-	lines = []\
-	if len(variables) == nb_dim:\
-		for i in range(0,len(arbre)):\
-			ineqs = [to_ieq(c,ring,variables) for c in arbre[i][0]]\
-			bind_color(arbre[i][1])\
-			regions = regions + [[Polyhedron(ieqs = ineqs), arbre[i][1]]]\
-			lines = lines + [arbre[i][1]]\
-	if len(variables) + 1 == nb_dim :\
-		for i in range(0,len(arbre)):\
-			ineqs = [to_ieq(c,ring,variables)+[0] for c in arbre[i][0]]\
-			eqs = [to_ieq(-1*arbre[i][1],ring,variables) + [-1]]\
-			bind_color(arbre[i][1])\
-			regions = regions + [[Polyhedron(ieqs = ineqs, eqns = eqs), arbre[i][1]]]\
-			lines = lines + [arbre[i][1]]\
-	def_colors()\
-	return (regions,lines)\
+"#arbre = liste de [region, solution]\n\
+def regions_from_tree(arbre, ring, variables, nb_dim):\n\
+\tregions = []\n\
+\tlines = []\n\
+\tif len(variables) == nb_dim:\n\
+\t\tfor i in range(0,len(arbre)):\n\
+\t\t\tineqs = [to_ieq(c,ring,variables) for c in arbre[i][0]]\n\
+\t\t\tbind_color(arbre[i][1])\n\
+\t\t\tregions = regions + [[Polyhedron(ieqs = ineqs), arbre[i][1]]]\n\
+\t\t\tlines = lines + [arbre[i][1]]\n\
+\tif len(variables) + 1 == nb_dim :\n\
+\t\tfor i in range(0,len(arbre)):\n\
+\t\t\tineqs = [to_ieq(c,ring,variables)+[0] for c in arbre[i][0]]\n\
+\t\t\teqs = [to_ieq(-1*arbre[i][1],ring,variables) + [-1]]\n\
+\t\t\tbind_color(arbre[i][1])\n\
+\t\t\tregions = regions + [[Polyhedron(ieqs = ineqs, eqns = eqs), arbre[i][1]]]\n\
+\t\t\tlines = lines + [arbre[i][1]]\n\
+\tdef_colors()\n\
+\treturn (regions,lines)\n\
 "
 
 let str_poly_from_regions =
-"def poly_from_regions(regions):\
-	return [x[0] for x in regions]\
+"def poly_from_regions(regions):\n\
+\treturn [x[0] for x in regions]\n\
 "
 
 let str_print_lines =
-"def print_lines(lines, ranges, variables):\
-	if len(variables) == 2:\
-		var(variables[0])\
-		newring = PolynomialRing(QQ,[variables[0]],1)\
-		p = ring(lines[0])\
-		c = p.monomial_coefficient(ring(variables[1]))\
-		g = newring(str((p - c * ring(variables[1])) / (-1*c)))\
-		couleur = color(p)\
-		to_plot = plot(g,ranges[0][0],ranges[0][1], color=couleur)\
-		for i in range(1,len(lines)):\
-			p = ring(lines[i])\
-			c = p.monomial_coefficient(ring(variables[1]))\
-			g = newring(str((p - c * ring(variables[1])) / (-1*c)))\
-			couleur = color(p)\
-			to_plot += plot(g,ranges[0][0],ranges[0][1], color=couleur)\
-		to_plot.show()\
+"def print_lines(lines, ranges, variables):\n\
+\tif len(variables) == 2:\n\
+\t\tvar(variables[0])\n\
+\t\tnewring = PolynomialRing(QQ,[variables[0]],1)\n\
+\t\tp = ring(lines[0])\n\
+\t\tc = p.monomial_coefficient(ring(variables[1]))\n\
+\t\tg = newring(str((p - c * ring(variables[1])) / (-1*c)))\n\
+\t\tcouleur = color(p)\n\
+\t\tto_plot = plot(g,ranges[0][0],ranges[0][1], color=couleur)\n\
+\t\tfor i in range(1,len(lines)):\n\
+\t\t\tp = ring(lines[i])\n\
+\t\t\tc = p.monomial_coefficient(ring(variables[1]))\n\
+\t\t\tg = newring(str((p - c * ring(variables[1])) / (-1*c)))\n\
+\t\t\tcouleur = color(p)\n\
+\t\t\tto_plot += plot(g,ranges[0][0],ranges[0][1], color=couleur)\n\
+\t\tto_plot.show()\n\
 "
 
 let str_compute_solution =
-"def compute_output_polyhedron(result, nb_dim, variables):\
-	solutions = [-1*x[1] for x in result]\
-	if len(variables) == nb_dim:\
-		P = Polyhedron(ieqs = [to_ieq(c,ring,parameters) for c in solutions])\
-	if len(variables) + 1 == nb_dim:\
-		ineqs = [to_ieq(c,ring,variables)+[0] for c in solutions]\
-		eqs = [[0,0,0,1]]\
-		P = Polyhedron(ieqs = ineqs, eqns = eqs)\
-\
-	if nb_dim == 2:\
-		return P.projection().render_outline_2d(color = 'black')\
-	if nb_dim == 3:\
-		return P.projection().render_wireframe_3d(color = 'black', thickness = 2)\
+"def compute_output_polyhedron(result, nb_dim, variables):\n\
+\tsolutions = [-1*x[1] for x in result]\n\
+\tif len(variables) == nb_dim:\n\
+\t\tP = Polyhedron(ieqs = [to_ieq(c,ring,parameters) for c in solutions])\n\
+\tif len(variables) + 1 == nb_dim:\n\
+\t\tineqs = [to_ieq(c,ring,variables)+[0] for c in solutions]\n\
+\t\teqs = [[0,0,0,1]]\n\
+\t\tP = Polyhedron(ieqs = ineqs, eqns = eqs)\n\
+\n\
+\tif nb_dim == 2:\n\
+\t\treturn P.projection().render_outline_2d(color = 'black')\n\
+\tif nb_dim == 3:\n\
+\t\treturn P.projection().render_wireframe_3d(color = 'black', thickness = 2)\n\
 "
 
 let str_plot =
