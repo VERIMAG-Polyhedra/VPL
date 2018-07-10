@@ -200,7 +200,7 @@ Module QOp.
   Qed.
   
   Local Open Scope Z_scope.
-  Lemma mul_pos_compat (num : Z) (den : positive) : 0 <= num * ' den <-> 0 <= num .
+  Lemma mul_pos_compat (num : Z) (den : positive) : 0 <= num * Zpos den <-> 0 <= num .
   Proof.
     intuition.
     assert (ZPOS_POS : 0 < Zpos (den)) by intuition.
@@ -230,7 +230,7 @@ Module QOp.
   
   Local Open Scope Z_scope.
   Lemma mul_pos_compat_strict (num : Z) (den : positive) : 
-    0 < num * ' den <-> 0 < num .
+    0 < num * Zpos den <-> 0 < num .
   Proof.
     intuition.
     - assert (ZPOS_POS : 0 < Zpos (den)) by intuition.
@@ -238,7 +238,7 @@ Module QOp.
     intuition.
     simpl.
     intuition.
-    - assert (MUL : 0 * num < ' den * num) by (apply Zmult_lt_compat_r ; intuition).
+    - assert (MUL : 0 * num < Zpos den * num) by (apply Zmult_lt_compat_r ; intuition).
     rewrite Z.mul_0_l in MUL.
     rewrite Z.mul_comm.
     assumption. 
