@@ -71,7 +71,7 @@ end
 module PLP(Minimization : Min.Type) = struct
 
 	module Minimization = Minimization
-	include PLPDistrib.PLP(Minimization)
+	include PLPMPIMain.PLP(Minimization)
 
 	let get_cert_default : 'c Cert.t -> 'c mapVar_t -> PSplx.t -> 'c
 		= fun factory map sx ->

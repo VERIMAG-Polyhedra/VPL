@@ -9,21 +9,133 @@ module PLP(Minimization : Min.Type) = struct
 
 	include PLPPlot.Plot(Minimization)
 
-    (** index of the process in the list of processes.*)
-    type global_region_idT = int
-    type local_region_idT = int
+    module MPIUtilities = struct
 
-	(*XXX : le parsing ne fonctionne pas quand il n'y a pas de paramètres *)
-	module Distributed = struct
+        (** index of the process in the list of processes.*)
+        type global_region_idT = int
+        type local_region_idT = int
+
+        let res_slave : t ref = ref empty
+
+        module MapId = Map.Make(struct type t = int let compare = Pervasives.compare end)
+
+        (** Associates a local region id to a global region id (key). *)
+        type map_process_regionT = local_region_idT MapId.t
+
+        (** Associates a map_process_regionT to a process id(key). *)
+        type mapIdT = map_process_regionT MapId.t
+
+        (** Associates to a processus id the number of points it has left to explore. *)
+        type mapWorkT = int MapId.t
+
+        type t = {
+            regs : mapRegs_t; (** associates global region id to regions. *)
+            mapId : mapIdT;
+            mapWork : mapWorkT;
+            todo : ExplorationPoint.t list;
+        }
+
+        let empty = {
+            regs = MapV.empty;
+            mapId = MapId.empty;
+            mapWork = MapId.empty;
+            todo = []
+        }
+
+        let result : t ref = ref empty
+
+        type resT =
+            | AskForWork of Mpi.rank
+            | NewRegion of Mpi.rank * (int * Region.t * ExplorationPoint.t list)
+                (* (node_rank, (remaining_work, region, points)) *)
 
         (* Parameters of the problem. *)
         (* TODO : ne pas oublier de l'initialiser !*)
         let params : Vec.V.t list ref = ref []
         let naming : Naming.t ref = ref Naming.empty
 
+        let region_already_known : Region.t -> bool
+			= fun reg ->
+			MapV.exists (fun _ reg' -> Region.equal reg reg') (!result.regs)
+
+        (** Set the local id of the region identified globally as [glob_id] in processus [pr_id] as [loc_id]. *)
+		let set_region_id : Mpi.rank -> global_region_idT -> local_region_idT -> unit
+			= fun pr_id glob_id loc_id ->
+			let map = MapId.add glob_id loc_id
+				(try MapId.find pr_id !result.mapId
+				with Not_found -> MapId.empty)
+			in
+			result := {!result with mapId = MapId.add pr_id map !result.mapId}
+
+        let get_slave_ranks : unit -> Mpi.rank list
+            = fun () ->
+            Misc.range 1 (Mpi.comm_size Mpi.comm_world)
+
         let getRank : unit -> Mpi.rank
             = fun () ->
             Mpi.comm_rank Mpi.comm_world
+
+        let set_work : Mpi.rank -> int -> unit
+			= fun pr_id work ->
+			result := {!result with mapWork = MapId.add pr_id work !result.mapWork}
+
+        let get_work : Mpi.rank -> int
+			= fun pr_id ->
+			try MapId.find pr_id !result.mapWork
+			with Not_found -> 0
+
+		let add_work : Mpi.rank -> int -> unit
+			= fun pr_id work ->
+			let prev_work = get_work pr_id in
+			result := {!result with mapWork = MapId.add pr_id (work + prev_work) !result.mapWork}
+
+        let add_region : Mpi.rank -> (int * Region.t * ExplorationPoint.t list)
+			-> (global_region_idT * ExplorationPoint.t list) option
+			(* explorationPoints talk about the new region. Put the global id instead of the local one. *)
+			= let update_explorationPoints : global_region_idT -> ExplorationPoint.t list -> ExplorationPoint.t list
+				= fun glob_id points ->
+				List.map
+                    (function
+                        | ExplorationPoint.Direction (_,p) -> ExplorationPoint.Direction (glob_id, p)
+                        | p -> p)
+                    points
+			in
+			fun sender_process_id (remaining_work, reg, explorationPoints) ->
+            set_work sender_process_id remaining_work;
+			let glob_id = get_fresh_id() in
+            let loc_id = reg.Region.id in
+			if region_already_known reg
+			then begin
+				DebugMaster.log DebugTypes.Normal (lazy "Region already known");
+				None
+			end
+			else begin
+				result := {!result with regs = MapV.add glob_id reg !result.regs};
+				(* Setting region ids*)
+				List.iter
+					(fun i ->
+						if i = sender_process_id
+						then set_region_id i glob_id loc_id
+						else set_region_id i glob_id glob_id)
+					(get_slave_ranks());
+				Some (glob_id, update_explorationPoints glob_id explorationPoints)
+			end
+
+    	(** Returns the local id of the region identified globally as [glob_id] in processus [pr_id]. *)
+		let get_region_id : Mpi.rank -> global_region_idT -> local_region_idT
+			= fun pr_id glob_id ->
+			try
+				let map = MapId.find pr_id !result.mapId in
+				try
+					MapId.find glob_id map
+				with Not_found -> Pervasives.failwith "PLP.get_id : region not found"
+			with Not_found -> Pervasives.failwith "PLP.get_id : process not found"
+
+        let set_explorationPoint : Mpi.rank -> ExplorationPoint.t -> ExplorationPoint.t
+			= fun process_id -> function
+            | ExplorationPoint.Direction (glob_id, p) ->
+                ExplorationPoint.Direction (get_region_id process_id glob_id, p)
+            | p -> p
 
         module Print = struct
 
@@ -251,8 +363,26 @@ module PLP(Minimization : Min.Type) = struct
     				(slave.PLPBuild.DescSlave.remaining_work, reg, explorationPoints)
 		end
 
+    end (* End module MPIUtilities *)
+
+    module type MPIMethod = sig
+        module Slave : sig
+            val workRequest : unit -> unit
+            val chooseResultsToSend : ExplorationPoint.t list -> Region.t list * ExplorationPoint.t list
+        end
+
+        module Master : sig
+            val workSend : unit -> unit
+            (* [gatherResults msg proces_id] *)
+            val gatherResults : string -> int -> unit
+        end
+    end
+
+	module MPI (Method: MPIMethod) = struct
+
+        open MPIUtilities
+
         module Slave = struct
-            let res_slave : t ref = ref empty
 
         	let print : unit -> unit
         		= fun () ->
@@ -301,12 +431,13 @@ module PLP(Minimization : Min.Type) = struct
                     DebugSlave.log DebugTypes.Detail (lazy s);
         			Mpi.send s 0 0 Mpi.comm_world
 
+                (*
         		let ask_for_work : unit -> unit
         			= fun () ->
                     DebugSlave.log DebugTypes.Normal
                         (lazy (Printf.sprintf "Slave %i asking for work" (getRank())));
             		Mpi.send "Done" 0 0 Mpi.comm_world
-
+                    *)
         	end
 
             module FirstStep = struct
@@ -414,7 +545,7 @@ module PLP(Minimization : Min.Type) = struct
 
             module Steps = struct
 
-        		let step : unit -> (ExplorationPoint.t list * local_region_idT) option
+        		let step : unit -> ((Region.t list * ExplorationPoint.t list) * local_region_idT) option
         			= fun () ->
                     DebugSlave.log DebugTypes.Detail
                         (lazy (Printf.sprintf "Slave %i checking exploration" (getRank())));
@@ -446,12 +577,10 @@ module PLP(Minimization : Min.Type) = struct
                 			  		let id = get_fresh_id() in
                 					let regs = MapV.add id reg !res_slave.regs in
                 					res_slave := {!res_slave with regs = regs};
-                					let points = [ExplorationPoint.Direction (id_region, (cstr, point))] @ (extract_points reg id) in
+                					let points = ExplorationPoint.Direction (id_region, (cstr, point)) :: (extract_points reg id) in
                                     let todo = adjust_points points in
-                                    let len = List.length todo in
-                                    res_slave := {!res_slave with todo = todo @ (Misc.sublist todo 0 (len/2))};
-                                    let to_send = Misc.sublist todo (len/2) len in
-                					Some (to_send, id)
+                                    let to_send = Method.Slave.chooseResultsToSend todo in
+                                    Some (to_send, id)
                                 end
             			  	end
                         end
@@ -460,7 +589,7 @@ module PLP(Minimization : Min.Type) = struct
         			= fun () ->
         			match step() with
         			| None -> ()
-        			| Some (points, loc_id) -> Write.send loc_id points
+        			| Some ((_,points), loc_id) -> Write.send loc_id points
 
         	end
 
@@ -500,7 +629,7 @@ module PLP(Minimization : Min.Type) = struct
             	print() ;
             	match !res_slave.todo with
             	| [] -> begin (* Plus de point à traiter. *)
-            		Write.ask_for_work();
+                	Method.Slave.workRequest();
             		let s = read_wait() in
             		Read.run s;
             		more_whip()
@@ -527,87 +656,11 @@ module PLP(Minimization : Min.Type) = struct
 
         end
 
-
-
-		module MapId = Map.Make(struct type t = int let compare = Pervasives.compare end)
-
-		(** Associates a local region id to a global region id (key). *)
-		type map_process_regionT = local_region_idT MapId.t
-
-		(** Associates a map_process_regionT to a process id(key). *)
-		type mapIdT = map_process_regionT MapId.t
-
-		(** Associates to a processus id the number of points it has left to explore. *)
-		type mapWorkT = int MapId.t
-
-		type t = {
-			regs : mapRegs_t; (** associates global region id to regions. *)
-			mapId : mapIdT;
-			mapWork : mapWorkT;
-			todo : ExplorationPoint.t list;
-		}
-
-		let empty = {
-			regs = MapV.empty;
-			mapId = MapId.empty;
-			mapWork = MapId.empty;
-			todo = []
-		}
-
-		(*
-		let to_string : unit () -> string
-			= fun () ->
-			Printf.sprintf "Current result : \n\t%s\n\t%s\n\t%s\n\t%s"
-			()
-		*)
-		let result : t ref = ref empty
-
-		let set_work : Mpi.rank -> int -> unit
-			= fun pr_id work ->
-			result := {!result with mapWork = MapId.add pr_id work !result.mapWork}
-
-		let get_work : Mpi.rank -> int
-			= fun pr_id ->
-			try MapId.find pr_id !result.mapWork
-			with Not_found -> 0
-
-		let add_work : Mpi.rank -> int -> unit
-			= fun pr_id work ->
-			let prev_work = get_work pr_id in
-			result := {!result with mapWork = MapId.add pr_id (work + prev_work) !result.mapWork}
-
 		let mapWork_to_string : unit -> string
 			= fun () ->
 			Misc.list_to_string
 				(fun (process_id,work) -> Printf.sprintf "(%i -> %i)" process_id work)
 				(MapId.bindings !result.mapWork) " ; "
-
-		(** Returns the local id of the region identified globally as [glob_id] in processus [pr_id]. *)
-		let get_region_id : Mpi.rank -> global_region_idT -> local_region_idT
-			= fun pr_id glob_id ->
-			try
-				let map = MapId.find pr_id !result.mapId in
-				try
-					MapId.find glob_id map
-				with Not_found -> Pervasives.failwith "PLP.get_id : region not found"
-			with Not_found -> Pervasives.failwith "PLP.get_id : process not found"
-
-		(** Set the local id of the region identified globally as [glob_id] in processus [pr_id] as [loc_id]. *)
-		let set_region_id : Mpi.rank -> global_region_idT -> local_region_idT -> unit
-			= fun pr_id glob_id loc_id ->
-			let map = MapId.add glob_id loc_id
-				(try MapId.find pr_id !result.mapId
-				with Not_found -> MapId.empty)
-			in
-			result := {!result with mapId = MapId.add pr_id map !result.mapId}
-
-        let get_slave_ranks : unit -> Mpi.rank list
-            = fun () ->
-            Misc.range 1 (Mpi.comm_size Mpi.comm_world)
-
-		let region_already_known : Region.t -> bool
-			= fun reg ->
-			MapV.exists (fun _ reg' -> Region.equal reg reg') (!result.regs)
 
         (** Returns a fresh id for a new region.
  		Ids given by master are negative. *)
@@ -616,122 +669,6 @@ module PLP(Minimization : Min.Type) = struct
  			let id = !reg_id in
  			reg_id := id - 1;
  			id
-
-		let add_region : Mpi.rank -> (int * Region.t * ExplorationPoint.t list)
-			-> (global_region_idT * ExplorationPoint.t list) option
-			(* explorationPoints talk about the new region. Put the global id instead of the local one. *)
-			= let update_explorationPoints : global_region_idT -> ExplorationPoint.t list -> ExplorationPoint.t list
-				= fun glob_id points ->
-				List.map
-                    (function
-                        | ExplorationPoint.Direction (_,p) -> ExplorationPoint.Direction (glob_id, p)
-                        | p -> p)
-                    points
-			in
-			fun sender_process_id (remaining_work, reg, explorationPoints) ->
-            set_work sender_process_id remaining_work;
-			let glob_id = get_fresh_id() in
-            let loc_id = reg.Region.id in
-			if region_already_known reg
-			then begin
-				DebugMaster.log DebugTypes.Normal (lazy "Region already known");
-				None
-			end
-			else begin
-				result := {!result with regs = MapV.add glob_id reg !result.regs};
-				(* Setting region ids*)
-				List.iter
-					(fun i ->
-						if i = sender_process_id
-						then set_region_id i glob_id loc_id
-						else set_region_id i glob_id glob_id)
-					(get_slave_ranks());
-				Some (glob_id, update_explorationPoints glob_id explorationPoints)
-			end
-
-		let set_explorationPoint : Mpi.rank -> ExplorationPoint.t -> ExplorationPoint.t
-			= fun process_id -> function
-            | ExplorationPoint.Direction (glob_id, p) ->
-                ExplorationPoint.Direction (get_region_id process_id glob_id, p)
-            | p -> p
-
-		(** Gives a fraction of todo to the process. *)
-		let giveWork : Mpi.rank -> unit
-			= fun pr_id ->
-			if get_work pr_id = 0 && !result.todo <> []
-			then begin
-                let len_todo = List.length !result.todo in
-                let n_slaves = Mpi.comm_size Mpi.comm_world - 1 in
-                let ratio = max 1 (len_todo/n_slaves) in
-                let work = Misc.sublist !result.todo 0 ratio in
-                result := {!result with todo = Misc.sublist !result.todo ratio len_todo};
-                set_work pr_id ratio;
-                (*
-                let msg = List.map
-                    (function
-                    | ExplorationPoint.Point _ as point -> Printf.sprintf "points\n%s\n"
-                        (Print.explorationPoint point)
-                    | ExplorationPoint.Direction (glob_id, p) -> Printf.sprintf "points\n%s\n"
-                        (set_explorationPoint pr_id (ExplorationPoint.Direction (glob_id, p))
-                        |> Print.explorationPoint)
-                    ) work
-                |> String.concat "\n"
-                in
-                Mpi.send msg pr_id 0 Mpi.comm_world*)
-                List.iter
-                    (fun work -> let msg = match work with
-                        | ExplorationPoint.Point _ as point -> Printf.sprintf "points\n%s\n"
-                            (Print.explorationPoint point)
-                        | ExplorationPoint.Direction (glob_id, p) -> Printf.sprintf "points\n%s\n"
-                            (set_explorationPoint pr_id (ExplorationPoint.Direction (glob_id, p))
-                            |> Print.explorationPoint)
-                    in
-                    Mpi.send msg pr_id 0 Mpi.comm_world
-                    )
-                    work
-                (*
-                let work = List.hd !result.todo in
-                result := {!result with todo = List.tl !result.todo};
-                set_work pr_id 1;
-                let msg = match work with
-                    | ExplorationPoint.Point _ as point -> Printf.sprintf "points\n%s\n"
-                        (Print.explorationPoint point)
-                    | ExplorationPoint.Direction (glob_id, p) -> Printf.sprintf "points\n%s\n"
-                        (set_explorationPoint pr_id (ExplorationPoint.Direction (glob_id, p))
-                        |> Print.explorationPoint)
-                in
-                Mpi.send msg pr_id 0 Mpi.comm_world
-                *)
-			end
-
-
-		let saveWork : global_region_idT -> ExplorationPoint.t list -> unit
-			= fun glob_id points ->
-			result := {!result with
-				todo = !result.todo @
-				(List.map
-					(function
-                        | ExplorationPoint.Direction (loc_id, p) -> ExplorationPoint.Direction (glob_id, p)
-                        | p -> p)
-					points)
-			}
-
-		(** Propagate the new region (glob_id) to every process, except the sender. *)
-		let propagateRegion : global_region_idT -> Mpi.rank -> unit
-			= fun glob_id sender_process ->
-			let reg = MapV.find glob_id !result.regs in
-			let str : Mpi.rank -> string
-				= fun pr_id ->
-				let loc_id = get_region_id pr_id glob_id in
-				Printf.sprintf "problem\nregion %i\n%sno point\ntodo 0\n" (* 0 est le nombre de travail restant (inutile dans cette communication) *)
-				loc_id
-				(Print.region reg)
-			in
-			List.iter
-                (fun process_id' ->
-    				if process_id' <> sender_process
-    				then Mpi.send (str process_id') process_id' 0 Mpi.comm_world)
-				(get_slave_ranks())
 
 		let init : PSplx.t -> unit
 			= fun sx ->
@@ -748,19 +685,6 @@ module PLP(Minimization : Min.Type) = struct
                 |> print_endline;
 			!result.todo = []
 			&&	(MapId.for_all (fun _ work -> work = 0) !result.mapWork)
-
-		let distrib_work : unit -> unit
-			= fun () ->
-			List.iter giveWork (get_slave_ranks ())
-
-		let asking_for_work : Mpi.rank -> unit
-			= fun process_id ->
-			set_work process_id 0
-
-        type resT =
-            | AskForWork of Mpi.rank
-            | NewRegion of Mpi.rank * (int * Region.t * ExplorationPoint.t list)
-                (* (node_rank, (remaining_work, region, points)) *)
 
         let treat_string  : string -> Mpi.rank -> resT
             = fun s process_id ->
@@ -779,30 +703,15 @@ module PLP(Minimization : Min.Type) = struct
                         |> Parse.slave)
             end
 
-        let rec wait_res : unit -> resT
+        let rec wait_res : unit -> unit
             = fun () ->
             let (s, id, _) = Mpi.(receive_status any_source any_tag comm_world) in
-            treat_string s id
+            Method.Master.gatherResults s id
 
 		let rec steps : (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
 			= fun get_cert ->
 			DebugMaster.log DebugTypes.Normal (lazy "Steps");
-			begin
-				match wait_res() with
-				| NewRegion (process_id, slave_result) -> begin
-					match add_region process_id slave_result with
-					| None -> ()
-					| Some (glob_id, points) -> begin
-						propagateRegion glob_id process_id;
-						saveWork glob_id points;
-						distrib_work()
-						end
-					end
-				| AskForWork process_id -> begin
-					asking_for_work process_id;
-					giveWork process_id
-					end
-			end;
+			wait_res ();
 			if stop()
 			then get_results {regs = !result.regs ; todo = []} get_cert
 			else steps get_cert
@@ -828,9 +737,129 @@ module PLP(Minimization : Min.Type) = struct
 
 	end
 
+    module MethodLegacy : MPIMethod = struct
+        open MPIUtilities
+
+        module Slave = struct
+
+            let workRequest	= fun () ->
+                DebugSlave.log DebugTypes.Normal
+                    (lazy (Printf.sprintf "Slave %i asking for work" (getRank())));
+        		Mpi.send "Done" 0 0 Mpi.comm_world
+
+            let chooseResultsToSend = fun todo ->
+                let len = List.length todo in
+                res_slave := {!res_slave with todo = todo @ (Misc.sublist todo 0 (len/2))};
+                let to_send = Misc.sublist todo (len/2) len in
+                ([],to_send)
+
+        end
+
+        module Master = struct
+
+            let workSend () = ()
+            
+            let treat_string  : string -> Mpi.rank -> resT
+                = fun s process_id ->
+                if String.compare s "Done" = 0
+                then begin
+                    DebugMaster.log DebugTypes.Detail
+                        (lazy (Printf.sprintf "process %i is asking for work" process_id));
+                    AskForWork process_id
+                end
+                else begin
+                    DebugMaster.log DebugTypes.Detail
+                        (lazy (Printf.sprintf "received from process %i region :\n%s" process_id s));
+                    NewRegion
+                        (process_id,
+                         PLPParser.problem PLPLexer.token (Lexing.from_string s)
+                            |> Parse.slave)
+                end
+
+            (** Propagate the new region (glob_id) to every process, except the sender. *)
+    		let propagateRegion : global_region_idT -> Mpi.rank -> unit
+    			= fun glob_id sender_process ->
+    			let reg = MapV.find glob_id !result.regs in
+    			let str : Mpi.rank -> string
+    				= fun pr_id ->
+    				let loc_id = get_region_id pr_id glob_id in
+    				Printf.sprintf "problem\nregion %i\n%sno point\ntodo 0\n" (* 0 est le nombre de travail restant (inutile dans cette communication) *)
+    				loc_id
+    				(Print.region reg)
+    			in
+    			List.iter
+                    (fun process_id' ->
+        				if process_id' <> sender_process
+        				then Mpi.send (str process_id') process_id' 0 Mpi.comm_world)
+    				(get_slave_ranks())
+
+        	let saveWork : global_region_idT -> ExplorationPoint.t list -> unit
+    			= fun glob_id points ->
+    			result := {!result with
+    				todo = !result.todo @
+    				(List.map
+    					(function
+                            | ExplorationPoint.Direction (loc_id, p) ->                        ExplorationPoint.Direction (glob_id, p)
+                            | p -> p)
+    					points)
+    			}
+
+            (** Gives a fraction of todo to the process. *)
+    		let giveWork : Mpi.rank -> unit
+    			= fun pr_id ->
+    			if get_work pr_id = 0 && !result.todo <> []
+    			then begin
+                    let len_todo = List.length !result.todo in
+                    let n_slaves = Mpi.comm_size Mpi.comm_world - 1 in
+                    let ratio = max 1 (len_todo/n_slaves) in
+                    let work = Misc.sublist !result.todo 0 ratio in
+                    result := {!result with todo = Misc.sublist !result.todo ratio len_todo};
+                    set_work pr_id ratio;
+                    List.iter
+                        (fun work -> let msg = match work with
+                            | ExplorationPoint.Point _ as point -> Printf.sprintf "points\n%s\n"
+                                (Print.explorationPoint point)
+                            | ExplorationPoint.Direction (glob_id, p) -> Printf.sprintf "points\n%s\n"
+                                (set_explorationPoint pr_id (ExplorationPoint.Direction (glob_id, p))
+                                |> Print.explorationPoint)
+                        in
+                        Mpi.send msg pr_id 0 Mpi.comm_world
+                        )
+                        work
+    			end
+
+            let broadcastWork : unit -> unit
+    			= fun () ->
+    			List.iter giveWork (get_slave_ranks ())
+
+            let asking_for_work : Mpi.rank -> unit
+    			= fun process_id ->
+    			set_work process_id 0
+
+            let gatherResults = fun msg process_id ->
+            	match treat_string msg process_id with
+				| NewRegion (process_id, slave_result) -> begin
+					match add_region process_id slave_result with
+					| None -> ()
+					| Some (glob_id, points) -> begin
+						propagateRegion glob_id process_id;
+						saveWork glob_id points;
+						broadcastWork ()
+						end
+					end
+				| AskForWork process_id -> begin
+					asking_for_work process_id;
+					giveWork process_id
+					end
+
+        end
+    end
+
+    module MPILegacy = MPI (MethodLegacy)
+
     let run : config -> PSplx.t -> (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
         = fun config sx get_cert ->
         if Mpi.comm_size Mpi.comm_world = 1
         then run config sx get_cert
-        else Distributed.run config.stgy sx get_cert
+        else MPILegacy.run config.stgy sx get_cert
 end

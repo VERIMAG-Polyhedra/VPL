@@ -5,8 +5,8 @@ let modules : ((module Type) * color) list = [
     (module Join.Debug), Magenta;
     (module Proj.Debug), Magenta;
     (module PLPCore.Debug), Red;
-    (module PLPDistrib.DebugMaster), Green;
-    (module PLPDistrib.DebugSlave), White;
+    (module PLPMPIMain.DebugMaster), Green;
+    (module PLPMPIMain.DebugSlave), White;
     (module MinLP.Debug), Green;
     (module Handelman.Debug), Magenta;
     (module HOtypes.Debug), White;
