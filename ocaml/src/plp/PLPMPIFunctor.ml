@@ -17,10 +17,13 @@ module Lift(Minimization : Min.Type) = struct
 
             open SlaveUtilities
 
+            let already_asked_for_work : bool ref = ref false
+
         	let print : unit -> unit
         		= fun () ->
                 DebugSlave.log DebugTypes.Normal
-                    (lazy (Printf.sprintf "current_result :\ntodo = %s"
+                    (lazy (Printf.sprintf "current_result :\n%s\ntodo = %s"
+                    (map_to_string !res_slave.regs)
         			(Misc.list_to_string ExplorationPoint.to_string !res_slave.todo " ; ")))
 
             let adjust_points : ExplorationPoint.t list -> ExplorationPoint.t list
@@ -57,18 +60,12 @@ module Lift(Minimization : Min.Type) = struct
         				(Print.explorationPoints points)
         				(work_to_string())
         			in
+                    if !res_slave.todo = []
+                    then already_asked_for_work := true;
                     DebugSlave.log DebugTypes.Normal
                         (lazy (Printf.sprintf "\nSlave %i sending region\n" (getRank())));
                     DebugSlave.log DebugTypes.Detail (lazy s);
         			Mpi.send s 0 0 Mpi.comm_world
-
-                (*
-        		let ask_for_work : unit -> unit
-        			= fun () ->
-                    DebugSlave.log DebugTypes.Normal
-                        (lazy (Printf.sprintf "Slave %i asking for work" (getRank())));
-            		Mpi.send "Done" 0 0 Mpi.comm_world
-                    *)
         	end
 
             module FirstStep = struct
@@ -89,7 +86,7 @@ module Lift(Minimization : Min.Type) = struct
         		 	| None -> None
         		  	| Some reg -> begin
         		  		(* taken from add_region*)
-        		  		let id = get_fresh_id() in
+        		  		let id = reg.Region.id in
         				let regs = MapV.add id reg MapV.empty in
         				(* XXX:  vérifier les points rendus! (voir addRegion)*)
         				let todo = extract_points reg id in
@@ -197,7 +194,7 @@ module Lift(Minimization : Min.Type) = struct
                         Pervasives.failwith "PLPDistrib.step: Unexpected point"
                         end
         			| ExplorationPoint.Direction (id_region, (cstr, point)) :: tl ->
-                        match (MapV.find id_region !res_slave.regs).Region.sx with
+                        match (get_region id_region).Region.sx with
                         | None -> Pervasives.failwith "PLPDistrib.step: unexpected None sx"
                         | Some sx -> begin
                             DebugSlave.log DebugTypes.Detail
@@ -210,10 +207,10 @@ module Lift(Minimization : Min.Type) = struct
                                 then None
                                 else begin
                 			  		(* taken from add_region*)
-                			  		let id = get_fresh_id() in
+                			  		let id = reg.Region.id in
                 					let regs = MapV.add id reg !res_slave.regs in
                 					res_slave := {!res_slave with regs = regs};
-                					let points = ExplorationPoint.Direction (id_region, (cstr, point)) :: (extract_points reg id) in
+                					let points = ExplorationPoint.Direction (id, (cstr, point)) :: (extract_points reg id) in
                                     let todo = adjust_points points in
                                     let to_send = Method.Slave.chooseResultsToSend todo in
                                     Some (to_send, id)
@@ -267,8 +264,10 @@ module Lift(Minimization : Min.Type) = struct
             	print() ;
             	match !res_slave.todo with
             	| [] -> begin (* Plus de point à traiter. *)
-                	Method.Slave.workRequest();
+                    (*if not !already_asked_for_work
+                	then *)Method.Slave.workRequest();
             		let s = read_wait() in
+                    already_asked_for_work := false;
             		Read.run s;
             		more_whip()
             		end
@@ -297,7 +296,7 @@ module Lift(Minimization : Min.Type) = struct
         module Master = struct
 
             open MasterUtilities
-            
+
     		let mapWork_to_string : unit -> string
     			= fun () ->
     			Misc.list_to_string

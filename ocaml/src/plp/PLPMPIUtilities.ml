@@ -18,6 +18,14 @@ module Lift(Minimization : Min.Type) = struct
 
         module MapId = Map.Make(struct type t = int let compare = Pervasives.compare end)
 
+        let map_to_string : Region.t MapV.t -> string
+            = fun map ->
+            Printf.sprintf "map:\n %s"
+                (Misc.list_to_string
+                    (fun (id,_) -> string_of_int id)
+                    (MapV.bindings map)
+                    " ; ")
+
         (* Parameters of the problem. *)
         (* TODO : ne pas oublier de l'initialiser !*)
         let params : Vec.V.t list ref = ref []
@@ -34,18 +42,6 @@ module Lift(Minimization : Min.Type) = struct
         let get_slave_ranks : unit -> Mpi.rank list
             = fun () ->
             Misc.range 1 (Mpi.comm_size Mpi.comm_world)
-
-        (** Returns a fresh id for a new region.
-    		Ids given by master are negative. *)
-    		let get_fresh_id : unit -> int
-            = fun () ->
-            let id = !reg_id in
-            begin
-                if isMaster ()
-                then reg_id := id - 1
-                else reg_id := id + 1;
-            end;
-    		id
 
         module Print = struct
 
@@ -348,6 +344,14 @@ module Lift(Minimization : Min.Type) = struct
     			let prev_work = get_work pr_id in
     			result := {!result with mapWork = MapId.add pr_id (work + prev_work) !result.mapWork}
 
+            (** Returns a fresh id for a new region.
+        		Ids given by master are negative. *)
+        		let get_fresh_id : unit -> int
+                = fun () ->
+                let id = !reg_id in
+                reg_id := id - 1;
+        		id
+
             let add_region : Mpi.rank -> (int * Region.t * ExplorationPoint.t list)
     			-> (global_region_idT * ExplorationPoint.t list) option
     			(* explorationPoints talk about the new region. Put the global id instead of the local one. *)
@@ -360,7 +364,7 @@ module Lift(Minimization : Min.Type) = struct
                         points
     			in
     			fun sender_process_id (remaining_work, reg, explorationPoints) ->
-                set_work sender_process_id remaining_work;
+                (*set_work sender_process_id remaining_work;*)
     			let glob_id = get_fresh_id() in
                 let loc_id = reg.Region.id in
     			if region_already_known reg
@@ -404,7 +408,14 @@ module Lift(Minimization : Min.Type) = struct
 
             let get_region : int -> Region.t
                 = fun reg_id ->
-                MapV.find reg_id !res_slave.regs
+                try MapV.find reg_id !res_slave.regs
+                with _ -> begin
+                    lazy (Printf.sprintf "Region %i not found in map %s"
+                        reg_id
+                        (map_to_string !res_slave.regs))
+                        |> DebugSlave.log DebugTypes.Normal;
+                    raise Not_found
+                end
         end (* End Slave *)
 
         module type MPIMethod = sig

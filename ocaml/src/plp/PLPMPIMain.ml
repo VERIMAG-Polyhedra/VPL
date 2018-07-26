@@ -59,8 +59,9 @@ module PLP(Minimization : Min.Type) = struct
     				= fun pr_id ->
                     lazy (Printf.sprintf "Propagating region %i to process %i" glob_id pr_id)
                         |> DebugMaster.log DebugTypes.Detail;
+                    let loc_id = get_region_id pr_id glob_id in
     				Printf.sprintf "problem\nregion %i\n%sno point\ntodo 0\n" (* 0 est le nombre de travail restant (inutile dans cette communication) *)
-    				glob_id
+    				loc_id
     				(Print.region (get_region glob_id))
     			in
     			List.iter
@@ -101,6 +102,8 @@ module PLP(Minimization : Min.Type) = struct
                                 (set_explorationPoint pr_id (ExplorationPoint.Direction (glob_id, p))
                                 |> Print.explorationPoint)
                         in
+                        lazy (Printf.sprintf "Sending to slave %i point %s" pr_id msg)
+                            |> DebugMaster.log DebugTypes.Detail;
                         Mpi.send msg pr_id 0 Mpi.comm_world
                         )
                         work
