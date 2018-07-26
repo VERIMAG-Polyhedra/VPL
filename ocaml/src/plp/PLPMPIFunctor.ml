@@ -202,15 +202,23 @@ module Lift(Minimization : Min.Type) = struct
             				match Exec.exec Cone Objective.Bland sx point with
             			 	| None -> None
             			  	| Some reg -> begin
+                                DebugSlave.log DebugTypes.Detail
+                                    (lazy (Printf.sprintf "Slave %i ending an exploration" (getRank())));
                                 res_slave := {!res_slave with todo = List.tl !res_slave.todo};
                                 if Read.region_already_known reg <> None
-                                then None
+                                then begin
+                                    DebugSlave.log DebugTypes.Detail
+                                        (lazy (Printf.sprintf "Region already known by slave %i" (getRank())));
+                                        None
+                                end
                                 else begin
-                			  		(* taken from add_region*)
+                			  		(* taken from add_region *)
+                                    DebugSlave.log DebugTypes.Detail
+                                        (lazy (Printf.sprintf "Slave %i found new region" (getRank())));
                 			  		let id = reg.Region.id in
                 					let regs = MapV.add id reg !res_slave.regs in
                 					res_slave := {!res_slave with regs = regs};
-                					let points = ExplorationPoint.Direction (id, (cstr, point)) :: (extract_points reg id) in
+                					let points = ExplorationPoint.Direction (id_region, (cstr, point)) :: (extract_points reg id) in
                                     let todo = adjust_points points in
                                     let to_send = Method.Slave.chooseResultsToSend todo in
                                     Some (to_send, id)
