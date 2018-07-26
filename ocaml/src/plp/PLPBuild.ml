@@ -71,13 +71,12 @@ end
 
 module DescSlave = struct
 	type t = {
-		reg : DescReg.t;
-		pointsToExplore : (int * Q.t list * (Q.t * Q.t) list) list;
+		regsAndPoints : (DescReg.t * DescPoints.t) list;
 		remaining_work : int}
 
-	let mk : DescReg.t -> (int * Q.t list * (Q.t * Q.t) list) list -> int -> t
-		= fun reg points i ->
-		{reg = reg;
-		pointsToExplore = points;
-		remaining_work = i}
+	let mk : (DescReg.t  * DescPoints.t) list -> int -> t
+		= fun regsAndPoints i -> {
+            regsAndPoints = regsAndPoints;
+            remaining_work = i
+        }
 end

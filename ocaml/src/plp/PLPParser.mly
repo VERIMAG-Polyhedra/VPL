@@ -1,5 +1,5 @@
 %token <Z.t> Z
-%token SX SLASH EOL EOF MATRIX FRONTIERS NO_FRONTIERS EXPLORATION_POINT TODO REGION PROBLEM NO_POINT POINTS
+%token SX SLASH EOL EOF MATRIX FRONTIERS NO_FRONTIERS EXPLORATION_POINT TODO REGION PROBLEM NO_POINT POINTS NO_REGION
 %start problem
 %start one_sx
 %start points
@@ -7,7 +7,12 @@
 %type <PLPBuild.DescSx.t> one_sx
 %type <PLPBuild.DescSlave.t> problem
 %%
-problem : PROBLEM EOL reg explorationPoints work_todo EOF {PLPBuild.DescSlave.mk $3 $4 $5}
+problem : PROBLEM EOL regsAndPoints work_todo EOF {PLPBuild.DescSlave.mk $3 $4}
+;
+regsAndPoints:
+  NO_REGION EOL {[]}
+| reg explorationPoints {[($1,$2)]}
+| reg explorationPoints regsAndPoints {($1, $2) :: $3}
 ;
 reg : REGION Z EOL point sx frontiers {PLPBuild.DescReg.mk (Z.to_int $2) $4 $5 $6}
 ;

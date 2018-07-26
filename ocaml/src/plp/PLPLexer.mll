@@ -11,6 +11,7 @@ rule token
  	| "region" {PLPParser.REGION}
  	| "problem" {PLPParser.PROBLEM}
  	| "no point" {PLPParser.NO_POINT}
+ 	| "ont du talent" {PLPParser.NO_REGION}
  	| "points" {PLPParser.POINTS}
    | '/' {PLPParser.SLASH}
    | '-'?['0'-'9']+ as n {PLPParser.Z (Z.of_string n)}
