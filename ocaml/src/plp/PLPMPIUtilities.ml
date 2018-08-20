@@ -364,7 +364,7 @@ module Lift(Minimization : Min.Type) = struct
                         points
     			in
     			fun sender_process_id (remaining_work, reg, explorationPoints) ->
-                (*set_work sender_process_id remaining_work;*)
+                set_work sender_process_id remaining_work;
     			let glob_id = get_fresh_id() in
                 let loc_id = reg.Region.id in
     			if region_already_known reg
