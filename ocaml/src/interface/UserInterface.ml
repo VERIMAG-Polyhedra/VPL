@@ -224,6 +224,8 @@ module type Type = sig
 
             val split_in_half : t -> t list
 
+            (** Returns the list of bounded variables in the given polyhedron. *)
+            val get_vars : t -> Var.t list
 		end
 
 		(** Defines operators in terms of the User datastructures. *)
@@ -914,6 +916,18 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                 fun p ->
                 lazy (size' p)
                 |> handle
+
+            let get_vars : t -> Var.t list
+                = fun p ->
+                let (rep, toVar) = match backend_rep p with
+                    | Some (p',(ofVar,toVar)) -> 
+                        let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                        (p', toVar')
+                    | _ -> Pervasives.failwith "get_vars"
+                in
+                Pol.varSet rep
+                |> Var.Set.elements
+                |> List.map toVar
 		end
 
 		include BuiltIn
