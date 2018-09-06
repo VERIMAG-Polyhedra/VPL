@@ -59,16 +59,25 @@ let to_string_ext: 'c Cert.t -> (Var.t -> string) -> 'c t -> string
 let to_string_ext_raw: 'c Cert.t -> 'c t -> string
 	= fun factory p -> to_string_ext factory Var.to_string  p
 
-(*
 let get_point : 'c t -> Vector.Symbolic.Positive.t
     = fun p ->
     match p.point with
         | Some point -> point
-        | None -> match Opt.getAsg_raw (List.map Cons.get_c p.ineqs) with
-            | None -> Pervasives.failwith "Pol.get_point"
+        | None -> begin
+            let ineqs = List.map Cons.get_c p.ineqs in
+            let params_set = Cs.getVars ineqs in
+            let params = Var.Set.elements params_set in
+            let horizon = Misc.max Var.cmp params
+                |> Var.next
+            in
+            match Splx.getPointInside_cone horizon (List.map Cons.get_c p.ineqs) with
             | Some point -> point
-*)
+            | None -> match Opt.getAsg horizon (List.mapi (fun i cstr -> i, cstr) ineqs) with
+                | None -> failwith "Pol.get_point: Unexpected empty polyhedron"
+                | Some point -> point
+            end
 
+(*
 let get_point : 'c t -> Vector.Symbolic.Positive.t
     = fun p ->
     let ineqs = List.map Cons.get_c p.ineqs in
@@ -82,7 +91,7 @@ let get_point : 'c t -> Vector.Symbolic.Positive.t
     | None -> match Opt.getAsg horizon (List.mapi (fun i cstr -> i, cstr) ineqs) with
         | None -> failwith "Pol.get_point: Unexpected empty polyhedron"
         | Some point -> point
-
+*)
 type 'c rel_t =
 | NoIncl
 | Incl of 'c list
@@ -1258,7 +1267,7 @@ let get_regions : 'c Cert.t -> 'c t -> unit t list
     let point = get_point p
         |> Vec.M.map Vec.ofSymbolic
     in
-    Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Normalization point generated: %s"
+    Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Normalization point used: %s"
 			(Vec.to_string Vec.V.to_string point)))
 	;
     let res = get_regions_from_point factory p point in
