@@ -204,6 +204,8 @@ module type Type = sig
 	(** [eval_partial p v] returns a polynomial, which is the evaluation of polynomial [p] where each variable is replaced by its value in function [v]. If a variable has no value in [v], it remains in the result. *)
 	val eval_partial : t -> (V.t -> Coeff.t option) -> t
 
+    val gradient : t -> t Vec.M.t
+
 	(** [ofCstr vec coeff] builds the polynomial [vec + coeff]. *)
 	val ofCstr : Vec.t -> Coeff.t -> t
 
@@ -296,6 +298,18 @@ module Make (Vec : Vector.Type) = struct
 			match ch m with
 			| Some m' -> m'
 			| None -> m
+
+        let partial_derivative : V.t -> t -> t
+            = fun var m ->
+            let rec partial_derivative_rec : t -> t -> t
+                = fun acc -> function
+                | [] -> []
+                | v :: m' when V.equal v var -> acc @ m'
+                | v :: m' when V.cmp v var > 0 -> []
+                | v :: m' -> partial_derivative_rec (acc @ [v]) m'
+            in
+            partial_derivative_rec [] m
+
 	end
 
 	module Monomial =
@@ -388,6 +402,10 @@ module Make (Vec : Vector.Type) = struct
 		let change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
 			= fun ch (m,c) ->
 			(MonomialBasis.change_variable ch m, c)
+
+        let partial_derivative : V.t -> t -> t
+            = fun var (m,c) ->
+            (MonomialBasis.partial_derivative var m, c)
 	end
 
 	type t = Monomial.t list
@@ -668,6 +686,25 @@ module Make (Vec : Vector.Type) = struct
 			(fun p m -> add p [(Monomial.eval_partial m e)])
 			[] p
 
+    let partial_derivative : V.t -> t -> t
+        = fun var p ->
+        List.fold_left
+            (fun acc m ->
+                let (m,c) = Monomial.partial_derivative var m in
+                if m = []
+                then acc
+                else (m,c) :: acc)
+            z p
+        |> List.rev
+
+    let gradient : t -> t Vec.M.t
+        = fun p ->
+        List.fold_left
+            (fun tree var ->
+                Vec.M.set z tree var (partial_derivative var p))
+            Vec.M.empty
+            (get_vars p)
+
 	let toCstr : t -> (Vec.t * Vec.Coeff.t)
 		= fun p ->
 		if is_affine p
@@ -818,6 +855,7 @@ module Rat = struct
 		val get_vars : t -> V.t list
 		val eval : t -> (V.t -> Coeff.t) -> Coeff.t
 		val eval_partial : t -> (V.t -> Coeff.t option) -> t
+        val gradient : t -> t Vec.M.t
 		val ofCstr : Vec.t -> Coeff.t -> t
 		val toCstr : t -> (Vec.t * Coeff.t)
 	end
