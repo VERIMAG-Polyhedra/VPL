@@ -323,4 +323,13 @@ module EqSet(Cs : Cstr.Rat.Type) = struct
 		in
 	(* List.fold_right is necessary because order needs to be preserved (echelon form) *)
 		List.fold_right apply s (nxt, relocTbl, nil)
+
+    let satisfy : 'c t -> Cs.Vec.t -> bool
+        = fun eqs point ->
+        List.for_all
+            (fun (_,cons) ->
+                Cons.get_c cons
+                |> Cs.satisfy point)
+            eqs
+
 end

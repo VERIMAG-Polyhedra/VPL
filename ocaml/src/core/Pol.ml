@@ -1319,3 +1319,46 @@ let split_in_half : 'c Cert.t -> 'c t -> Cs.t option
         Profile.stop "split_in_half";
         Some (Cs.mk Cstr.Le [Scalar.Rat.u, max_var] cste)
         end
+
+let satisfy : 'c t -> Vec.t -> bool
+    = fun p point ->
+    EqSet.satisfy p.eqs point && IneqSet.satisfy p.ineqs point
+
+let spawn : 'c Cert.t -> 'c t -> Vec.t
+    = let rec spawn_rec : 'c t -> (Var.t * float * float) list -> Vec.t
+        = fun p itvs ->
+        let point = List.map
+            (fun (v,low,up) ->
+                (Random.float (up -. low) +. low |> Scalar.Rat.of_float, v)
+            )
+            itvs
+            |> Vec.mk
+        in
+        if IneqSet.satisfy p.ineqs point
+        then point
+        else spawn_rec p itvs
+    in
+    fun factory p ->
+    let itvs = List.map
+        (fun var ->
+            let (itv,_,_) = itvize factory p (Vec.mk [Scalar.Rat.u, var]) in
+            let low = match itv.low with
+            | Infty -> -1. *. max_float
+        	| Open r | Closed r -> Scalar.Rat.to_float r
+            and up = match itv.up with
+            | Infty -> max_float
+        	| Open r | Closed r -> Scalar.Rat.to_float r
+            in
+            (var, low, up))
+        (get_cstr_ineqs p |> Cs.getVars |> Var.Set.elements)
+    in
+    let point = spawn_rec p itvs in
+    List.fold_left
+        (fun point (var, cons) ->
+            let cstr = { (Cons.get_c cons) with
+                Cs.v = Vec.add (Cs.get_v (Cons.get_c cons)) (Vec.mk [Scalar.Rat.negU, var]);
+            } in
+            let coeff = Cs.eval' cstr point in
+            Vec.set point var coeff
+        )
+        point p.eqs

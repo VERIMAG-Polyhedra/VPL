@@ -228,6 +228,9 @@ module type Type = sig
 
             (** Returns the size of the given polyhedron. *)
             val size : t -> Scalar.Rat.t option
+
+            (** Returns the list of bounded variables in the given polyhedron. *)
+            val get_vars : t -> Var.t list
 		end
 
 		(** Defines operators in terms of the User datastructures. *)
@@ -443,6 +446,11 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 				| Atom (e1,cmp,e2) -> Cond.Atom (Expr.to_term e1, cmp, Expr.to_term e2)
 				| BinL (c1,bl,c2) -> Cond.BinL(to_cond c1, bl, to_cond c2)
 				| Not c -> Cond.Not (to_cond c)
+
+            let to_string : t -> string
+                = fun cond ->
+                to_cond cond
+                |> Cond.to_string Var.to_string
 		end
 
 		module Record = struct
@@ -926,6 +934,40 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                 fun p ->
                 lazy (size' p)
                 |> handle
+
+            let get_vars : t -> Var.t list
+                = fun p ->
+                let (rep, toVar) = match backend_rep p with
+                    | Some (p',(ofVar,toVar)) ->
+                        let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                        (p', toVar')
+                    | _ -> Pervasives.failwith "get_vars"
+                in
+                Pol.varSet rep
+                |> Var.Set.elements
+                |> List.map toVar
+
+            let satisfy : t -> Vec.t -> bool
+                = fun p point ->
+                let (rep, toVar) = match backend_rep p with
+                    | Some (p',(ofVar,toVar)) ->
+                        let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                        (p', toVar')
+                    | _ -> Pervasives.failwith "get_vars"
+                in
+                Vec.rename_f toVar point
+                |> Pol.satisfy rep
+
+            let spawn : t -> Vec.t
+                = fun p ->
+                let (rep, ofVar) = match backend_rep p with
+                    | Some (p',(ofVar,toVar)) ->
+                        let (_,ofVar',_) = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                        (p', ofVar')
+                    | _ -> Pervasives.failwith "get_vars"
+                in
+                Pol.spawn Factory.Unit.factory rep
+                |> Vec.rename_f ofVar
 		end
 
 		include BuiltIn

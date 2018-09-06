@@ -225,3 +225,12 @@ val split_in_half : 'c Cert.t -> 'c t -> Cs.t option
 (** [set_point point p] returns the polyhedron [p] with its interior point set to [p].
     @raise Invalid_argument if [point] is not inside [p]'s interior. *)
 val set_point : Vec.t -> 'c t -> 'c t
+(**
+  * Returns true if the given point satisfies the constraints of the polyhedron.
+  *)
+val satisfy : 'c t -> Vec.t -> bool
+
+(**
+ * Randomly generates a point in the polyhedron.
+ *)
+val spawn : 'c Cert.t -> 'c t -> Vec.t

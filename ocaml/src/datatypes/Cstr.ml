@@ -379,10 +379,7 @@ module Cstr (Vec : Vector.Type) = struct
 
 	let rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
 		= fun f cstr ->
-		List.fold_left
-    		(fun cstr' var -> rename var (f var) cstr')
-    		cstr
-    		(getVars [cstr] |> Vec.V.Set.elements)
+        {cstr with v = Vec.rename_f f (get_v cstr)}
 
 	(* TODO: vérifier la présence de x? *)
 	let change_variable : Vec.V.t -> Vec.t -> Coeff.t -> t -> t

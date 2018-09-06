@@ -602,3 +602,9 @@ let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> (unit t * Vector.Symb
             in
             (ineqs, point)
         ) regions.PoltoPLP.mapping
+
+let satisfy : 'c t -> Vec.t -> bool
+    = fun ineqs point ->
+    List.for_all
+        (fun cons -> Cons.get_c cons |> Cs.satisfy point)
+        ineqs

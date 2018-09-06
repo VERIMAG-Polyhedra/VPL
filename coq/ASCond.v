@@ -498,10 +498,10 @@ Module NaiveRename (Import BasicD: BasicDomain ZNum) (Import D: HasAssume ZNum Z
     unfold Basics.impl, rename.
     intros; xasimplify ltac:(eauto with vpl). simpl in * |- *.
     intros X m H0. eapply gamma_ext.
-    Focus 3. 
+    3: {
       eapply project_correct; [ eauto | eapply H; [idtac | eauto]].
       autorewrite with progvar.
-      unfold Mem.assign. case (PVar.eq_dec x y); auto.
+      unfold Mem.assign. case (PVar.eq_dec x y); auto. }
     auto.
     autorewrite with progvar.
     intros x'; erewrite @Mem.assign_id; auto.
