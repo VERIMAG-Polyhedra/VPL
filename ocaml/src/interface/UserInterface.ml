@@ -920,7 +920,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
             let get_vars : t -> Var.t list
                 = fun p ->
                 let (rep, toVar) = match backend_rep p with
-                    | Some (p',(ofVar,toVar)) -> 
+                    | Some (p',(ofVar,toVar)) ->
                         let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
                         (p', toVar')
                     | _ -> Pervasives.failwith "get_vars"
@@ -928,6 +928,28 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                 Pol.varSet rep
                 |> Var.Set.elements
                 |> List.map toVar
+
+            let satisfy : t -> Vec.t -> bool
+                = fun p point ->
+                let (rep, toVar) = match backend_rep p with
+                    | Some (p',(ofVar,toVar)) ->
+                        let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                        (p', toVar')
+                    | _ -> Pervasives.failwith "get_vars"
+                in
+                Vec.rename_f toVar point
+                |> Pol.satisfy rep
+
+            let spawn : t -> Vec.t
+                = fun p ->
+                let (rep, ofVar) = match backend_rep p with
+                    | Some (p',(ofVar,toVar)) ->
+                        let (_,ofVar',_) = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                        (p', ofVar')
+                    | _ -> Pervasives.failwith "get_vars"
+                in
+                Pol.spawn Factory.Unit.factory rep
+                |> Vec.rename_f ofVar
 		end
 
 		include BuiltIn

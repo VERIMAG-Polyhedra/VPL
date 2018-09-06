@@ -81,6 +81,10 @@ module type Type = sig
 
 	val toRat : t -> Scalar.Rat.t M.t
 	val ofRat : Scalar.Rat.t M.t -> t
+
+    val rename : V.t -> V.t -> t -> t
+    
+	val rename_f : (V.t -> V.t) -> t -> t
 end
 
 module VectorRtree (Coeff : Scalar.Type) = struct
@@ -326,6 +330,20 @@ module VectorRtree (Coeff : Scalar.Type) = struct
 			Coeff.add
 				(Coeff.mulr n1 n2)
 				(Coeff.add (dot_productr l1 l2) (dot_productr r1 r2))
+
+    let rename : V.t -> V.t -> t -> t
+		= fun fromX toY vec ->
+		let v1 = set vec fromX Coeff.z in
+		let v2 = set v1 toY (get vec fromX) in
+		assert (Coeff.cmpz (get vec toY) = 0);
+		v2
+
+	let rename_f : (V.t -> V.t) -> t -> t
+		= fun f vec ->
+		List.fold_left
+    		(fun vec' var -> rename var (f var) vec')
+    		vec
+    		(getVars [vec] |> V.Set.elements)
 end
 
 module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
@@ -544,6 +562,20 @@ module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
 				Coeff.add res (Coeff.mulr n m))
 			Coeff.z
 			q v
+
+    let rename : V.t -> V.t -> t -> t
+		= fun fromX toY vec ->
+		let v1 = set vec fromX Coeff.z in
+		let v2 = set v1 toY (get vec fromX) in
+		assert (Coeff.cmpz (get vec toY) = 0);
+		v2
+
+	let rename_f : (V.t -> V.t) -> t -> t
+		= fun f vec ->
+		List.fold_left
+    		(fun vec' var -> rename var (f var) vec')
+    		vec
+    		(getVars [vec] |> V.Set.elements)
 end
 
 module Rat = struct

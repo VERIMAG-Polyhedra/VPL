@@ -217,3 +217,13 @@ val size : 'c t -> Scalar.Rat.t option
 (** Returns the constraint on which the polyhedron must be split, if there is one.
     This constraint splits the polyhedron in two halfs along the longuest axis-aligned interval. *)
 val split_in_half : 'c Cert.t -> 'c t -> Cs.t option
+
+(**
+  * Returns true if the given point satisfies the constraints of the polyhedron.
+  *)
+val satisfy : 'c t -> Vec.t -> bool
+
+(**
+ * Randomly generates a point in the polyhedron.
+ *)
+val spawn : 'c Cert.t -> 'c t -> Vec.t
