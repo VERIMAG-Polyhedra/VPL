@@ -573,7 +573,6 @@ module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
 			Coeff.z
 			q v
 
-<<<<<<< HEAD
     let project : V.t list -> t -> t
         = fun vars vec ->
         List.fold_left
@@ -586,13 +585,6 @@ module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
 		let vec2 = set vec1 toY (get vec fromX) in
 		assert (Coeff.cmpz (get vec toY) = 0);
         vec2
-=======
-    let rename : V.t -> V.t -> t -> t
-		= fun fromX toY vec ->
-		let v1 = set vec fromX Coeff.z in
-		let v2 = set v1 toY (get vec fromX) in
-		assert (Coeff.cmpz (get vec toY) = 0);
-		v2
 
 	let rename_f : (V.t -> V.t) -> t -> t
 		= fun f vec ->
@@ -600,7 +592,6 @@ module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
     		(fun vec' var -> rename var (f var) vec')
     		vec
     		(getVars [vec] |> V.Set.elements)
->>>>>>> d4f6cde3e26885757b901af1761ce39ac78b44d9
 end
 
 module Rat = struct

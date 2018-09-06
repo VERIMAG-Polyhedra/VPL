@@ -165,7 +165,7 @@ module Build (Min : Min.Type) = struct
 		and cste = null_paramCoeff in
 		PLP.Objective.mk coeffs cste
 
-        (*
+
 	let get_init_point : V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> Cs.Vec.t
 		= fun params p1 p2 ->
 		let horizon = Misc.max V.cmp params
@@ -187,7 +187,7 @@ module Build (Min : Min.Type) = struct
 			in
 			Cs.Vec.divc (Cs.Vec.add x1 x2) (Scalar.Rat.of_float 2.)
 			end
-            *)
+
 	let build : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Cs.Vec.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> PSplx.t * (('c1,'c2) certT) PLP.mapVar_t
 		= fun factory1 factory2 epsilon_opt init_point p1 p2 ->
@@ -322,8 +322,12 @@ module Build (Min : Min.Type) = struct
 
 	let join' : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Vector.Symbolic.Positive.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> 'c1 Cons.t list * 'c2 Cons.t list
-		= fun factory1 factory2 epsilon_opt init_point p1 p2 ->
-        let init_point = Vector.Symbolic.Positive.toRat init_point in
+		= fun factory1 factory2 epsilon_opt _ p1 p2 ->
+		let cs = List.map Cons.get_c p1 @ List.map Cons.get_c p2 in
+		let params_set = Cs.getVars cs in
+		let params = V.Set.elements params_set in
+        let init_point = get_init_point params p1 p2 in
+        (*let init_point = Vector.Symbolic.Positive.toRat init_point in*)
 		let (sx,map) = build factory1 factory2 epsilon_opt init_point p1 p2 in
 		let regs = PLP.run_classic sx (get_no_cert factory1 factory2) in
 		let regs_filtered = filter_trivial regs
