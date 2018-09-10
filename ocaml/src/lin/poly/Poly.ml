@@ -405,7 +405,9 @@ module Make (Vec : Vector.Type) = struct
 
         let partial_derivative : V.t -> t -> t
             = fun var (m,c) ->
-            (MonomialBasis.partial_derivative var m, c)
+            if List.exists (fun v -> V.equal var v) (MonomialBasis.data m)
+            then (MonomialBasis.partial_derivative var m, c)
+            else (MonomialBasis.null,Vec.Coeff.z)
 	end
 
 	type t = Monomial.t list
@@ -691,12 +693,12 @@ module Make (Vec : Vector.Type) = struct
         List.fold_left
             (fun acc m ->
                 let (m,c) = Monomial.partial_derivative var m in
-                if m = []
+                if Vec.Coeff.isZ c
                 then acc
                 else (m,c) :: acc)
             z p
-        |> List.rev
-
+        |> canon
+        
     let gradient : t -> t Vec.M.t
         = fun p ->
         List.fold_left
