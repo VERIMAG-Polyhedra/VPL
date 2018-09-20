@@ -1149,21 +1149,23 @@ let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
     in
     List.map (fun reg -> {eqs = eqs ; ineqs = reg}) regions
 
-let get_regions : 'c Cert.t -> 'c t -> unit t list
-    = fun factory p ->
+let get_regions : 'c Cert.t -> Vector.Rat.Positive.t option -> 'c t -> unit t list
+    = fun factory point p ->
 	Debug.log DebugTypes.Title (lazy "Getting regions");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
 			(to_string_raw p)))
 	;
     Profile.start "get_regions";
-    let point = match Opt.getAsg_raw (List.map Cons.get_c p.ineqs) with
+    let point' = match point with
+    | Some point -> point
+    | None -> match Opt.getAsg_raw (List.map Cons.get_c p.ineqs) with
         | None -> Pervasives.failwith "Pol.get_regions"
         | Some pl -> (Vec.M.map Vec.ofSymbolic pl)
     in
     Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Normalization point generated: %s"
-			(Vec.to_string Vec.V.to_string point)))
+			(Vec.to_string Vec.V.to_string point')))
 	;
-    let regions = IneqSet.get_regions_from_point factory p.ineqs point
+    let regions = IneqSet.get_regions_from_point factory p.ineqs point'
     and eqs = List.map (fun (var, (cstr,_)) -> (var, (cstr, ()))) p.eqs
     in
     let res = List.map (fun reg -> {eqs = eqs ; ineqs = reg}) regions in

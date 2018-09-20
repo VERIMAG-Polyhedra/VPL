@@ -43,7 +43,7 @@ module type PolyhedronDomain = sig
 
 	(* Non certifed functions: *)
 	val mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
-    val get_regions : t -> t list
+    val get_regions : Vector.Rat.Positive.t option -> t -> t list
 end
 
 (**

@@ -230,11 +230,11 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
 				Pol.ineqs = List.mapi (fun i (cstr,_) -> F.mkCons (f2 i cstr)) ineqs
 			}
 
-    let get_regions : t -> t list
-        = function
+    let get_regions : Vector.Rat.Positive.t option -> t -> t list
+        = fun point -> function
         | Bottom _ -> []
         | NonBot p ->
-            Pol.get_regions F.factory p
+            Pol.get_regions F.factory point p
             |> List.map (fun p -> NonBot (F.convert p))
 end
 
