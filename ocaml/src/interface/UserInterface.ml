@@ -893,7 +893,14 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 
             let set_point : Vector.Rat.Positive.t -> t -> t
 				= let set_point' point p =
-                    mk (Names.mk ()) (I.set_point point p.value)
+                    let toVar = match backend_rep p with
+    					| Some (p',(ofVar, toVar)) ->
+                            let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+                            toVar'
+    					| _ -> Pervasives.failwith "split_in_half"
+    				in
+                    I.set_point (Vector.Rat.Positive.rename_f toVar point) p.value
+                    |> mk (Names.mk ())
                 in
                 fun point p ->
 				lazy (set_point' point p)

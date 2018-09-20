@@ -350,10 +350,12 @@ module VectorRtree (Coeff : Scalar.Type) = struct
 
     let rename_f : (V.t -> V.t) -> t -> t
 		= fun f vec ->
-		List.fold_left
-    		(fun vec' var -> rename var (f var) vec')
-    		vec
-    		(getVars [vec] |> V.Set.elements)
+        getVars [vec]
+        |> V.Set.elements
+        |> List.fast_sort (fun v1 v2 -> V.cmp v2 v1)
+		|> List.fold_left (
+            fun vec' var -> rename var (f var) vec'
+            ) vec
 end
 
 module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
