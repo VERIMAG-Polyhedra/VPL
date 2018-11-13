@@ -56,8 +56,20 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     else
     	 auto_lifting (fun p -> LHD.mapi false f1 f2 p) pol
 
-  let get_regions p =
-    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions p.pol)
+  let get_regions point p =
+    let point' = match point with
+    | None -> None
+    | Some point -> begin
+        let toVar = match backend_rep p with
+        | Some (p',(ofVar, toVar)) ->
+            let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+            toVar'
+        | _ -> Pervasives.failwith "get_regions"
+        in
+        Some (Vector.Rat.Positive.rename_f toVar point)
+        end
+    in
+    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions point' p.pol)
 
   let is_bottom = isBottom
 
@@ -243,8 +255,8 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
   let minkowski p1 p2 =
     {p1 with pol = LHD.minkowski p1.pol p2.pol}
 
-  let get_regions p =
-    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions p.pol)
+  let get_regions point p =
+    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions point p.pol)
 
   let set_point point pol = auto_lifting (LHD.set_point point) pol
 

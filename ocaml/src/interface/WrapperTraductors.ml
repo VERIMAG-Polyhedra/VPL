@@ -92,7 +92,7 @@ module type LowLevelDomain = sig
   (**
    * Returns the partition into regions of the given polyhedron.
    *)
-  val get_regions : t -> t list
+  val get_regions : Vector.Rat.Positive.t option -> t -> t list
 
   val set_point : Vector.Rat.Positive.t -> t -> t
 end

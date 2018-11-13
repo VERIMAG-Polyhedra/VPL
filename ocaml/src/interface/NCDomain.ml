@@ -231,11 +231,11 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
                 Pol.point = pol.Pol.point;
 			}
 
-    let get_regions : t -> t list
-        = function
+    let get_regions : Vector.Rat.Positive.t option -> t -> t list
+        = fun point -> function
         | Bottom _ -> []
         | NonBot p ->
-            Pol.get_regions F.factory p
+            Pol.get_regions F.factory point p
             |> List.map (fun p -> NonBot (F.convert p))
 
     let set_point : Vec.t -> t -> t

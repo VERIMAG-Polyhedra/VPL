@@ -855,14 +855,14 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 			lazy (diff' p1 p2)
 			|> handle
 
-            let get_regions : t -> t list
-				= let get_regions' p =
+            let get_regions : Vector.Rat.Positive.t option -> t -> t list
+				= let get_regions' point p =
                     List.map
                         (fun p' -> mk (Names.mk ()) p')
-                        (I.get_regions p.value)
+                        (I.get_regions point p.value)
                 in
-                fun p ->
-				lazy (get_regions' p)
+                fun point p ->
+				lazy (get_regions' point p)
 				|> handle
 
             (**
@@ -876,7 +876,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                             (p', toVar')
     					| _ -> Pervasives.failwith "get_regions"
     				in
-                    let regions = Pol.get_regions Factory.Unit.factory rep in
+                    let regions = Pol.get_regions Factory.Unit.factory None rep in
                     List.map
                         (fun reg ->
                             let cond = Pol.get_cstr reg
