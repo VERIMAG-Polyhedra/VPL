@@ -1,10 +1,3 @@
-(** Types for scalar values:
-{ul
-	{- {!module:Rat}: rationals}
-	{- {!module:Symbolic}: rationals of the form [a + b.delta] where [delta] represents a symbolic error}
-	{- {!module:Float}: floating points}
-}*)
-
 open Scalar_type
 
 module type Type = Type
@@ -15,6 +8,7 @@ module Float = struct
 	let name = "Float"
 
 	let delta = 0.00000001
+
 	let to_string x =
 		if x < 0.001
 		then string_of_float x
@@ -61,8 +55,8 @@ module Float = struct
 		Q.of_float n
 
 	let well_formed x = not (x = nan) && not (x = infinity) && not (x = neg_infinity)
-
 	let well_formed_nonnull x = not (equal x z) && well_formed x
+
 	let to_float t = t
 	let of_float t = t
 
@@ -75,21 +69,21 @@ module Float = struct
 		div f (ofQ q)
 
 	let mk (den: int) (num: int) = float(num) /. float(den)
-	let mk1 (num : int) = float(num)
+	let of_int (num : int) = float(num)
 
-	let toInt_round f round =
+	let to_int f round =
 		let i = int_of_float f in
 		if (match round with
-			| Up -> mk1 i < f
-			| Down -> mk1 i > f)
+			| Up -> of_int i < f
+			| Down -> of_int i > f)
 		then match round with
 			| Up -> Some (i + 1)
 			| Down -> Some(i - 1)
 		else Some i
 
-    let gcd _ _ = failwith "unimplemented"
-    let toZ _ = failwith "unimplemented"
-    let ofZ _ _ = failwith "unimplemented"
+    let gcd _ _ = failwith "Float.gcd: unimplemented"
+    let toZ _ = failwith "Float.toZ: unimplemented"
+    let ofZ n d = div (Z.to_string n |> of_string) (Z.to_string d |> of_string)
 end
 
 (** Rationals are used everywhere in the VPL.
@@ -130,7 +124,7 @@ module Rat = struct
 	let toQ : Q.t -> t = fun n -> n
 
 	let mk (den: int) (num: int) = Q.of_ints num den
-	let mk1 (num : int) = Q.of_ints num 1
+	let of_int (num : int) = Q.of_ints num 1
 
 	let of_float = Q.of_float
 
@@ -211,8 +205,6 @@ module Rat = struct
 		let pr = Z.to_string
 	end
 
-	(** [gcd nGcd dGcd n] returns the greatest common divisor of nGcd and the numerator of [n]
-	and that of [dGcd] and the denominator of [n]. *)
 	let gcd (nGcd, dGcd) a =
 		((if Z.equal Z.u nGcd then
 			Z.u
@@ -229,16 +221,13 @@ module Rat = struct
 	(** [ofZ n d] builds a rational of numerator [n] and denominator [d]. *)
 	let ofZ num den = Q.make num den
 
-	let ofRat x = x
-	let toRat x = x
-
 	let mulr = mul
 
 	let divr : t -> Q.t -> t
 		= fun f q ->
 		div f (ofQ q)
 
-	let toInt_round q round =
+	let to_int q round =
 		try
 			let i = let (num,den) = toZ q in
 				let num = Z.toInt num
@@ -246,26 +235,16 @@ module Rat = struct
 				num / den
 			in
 			if (match round with
-				| Up -> lt (mk1 i) q
-				| Down -> lt q (mk1 i))
+				| Up -> lt (of_int i) q
+				| Down -> lt q (of_int i))
 			then match round with
 				| Up -> Some (i + 1)
 				| Down -> Some (i - 1)
 			else Some i
 		with _ -> None
-		(*
-	(* TODO: arrondi? *)
-	let toInt_round : t -> int option
-		= fun q ->
-		try
-			let (num,den) = toZ q in
-			let num = Z.toInt_round num
-			and den = Z.toInt_round den in
-			Some (num / den)
-		with _ -> None*)
 end
 
-module RelInt = struct
+module Int = struct
 	type t = Z.t
 
 	let name = "Z"
@@ -284,7 +263,7 @@ module RelInt = struct
 
 	let abs = Z.abs
 	let neg = Z.neg
-	let inv _ = Pervasives.failwith "Scalar.RelInt.inv"
+	let inv _ = Pervasives.failwith "Scalar.Int.inv"
 
 	let add = Z.add
 	let sub = Z.sub
@@ -297,34 +276,32 @@ module RelInt = struct
 			u
 			(Misc.range 0 exp)
 
-	let ofQ _ = Pervasives.failwith "Scalar.RelInt.ofQ"
+	let ofQ _ = Pervasives.failwith "Scalar.Int.ofQ"
 	let toQ n = Rat.ofZ n u
 
     let gcd _ _ = failwith "unimplemented"
     let toZ _ = failwith "unimplemented"
     let ofZ _ _ = failwith "unimplemented"
 
-	let mk1 : int -> t
+	let of_int : int -> t
 		= fun i ->
 		Z.of_int i
 
 	let mk: int -> int -> t
 		= fun den nom ->
-		Z.div (mk1 nom) (mk1 den)
+		Z.div (of_int nom) (of_int den)
 
-	let toInt_round x round =
+	let to_int x round =
 		try
 			let i = Z.to_int x in
 			if (match round with
-				| Up -> lt (mk1 i) x
-				| Down -> lt x (mk1 i))
+				| Up -> lt (of_int i) x
+				| Down -> lt x (of_int i))
 			then match round with
 				| Up -> Some (i + 1)
 				| Down -> Some (i - 1)
 			else Some i
 		with _ -> None
-
-	let toInt  = Z.to_int
 
 	let of_float = Z.of_float
 
@@ -353,11 +330,11 @@ module RelInt = struct
 	(** Multiplication by a rational. *)
 	let mulr : Q.t -> t -> t
 		= fun _ _ ->
-		Pervasives.failwith "Scalar.RelInt.mulr"
+		Pervasives.failwith "Scalar.Int.mulr"
 
 	let divr : t -> Q.t -> t
 		= fun _ _ ->
-		Pervasives.failwith "Scalar.RelInt.divr"
+		Pervasives.failwith "Scalar.Int.divr"
 end
 
 type symbolic = { v: Q.t; d: Q.t }
@@ -373,8 +350,6 @@ module Symbolic = struct
 	let get_d (x : t) = x.d
 
     let get_v (x : t) = x.v
-
-	let ofRat n = { v = n; d = Rat.z }
 
 	let pdelta n = { v = n; d = Rat.u }
 
@@ -433,7 +408,7 @@ module Symbolic = struct
 
 	let isZ x = cmpz x = 0
 
-	let negU = ofRat Rat.negU
+	let negU = ofQ Rat.negU
 
 	let abs x = if cmpz x > 0
 		then mulr Rat.negU x
@@ -445,7 +420,7 @@ module Symbolic = struct
 
 	let equalApprox c1 c2 = cmp (sub c1 c2 |> abs) delta < 0
 
-	let u = ofRat (Rat.u)
+	let u = ofQ (Rat.u)
 
 	let neg : t -> t
 		= fun v ->
@@ -460,7 +435,7 @@ module Symbolic = struct
 					(pdelta Rat.z))
 				(mulr (Rat.mul (get_v v2) (get_d v1))
 				(pdelta Rat.z)))
-			(ofRat (Rat.mul (get_v v1) (get_v v2)))
+			(ofQ (Rat.mul (get_v v1) (get_v v2)))
 
 	let pow : t -> int -> t
 		= fun x exp ->
@@ -486,7 +461,7 @@ module Symbolic = struct
 	 	(mulr
 	 		b3
 	 		(pdelta Rat.z))
-		 (ofRat a3) in
+		 (ofQ a3) in
 		 res
 
 	let ofVal : t -> t
@@ -509,7 +484,7 @@ module Symbolic = struct
 	let of_float : float -> t
 		= fun v ->
 		Rat.of_float v
-		|> ofRat
+		|> ofQ
 
 	let to_float : t -> float
 		= let float_of_val : t -> float
@@ -524,8 +499,8 @@ module Symbolic = struct
 		float_of_val v
 		|> Float.to_float
 
-	let mk (den: int) (num: int) = ofRat (Rat.mk den num)
-	let mk1 (num : int) = ofRat (Rat.mk1 num)
+	let mk (den: int) (num: int) = ofQ (Rat.mk den num)
+	let of_int (num : int) = ofQ (Rat.of_int num)
 
 	let well_formed_nonnull x = Rat.well_formed_nonnull (get_v x) && Rat.well_formed_nonnull (get_d x)
 
@@ -533,7 +508,7 @@ module Symbolic = struct
 
 	let of_string _ = print_endline "Scalar.Val.of_string : not implemented" ; z
 
-	let toInt_round _ _ = Pervasives.failwith "Scalar.Symbolic.toInt_round : not implemented"
+	let to_int _ _ = Pervasives.failwith "Scalar.Symbolic.to_int : not implemented"
 
     let gcd _ _ = failwith "unimplemented"
     let toZ _ = failwith "unimplemented"
@@ -573,16 +548,16 @@ module MachineInt = struct
 			u
 			(Misc.range 0 exp)
 
-	let ofQ _ = Pervasives.failwith "Scalar.RelInt.ofQ"
+	let ofQ _ = Pervasives.failwith "Scalar.Int.ofQ"
 	let toQ = Q.of_int
 
-	let mk1 n = n
+	let of_int n = n
 
 	let mk: int -> int -> t
 		= fun den nom ->
-		div (mk1 nom) (mk1 den)
+		div (of_int nom) (of_int den)
 
-	let toInt_round x _ = Some x
+	let to_int x _ = Some x
 
 	let of_float = int_of_float
 

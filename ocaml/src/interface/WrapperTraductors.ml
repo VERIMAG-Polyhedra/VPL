@@ -224,14 +224,14 @@ module CZNum = NumC.ZNum
 let import_Q: Scalar.Rat.t -> CQNum.t
 = PedraQOracles.nToNumC
 
-let import_Z: Scalar.RelInt.t -> CZNum.t
+let import_Z: Scalar.Int.t -> CZNum.t
 = PedraQOracles.zToCoqZ
 
 let export_Q: CQNum.t -> Scalar.Rat.t
 = PedraQOracles.nToNb
 
 let export_Z_as_Q: CZNum.t -> Scalar.Rat.t
-= fun z -> Scalar.RelInt.toQ (PedraQOracles.coqZToZ z)
+= fun z -> Scalar.Int.toQ (PedraQOracles.coqZToZ z)
 
 module CAnnot = ASTerm.TopLevelAnnot
 
@@ -359,7 +359,7 @@ let rec import_QCond: QCond.t -> CQCond.t
 (* translation on Z: mostly a copy-paste from the one of Q *)
 (***********************************************************)
 
-module ZInterface = Interface(Scalar.RelInt)
+module ZInterface = Interface(Scalar.Int)
 module ZTerm = ZInterface.Term
 module ZCond = ZInterface.Cond
 module CZCond = ASCond.ZCond

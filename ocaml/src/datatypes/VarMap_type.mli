@@ -1,3 +1,5 @@
+(** Type of maps associating variables to values. *)
+
 module type Type = sig
 	type 'n t
 

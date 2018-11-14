@@ -17,7 +17,7 @@ let elim_ts : Test.t
 	"pos", 0, v [1; 1; 0],
 	Objective.mk [
 		 ParamCoeff.mkSparse 1 [0, Cs.Vec.Coeff.u] Cs.Vec.Coeff.z;
-		 ParamCoeff.mkSparse 1 [0, Cs.Vec.Coeff.mk1 2] Cs.Vec.Coeff.z
+		 ParamCoeff.mkSparse 1 [0, Cs.Vec.Coeff.of_int 2] Cs.Vec.Coeff.z
 	  ] (ParamCoeff.mkSparse 1 [] Cs.Vec.Coeff.z),
 	Objective.mk [
 		 ParamCoeff.mkSparse 1 [] Cs.Vec.Coeff.z;

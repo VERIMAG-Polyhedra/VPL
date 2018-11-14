@@ -31,7 +31,7 @@ include B
 			in
 			(* intersection between [x,x0) and cstr: *)
 			let x_inter = MinFloat.Sort.getPoint' (direction, value) in
-			let x_output = Vec.divc (Vec.add x_inter x') (Scalar.Rat.mk1 2) in
+			let x_output = Vec.divc (Vec.add x_inter x') (Scalar.Rat.of_int 2) in
 			(cstr, x_output)
 			)
 			cstrs

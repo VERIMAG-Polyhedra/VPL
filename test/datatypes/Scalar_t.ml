@@ -26,16 +26,16 @@ module Make_Tests (Coeff : Scalar.Type) = struct
 			"uu0", Coeff.u, Coeff.u, Z;
 			"uu1", Coeff.u, Coeff.negU, P;
 			"uu2", Coeff.negU, Coeff.u, N;
-			"pz0", Coeff.mk1 2, Coeff.z, P;
-			"zp0", Coeff.z, Coeff.mk1 2, N;
-			"pp0", Coeff.mk1 2, Coeff.mk1 2, Z;
-			"pp1", Coeff.mk1 2, Coeff.mk1 3, N;
-			"pp2", Coeff.mk1 3, Coeff.mk1 2, P;
-			"nn0", Coeff.mk1 (-2), Coeff.mk1 (-2), Z;
-			"nn1", Coeff.mk1 (-2), Coeff.mk1 (-3), P;
-			"nn2", Coeff.mk1 (-3), Coeff.mk1 (-2), N;
-			"pn0", Coeff.mk1 2, Coeff.mk1 (-2), P;
-			"np0", Coeff.mk1 (-2), Coeff.mk1 2, N
+			"pz0", Coeff.of_int 2, Coeff.z, P;
+			"zp0", Coeff.z, Coeff.of_int 2, N;
+			"pp0", Coeff.of_int 2, Coeff.of_int 2, Z;
+			"pp1", Coeff.of_int 2, Coeff.of_int 3, N;
+			"pp2", Coeff.of_int 3, Coeff.of_int 2, P;
+			"nn0", Coeff.of_int (-2), Coeff.of_int (-2), Z;
+			"nn1", Coeff.of_int (-2), Coeff.of_int (-3), P;
+			"nn2", Coeff.of_int (-3), Coeff.of_int (-2), N;
+			"pn0", Coeff.of_int 2, Coeff.of_int (-2), P;
+			"np0", Coeff.of_int (-2), Coeff.of_int 2, N
 		] in
 		Test.suite "cmp" (List.map chk tcs)
 
@@ -54,9 +54,9 @@ module Make_Tests (Coeff : Scalar.Type) = struct
 			"z", Coeff.z, Z;
 			"u0", Coeff.u, N;
 			"u1", Coeff.negU, P;
-			"p0", Coeff.mk1 3, N;
+			"p0", Coeff.of_int 3, N;
 			"p1", Coeff.mk 10 2, N;
-			"n0", Coeff.mk1 (-4), P
+			"n0", Coeff.of_int (-4), P
 		] in
 		Test.suite "cmpz" (List.map chk tcs)
 
@@ -82,10 +82,10 @@ module Make_Tests (Coeff : Scalar.Type) = struct
 		let tcs = [
 			"z", Coeff.z, Coeff.z;
 			"u", Coeff.u, Coeff.negU;
-			"p0", Coeff.mk1 2, Coeff.mk1 (-2);
-			"p1", Coeff.mk1 5, Coeff.mk1 (-5);
+			"p0", Coeff.of_int 2, Coeff.of_int (-2);
+			"p1", Coeff.of_int 5, Coeff.of_int (-5);
 			"n0", Coeff.negU, Coeff.u;
-			"n1", Coeff.mk1 (-15), Coeff.mk1 15
+			"n1", Coeff.of_int (-15), Coeff.of_int 15
 		] in
 		Test.suite "neg" [
 			Test.suite "res" (List.map chk_res tcs);
@@ -125,8 +125,8 @@ module Make_Tests (Coeff : Scalar.Type) = struct
 		let tcs = [
 			"u0", Coeff.u, Coeff.u;
 			"u1", Coeff.negU, Coeff.negU;
-			"p0", Coeff.mk1 2, Coeff.mk 2 1;
-			"n0", Coeff.mk1 (-2), Coeff.mk 2 (-1)
+			"p0", Coeff.of_int 2, Coeff.mk 2 1;
+			"n0", Coeff.of_int (-2), Coeff.mk 2 (-1)
 		] in
 		Test.suite "ok" [
 			Test.suite "res" (List.map chk_res tcs);
@@ -162,12 +162,12 @@ module Make_Tests (Coeff : Scalar.Type) = struct
 		let tcs = [
 			"zz", Coeff.z, Coeff.z, Coeff.z;
 			"u0", Coeff.z, Coeff.u, Coeff.u;
-			"u1", Coeff.u, Coeff.u, Coeff.mk1 2;
-			"p0", Coeff.mk1 2, Coeff.u, Coeff.mk1 3;
-			"p1", Coeff.mk1 10, Coeff.mk1 15, Coeff.mk1 25;
+			"u1", Coeff.u, Coeff.u, Coeff.of_int 2;
+			"p0", Coeff.of_int 2, Coeff.u, Coeff.of_int 3;
+			"p1", Coeff.of_int 10, Coeff.of_int 15, Coeff.of_int 25;
 			"n0", Coeff.negU, Coeff.z, Coeff.negU;
 			"n1", Coeff.negU, Coeff.u, Coeff.z;
-			"n2", Coeff.mk1 (-5), Coeff.u, Coeff.mk1 (-4)
+			"n2", Coeff.of_int (-5), Coeff.u, Coeff.of_int (-4)
 		] in
 		Test.suite "add" [
 			Test.suite "res" (List.map chk_res tcs);
@@ -198,17 +198,17 @@ module Make_Tests (Coeff : Scalar.Type) = struct
 		let tcs = [
 			"z0", Coeff.z, Coeff.z, Coeff.z;
 			"z1", Coeff.z, Coeff.u, Coeff.z;
-			"z2", Coeff.z, Coeff.mk1 2, Coeff.z;
-			"z3", Coeff.z, Coeff.mk1 (-2), Coeff.z;
+			"z2", Coeff.z, Coeff.of_int 2, Coeff.z;
+			"z3", Coeff.z, Coeff.of_int (-2), Coeff.z;
 			"u0", Coeff.u, Coeff.u, Coeff.u;
-			"u1", Coeff.u, Coeff.mk1 2, Coeff.mk1 2;
-			"u2", Coeff.u, Coeff.mk1 (-2), Coeff.mk1 (-2);
-			"p0", Coeff.mk1 2, Coeff.mk1 3, Coeff.mk1 6;
-			"p1", Coeff.mk1 10, Coeff.mk1 15, Coeff.mk1 150;
+			"u1", Coeff.u, Coeff.of_int 2, Coeff.of_int 2;
+			"u2", Coeff.u, Coeff.of_int (-2), Coeff.of_int (-2);
+			"p0", Coeff.of_int 2, Coeff.of_int 3, Coeff.of_int 6;
+			"p1", Coeff.of_int 10, Coeff.of_int 15, Coeff.of_int 150;
 			"n0", Coeff.negU, Coeff.u, Coeff.negU;
 			"n1", Coeff.negU, Coeff.negU, Coeff.u;
-			"n2", Coeff.mk1 (-5), Coeff.mk1 5, Coeff.mk1 (-25);
-			"n2", Coeff.mk1 (-5), Coeff.mk1 (-5), Coeff.mk1 25
+			"n2", Coeff.of_int (-5), Coeff.of_int 5, Coeff.of_int (-25);
+			"n2", Coeff.of_int (-5), Coeff.of_int (-5), Coeff.of_int 25
 		] in
 		Test.suite "mult" [
 			Test.suite "res" (List.map chk_res tcs);
@@ -231,8 +231,8 @@ module Make_Tests (Coeff : Scalar.Type) = struct
 			"zz", Coeff.z, Coeff.z;
 			"u0", Coeff.u, Coeff.z;
 			"u1", Coeff.negU, Coeff.z;
-			"p0", Coeff.mk1 2, Coeff.z;
-			"n0", Coeff.mk1 (-5), Coeff.z
+			"p0", Coeff.of_int 2, Coeff.z;
+			"n0", Coeff.of_int (-5), Coeff.z
 		] in
 		Test.suite "ko" (List.map chk tcs)
 	*)
@@ -252,14 +252,14 @@ module Make_Tests (Coeff : Scalar.Type) = struct
 			"u1", Coeff.z, Coeff.negU, Coeff.z;
 			"u2", Coeff.u, Coeff.u, Coeff.u;
 			"u3", Coeff.negU, Coeff.u, Coeff.negU;
-			"u4", Coeff.mk1 2, Coeff.u, Coeff.mk1 2;
-			"u5", Coeff.mk1 2, Coeff.negU, Coeff.mk1 (-2);
-			"p0", Coeff.mk1 4, Coeff.mk1 2, Coeff.mk1 2;
-			"p1", Coeff.mk1 3, Coeff.mk1 2, Coeff.mk 2 3;
-			"p2", Coeff.mk1 6, Coeff.mk1 4, Coeff.mk 2 3;
-			"n0", Coeff.mk1 (-4), Coeff.mk1 2, Coeff.mk1 (-2);
-			"n1", Coeff.mk1 4, Coeff.mk1 (-2), Coeff.mk1 (-2);
-			"n2", Coeff.mk1 (-4), Coeff.mk1 (-2), Coeff.mk1 2
+			"u4", Coeff.of_int 2, Coeff.u, Coeff.of_int 2;
+			"u5", Coeff.of_int 2, Coeff.negU, Coeff.of_int (-2);
+			"p0", Coeff.of_int 4, Coeff.of_int 2, Coeff.of_int 2;
+			"p1", Coeff.of_int 3, Coeff.of_int 2, Coeff.mk 2 3;
+			"p2", Coeff.of_int 6, Coeff.of_int 4, Coeff.mk 2 3;
+			"n0", Coeff.of_int (-4), Coeff.of_int 2, Coeff.of_int (-2);
+			"n1", Coeff.of_int 4, Coeff.of_int (-2), Coeff.of_int (-2);
+			"n2", Coeff.of_int (-4), Coeff.of_int (-2), Coeff.of_int 2
 		] in
 		Test.suite "ok" (List.map chk tcs)
 
@@ -326,10 +326,10 @@ module Symbolic = struct
 			"10", Scalar.Symbolic.ofQ Scalar.Rat.u, Scalar.Symbolic.ofQ Scalar.Rat.z, gt;
 			"0-1", Scalar.Symbolic.ofQ Scalar.Rat.z, Scalar.Symbolic.ofQ Scalar.Rat.negU, gt;
 			"-10", Scalar.Symbolic.ofQ Scalar.Rat.negU, Scalar.Symbolic.ofQ Scalar.Rat.z, lt;
-			"12", Scalar.Symbolic.ofQ Scalar.Rat.u, Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), lt;
-			"21", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Scalar.Symbolic.ofQ Scalar.Rat.u, gt;
-			"-12", Scalar.Symbolic.ofQ Scalar.Rat.negU, Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), lt;
-			"2-1", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Scalar.Symbolic.ofQ Scalar.Rat.negU, gt
+			"12", Scalar.Symbolic.ofQ Scalar.Rat.u, Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2), lt;
+			"21", Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2), Scalar.Symbolic.ofQ Scalar.Rat.u, gt;
+			"-12", Scalar.Symbolic.ofQ Scalar.Rat.negU, Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2), lt;
+			"2-1", Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2), Scalar.Symbolic.ofQ Scalar.Rat.negU, gt
 		] in
 		Test.suite "cmp" (List.map chk tcs)
 
@@ -345,14 +345,14 @@ module Symbolic = struct
 		let tcs = [
 			"z", false, Scalar.Symbolic.z;
 			"int0", false, Scalar.Symbolic.ofQ Scalar.Rat.u;
-			"int1", false, Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2);
-			"int2", false, Scalar.Symbolic.ofQ (Scalar.Rat.mk1 (-2));
+			"int1", false, Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2);
+			"int2", false, Scalar.Symbolic.ofQ (Scalar.Rat.of_int (-2));
 			"rat0", false, Scalar.Symbolic.ofQ (Scalar.Rat.mk 3 2);
 			"pdelta0", true, Scalar.Symbolic.pdelta Scalar.Rat.z;
 			"pdelta1", true, Scalar.Symbolic.pdelta Scalar.Rat.u;
-			"pdelta2", true, Scalar.Symbolic.adddelta (Scalar.Symbolic.pdelta (Scalar.Rat.mk1 2));
+			"pdelta2", true, Scalar.Symbolic.adddelta (Scalar.Symbolic.pdelta (Scalar.Rat.of_int 2));
 			"pdelta3", true, Scalar.Symbolic.subdelta
-				(Scalar.Symbolic.adddelta (Scalar.Symbolic.pdelta (Scalar.Rat.mk1 2)));
+				(Scalar.Symbolic.adddelta (Scalar.Symbolic.pdelta (Scalar.Rat.of_int 2)));
 
 			"ndelta0", true, Scalar.Symbolic.ndelta Scalar.Rat.z;
 			"ndelta1", true, Scalar.Symbolic.subdelta (Scalar.Symbolic.ndelta Scalar.Rat.u);
@@ -379,8 +379,8 @@ module Symbolic = struct
 				Scalar.Symbolic.pdelta Scalar.Rat.u;
 			"nu", Scalar.Symbolic.mulr Scalar.Rat.u (Scalar.Symbolic.ndelta Scalar.Rat.u),
 				Scalar.Symbolic.ndelta Scalar.Rat.u;
-			"pn", Scalar.Symbolic.mulr (Scalar.Rat.mk1 2) (Scalar.Symbolic.pdelta Scalar.Rat.u),
-				Scalar.Symbolic.add (Scalar.Symbolic.pdelta (Scalar.Rat.mk1 2))
+			"pn", Scalar.Symbolic.mulr (Scalar.Rat.of_int 2) (Scalar.Symbolic.pdelta Scalar.Rat.u),
+				Scalar.Symbolic.add (Scalar.Symbolic.pdelta (Scalar.Rat.of_int 2))
 					(Scalar.Symbolic.pdelta Scalar.Rat.z);
 		] in
 		Test.suite "mulr" (List.map chk tcs)
@@ -402,7 +402,7 @@ module Symbolic = struct
 		let tcs = [
 			"z", Scalar.Symbolic.z, Scalar.Symbolic.pdelta Scalar.Rat.z;
 			"u", Scalar.Symbolic.ofQ Scalar.Rat.u, Scalar.Symbolic.pdelta Scalar.Rat.u;
-			"pos", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Scalar.Symbolic.pdelta (Scalar.Rat.mk1 2);
+			"pos", Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2), Scalar.Symbolic.pdelta (Scalar.Rat.of_int 2);
 			"ndelta", Scalar.Symbolic.ndelta Scalar.Rat.u, Scalar.Symbolic.ofQ Scalar.Rat.u;
 			"deltas", Scalar.Symbolic.pdelta Scalar.Rat.u,
 				Scalar.Symbolic.add (Scalar.Symbolic.pdelta Scalar.Rat.u) (Scalar.Symbolic.pdelta Scalar.Rat.z)
@@ -426,7 +426,7 @@ module Symbolic = struct
 		let tcs = [
 			"z", Scalar.Symbolic.z, Scalar.Symbolic.ndelta Scalar.Rat.z;
 			"u", Scalar.Symbolic.ofQ Scalar.Rat.u, Scalar.Symbolic.ndelta Scalar.Rat.u;
-			"pos", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Scalar.Symbolic.ndelta (Scalar.Rat.mk1 2);
+			"pos", Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2), Scalar.Symbolic.ndelta (Scalar.Rat.of_int 2);
 			"pdelta", Scalar.Symbolic.pdelta Scalar.Rat.u, Scalar.Symbolic.ofQ Scalar.Rat.u;
 			"deltas", Scalar.Symbolic.ndelta Scalar.Rat.u,
 				Scalar.Symbolic.add (Scalar.Symbolic.ndelta Scalar.Rat.u) (Scalar.Symbolic.ndelta Scalar.Rat.z)

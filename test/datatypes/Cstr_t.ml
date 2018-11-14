@@ -16,13 +16,13 @@ module Make_Tests (Cs : Cstr.Type) = struct
 		| Not_found -> "v" ^ (Cs.Vec.V.to_string _x)
 
 	let mkc t v c =
-		Cs.mk t (List.map (fun (i, v) -> (Cs.Vec.Coeff.mk1 i, v)) v) (Cs.Vec.Coeff.mk1 c)
+		Cs.mk t (List.map (fun (i, v) -> (Cs.Vec.Coeff.of_int i, v)) v) (Cs.Vec.Coeff.of_int c)
 
 	let eq = mkc Cstr_type.Eq
 	let le = mkc Cstr_type.Le
 	let lt = mkc Cstr_type.Lt
 
-	let v iv = Cs.Vec.mk (List.map (fun (i, v) -> (Cs.Vec.Coeff.mk1 i, v)) iv)
+	let v iv = Cs.Vec.mk (List.map (fun (i, v) -> (Cs.Vec.Coeff.of_int i, v)) iv)
 
 	(* Cs.eval *)
 	let evalTs: Test.t

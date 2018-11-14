@@ -20,10 +20,10 @@ module Symbolic : sig
     module Int : Type with module Coeff = Scalar.Symbolic and module M = VarMap.VarMap(Var.Int) and module V = Var.Int
 end
 
-module RelInt : sig
-    module Positive : Type with module Coeff = Scalar.RelInt and module M = Rtree and module V = Var.Positive
+module Int : sig
+    module Positive : Type with module Coeff = Scalar.Int and module M = Rtree and module V = Var.Positive
 
-    module Int : Type with module Coeff = Scalar.RelInt and module M = VarMap.VarMap(Var.Int) and module V = Var.Int
+    module Int : Type with module Coeff = Scalar.Int and module M = VarMap.VarMap(Var.Int) and module V = Var.Int
 end
 
 module MachineInt : sig

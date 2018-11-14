@@ -141,12 +141,12 @@ let paramCoeffPolyTcs : (string * (Cs.Vec.V.t -> int) *
   ParamCoeff.Poly.mk2_cste [([x],Scalar.Rat.u)] Scalar.Rat.u
 ;
   "multi", (fun i -> (Cs.Vec.V.toInt i) - 1), (fun i -> Cs.Vec.V.fromInt (i + 1)), 2,
-  ParamCoeff.mkSparse 2 [0, Scalar.Rat.u; 1, Scalar.Rat.mk1 2] Scalar.Rat.u,
-  ParamCoeff.Poly.mk2_cste [([x],Scalar.Rat.u) ; ([y],Scalar.Rat.mk1 2)] Scalar.Rat.u
+  ParamCoeff.mkSparse 2 [0, Scalar.Rat.u; 1, Scalar.Rat.of_int 2] Scalar.Rat.u,
+  ParamCoeff.Poly.mk2_cste [([x],Scalar.Rat.u) ; ([y],Scalar.Rat.of_int 2)] Scalar.Rat.u
 ;
   "shift", (fun i -> (Cs.Vec.V.toInt i) - 2), (fun i -> Cs.Vec.V.fromInt (i + 2)), 3,
-  ParamCoeff.mkSparse 3 [1, Scalar.Rat.u; 2, Scalar.Rat.mk1 2] Scalar.Rat.u,
-  ParamCoeff.Poly.mk2_cste [([z],Scalar.Rat.u) ; ([t],Scalar.Rat.mk1 2)] Scalar.Rat.u
+  ParamCoeff.mkSparse 3 [1, Scalar.Rat.u; 2, Scalar.Rat.of_int 2] Scalar.Rat.u,
+  ParamCoeff.Poly.mk2_cste [([z],Scalar.Rat.u) ; ([t],Scalar.Rat.of_int 2)] Scalar.Rat.u
 ]
 
 let ofPolyTs : Test.t
@@ -196,7 +196,7 @@ let addTs : Test.t
 	   "two",
 	   ParamCoeff.mkCst Scalar.Rat.u,
 	   ParamCoeff.mkCst Scalar.Rat.u,
-	   ParamCoeff.mkCst (Scalar.Rat.mk1 2)
+	   ParamCoeff.mkCst (Scalar.Rat.of_int 2)
 	 ;
 	   "unit",
 	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.u] Scalar.Rat.z,
@@ -205,13 +205,13 @@ let addTs : Test.t
 	 ;
 	   "units",
 	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.u] Scalar.Rat.z,
-	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.mk1 2] Scalar.Rat.z,
-	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.mk1 3] Scalar.Rat.z
+	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.of_int 2] Scalar.Rat.z,
+	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.of_int 3] Scalar.Rat.z
 	 ;
 	   "diff",
 	   ParamCoeff.mkSparse 2 [1, Scalar.Rat.u] Scalar.Rat.z,
-	   ParamCoeff.mkSparse 2 [0, Scalar.Rat.mk1 2] Scalar.Rat.z,
-	   ParamCoeff.mkSparse 2 [0, Scalar.Rat.mk1 2; 1, Scalar.Rat.u] Scalar.Rat.z
+	   ParamCoeff.mkSparse 2 [0, Scalar.Rat.of_int 2] Scalar.Rat.z,
+	   ParamCoeff.mkSparse 2 [0, Scalar.Rat.of_int 2; 1, Scalar.Rat.u] Scalar.Rat.z
 	 ]
 	 |> List.map chk
 	 |> Test.suite "add"
@@ -240,9 +240,9 @@ let mulTs : Test.t
 	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.u] Scalar.Rat.u,
 	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.u] Scalar.Rat.u
 	 ;
-	   "two", Scalar.Rat.mk1 2,
-	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.u] (Scalar.Rat.mk1 2),
-	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.mk1 2] (Scalar.Rat.mk1 4)
+	   "two", Scalar.Rat.of_int 2,
+	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.u] (Scalar.Rat.of_int 2),
+	   ParamCoeff.mkSparse 1 [0, Scalar.Rat.of_int 2] (Scalar.Rat.of_int 4)
 	 ]
 	 |> List.map chk
 	 |> Test.suite "mul"

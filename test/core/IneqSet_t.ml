@@ -41,7 +41,7 @@ let varPr: V.t -> string
 	| Not_found -> "v" ^ (V.to_string _x)
 
 let mkc t v c =
-	Cs.mk t (List.map (fun (n, x) -> (Scalar.Rat.mk1 n, x)) v) (Scalar.Rat.mk1 c)
+	Cs.mk t (List.map (fun (n, x) -> (Scalar.Rat.of_int n, x)) v) (Scalar.Rat.of_int c)
 
 let eq = mkc Cstr_type.Eq
 let le = mkc Cstr_type.Le
@@ -55,7 +55,7 @@ let optxpr =
 	| None -> "None"
 	| Some x -> "Some " ^ (varPr x)
 (*
-let mkN = List.map (fun (i, n) -> (i, Scalar.Rat.mk1 n))
+let mkN = List.map (fun (i, n) -> (i, Scalar.Rat.of_int n))
 *)
 let propPr = function
 	| IneqSet.Empty f -> Printf.sprintf "Empty: %s" (factory.Cert.to_string f)
@@ -246,7 +246,7 @@ let chk (nm, s, l, r)
 			le [1, y] 1];
 
     "raytracing_bug", iset [
-        Cs.mk Cstr_type.Le [Scalar.Rat.of_string "1/2" |> Cs.Vec.Coeff.ofQ, x] (Cs.Vec.Coeff.mk1 1);
+        Cs.mk Cstr_type.Le [Scalar.Rat.of_string "1/2" |> Cs.Vec.Coeff.ofQ, x] (Cs.Vec.Coeff.of_int 1);
         Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ);
         Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ);
         le [2, x] 1],

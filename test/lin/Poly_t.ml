@@ -108,7 +108,7 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
 		   "const0", ([], Coeff.u), Some ([], Coeff.u);
 		   "mono0", ([x], Coeff.u), Some ([x], Coeff.u);
 		   "mono1", ([y], Coeff.u), Some ([y], Coeff.u);
-		   "mono2", ([x], Coeff.mk1 2), Some ([x], Coeff.mk1 2);
+		   "mono2", ([x], Coeff.of_int 2), Some ([x], Coeff.of_int 2);
 		   "multi0", ([x; y], Coeff.u), Some ([x; y], Coeff.u);
 		   "multi1", ([y; x], Coeff.u), Some ([x; y], Coeff.u);
 		   "zero0", ([], Coeff.z), None;
@@ -131,7 +131,7 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
 		=
 		Poly.Monomial.([
 						 "equal_syn", canon ([x; y], Coeff.mk ~-2 3), canon ([x; y], Coeff.mk ~-2 3), 0;
-						 "equal", canon ([x; y], Coeff.mk ~-2 3), canon ([x; y], Coeff.mk1 12), 0;
+						 "equal", canon ([x; y], Coeff.mk ~-2 3), canon ([x; y], Coeff.of_int 12), 0;
 						 "neq", canon ([x; y], Coeff.mk ~-2 3), canon ([y], Coeff.mk ~-2 3), -1;
 		])
 		   in
@@ -148,7 +148,7 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
 		=
 		Poly.Monomial.([
 						 "equal", canon ([x; y], Coeff.mk ~-2 3), canon ([x; y], Coeff.mk ~-2 3), true;
-						 "neq0", canon ([x; y], Coeff.mk ~-2 3), canon ([x; y], Coeff.mk1 12), false;
+						 "neq0", canon ([x; y], Coeff.mk ~-2 3), canon ([x; y], Coeff.of_int 12), false;
 						 "neq1", canon ([x; y], Coeff.mk ~-2 3), canon ([y], Coeff.mk ~-2 3), false;
 		])
 		   in
@@ -192,13 +192,13 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
 		"empty2", [[x], Coeff.z], [[], Coeff.z];
 		"const0", [[], Coeff.u], [[], Coeff.u];
 		"const1", [[x], Coeff.u], [[x], Coeff.u];
-		"const_add0", [[], Coeff.u; [], Coeff.u], [[], Coeff.mk1 2];
+		"const_add0", [[], Coeff.u; [], Coeff.u], [[], Coeff.of_int 2];
 		"const_cancel", [[], Coeff.u; [], Coeff.negU], [[], Coeff.z];
 		"mono0", [[x], Coeff.u], [[x], Coeff.u];
 		"mono1", [[], Coeff.u; [x], Coeff.u], [[], Coeff.u; [x], Coeff.u];
-		"mono_unsorted", [[x], Coeff.u; [], Coeff.mk1 2], [[], Coeff.mk1 2; [x], Coeff.u];
-		"dup0", [[x], Coeff.u; [x], Coeff.mk1 2], [[x], Coeff.mk1 3];
-		"dup1", [[x; y], Coeff.u; [y; x], Coeff.u], [[x; y], Coeff.mk1 2];
+		"mono_unsorted", [[x], Coeff.u; [], Coeff.of_int 2], [[], Coeff.of_int 2; [x], Coeff.u];
+		"dup0", [[x], Coeff.u; [x], Coeff.of_int 2], [[x], Coeff.of_int 3];
+		"dup1", [[x; y], Coeff.u; [y; x], Coeff.u], [[x; y], Coeff.of_int 2];
 		"dup_cancel", [[x], Coeff.u; [y], Coeff.u; [x], Coeff.negU], [[y], Coeff.u]
 		   ]
 		   |> fun tcs -> List.map chkResult tcs @ List.map chkInvariant tcs
@@ -263,7 +263,7 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
 		"empty_basis", Poly.of_string "-2/3", Coeff.of_string "-2/3";
 		"regular", Poly.of_string "-2/3", Coeff.of_string "-2/3";
 		"empty", Poly.of_string "", Coeff.z;
-		"poly", Poly.of_string "-1*x1+4*x4+-2", Coeff.mk1 (-2);
+		"poly", Poly.of_string "-1*x1+4*x4+-2", Coeff.of_int (-2);
 		"mono", Poly.of_string "x1", Coeff.z
 		   ] in
 		   Test.suite "get_constant" (List.map chk tcs)
@@ -353,13 +353,13 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
 		   in
 		[
 		  "zero", true, Poly.mk_cste [] Coeff.z;
-		  "constant", true, Poly.mk_cste [] (Coeff.mk1 2);
+		  "constant", true, Poly.mk_cste [] (Coeff.of_int 2);
 		  "linear1", true, Poly.mk_cste [[x], Coeff.u] Coeff.z;
-		  "linear2", true, Poly.mk_cste [[x], Coeff.u; [y], Coeff.mk1 3] Coeff.z;
+		  "linear2", true, Poly.mk_cste [[x], Coeff.u; [y], Coeff.of_int 3] Coeff.z;
 		  "affine", true, Poly.mk_cste [[x], Coeff.negU] Coeff.u;
 		  "affine2", true, Poly.mk_cste [[x], Coeff.negU; [z],Coeff.u] Coeff.u;
 		  "multi", false, Poly.mk_cste [[x; y], Coeff.u] Coeff.z;
-		  "mixed", false, Poly.mk_cste [[y; z], Coeff.mk1 2; [x], Coeff.u] Coeff.z
+		  "mixed", false, Poly.mk_cste [[y; z], Coeff.of_int 2; [x], Coeff.u] Coeff.z
 		   ]
 		   |> List.map chk
 		   |> Test.suite "is_affine"
@@ -375,7 +375,7 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
     	= Poly.
     	  ([
     	    "empty", "", mk_cste [] Coeff.z;
-    	    "constant", "3", mk_cste [] (Coeff.mk1 3);
+    	    "constant", "3", mk_cste [] (Coeff.of_int 3);
     	    "linear", "x1", mk_cste [[x], Coeff.u] Coeff.z;
     	    "product", "x1*x2", mk_cste [[x; y], Coeff.u] Coeff.z;
     	    "affine", "-1 * x1 + 1", mk_cste [[x], Coeff.negU] Coeff.u;

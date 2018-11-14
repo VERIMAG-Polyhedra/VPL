@@ -10,10 +10,10 @@ module Var = Var.Positive
 module Vec = Vector.Rat.Positive
 module Cs = Cstr.Rat.Positive
 
-val coqPosToZ: BinNums.positive -> Scalar.RelInt.t
-val zToCoqPos: Scalar.RelInt.t -> BinNums.positive
-val coqZToZ: BinNums.coq_Z -> Scalar.RelInt.t
-val zToCoqZ: Scalar.RelInt.t -> BinNums.coq_Z
+val coqPosToZ: BinNums.positive -> Scalar.Int.t
+val zToCoqPos: Scalar.Int.t -> BinNums.positive
+val coqZToZ: BinNums.coq_Z -> Scalar.Int.t
+val zToCoqZ: Scalar.Int.t -> BinNums.coq_Z
 val nToNb: NumC.QNum.t -> Nb.t
 val nToNumC: Nb.t -> NumC.QNum.t
 val coq_QToNb: QArith_base.coq_Q -> Nb.t

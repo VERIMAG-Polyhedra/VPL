@@ -30,7 +30,7 @@ module Handelman (Minimization : Min.Type) = struct
 			if config.points = []
 			then
 				let point = PSplx.getParams sx
-					|> List.map (fun p -> (Vec.Coeff.mk1 (Random.int 100),p))
+					|> List.map (fun p -> (Vec.Coeff.of_int (Random.int 100),p))
 			  		|> Vec.mk
 			  	in
 			  	(point, {config with points = [ExplorationPoint.Point point]})

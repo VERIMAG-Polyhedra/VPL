@@ -114,9 +114,9 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 			= fun m -> let (vlist, c) = m in
 			match vlist with
 			| [] -> Vec.Coeff.to_string c
-			| _ -> if Vec.Coeff.equal c (Vec.Coeff.mk1 1)
+			| _ -> if Vec.Coeff.equal c (Vec.Coeff.of_int 1)
 				then MonomialBasis.to_string vlist
-				else if Vec.Coeff.lt c (Vec.Coeff.mk1 0)
+				else if Vec.Coeff.lt c (Vec.Coeff.of_int 0)
 					then String.concat "" ["(";Vec.Coeff.to_string c;")*";MonomialBasis.to_string vlist]
 					else String.concat "" [Vec.Coeff.to_string c ; "*" ; MonomialBasis.to_string vlist]
 

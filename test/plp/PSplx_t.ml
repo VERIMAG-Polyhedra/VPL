@@ -31,13 +31,13 @@ let addSlackAt_ts : Test.t
 		 "two_cons", 0,
 		 {
 			PSplx.obj = Objective.mk [] (ParamCoeff.mkCst Scalar.Rat.z);
-			PSplx.mat = [[Scalar.Rat.u]; [Scalar.Rat.mk1 2]];
+			PSplx.mat = [[Scalar.Rat.u]; [Scalar.Rat.of_int 2]];
 			PSplx.basis = [];
 			PSplx.names = Naming.empty
 		 },
 		 {
 			PSplx.obj = Objective.mkSparse 1 [] (ParamCoeff.mkCst Scalar.Rat.z);
-			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]; [Scalar.Rat.z; Scalar.Rat.mk1 2]];
+			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]; [Scalar.Rat.z; Scalar.Rat.of_int 2]];
 			PSplx.basis = [0];
 			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty
 		 }

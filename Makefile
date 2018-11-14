@@ -6,6 +6,9 @@ vpl: setup
 dev: setup_dev
 	$(MAKE) -C ocaml/
 
+doc:
+	$(MAKE) -C ocaml/ doc
+
 setup:
 	cd ocaml; cp -f _oasis_no_glpk _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
 
@@ -67,4 +70,4 @@ coq_uninstall:
 coq_clean:
 	$(MAKE) -C coq clean
 
-.PHONY: all vpl clean allclean install uninstall check coq_update coq_extract coq_build coq_install coq_uninstall coq_clean test_clean
+.PHONY: all vpl clean allclean install uninstall check coq_update coq_extract coq_build coq_install coq_uninstall coq_clean test_clean doc

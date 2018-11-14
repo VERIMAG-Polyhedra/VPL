@@ -21,7 +21,7 @@ module VectorRtree = struct
 			| Not_found -> "v" ^ (Vec.V.to_string _x)
 
 		let v: (int * Vec.V.t) list -> Vec.t
-		= fun l -> Vec.mk (List.map (fun (i, v) -> (Coeff.mk1 i, v)) l)
+		= fun l -> Vec.mk (List.map (fun (i, v) -> (Coeff.of_int i, v)) l)
 
 		(* Vec.elim *)
 		let elimInFromOnlyTs: Test.t
@@ -163,7 +163,7 @@ module VectorRtree = struct
 				"nil1", Vec.mk [], Rtree.mk None [x, Some x1];
 				"one0", Vec.mk [Coeff.u, x], Rtree.mk None [x, Some x1];
 				"one1", Vec.mk [Coeff.u, x], Rtree.mk None [];
-				"one2", Vec.mk [Coeff.mk1 2, x], Rtree.mk None [x, Some x1];
+				"one2", Vec.mk [Coeff.of_int 2, x], Rtree.mk None [x, Some x1];
 				"none0", Vec.mk [Coeff.u, x; Coeff.u, y], Rtree.mk None [];
 				"some0", Vec.mk [Coeff.u, x; Coeff.u, y], Rtree.mk None [x, Some x1];
 				"some1", Vec.mk [Coeff.u, x; Coeff.u, y], Rtree.mk None [y, Some y1];
@@ -192,7 +192,7 @@ module VectorRtree = struct
 			"one0", [x], [Vec.mk [Coeff.u, x]];
 			"one1", [t], [Vec.mk [Coeff.u, t]];
 			"one2", [z], [Vec.mk [Coeff.u, z]];
-			"m0", [x; y; z], [Vec.mk [Coeff.u, x; Coeff.mk1 2, z]; Vec.mk [Coeff.u, y]]
+			"m0", [x; y; z], [Vec.mk [Coeff.u, x; Coeff.of_int 2, z]; Vec.mk [Coeff.u, y]]
 				] in
 			 Test.suite "listVars" (List.map chk tcs)
 
@@ -222,15 +222,15 @@ module VectorRtree = struct
 			let tcs = [
 				"nil0", Coeff.u, Vector.Rat.Positive.mk [];
 				"u0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x];
-				"u1", (Coeff.mk 2 1), Vector.Rat.Positive.mk [Coeff.mk1 2, x];
-				"m0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x; Coeff.mk1 2, y];
-				"m1", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 2, x; Coeff.mk1 2, y];
-				"m2", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 2, x; Coeff.mk1 4, y];
-				"f0", Coeff.mk1 2, Vector.Rat.Positive.mk [Coeff.mk 2 1, x; Coeff.mk 2 1, y];
+				"u1", (Coeff.mk 2 1), Vector.Rat.Positive.mk [Coeff.of_int 2, x];
+				"m0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x; Coeff.of_int 2, y];
+				"m1", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 2, x; Coeff.of_int 2, y];
+				"m2", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 2, x; Coeff.of_int 4, y];
+				"f0", Coeff.of_int 2, Vector.Rat.Positive.mk [Coeff.mk 2 1, x; Coeff.mk 2 1, y];
 				"f1", Coeff.mk 3 2,
 					Vector.Rat.Positive.mk [Coeff.mk 2 9, x; Coeff.mk 2 3, y];
 
-				"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 4, y; Coeff.mk1 6, z];
+				"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 4, y; Coeff.of_int 6, z];
 				"neg0", Coeff.u, Vector.Rat.Positive.mk [Coeff.negU, x]
 			] in
 			Test.suite "gcd" (List.map chk tcs)
@@ -275,7 +275,7 @@ module VectorMap = struct
 			| Not_found -> "v" ^ (Vec.V.to_string _x)
 
 		let v: (int * Vec.V.t) list -> Vec.t
-		= fun l -> Vec.mk (List.map (fun (i, v) -> (Coeff.mk1 i, v)) l)
+		= fun l -> Vec.mk (List.map (fun (i, v) -> (Coeff.of_int i, v)) l)
 
 		(* Vec.elim *)
 		let elimInFromOnlyTs: Test.t
@@ -342,7 +342,7 @@ module VectorMap = struct
 			"one0", [x], [Vec.mk [Coeff.u, x]];
 			"one1", [t], [Vec.mk [Coeff.u, t]];
 			"one2", [z], [Vec.mk [Coeff.u, z]];
-			"m0", [x; y; z], [Vec.mk [Coeff.u, x; Coeff.mk1 2, z]; Vec.mk [Coeff.u, y]]
+			"m0", [x; y; z], [Vec.mk [Coeff.u, x; Coeff.of_int 2, z]; Vec.mk [Coeff.u, y]]
 				] in
 			 Test.suite "listVars" (List.map chk tcs)
 
@@ -373,15 +373,15 @@ module VectorMap = struct
 				let tcs = [
 					"nil0", Coeff.u, Vector.Rat.Positive.mk [];
 					"u0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x];
-					"u1", (Coeff.mk 2 1), Vector.Rat.Positive.mk [Coeff.mk1 2, x];
-					"m0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x; Coeff.mk1 2, y];
-					"m1", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 2, x; Coeff.mk1 2, y];
-					"m2", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 2, x; Coeff.mk1 4, y];
-					"f0", Coeff.mk1 2, Vector.Rat.Positive.mk [Coeff.mk 2 1, x; Coeff.mk 2 1, y];
+					"u1", (Coeff.mk 2 1), Vector.Rat.Positive.mk [Coeff.of_int 2, x];
+					"m0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x; Coeff.of_int 2, y];
+					"m1", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 2, x; Coeff.of_int 2, y];
+					"m2", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 2, x; Coeff.of_int 4, y];
+					"f0", Coeff.of_int 2, Vector.Rat.Positive.mk [Coeff.mk 2 1, x; Coeff.mk 2 1, y];
 					"f1", Coeff.mk 3 2,
 						Vector.Rat.Positive.mk [Coeff.mk 2 9, x; Coeff.mk 2 3, y];
 
-					"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 4, y; Coeff.mk1 6, z];
+					"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 4, y; Coeff.of_int 6, z];
 					"neg0", Coeff.u, Vector.Rat.Positive.mk [Coeff.negU, x]
 				] in
 				Test.suite "gcd" (List.map chk tcs)
@@ -412,15 +412,15 @@ module VectorMap = struct
 				let tcs = [
 					"nil0", Coeff.u, Vector.Rat.Positive.mk [];
 					"u0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x];
-					"u1", (Coeff.mk 2 1), Vector.Rat.Positive.mk [Coeff.mk1 2, x];
-					"m0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x; Coeff.mk1 2, y];
-					"m1", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 2, x; Coeff.mk1 2, y];
-					"m2", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 2, x; Coeff.mk1 4, y];
-					"f0", Coeff.mk1 2, Vector.Rat.Positive.mk [Coeff.mk 2 1, x; Coeff.mk 2 1, y];
+					"u1", (Coeff.mk 2 1), Vector.Rat.Positive.mk [Coeff.of_int 2, x];
+					"m0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x; Coeff.of_int 2, y];
+					"m1", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 2, x; Coeff.of_int 2, y];
+					"m2", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 2, x; Coeff.of_int 4, y];
+					"f0", Coeff.of_int 2, Vector.Rat.Positive.mk [Coeff.mk 2 1, x; Coeff.mk 2 1, y];
 					"f1", Coeff.mk 3 2,
 						Vector.Rat.Positive.mk [Coeff.mk 2 9, x; Coeff.mk 2 3, y];
 
-					"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.mk1 4, y; Coeff.mk1 6, z];
+					"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 4, y; Coeff.of_int 6, z];
 					"neg0", Coeff.u, Vector.Rat.Positive.mk [Coeff.negU, x]
 				] in
 				Test.suite "gcd" (List.map chk tcs)

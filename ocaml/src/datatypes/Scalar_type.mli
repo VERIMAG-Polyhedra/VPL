@@ -15,11 +15,8 @@ module type Type = sig
 	(** Value -1. *)
 	val negU: t
 
-	(** Small value *)
+	(** Small value used for conversions from {!type:symbolic}. *)
 	val delta : t
-
-	val to_string : t -> string
-	val of_string : string -> t
 
 	(** [cmp x y] returns 0 if x = y, a negative integer if x < y, and a positive one otherwise. *)
 	val cmp : t -> t -> int
@@ -51,9 +48,16 @@ module type Type = sig
 	(** Compute the absolute value. *)
 	val abs: t -> t
 
+    (** Addition of two constants. *)
 	val add : t -> t -> t
+
+    (** Substraction of a constant by another. *)
 	val sub : t -> t -> t
+
+    (** Multiplication of two constants. *)
 	val mul : t -> t -> t
+
+    (** Power of a constant. *)
 	val pow : t -> int -> t
 
 	(** [div num den] *)
@@ -65,22 +69,40 @@ module type Type = sig
 	(** Division by a rational. *)
 	val divr : t -> Q.t -> t
 
-	val of_float : float -> t
-	val to_float : t -> float
-
-	val ofQ : Q.t -> t
-	val toQ : t -> Q.t
-
-	(** [toInt_round x Up] returns the smallest [i] such that [i >= x].
-		[toInt_round x Down] returns the greatest [i] such that [i <= x].
-		Returns None if x does not fit within a machine integer. *)
-	val toInt_round : t -> roundT -> int option
-
-	(** [mk ~den:i1 i2] builds an element of type {!type:t} and of value [i2]/[i1]. *)
+    (** [mk ~den:i1 i2] builds an element of type {!type:t} and of value [i2]/[i1]. *)
 	val mk: int -> int -> t
 
-	(** [mk1 i] builds an element of type {!type:t} from integer [i]. *)
-	val mk1 : int -> t
+    (** Builds an element of type {!type:t} from an integer. *)
+	val of_int : int -> t
+
+    (** [to_int x Up] returns the smallest [i] such that [i >= x].
+		[to_int x Down] returns the greatest [i] such that [i <= x].
+		Returns None if x does not fit within a machine integer. *)
+	val to_int : t -> roundT -> int option
+
+    (** Conversion from float. *)
+	val of_float : float -> t
+
+    (** Conversion to float. *)
+	val to_float : t -> float
+
+    (** Conversion into integer. *)
+    val toZ : t -> Z.t * Z.t
+
+    (** Conversion from integer. *)
+    val ofZ : Z.t -> Z.t -> t
+
+    (** Conversion from rational. *)
+	val ofQ : Q.t -> t
+
+    (** Conversion to rational. *)
+	val toQ : t -> Q.t
+
+    (** Conversion into string. *)
+	val to_string : t -> string
+
+    (** Conversion from string. *)
+	val of_string : string -> t
 
 	(** [well_formed x] returns true if x is not +/- infinity *)
 	val well_formed : t -> bool
@@ -92,7 +114,7 @@ module type Type = sig
 	(** Used in the simplex tableau sharing during the distributed PLP.*)
 	val plp_print : t -> string
 
+    (** [gcd nGcd dGcd n] returns the gcds of nGcd and the numerator of [n] and that of [dGcd] and the denominator of [n]. *)
     val gcd : Z.t * Z.t -> t -> Z.t * Z.t
-    val toZ : t -> Z.t * Z.t
-    val ofZ : Z.t -> Z.t -> t
+
 end

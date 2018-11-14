@@ -21,7 +21,7 @@ let varPr: Var.t -> string
 	try List.assoc _x vars with Not_found -> "v" ^ (Var.to_string _x)
 
 let mkc t v c =
-	Cs.mk t (List.map (fun (c, v) -> (Vec.Coeff.mk1 c, v)) v) (Vec.Coeff.mk1 c)
+	Cs.mk t (List.map (fun (c, v) -> (Vec.Coeff.of_int c, v)) v) (Vec.Coeff.of_int c)
 
 let eq = mkc Cstr_type.Eq
 let le = mkc Cstr_type.Le
@@ -129,8 +129,8 @@ let asgEquiv : Scalar.Symbolic.t Cs.Vec.M.t -> (Var.t * Scalar.Symbolic.t) list 
 (* Splx.mergeB *)
 let mergeBTs: Test.t
 = fun () ->
-	let mkV i = Scalar.Symbolic.ofQ (Vec.Coeff.mk1 i) in
-	let mkN i = Vec.Coeff.mk1 i in
+	let mkV i = Scalar.Symbolic.ofQ (Vec.Coeff.of_int i) in
+	let mkN i = Vec.Coeff.of_int i in
 	let mkB id sc v = Some {Splx.id = id; Splx.scale = sc; Splx.bv = v} in
 	let chk (t, st, stA, stB) = fun state ->
 		let actualSt = Splx.mergeB stA stB in
@@ -299,16 +299,16 @@ let setSymbolicTs: Test.t
 	in
 	let mapMk = Cs.Vec.M.mk {Splx.v = Scalar.Symbolic.z; Splx.low = None; Splx.up = None} in
 	let stMk v = {Splx.v = v; Splx.low = None; Splx.up = None} in
-	let valMk i = Scalar.Symbolic.ofQ (Vec.Coeff.mk1 i) in
+	let valMk i = Scalar.Symbolic.ofQ (Vec.Coeff.of_int i) in
 	let tcs = [
 		"nil0", valMk 0, Cs.Vec.nil, Cs.Vec.M.empty;
 		"nil1", valMk 0, Cs.Vec.mk [Vec.Coeff.u, x], Cs.Vec.M.empty;
 		"nil2", valMk 0, Cs.Vec.nil, mapMk [x, stMk (valMk 1)];
 		"u0", valMk (-1), Cs.Vec.mk [Vec.Coeff.u, x], mapMk [x, stMk (valMk 1)];
 		"u1", valMk (-2), Cs.Vec.mk [Vec.Coeff.u, x], mapMk [x, stMk (valMk 2)];
-		"u2", valMk 1, Cs.Vec.mk [Vec.Coeff.mk1 (-1), x], mapMk [x, stMk (valMk 1)];
+		"u2", valMk 1, Cs.Vec.mk [Vec.Coeff.of_int (-1), x], mapMk [x, stMk (valMk 1)];
 		"u3", valMk 2, Cs.Vec.mk [Vec.Coeff.u, x], mapMk [x, stMk (valMk (-2))];
-		"m0", valMk 1, Cs.Vec.mk [Vec.Coeff.mk1 2, x; Vec.Coeff.mk1 3, y; Vec.Coeff.u, z],
+		"m0", valMk 1, Cs.Vec.mk [Vec.Coeff.of_int 2, x; Vec.Coeff.of_int 3, y; Vec.Coeff.u, z],
 			mapMk [x, stMk (valMk 1); y, stMk (valMk (-1))]
 	] in
 	Test.suite "setSymbolic" (List.map chk tcs)
@@ -316,8 +316,8 @@ let setSymbolicTs: Test.t
 (* Splx.fitBnd *)
 let fitBndTs: Test.t
 = fun () ->
-	let mkV i = Scalar.Symbolic.ofQ (Vec.Coeff.mk1 i) in
-	let mkB v = Some {Splx.id = 1; Splx.scale = Vec.Coeff.mk1 0; Splx.bv = v} in
+	let mkV i = Scalar.Symbolic.ofQ (Vec.Coeff.of_int i) in
+	let mkB v = Some {Splx.id = 1; Splx.scale = Vec.Coeff.of_int 0; Splx.bv = v} in
 	let chkBnd (t, s) = fun state ->
 		match Splx.fitBnd s with
 		| Splx.BndUnsat _ -> Test.fail t "unsat" state
@@ -376,9 +376,9 @@ let fitBndTs: Test.t
 (* Splx.add *)
 let addOkTs: Test.t
 = fun () ->
-	let mkV i = Scalar.Symbolic.ofQ (Vec.Coeff.mk1 i) in
-	let mkVn i = Scalar.Symbolic.ndelta (Vec.Coeff.mk1 i) in
-	let mkN i = Vec.Coeff.mk1 i in
+	let mkV i = Scalar.Symbolic.ofQ (Vec.Coeff.of_int i) in
+	let mkVn i = Scalar.Symbolic.ndelta (Vec.Coeff.of_int i) in
+	let mkN i = Vec.Coeff.of_int i in
 	let mkB id sc v = Some {Splx.id = id; Splx.scale = sc; Splx.bv = v} in
 	let chkSt (t, i, c, s, _, v, l, u) = fun state ->
 		match Splx.addAcc s (i, c) with
@@ -867,7 +867,7 @@ let checkUnsatTs: Test.t
 			else Test.fail t (print_witness f) state
 	in
 	let tcs = [
-		"simple_le0", [0, Vec.Coeff.u; 1, Vec.Coeff.u; 2, Vec.Coeff.mk1 2], Splx.mk nxt [
+		"simple_le0", [0, Vec.Coeff.u; 1, Vec.Coeff.u; 2, Vec.Coeff.of_int 2], Splx.mk nxt [
 			0, le  [-1, x] (-3);
 			1, le [1, x; 2, y] 3;
 			2, le [-1, y] (-1)];
@@ -877,28 +877,28 @@ let checkUnsatTs: Test.t
 			1, le [1, x; 2, y] 3;
 			2, le [-2, y] (-2)];
 
-		"simple_eq0", [0, Vec.Coeff.u; 1, Vec.Coeff.u; 2, Vec.Coeff.mk1 2], Splx.mk nxt [
+		"simple_eq0", [0, Vec.Coeff.u; 1, Vec.Coeff.u; 2, Vec.Coeff.of_int 2], Splx.mk nxt [
 			0, le  [-1, x] (-3);
 			1, eq [1, x; 2, y] 3;
 			2, le [-1, y] (-1)];
 
-		"simple_eq1", [0, Vec.Coeff.u; 1, Vec.Coeff.negU; 2, Vec.Coeff.mk1 2], Splx.mk nxt [
+		"simple_eq1", [0, Vec.Coeff.u; 1, Vec.Coeff.negU; 2, Vec.Coeff.of_int 2], Splx.mk nxt [
 			0, le [-1, x] (-3);
 			1, eq [-1, x; -2, y] (-3);
 			2, le [-1, y] (-1)];
 
-		"simple_eq2", [0, Vec.Coeff.u; 1, Vec.Coeff.u; 2, Vec.Coeff.mk1 2], Splx.mk nxt [
+		"simple_eq2", [0, Vec.Coeff.u; 1, Vec.Coeff.u; 2, Vec.Coeff.of_int 2], Splx.mk nxt [
 			0, le [-1, x] (-3);
 			1, eq [1, x; 2, y] 3;
 			2, le [-1, y] (-1)];
 
-		"useless_l0", [0, Vec.Coeff.u; 2, Vec.Coeff.u; 3, Vec.Coeff.mk1 2], Splx.mk nxt [
+		"useless_l0", [0, Vec.Coeff.u; 2, Vec.Coeff.u; 3, Vec.Coeff.of_int 2], Splx.mk nxt [
 			0, le [-1, x] (-3);
 			1, le [1, x; 1, y] 4;
 			2, eq [1, x; 2, y] 3;
 			3, le [-1, y] (-1)];
 
-		"useless_l1", [0, Vec.Coeff.u; 2, Vec.Coeff.u; 3, Vec.Coeff.mk1 2], Splx.mk nxt [
+		"useless_l1", [0, Vec.Coeff.u; 2, Vec.Coeff.u; 3, Vec.Coeff.of_int 2], Splx.mk nxt [
 			0, le [-1, x] (-3);
 			1, le [1, x] 4;
 			2, eq [1, x; 2, y] 3;
@@ -954,7 +954,7 @@ let chk : (string * Splx.t Splx.mayUnsatT * (Var.t * Scalar.Symbolic.t) list) ->
 		3, le [1, x; 1, z] ~-2;
 		4, le [1, z] 1
 		  ],
-	  [x, Scalar.Symbolic.ofQ Vec.Coeff.u; y, Scalar.Symbolic.z; z, Scalar.Symbolic.ofQ (Vec.Coeff.mk1 ~-3)];
+	  [x, Scalar.Symbolic.ofQ Vec.Coeff.u; y, Scalar.Symbolic.z; z, Scalar.Symbolic.ofQ (Vec.Coeff.of_int ~-3)];
 
 	  "two_unbounded",
 	  Splx.mk nxt
@@ -963,7 +963,7 @@ let chk : (string * Splx.t Splx.mayUnsatT * (Var.t * Scalar.Symbolic.t) list) ->
 		2, le [1, x; 1, y] 1;
 		3, le [1, x; 1, z] ~-2
 		  ],
-	  [x, Scalar.Symbolic.ofQ Vec.Coeff.u; y, Scalar.Symbolic.z; z, Scalar.Symbolic.ofQ (Vec.Coeff.mk1 ~-3)];
+	  [x, Scalar.Symbolic.ofQ Vec.Coeff.u; y, Scalar.Symbolic.z; z, Scalar.Symbolic.ofQ (Vec.Coeff.of_int ~-3)];
 
 	  (* When [y] is eliminated, [x] disappears from the matrix of constraints. *)
 	  "vanishing_var",

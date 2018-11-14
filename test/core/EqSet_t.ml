@@ -38,7 +38,7 @@ let varPr: Cs.Vec.V.t -> string
 	| Not_found -> "v" ^ (Cs.Vec.V.to_string _x)
 
 let mkc t v c =
-	Cs.mk t (List.map (fun (n, x) -> (Cs.Vec.Coeff.mk1 n, x)) v) (Cs.Vec.Coeff.mk1 c)
+	Cs.mk t (List.map (fun (n, x) -> (Cs.Vec.Coeff.of_int n, x)) v) (Cs.Vec.Coeff.of_int c)
 
 let eq = mkc Cstr_type.Eq
 let le = mkc Cstr_type.Le

@@ -108,7 +108,7 @@ module Test (Vec : Vector.Rat.Type) = struct
 		   "const0", ([], Coeff.u), Some (mkM ([], Coeff.u));
 		   "mono0", ([x,1], Coeff.u), Some (mkM ([x], Coeff.u));
 		   "mono1", ([y,1], Coeff.u), Some (mkM ([y], Coeff.u));
-		   "mono2", ([x,1], Coeff.mk1 2), Some (mkM ([x], Coeff.mk1 2));
+		   "mono2", ([x,1], Coeff.of_int 2), Some (mkM ([x], Coeff.of_int 2));
 		   "multi0", ([x,1; y,1], Coeff.u), Some (mkM ([x; y], Coeff.u));
 		   "multi1", ([y,1; x,1], Coeff.u), Some (mkM ([x; y], Coeff.u));
 		   "zero0", ([], Coeff.z), None;
@@ -130,7 +130,7 @@ module Test (Vec : Vector.Rat.Type) = struct
 		=
 		Poly.Monomial.([
 						 "equal_syn", canon (mkM ([x; y], Coeff.mk ~-2 3)), canon  (mkM ([x; y], Coeff.mk ~-2 3)), 0;
-						 "equal", canon  (mkM ([x; y], Coeff.mk ~-2 3)), canon  (mkM ([x; y], Coeff.mk1 12)), 0;
+						 "equal", canon  (mkM ([x; y], Coeff.mk ~-2 3)), canon  (mkM ([x; y], Coeff.of_int 12)), 0;
 						 "neq", canon  (mkM ([x; y], Coeff.mk ~-2 3)), canon  (mkM ([y], Coeff.mk ~-2 3)), -1;
 		])
 		   in
@@ -146,7 +146,7 @@ module Test (Vec : Vector.Rat.Type) = struct
 		=
 		Poly.Monomial.([
 						 "equal", canon (mkM ([x; y], Coeff.mk ~-2 3)), canon (mkM ([x; y], Coeff.mk ~-2 3)), true;
-						 "neq0", canon (mkM ([x; y], Coeff.mk ~-2 3)), canon (mkM ([x; y], Coeff.mk1 12)), false;
+						 "neq0", canon (mkM ([x; y], Coeff.mk ~-2 3)), canon (mkM ([x; y], Coeff.of_int 12)), false;
 						 "neq1", canon (mkM ([x; y], Coeff.mk ~-2 3)), canon (mkM ([y], Coeff.mk ~-2 3)), false;
 		])
 		   in
@@ -189,13 +189,13 @@ module Test (Vec : Vector.Rat.Type) = struct
 		"empty2", mkP [[x], Coeff.z], mkP [[], Coeff.z];
 		"const0", mkP [[], Coeff.u], mkP [[], Coeff.u];
 		"const1", mkP [[x], Coeff.u], mkP [[x], Coeff.u];
-		"const_add0", mkP [[], Coeff.u; [], Coeff.u], mkP [[], Coeff.mk1 2];
+		"const_add0", mkP [[], Coeff.u; [], Coeff.u], mkP [[], Coeff.of_int 2];
 		"const_cancel", mkP [[], Coeff.u; [], Coeff.negU], mkP [[], Coeff.z];
 		"mono0", mkP [[x], Coeff.u], mkP [[x], Coeff.u];
 		"mono1", mkP [[], Coeff.u; [x], Coeff.u], mkP [[], Coeff.u; [x], Coeff.u];
-		"mono_unsorted", mkP [[x], Coeff.u; [], Coeff.mk1 2], mkP [[], Coeff.mk1 2; [x], Coeff.u];
-		"dup0", mkP [[x], Coeff.u; [x], Coeff.mk1 2], mkP [[x], Coeff.mk1 3];
-		"dup1", mkP [[x; y], Coeff.u; [y; x], Coeff.u], mkP [[x; y], Coeff.mk1 2];
+		"mono_unsorted", mkP [[x], Coeff.u; [], Coeff.of_int 2], mkP [[], Coeff.of_int 2; [x], Coeff.u];
+		"dup0", mkP [[x], Coeff.u; [x], Coeff.of_int 2], mkP [[x], Coeff.of_int 3];
+		"dup1", mkP [[x; y], Coeff.u; [y; x], Coeff.u], mkP [[x; y], Coeff.of_int 2];
 		"dup_cancel", mkP [[x], Coeff.u; [y], Coeff.u; [x], Coeff.negU], mkP [[y], Coeff.u]
 		   ]
 		   |> fun tcs -> List.map chkResult tcs @ List.map chkInvariant tcs
@@ -256,7 +256,7 @@ module Test (Vec : Vector.Rat.Type) = struct
 		"empty_basis", Poly.of_string "-2/3", Coeff.of_string "-2/3";
 		"regular", Poly.of_string "-2/3", Coeff.of_string "-2/3";
 		"empty", Poly.of_string "", Coeff.z;
-		"poly", Poly.of_string "-1*x1+4*x4+-2", Coeff.mk1 (-2);
+		"poly", Poly.of_string "-1*x1+4*x4+-2", Coeff.of_int (-2);
 		"mono", Poly.of_string "x1", Coeff.z
 		   ] in
 		   T.suite "get_constant" (List.map chk tcs)
@@ -341,13 +341,13 @@ module Test (Vec : Vector.Rat.Type) = struct
 		   in
 		[
 		  "zero", true, Poly.mk_cste [] Coeff.z;
-		  "constant", true, Poly.mk_cste [] (Coeff.mk1 2);
+		  "constant", true, Poly.mk_cste [] (Coeff.of_int 2);
 		  "linear1", true, Poly.mk_cste (mkP [[x], Coeff.u]) Coeff.z;
-		  "linear2", true, Poly.mk_cste (mkP [[x], Coeff.u; [y], Coeff.mk1 3]) Coeff.z;
+		  "linear2", true, Poly.mk_cste (mkP [[x], Coeff.u; [y], Coeff.of_int 3]) Coeff.z;
 		  "affine", true, Poly.mk_cste (mkP [[x], Coeff.negU]) Coeff.u;
 		  "affine2", true, Poly.mk_cste (mkP [[x], Coeff.negU; [z],Coeff.u]) Coeff.u;
 		  "multi", false, Poly.mk_cste (mkP [[x; y], Coeff.u]) Coeff.z;
-		  "mixed", false, Poly.mk_cste (mkP [[y; z], Coeff.mk1 2; [x], Coeff.u]) Coeff.z
+		  "mixed", false, Poly.mk_cste (mkP [[y; z], Coeff.of_int 2; [x], Coeff.u]) Coeff.z
 		   ]
 		   |> List.map chk
 		   |> T.suite "is_affine"
@@ -362,7 +362,7 @@ module Test (Vec : Vector.Rat.Type) = struct
 	= Poly.
 	  ([
 	    "empty", "", mk_cste [] Coeff.z;
-	    "constant", "3", mk_cste [] (Coeff.mk1 3);
+	    "constant", "3", mk_cste [] (Coeff.of_int 3);
 	    "linear", "x1", mk_cste (mkP [[x], Coeff.u]) Coeff.z;
 	    "product", "x1*x2", mk_cste (mkP [[x; y], Coeff.u]) Coeff.z;
 	    "affine", "-1 * x1 + 1", mk_cste (mkP [[x], Coeff.negU]) Coeff.u;

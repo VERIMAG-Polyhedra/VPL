@@ -12,7 +12,7 @@ module Make_Tests (Min : Min.Type) = struct
 	let x = var 1 and y = var 2 and z = var 3
 
 	let le
-	  = fun l b -> Cs.mk Cstr_type.Le (List.map (fun (a, x) -> (Scalar.Rat.mk1 a, x)) l) (Scalar.Rat.mk1 b)
+	  = fun l b -> Cs.mk Cstr_type.Le (List.map (fun (a, x) -> (Scalar.Rat.of_int a, x)) l) (Scalar.Rat.of_int b)
 
 	module Norm
 	  = struct

@@ -24,7 +24,7 @@ module Translation = struct
   			(fun res (vars,coeff) ->
   				let vars_term = List.fold_left
   					(fun res v ->
-  						let v' = Var.toInt v |> Scalar.RelInt.mk1 |> PedraQOracles.zToCoqPos in
+  						let v' = Var.toInt v |> Scalar.Int.of_int |> PedraQOracles.zToCoqPos in
   						Mul (res, Var v'))
   					(Cte NumC.QNum.u) vars
   				in
@@ -34,11 +34,11 @@ module Translation = struct
 
   	let var_to_PExpr : Var.t -> BinNums.positive
   		= fun v ->
-  		Var.toInt v |> Scalar.RelInt.mk1 |> PedraQOracles.zToCoqPos
+  		Var.toInt v |> Scalar.Int.of_int |> PedraQOracles.zToCoqPos
 
   	let int_to_coq_N : int -> BinNums.coq_N
   		= fun i ->
-  		BinNums.Npos (Scalar.RelInt.mk1 i |> PedraQOracles.zToCoqPos)
+  		BinNums.Npos (Scalar.Int.of_int i |> PedraQOracles.zToCoqPos)
 
 	let squares_trans : Hi.Cert.squares -> Map_poly.squares
 		= fun l ->

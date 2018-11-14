@@ -56,7 +56,7 @@ let min_to_xml : unit -> string
 	= fun () ->
 	match !min with
 	| Classic -> "classic"
-	| Raytracing _ -> "raytracing"
+	| Raytracing -> "raytracing"
 	| MHeuristic -> "heuristic"
 	| Apron -> "apron"
 

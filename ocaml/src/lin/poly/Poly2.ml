@@ -302,9 +302,9 @@ module Poly (Vec : Vector.Type) = struct
 			= fun m -> let (vlist, c) = m in 
 			match vlist with
 			| [] -> Coeff.to_string c
-			| _ -> if Coeff.equal c (Coeff.mk1 1)
+			| _ -> if Coeff.equal c (Coeff.of_int 1)
 				then MonomialBasis.to_string vlist
-				else if Coeff.lt c (Coeff.mk1 0) 
+				else if Coeff.lt c (Coeff.of_int 0) 
 					then String.concat "" ["(";Coeff.to_string c;")*";MonomialBasis.to_string vlist]
 					else String.concat "" [Coeff.to_string c ; "*" ; MonomialBasis.to_string vlist]
 		
@@ -721,5 +721,5 @@ module Poly (Vec : Vector.Type) = struct
 	*)
 end
 
-module RelInt = Poly(Vector.RelInt.Int)
+module Int = Poly(Vector.Int.Int)
 

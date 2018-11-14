@@ -22,7 +22,7 @@ let varPr: Var.t -> string
 let factory = Factory.Cstr.factory
 
 let mkc t v c =
-	Cs.mk t (List.map (function (i, x) -> (Scalar.Rat.mk1 i, x)) v) (Scalar.Rat.mk1 c)
+	Cs.mk t (List.map (function (i, x) -> (Scalar.Rat.of_int i, x)) v) (Scalar.Rat.of_int c)
 
 let eq = mkc Cstr_type.Eq
 let le = mkc Cstr_type.Le
@@ -1119,30 +1119,30 @@ module Make_Tests (F : sig
 	let itvizeTcs: (string * Vec.t * Pol.itvT * Cs.t Pol.t) list
 	= [
 		"nil0", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Infty}, p [];
-		"direct0", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Closed (Scalar.Rat.mk1 2)}, p [
+		"direct0", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Closed (Scalar.Rat.of_int 2)}, p [
 			le [1, x] 2 ];
 
-		"direct1", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Open (Scalar.Rat.mk1 2)}, p [
+		"direct1", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Open (Scalar.Rat.of_int 2)}, p [
 			lt [1, x] 2 ];
 
-		"direct2", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Closed (Scalar.Rat.mk1 (-2)); Pol.up = Pol.Infty}, p [
+		"direct2", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Closed (Scalar.Rat.of_int (-2)); Pol.up = Pol.Infty}, p [
 			le [-1, x] 2 ];
 
-		"direct3", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Open (Scalar.Rat.mk1 (-2)); Pol.up = Pol.Infty}, p [
+		"direct3", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Open (Scalar.Rat.of_int (-2)); Pol.up = Pol.Infty}, p [
 			lt [-1, x] 2 ];
 
-		"direct4", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Closed (Scalar.Rat.mk1 2); Pol.up = Pol.Closed (Scalar.Rat.mk1 2)}, p [
+		"direct4", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Closed (Scalar.Rat.of_int 2); Pol.up = Pol.Closed (Scalar.Rat.of_int 2)}, p [
 			eq [1, x] 2 ];
 
-		"comb0", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Closed (Scalar.Rat.mk1 2)}, p [
+		"comb0", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Closed (Scalar.Rat.of_int 2)}, p [
 			le [1, y] 2;
 			le [2, x; -1, y] 2 ];
 
-		"comb1", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Open (Scalar.Rat.mk1 2)}, p [
+		"comb1", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Open (Scalar.Rat.of_int 2)}, p [
 			lt [1, y] 2;
 			le [2, x; -1, y] 2 ];
 
-		"comb2", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Open (Scalar.Rat.mk1 2)}, p [
+		"comb2", Vec.mk [Scalar.Rat.u, x], {Pol.low = Pol.Infty; Pol.up = Pol.Open (Scalar.Rat.of_int 2)}, p [
 			le [1, y] 2;
 			lt [2, x; -1, y] 2 ];
 

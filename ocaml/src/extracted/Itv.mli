@@ -32,7 +32,7 @@ module QItv :
 
   val is_bot : t -> bool
 
-  val mk1 : QNum.t -> t
+  val of_int : QNum.t -> t
 
   val bndAdd : bndT -> bndT -> bndT
 

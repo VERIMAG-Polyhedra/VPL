@@ -647,23 +647,23 @@ module Symbolic = struct
 	end
 end
 
-module RelInt = struct
+module Int = struct
 	module Positive = struct
-        module Coeff = Scalar.RelInt
-		include VectorRtree(Scalar.RelInt)
+        module Coeff = Scalar.Int
+		include VectorRtree(Scalar.Int)
 
-		let ofSymbolic : Scalar.Symbolic.t -> Scalar.RelInt.t
+		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Int.t
 			= fun _ ->
-			Pervasives.failwith "Vector.RelInt.Positive.ofSymbolic"
+			Pervasives.failwith "Vector.Int.Positive.ofSymbolic"
 	end
 
 	module Int = struct
-        module Coeff = Scalar.RelInt
-		include VectorMap(Scalar.RelInt)(Var.Int)
+        module Coeff = Scalar.Int
+		include VectorMap(Scalar.Int)(Var.Int)
 
-		let ofSymbolic : Scalar.Symbolic.t -> Scalar.RelInt.t
+		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Int.t
 			= fun _ ->
-			Pervasives.failwith "Vector.RelInt.Int.ofSymbolic"
+			Pervasives.failwith "Vector.Int.Int.ofSymbolic"
 	end
 end
 

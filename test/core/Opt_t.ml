@@ -20,7 +20,7 @@ let varPr: V.t -> string
 	| Not_found -> "v" ^ (V.to_string x)
 
 let mkc t v c =
-	Cs.mk t (List.map (fun (c, v) -> (Scalar.Rat.mk1 c, v)) v) (Scalar.Rat.mk1 c)
+	Cs.mk t (List.map (fun (c, v) -> (Scalar.Rat.of_int c, v)) v) (Scalar.Rat.of_int c)
 
 let sxLift : Splx.t Splx.mayUnsatT -> Splx.t
 = function
@@ -187,7 +187,7 @@ let pickNBasicTs: Test.t
 			(Vec.mk [Scalar.Rat.negU, x; Scalar.Rat.u, y]);
 
 		"bnd0", Some [
-				x, Opt.Incr, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2))
+				x, Opt.Incr, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2))
 			], Opt.setObj (sxLift (Splx.mk nxt [
 				0, le [1, x] 2 ]))
 			(Vec.mk [Scalar.Rat.u, x]);
@@ -212,7 +212,7 @@ let pickNBasicTs: Test.t
 			(Vec.mk [Scalar.Rat.u, x; Scalar.Rat.u, y]);
 
 		"notFirst1", Some [
-				y, Opt.Incr, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2))
+				y, Opt.Incr, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2))
 			], Opt.setObj (sxLift (Splx.mk nxt [
 				0, eq [1, x] 0;
 				1, le [1, y] 2 ]))
@@ -249,12 +249,12 @@ let pickBasicTs: Test.t
 			Opt.setObj (sxLift (Splx.mk nxt []))
 			(Vec.mk [Scalar.Rat.u, x]);
 
-		"up0", x, Opt.Unbnd, Opt.Decr, sx1, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.mk1 3)),
+		"up0", x, Opt.Unbnd, Opt.Decr, sx1, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.of_int 3)),
 			Opt.setObj (sxLift (Splx.mk nxt [
 				0, le [-1, x; 1, y] 3 ]))
 			(Vec.mk [Scalar.Rat.u, x]);
 
-		"up1", x, Opt.Unbnd, Opt.Decr, sx1, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2)),
+		"up1", x, Opt.Unbnd, Opt.Decr, sx1, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2)),
 			Opt.setObj (sxLift (Splx.mk nxt [
 				0, le [-2, x; 1, y] 4 ]))
 			(Vec.mk [Scalar.Rat.u, x]);
@@ -265,8 +265,8 @@ let pickBasicTs: Test.t
 				1, le [-1, x; 1, z] 0 ]))
 			(Vec.mk [Scalar.Rat.u, x]);
 
-		"nbasic0", x, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.mk1 1)), Opt.Decr,
-			x, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.mk1 1)),
+		"nbasic0", x, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.of_int 1)), Opt.Decr,
+			x, Opt.UpTo (Scalar.Symbolic.ofQ (Scalar.Rat.of_int 1)),
 			Opt.setObj (sxLift (Splx.mk nxt [
 				0, le [-2, x; 1, y] 4 ]))
 			(Vec.mk [Scalar.Rat.u, x])
@@ -293,7 +293,7 @@ let stepEndTs: Test.t
 		"nil0", Opt.OptUnbnd, Opt.setObj (sxLift (Splx.mk nxt []))
 			(Vec.mk [Scalar.Rat.u, x]);
 
-		"u0", Opt.OptFinite (Scalar.Symbolic.ofQ (Scalar.Rat.mk1 (-2))),
+		"u0", Opt.OptFinite (Scalar.Symbolic.ofQ (Scalar.Rat.of_int (-2))),
 			Opt.setObj (sxLift (Splx.mk nxt [
 				0, le [-1, x] (-2) ]))
 			(Vec.mk [Scalar.Rat.negU, x])
@@ -328,11 +328,11 @@ let stepGoOnTs: Test.t
 				Test.fail t (Scalar.Symbolic.to_string zV1) state
 	in
 	let tcs = [
-		"own0", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Opt.setObj (sxLift (Splx.mk nxt [
+		"own0", Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2), Opt.setObj (sxLift (Splx.mk nxt [
 				0, le [1, x] 2 ]))
 			(Vec.mk [Scalar.Rat.u, x]);
 
-		"other0", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Opt.setObj
+		"other0", Scalar.Symbolic.ofQ (Scalar.Rat.of_int 2), Opt.setObj
 			(sxLift (Splx.mk nxt [ 0, le [1, x; 1, y] 2 ]))
 			(Vec.mk [Scalar.Rat.u, x])
 	] in
@@ -366,30 +366,30 @@ let maxTs: Test.t
 	    [
 		"nil0", Opt.Finite (dummySx, Scalar.Rat.z, []), Vec.mk [], Splx.mk nxt [];
 		"nil1", Opt.Infty, Vec.mk [Scalar.Rat.u, x], Splx.mk nxt [];
-		"own0", Opt.Finite (dummySx, Scalar.Rat.mk1 2, [0, Scalar.Rat.u]), Vec.mk [Scalar.Rat.u, x], Splx.mk nxt [
+		"own0", Opt.Finite (dummySx, Scalar.Rat.of_int 2, [0, Scalar.Rat.u]), Vec.mk [Scalar.Rat.u, x], Splx.mk nxt [
 			0, le [1, x] 2 ];
 
-		"ownSup0", Opt.Sup (dummySx, Scalar.Rat.mk1 2, [0, Scalar.Rat.u]),
+		"ownSup0", Opt.Sup (dummySx, Scalar.Rat.of_int 2, [0, Scalar.Rat.u]),
 			Vec.mk [Scalar.Rat.u, x], Splx.mk nxt [
 				0, lt [1, x] 2 ];
 
-		"comb1", Opt.Finite (dummySx, Scalar.Rat.mk1 2, [0, Scalar.Rat.u; 1, Scalar.Rat.u]),
+		"comb1", Opt.Finite (dummySx, Scalar.Rat.of_int 2, [0, Scalar.Rat.u; 1, Scalar.Rat.u]),
 			Vec.mk [Scalar.Rat.u, x], Splx.mk nxt [
 				0, le [1, x; 1, y] 2;
 				1, le [-1, y] 0 ];
 
-		"comb2", Opt.Sup (dummySx, Scalar.Rat.mk1 2, [0, Scalar.Rat.u; 1, Scalar.Rat.u]),
+		"comb2", Opt.Sup (dummySx, Scalar.Rat.of_int 2, [0, Scalar.Rat.u; 1, Scalar.Rat.u]),
 			Vec.mk [Scalar.Rat.u, x], Splx.mk nxt [
 				0, le [1, x; 1, y] 2;
 				1, lt [-1, y] 0 ];
 
-		"m0", Opt.Finite (dummySx, Scalar.Rat.mk1 6, [0, Scalar.Rat.mk 2 1; 1, Scalar.Rat.mk 2 1]),
+		"m0", Opt.Finite (dummySx, Scalar.Rat.of_int 6, [0, Scalar.Rat.mk 2 1; 1, Scalar.Rat.mk 2 1]),
 			Vec.mk [Scalar.Rat.u, x], Splx.mk nxt [
 				0, le [-1, y] 4;
 				1, le [2, x; 1, y] 8;
 				2, le [1, x; 1, y] 3 ];
 
-		"red0", Opt.Finite (dummySx, Scalar.Rat.mk1 4, [0, Scalar.Rat.u; 1, Scalar.Rat.u]),
+		"red0", Opt.Finite (dummySx, Scalar.Rat.of_int 4, [0, Scalar.Rat.u; 1, Scalar.Rat.u]),
 			Vec.mk [Scalar.Rat.u, x; Scalar.Rat.u, y], Splx.mk nxt [
 				0, le [1, x] 2;
 				1, le [1, y] 2;

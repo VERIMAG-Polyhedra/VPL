@@ -1321,7 +1321,7 @@ let split_in_half : 'c Cert.t -> 'c t -> Cs.t option
     | Some length -> begin
         let cste = match get_low max_itv with
         | Infty -> Pervasives.failwith "split_in_half: unexpected unbounded lower bound"
-        | Closed r | Open r -> Scalar.Rat.add r (Scalar.Rat.divr length (Scalar.Rat.mk1 2))
+        | Closed r | Open r -> Scalar.Rat.add r (Scalar.Rat.divr length (Scalar.Rat.of_int 2))
         in
         Profile.stop "split_in_half";
         Some (Cs.mk Cstr_type.Le [Scalar.Rat.u, max_var] cste)
