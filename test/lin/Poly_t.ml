@@ -1,8 +1,8 @@
 open Vpl
 
-module Make_Tests (Vec : Vector.Rat.Type) = struct
+module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Positive) = struct
 
-	module Poly = Poly.Poly(Vec)
+	module Poly = Poly.Make(Vec)
 	module Coeff = Poly.Coeff
 	module V = Poly.V
 
@@ -476,13 +476,10 @@ module Make_Tests (Vec : Vector.Rat.Type) = struct
 			]
 end
 
-module Rat_Int = Make_Tests(Vector.Rat.Int)
-
 module Rat_Pos = Make_Tests(Vector.Rat.Positive)
 
 let ts : Test.t
     = fun () ->
     Test.suite "Poly" [
-     Rat_Int.ts();
      Rat_Pos.ts()
 	]

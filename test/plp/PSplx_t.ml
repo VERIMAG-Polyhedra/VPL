@@ -1,11 +1,8 @@
 open Vpl
-module Cs = CstrPoly.Positive.Cs
+module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module PSplx_ = PSplx.PSplx(Cs)
-module PSplx = PSplx_.PSplx(Vec)
+module PSplx = PSplx.Make(Vec)
 
-module Objective = PSplx.Objective
-module ParamCoeff = PSplx.ParamCoeff
 module Naming = PSplx.Naming
 module Poly = ParamCoeff.Poly
 
@@ -99,17 +96,17 @@ module Explore = struct
 
 	let ineq_to_cstr : Poly.t -> Cs.t
 		= fun ineq ->
-		CstrPoly.Positive.mk Cstr.Le ineq
-		|> CstrPoly.Positive.toCstr
+		CstrPoly.mk Cstr_type.Le ineq
+		|> CstrPoly.toCstr
 
 	let eq_to_cstr : Poly.t -> Cs.t
 		= fun eq ->
-		CstrPoly.Positive.mk Cstr.Eq eq
-		|> CstrPoly.Positive.toCstr
+		CstrPoly.mk Cstr_type.Eq eq
+		|> CstrPoly.toCstr
 
 	let positivity_constraints : Vec.V.t list -> Cs.t list
 		= fun vars ->
-		List.map (fun v -> Cs.mk Cstr.Le [Vec.Coeff.negU,v] Vec.Coeff.z) vars
+		List.map (fun v -> Cs.mk Cstr_type.Le [Vec.Coeff.negU,v] Vec.Coeff.z) vars
 
 	(* On évalue les paramètres *)
 	let obj_to_vec : Vec.V.t list -> Poly.t -> Vec.t -> Vec.t * Vec.Coeff.t
@@ -122,8 +119,8 @@ module Explore = struct
 		in
 		Poly.eval_partial obj eval
 		|> Poly.neg (* XXX: because PSplx is minimizing?*)
-		|>	CstrPoly.Positive.mk Cstr.Eq
-		|> CstrPoly.Positive.toCstr
+		|>	CstrPoly.mk Cstr_type.Eq
+		|> CstrPoly.toCstr
 		|> fun c -> (Cs.get_v c, Cs.get_c c)
 
 	let to_splx : Vec.V.t list -> Vec.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> Vec.t -> Splx.t Splx.mayUnsatT * Vec.t * Vec.Coeff.t

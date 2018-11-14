@@ -1,6 +1,6 @@
-module CP = CstrPoly.Positive
+module CP = CstrPoly
 
-let addPolyM' : 'a Pol.Cert.t -> 'a Pol.t -> CP.t list -> Factory.Unit.t Pol.t option
+let addPolyM' : 'a Cert.t -> 'a Pol.t -> CP.t list -> Factory.Unit.t Pol.t option
 	= fun factory phPol pl ->
 	if Pol.equal factory factory Pol.top phPol
 	then Some (Pol.to_unit phPol)
@@ -10,15 +10,14 @@ let addPolyM' : 'a Pol.Cert.t -> 'a Pol.t -> CP.t list -> Factory.Unit.t Pol.t o
 		| Flags.Proj_PLP(Flags.Float) -> (Handelman.Float.Pb.run phPol pl).Handelman.Float.Pb.ph#get_vpl_rep
 		| Flags.FM -> (Handelman.Rat.Pb.run phPol pl).Handelman.Rat.Pb.ph#get_vpl_rep
 		| Flags.PHeuristic -> Pervasives.failwith "Lin.addPolyM"
-	
-	
-let addPolyM : 'a Pol.Cert.t -> 'a Pol.t -> CP.t list -> Factory.Unit.t Pol.t option
+
+
+let addPolyM : 'a Cert.t -> 'a Pol.t -> CP.t list -> Factory.Unit.t Pol.t option
 	= fun factory p ->
-	Heuristic.apply_proj 
-		(List.map Pol.Cons.get_c (Pol.get_ineqs p)) 
+	Heuristic.apply_proj
+		(List.map Cons.get_c (Pol.get_ineqs p))
 		(addPolyM' factory p)
 
-let addPoly : 'a Pol.Cert.t -> 'a Pol.t -> CP.t -> Factory.Unit.t Pol.t option
+let addPoly : 'a Cert.t -> 'a Pol.t -> CP.t -> Factory.Unit.t Pol.t option
 	= fun factory phPol p ->
 	addPolyM factory phPol [p]
-	

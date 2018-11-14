@@ -1,4 +1,4 @@
-module CP = CstrPoly.Positive
+module CP = CstrPoly
 module Poly = CP.Poly
 module V = Poly.V
 
@@ -80,7 +80,7 @@ module MapIndexP
 			= fun p v ->
 			Misc.max Pervasives.compare
 			(List.map
-				(fun (m,_) -> List.filter 
+				(fun (m,_) -> List.filter
 					(fun v' -> V.equal v' v)
 					(Poly.MonomialBasis.data m)
 					|> List.length)
@@ -303,13 +303,13 @@ module Pneuma
 		(IndexBuild.Map.to_string pn.mapI |> Misc.add_tab 2)
 
 	(* l'oracle traite les polynômes sous la forme p >= 0 *)
-	let neg_poly : CstrPoly.Positive.t -> Poly.t list
+	let neg_poly : CstrPoly.t -> Poly.t list
 		= fun cp ->
-		let p = cp.CstrPoly.Positive.p in
-		match cp.CstrPoly.Positive.typ with
-		| Cstr.Le -> [Poly.neg p]
-		| Cstr.Lt -> [Poly.neg p]
-		| Cstr.Eq -> p :: [Poly.neg p]
+		let p = cp.CstrPoly.p in
+		match cp.CstrPoly.typ with
+		| Cstr_type.Le -> [Poly.neg p]
+		| Cstr_type.Lt -> [Poly.neg p]
+		| Cstr_type.Eq -> p :: [Poly.neg p]
 
 	(* On initialise uniquement avec les inégalités du polyèdre.
 	Les polynômes à linéariser ont été réécris pour ne plus parler des variables définies par des égalités. *)

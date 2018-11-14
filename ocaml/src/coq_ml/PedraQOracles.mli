@@ -9,14 +9,11 @@ module Nb = Scalar.Rat
 module Var = Var.Positive
 module Vec = Vector.Rat.Positive
 module Cs = Cstr.Rat.Positive
-module Cons = IneqSet.Cons
-module Cert = IneqSet.Cert
-module EqSet = IneqSet.EqSet
 
-val coqPosToZ: BinNums.positive -> Nb.Z.t
-val zToCoqPos: Nb.Z.t -> BinNums.positive
-val coqZToZ: BinNums.coq_Z -> Nb.Z.t
-val zToCoqZ: Nb.Z.t -> BinNums.coq_Z
+val coqPosToZ: BinNums.positive -> Scalar.RelInt.t
+val zToCoqPos: Scalar.RelInt.t -> BinNums.positive
+val coqZToZ: BinNums.coq_Z -> Scalar.RelInt.t
+val zToCoqZ: Scalar.RelInt.t -> BinNums.coq_Z
 val nToNb: NumC.QNum.t -> Nb.t
 val nToNumC: Nb.t -> NumC.QNum.t
 val coq_QToNb: QArith_base.coq_Q -> Nb.t
@@ -25,8 +22,8 @@ val progVarToVar: ProgVar.PVar.t -> Var.t
 val varToProgVar: Var.t -> ProgVar.PVar.t
 val ltToVec: LinTerm.LinQ.t -> Vec.t
 val vecToLt: Vec.t -> LinTerm.LinQ.t
-val cToCmpT: NumC.cmpT -> Cstr.cmpT
-val cToCmp: Cstr.cmpT -> NumC.cmpT
+val cToCmpT: NumC.cmpT -> Cstr_type.cmpT
+val cToCmp: Cstr_type.cmpT -> NumC.cmpT
 val cToCstr: CstrC.Cstr.t -> Cs.t
 val cToCstrC: Cs.t -> CstrC.Cstr.t
 val cstrCPr: CstrC.Cstr.t -> string
@@ -45,7 +42,7 @@ val project: ('c pedraCert) * ProgVar.PVar.t -> t * ('c list)
 val rename: (ProgVar.PVar.t * ProgVar.PVar.t) * t -> t
 val widen: t * t -> t * ConsSet.Cs.t
 val getItv: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.itvT
-val getUpperBound: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.bndT 
+val getUpperBound: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.bndT
 val getLowerBound: 'c pedraCert * LinTerm.LinQ.t -> 'c CstrLCF.bndT
 val pr: t -> char list
 val export_backend_rep:

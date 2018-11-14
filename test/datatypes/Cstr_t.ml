@@ -18,9 +18,9 @@ module Make_Tests (Cs : Cstr.Type) = struct
 	let mkc t v c =
 		Cs.mk t (List.map (fun (i, v) -> (Cs.Vec.Coeff.mk1 i, v)) v) (Cs.Vec.Coeff.mk1 c)
 
-	let eq = mkc Cstr.Eq
-	let le = mkc Cstr.Le
-	let lt = mkc Cstr.Lt
+	let eq = mkc Cstr_type.Eq
+	let le = mkc Cstr_type.Le
+	let lt = mkc Cstr_type.Lt
 
 	let v iv = Cs.Vec.mk (List.map (fun (i, v) -> (Cs.Vec.Coeff.mk1 i, v)) iv)
 
@@ -332,12 +332,12 @@ module Make_Tests (Cs : Cstr.Type) = struct
 			"c1contrad0", le [] (-1), le [1, x] 1, false;
 			"c1trivial0", le [] 1, le [1, x] 1, false;
             "raytracing_bug",
-                Cs.mk Cstr.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ),
-                Cs.mk Cstr.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ),
+                Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ),
+                Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ),
                 true;
             "raytracing_bug_reversed",
-                Cs.mk Cstr.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ),
-                Cs.mk Cstr.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ),
+                Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ),
+                Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ),
                 true;
 		] in
 		Test.suite "isIncl" (List.map chk tcs)
@@ -380,7 +380,12 @@ end
 
 module Rat = struct
 
-	module Make_Tests (Cstr : Cstr.Rat.Type) = struct
+	module Make_Tests (Cstr : sig
+        include Cstr.Type
+        val elim : t -> t -> Vec.V.t -> (t * Vec.Coeff.t * Vec.Coeff.t)
+        val canon : t -> t
+        end) = struct
+
 		include Make_Tests(Cstr)
 
 		(* Cs.elim *)

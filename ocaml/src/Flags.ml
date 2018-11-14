@@ -1,23 +1,11 @@
 (** This module allows to tune the algorithms used in the polyhedral operators. *)
 
-(** Type of linear solver for the new minimization.
-{ul
-	{- [Glpk]: floating point LP binded to the VPL using ocaml-glpk}
-	{- [Splx]: rational LP of the VPL}}
-*)
-type lp = Glpk | Splx
-
-let lp_to_xml : lp -> string
-	= function
-	| Glpk -> "glpk"
-	| Splx -> "splx"
-
 (** Choice of the minimization method.
 {ul
 	{- [Classic]: classical way that uses LP}
 	{- [Raytracing]: New method based on constraint evaluation + LP}}
 *)
-type min_method = Classic | Raytracing of lp | MHeuristic | Apron (* Apron for tests only *)
+type min_method = Classic | Raytracing | MHeuristic | Apron (* Apron for tests only *)
 
 (** Choice of the point type.
 {ul
@@ -60,8 +48,7 @@ let min_to_string : unit -> string
 	= fun () ->
 	match !min with
 	| Classic -> "Classic"
-	| Raytracing Glpk -> "Raytracing:Glpk"
-	| Raytracing Splx -> "Raytracing:Splx"
+	| Raytracing -> "Raytracing"
 	| MHeuristic -> "Heuristic"
 	| Apron -> "Apron"
 

@@ -7,14 +7,12 @@ module Make_Tests (Min : Min.Type) = struct
 
 	module Proj_ = Proj.Proj(Min)
 	module ProjBuild = Proj_.Build
-	module Objective = Proj_.PLP.Objective
-	module ParamCoeff = Proj_.PLP.ParamCoeff
 
 	let var = Var.fromInt
 	let x = var 1 and y = var 2 and z = var 3
 
 	let le
-	  = fun l b -> Cs.mk Cstr.Le (List.map (fun (a, x) -> (Scalar.Rat.mk1 a, x)) l) (Scalar.Rat.mk1 b)
+	  = fun l b -> Cs.mk Cstr_type.Le (List.map (fun (a, x) -> (Scalar.Rat.mk1 a, x)) l) (Scalar.Rat.mk1 b)
 
 	module Norm
 	  = struct
@@ -129,32 +127,14 @@ module Raytracing = struct
 			include Make_Tests(Min)
 		end
 	end
-	module Splx = struct
-		module Rat = struct
-			module Min = Min.Splx(Vector.Rat.Positive)
-			include Make_Tests(Min)
-		end
-
-		module Float = struct
-			module Min = Min.Splx(Vector.Float.Positive)
-			include Make_Tests(Min)
-		end
-
-		module Symbolic = struct
-			module Min = Min.Splx(Vector.Symbolic.Positive)
-			include Make_Tests(Min)
-		end
-	end
 end
 
 let ts : Test.t
 	= fun () ->
     List.map Test.run (
-		(if Wrapper.with_glpk then [
+		if Wrapper.with_glpk then [
 			Raytracing.Glpk.Rat.ts;
 			Raytracing.Glpk.Float.ts;
 			Raytracing.Glpk.Symbolic.ts;
 		] else [])
-	@
-	[ Raytracing.Splx.Rat.ts; Raytracing.Splx.Float.ts; Raytracing.Splx.Symbolic.ts; ])
 	|> Test.suite "ProjBuild"

@@ -1,18 +1,18 @@
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module Var = Vec.V
-module CP = CstrPoly.Positive
+module CP = CstrPoly
 module Polynomial = CP.Poly
 module Coeff = Scalar.Rat
 
 module type Type = sig
 	type t
 
-	val factory : t Pol.Cert.t
+	val factory : t Cert.t
 
 	val mk : Pol.Cs.t -> t
 
-    val mkCons : Pol.Cs.t -> t Pol.Cons.t
+    val mkCons : Pol.Cs.t -> t Cons.t
 
     val convert : 'c Pol.t -> t Pol.t
 
@@ -27,19 +27,19 @@ module Cstr = struct
 
 	type t = Pol.Cs.t
 
-	module Cert = Pol.Cert
+	module Cert = Cert
 
 	let factory : t Cert.t = {
 		Cert.name = "Cstr";
-		Cert.top = (Cs.mk Cstr.Eq [] Scalar.Rat.z);
+		Cert.top = (Cs.mk Cstr_type.Eq [] Scalar.Rat.z);
 		Cert.triv = (fun cmp n -> if
 			match cmp with
-			| Cstr.Le -> Scalar.Rat.le Scalar.Rat.z n
-			| Cstr.Lt -> Scalar.Rat.lt Scalar.Rat.z n
-			| Cstr.Eq -> Scalar.Rat.equal n Scalar.Rat.z
+			| Cstr_type.Le -> Scalar.Rat.le Scalar.Rat.z n
+			| Cstr_type.Lt -> Scalar.Rat.lt Scalar.Rat.z n
+			| Cstr_type.Eq -> Scalar.Rat.equal n Scalar.Rat.z
 			then ()
 			else (Printf.sprintf "triv %s %s 0"
-			 	(Cstr.(match cmp with | Le -> "<=" | Lt -> "<" | Eq -> "="))
+			 	(Cstr_type.(match cmp with | Le -> "<=" | Lt -> "<" | Eq -> "="))
 				(Scalar.Rat.to_string n)
 				|> print_endline;
 				Pervasives.failwith "Factory.Cstr.triv")
@@ -47,10 +47,10 @@ module Cstr = struct
 			Cs.mk cmp [] n);
 		Cert.add = Cs.add;
 		Cert.mul = Cs.mulc;
-		Cert.to_le = (fun c -> {c with Cs.typ = Cstr.Le});
+		Cert.to_le = (fun c -> {c with Cs.typ = Cstr_type.Le});
 		Cert.merge = (fun c1 c2 ->
-			let c1' = {c1 with Cs.typ = Cstr.Eq}
-			and c2' = {c2 with Cs.typ = Cstr.Eq} in
+			let c1' = {c1 with Cs.typ = Cstr_type.Eq}
+			and c2' = {c2 with Cs.typ = Cstr_type.Eq} in
 			if Cs.equal c1' c2'
 			then c1'
 			else failwith "merge");
@@ -61,7 +61,7 @@ module Cstr = struct
     let mk : Pol.Cs.t -> t
         = fun cs -> cs
 
-	let mkCons : Pol.Cs.t -> t Pol.Cons.t
+	let mkCons : Pol.Cs.t -> t Cons.t
 		= fun cs -> (cs,cs)
 
     let convert : 'c Pol.t -> t Pol.t
@@ -88,7 +88,7 @@ module Unit = struct
 
 	type t = unit
 
-	module Cert = Pol.Cert
+	module Cert = Cert
 
 	let factory : t Cert.t = {
 		Cert.name = "Unit";
@@ -105,7 +105,7 @@ module Unit = struct
     let mk : Pol.Cs.t -> t
         = fun _ -> ()
 
-	let mkCons : Pol.Cs.t -> t Pol.Cons.t
+	let mkCons : Pol.Cs.t -> t Cons.t
 		= fun cs -> (cs,())
 
     let convert : 'c Pol.t -> t Pol.t
@@ -128,7 +128,7 @@ module Farkas = struct
 
 	type t = unit
 
-	module Cert = Pol.Cert
+	module Cert = Cert
 
 	let factory : t Cert.t = {
 		Cert.name = "Unit";
@@ -145,7 +145,7 @@ module Farkas = struct
     let mk : Pol.Cs.t -> t
 		= fun _ -> ()
 
-	let mkCons : Pol.Cs.t -> t Pol.Cons.t
+	let mkCons : Pol.Cs.t -> t Cons.t
 		= fun cs -> (cs,())
 
     let convert : 'c Pol.t -> t Pol.t

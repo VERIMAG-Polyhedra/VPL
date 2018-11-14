@@ -1,5 +1,5 @@
 module type Type = sig
-	module Vec : Vector.Type
+	module Vec : Vector.Type with module V = Var.Positive and module M = Rtree
 	module V = Vec.V
 
 	type typT = Param | Var | Slack
@@ -58,6 +58,8 @@ module type Type = sig
 	are assigned strictly smaller [V.t]'s. *)
 	val vpl_max : t -> V.t
 
+  	val slack_max : t -> V.t
+
 	(** [allocSlackShift x m] allocates [x] at index [0], shifting
 	all the variables and slack accordingly.  If [x] is already allocated,
 	[Invalid_argument] is raised. *)
@@ -68,9 +70,10 @@ module type Type = sig
 	[Invalid_argument] is raised. *)
 	val freeSlackShift : V.t -> t -> t
 
+    val to_string: t -> typT -> int -> string
 end
 
-module Naming (Vec : Vector.Type) = struct
+module Naming (Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
 	module Vec = Vec
 	module V = Vec.V
 

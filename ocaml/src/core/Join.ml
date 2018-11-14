@@ -1,7 +1,5 @@
 module Cs = Cstr.Rat.Positive
 module V = Cs.Vec.V
-module Cons = PLP.Cons
-module Cert = Cons.Cert
 
 module Debug = DebugTypes.Debug(struct let name = "CHullBuild" end)
 
@@ -23,7 +21,7 @@ module type Type = sig
 
 	val build_constraints : V.t option -> Cs.Vec.t -> V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> Tableau.Vector.t list
 
-	val build_obj : V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> PLP.PSplx.Objective.t
+	val build_obj : V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> Objective.t
 
 	val get_init_point : V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> Cs.Vec.t
 
@@ -61,8 +59,8 @@ module Build (Min : Min.Type) = struct
 	let build_map : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 Cons.t list -> 'c2 Cons.t list -> V.t list -> Naming.t -> (('c1,'c2) certT) PLP.mapVar_t
 		= fun factory1 factory2 p1 p2 vars names ->
 		let to_index = Naming.to_index names Naming.Var in
-		let trivial_cstr1 = Cons.mkTriv factory1 Cstr.Le Scalar.Rat.u in
-		let trivial_cstr2 = Cons.mkTriv factory2 Cstr.Le Scalar.Rat.u in
+		let trivial_cstr1 = Cons.mkTriv factory1 Cstr_type.Le Scalar.Rat.u in
+		let trivial_cstr2 = Cons.mkTriv factory2 Cstr_type.Le Scalar.Rat.u in
 		let p1_cons = List.map (fun (c,cert) -> c, C1 cert) (p1 @ [trivial_cstr1])
 		and p2_cons = List.map (fun (c,cert) -> c, C2 cert) (p2 @ [trivial_cstr2])
 		in
@@ -146,24 +144,24 @@ module Build (Min : Min.Type) = struct
 		:: (build_constraint None p1 p2)
 		:: (List.map (fun param -> build_constraint (Some param) p1 p2) params)
 
-	let build_paramCoeff : V.t list -> 'c1 Cons.t -> PLP.ParamCoeff.t
+	let build_paramCoeff : V.t list -> 'c1 Cons.t -> ParamCoeff.t
 		= fun params cons ->
 		let vec = List.map
 			(fun param ->
 					Cons.get_c cons |> Cs.get_v |> Cs.Vec.neg |> fun vec -> Cs.Vec.get vec param)
 			params
 		in
-		PLP.ParamCoeff.mk vec (Cons.get_c cons |> Cs.get_c)
+		ParamCoeff.mk vec (Cons.get_c cons |> Cs.get_c)
 
-	let build_obj : V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> PLP.Objective.t
+	let build_obj : V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> Objective.t
 		= fun params p1 p2 ->
-		let null_paramCoeff = PLP.ParamCoeff.mk (List.map (fun _ -> Scalar.Rat.z) params) Scalar.Rat.z in
+		let null_paramCoeff = ParamCoeff.mk (List.map (fun _ -> Scalar.Rat.z) params) Scalar.Rat.z in
 		let coeffs = List.map (build_paramCoeff params) p1
-			@ [PLP.ParamCoeff.mk (List.map (fun _ -> Scalar.Rat.z) params) Scalar.Rat.u]
+			@ [ParamCoeff.mk (List.map (fun _ -> Scalar.Rat.z) params) Scalar.Rat.u]
 			@ List.map (fun _ -> null_paramCoeff) p2
 			@ [null_paramCoeff]
 		and cste = null_paramCoeff in
-		PLP.Objective.mk coeffs cste
+		Objective.mk coeffs cste
 
 
 	let get_init_point : V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> Cs.Vec.t
@@ -257,7 +255,7 @@ module Build (Min : Min.Type) = struct
 			List.exists
 				(fun (col,_) -> try
 					let (c,_) = PLP.MapV.find col map in
-					Cs.get_typ c = Cstr.Lt
+					Cs.get_typ c = Cstr_type.Lt
 					with Not_found -> false)
 				basisValue
 		in
@@ -282,7 +280,7 @@ module Build (Min : Min.Type) = struct
 						and arg2 = List.filter (fun (i,q) -> p2_col_min <= i && i <= p2_col_max && Scalar.Rat.cmpz q < 0) basisValue
 						in
 						if is_strict arg1 map && is_strict arg2 map
-						then let cstr' = {cstr with Cs.typ = Cstr.Lt} in
+						then let cstr' = {cstr with Cs.typ = Cstr_type.Lt} in
 							((cstr', get_cert_p1 factory1 arg1 map),
 						 	 (cstr', get_cert_p2 factory2 arg2 map))
 						else (* TODO: dans ce cas, il faut élargir les deux certificats*)
@@ -362,20 +360,11 @@ module Classic = struct
 end
 
 module Raytracing = struct
-	module Glpk = struct
-		module Rat = Build(Min.Glpk(Vector.Rat.Positive))
+	module Rat = Build(Min.Glpk(Vector.Rat.Positive))
 
-		module Float = Build(Min.Glpk(Vector.Float.Positive))
+	module Float = Build(Min.Glpk(Vector.Float.Positive))
 
-		module Symbolic = Build(Min.Glpk(Vector.Symbolic.Positive))
-	end
-	module Splx = struct
-		module Rat = Build(Min.Splx(Vector.Rat.Positive))
-
-		module Float = Build(Min.Splx(Vector.Float.Positive))
-
-		module Symbolic = Build(Min.Splx(Vector.Symbolic.Positive))
-	end
+	module Symbolic = Build(Min.Glpk(Vector.Symbolic.Positive))
 end
 
 module Heuristic = struct
@@ -391,17 +380,11 @@ let join : Flags.scalar -> 'c1 Cert.t -> 'c2 Cert.t -> V.t option ->  Vector.Sym
 	= fun scalar factory1 factory2 epsilon_opt init_point p1 p2 ->
 	Debug.log DebugTypes.Title (lazy "Building Convex Hull");
 	match !Flags.min with
-	| Flags.Raytracing Flags.Glpk ->	begin
+	| Flags.Raytracing -> begin
 		match scalar with
-  		| Flags.Symbolic -> Raytracing.Glpk.Symbolic.join factory1 factory2 epsilon_opt init_point p1 p2
-		| Flags.Float -> Raytracing.Glpk.Float.join factory1 factory2 epsilon_opt init_point p1 p2
-		| Flags.Rat -> Raytracing.Glpk.Rat.join factory1 factory2 epsilon_opt init_point p1 p2
-		end
-	| Flags.Raytracing Flags.Splx -> begin
-		match scalar with
-  		| Flags.Symbolic -> Raytracing.Splx.Symbolic.join factory1 factory2 epsilon_opt init_point p1 p2
-		| Flags.Float -> Raytracing.Splx.Float.join factory1 factory2 epsilon_opt init_point p1 p2
-		| Flags.Rat -> Raytracing.Splx.Rat.join factory1 factory2 epsilon_opt init_point p1 p2
+  		| Flags.Symbolic -> Raytracing.Symbolic.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Float -> Raytracing.Float.join factory1 factory2 epsilon_opt init_point p1 p2
+		| Flags.Rat -> Raytracing.Rat.join factory1 factory2 epsilon_opt init_point p1 p2
 		end
 	| Flags.Classic -> begin
 		match scalar with

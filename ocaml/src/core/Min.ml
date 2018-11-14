@@ -1,19 +1,19 @@
+module Debug = DebugTypes.Debug(struct let name = "Min" end)
+
 module type Type = sig
-	module Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M
+	module VecInput : Vector.Type with module V = Var.Positive and module M = Rtree
 
 	(** [minimize x cstrs] removes the redundancies in the list of constraints [cstrs].
-        @param cstrs is the list of constraints to minimize. Syntactic redundancies should have been removed previously. 
+        @param cstrs is the list of constraints to minimize. Syntactic redundancies should have been removed previously.
 		@param x is a point that should lie in the interior of the polyhedron defined by [cstrs].
 		This function attach to each returned constraint [cstr] a point that violates only [cstr].
 		When possible, this point does not saturate the completentary of [cstr]. *)
-	val minimize : Vec.t -> Cstr.Rat.Positive.t list -> (Cstr.Rat.Positive.t * Vec.t) list
+	val minimize : VecInput.t -> Cstr.Rat.Positive.t list -> (Cstr.Rat.Positive.t * VecInput.t) list
 
-	val minimize_cone : Vec.t -> Cstr.Rat.Positive.t list -> (Cstr.Rat.Positive.t * Vec.t) list
+	val minimize_cone : VecInput.t -> Cstr.Rat.Positive.t list -> (Cstr.Rat.Positive.t * VecInput.t) list
 
 	val name : string
 end
-
-module Debug = DebugTypes.Debug(struct let name = "Min" end)
 
 module Check = struct
 	let enabled : bool Pervasives.ref = Pervasives.ref false
@@ -29,15 +29,15 @@ module Check = struct
 			then Pervasives.failwith ("Check error : " ^ (Lazy.force s))
 end
 
-module Classic (Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
+module Classic (Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
 	module Cs = Cstr.Rat.Positive
-	module Vec = Vec
+	module VecInput = Vec
 
 	let name = "Classic"
 
 	let (strict_comp : Cs.t -> Cs.t)
 		= fun cstr ->
-		{(Cs.compl cstr) with Cs.typ = Cstr.Lt}
+		{(Cs.compl cstr) with Cs.typ = Cstr_type.Lt}
 
 
 	let ofSymbolic : Vector.Symbolic.Positive.t -> Vec.t
@@ -54,7 +54,7 @@ module Classic (Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = str
 		| Splx.IsUnsat _ -> None
 		| Splx.IsOk sx ->
 			(* On vérifie si le point obtenu va saturer cstr0 *)
-			if Cs.get_typ cstr0 = Cstr.Le
+			if Cs.get_typ cstr0 = Cstr_type.Le
 			then Some (ofSymbolic (Splx.getAsg sx))
 			else
 				let max_id = Misc.max (fun (i1,_) (i2,_) -> Pervasives.compare i1 i2) cstrs
@@ -117,7 +117,7 @@ module Classic (Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = str
 		let cstrs'' = List.map
 			(fun (i,cstr) -> i, {cstr with
 				Cs.c = Cs.Vec.Coeff.sub cstr.Cs.c Cs.Vec.Coeff.u;
-				Cs.typ = Cstr.Le})
+				Cs.typ = Cstr_type.Le})
 			((i0, Cs.compl cstr0) :: cstrs')
 		in
 		let sx = Splx.mk horizon cstrs''
@@ -155,11 +155,15 @@ module Classic (Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = str
 		res
 end
 
-module Classic_ = Classic (Cstr.Rat.Positive.Vec)
-
-module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP : MinLP.Type)  = struct
-
+module Make
+    (VecInput : Vector.Type with module M = Cstr.Rat.Positive.Vec.M)
+    (Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M)
+    (CsInput : Cstr.Type)
+    (LP : MinLP.Type) = struct
+    module VecInput = VecInput
 	module Cs = LP.CsUser
+
+    let name = "Raytracing"
 
 	type direction_type  =
 	| Normal of Vec.t * Cs.Vec.t (** x' = x0 + t * normal *)
@@ -528,7 +532,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 
 	let (strict_comp : Cs.t -> Cs.t)
 		= fun cstr ->
-		{(Cs.compl cstr) with Cs.typ = Cstr.Lt}
+		{(Cs.compl cstr) with Cs.typ = Cstr_type.Lt}
 
 	let init_lp : LP.t option -> Cs.t -> Cs.Vec.V.t list -> LP.t
 		= fun lp cstr vars ->
@@ -545,7 +549,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 		let lp = init_lp lp cstr vars in
 		match LP.add_cstrs cstrs lp with
 		| LP.IsOk lp -> begin
-			if Cs.get_typ cstr = Cstr.Le
+			if Cs.get_typ cstr = Cstr_type.Le
 			then let sol = LP.get_solution lp
 				|> !conv.csVec_Vec in
 				Some (sol, lp)
@@ -582,7 +586,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 		| None ->
 			let cstr' = {(Cs.compl cstr) with
 				Cs.c = Cs.Vec.Coeff.sub (Cs.compl cstr).Cs.c Cs.Vec.Coeff.u;
-				Cs.typ = Cstr.Le}
+				Cs.typ = Cstr_type.Le}
 			in
 			match LP.mk [cstr'] vars with
 			| LP.IsOk lp -> lp
@@ -596,7 +600,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 		let cstrs' = List.map
 			(fun cstr -> {cstr with
 				Cs.c = Cs.Vec.Coeff.sub cstr.Cs.c Cs.Vec.Coeff.u;
-				Cs.typ = Cstr.Le})
+				Cs.typ = Cstr_type.Le})
 			cstrs
 		in
 		match LP.add_cstrs cstrs' lp with
@@ -796,7 +800,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 				frontiers' (* frontiers' contient frontiers*)
 		end
 
-	let minimize : conversion -> VecInput.t -> CsInput.t list -> (CsInput.t * VecInput.t) list
+	let minimize_from_conv : conversion -> VecInput.t -> CsInput.t list -> (CsInput.t * VecInput.t) list
 		= fun conversion point cstrs ->
 		Debug.log DebugTypes.Title (lazy ("Minimization : Raytracing with vector type = " ^ (VecInput.name)));
 		Debug.log DebugTypes.MInput (lazy (Printf.sprintf "Interior Point : %s\nConstraints : %s"
@@ -810,7 +814,7 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 			res " ; "));
 		res
 
-	let minimize_cone : conversion -> VecInput.t -> CsInput.t list -> (CsInput.t * VecInput.t) list
+	let minimize_cone_from_conv : conversion -> VecInput.t -> CsInput.t list -> (CsInput.t * VecInput.t) list
 		= fun conversion point cstrs ->
 		Debug.log DebugTypes.Title (lazy ("Minimization : Raytracing with vector type = " ^ (VecInput.name)));
 		Debug.log DebugTypes.MInput (lazy (Printf.sprintf "Interior Point : %s\nConstraints : %s"
@@ -824,43 +828,15 @@ module Min (VecInput : Vector.Type)(Vec : Vector.Type)(CsInput : Cstr.Type)(LP :
 			res " ; "));
 		res
 
+    let minimize _ _ = failwith "unimplemented"
+    let minimize_cone _ _ = failwith "unimplemented"
 end
 
-module Splx(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
-	let name = "Raytracing:Splx:" ^ (Vec.Coeff.name)
-	module Vec = Vec
-	module LP = MinLP.Splx(Cstr.Float.Positive)
-	include Min(Vec)(Cstr.Float.Positive.Vec)(Cstr.Rat.Positive)(LP)
-
-	let id : 'a -> 'a = fun x -> x
-	let csCoeff_Coeff x = x
-	let vecInput_Vec x = Rtree.map (fun v -> Vec.Coeff.to_float v |> Cstr.Float.Positive.Vec.Coeff.of_float) x
-	let vec_VecInput x = Rtree.map (fun v -> Cstr.Float.Positive.Vec.Coeff.to_float v |> Vec.Coeff.of_float) x
-	let float_of_cstr : Cstr.Rat.Positive.t -> Cstr.Float.Positive.t
-		= fun cstr ->
-		let v = Rtree.map (fun x -> Cstr.Rat.Positive.Coeff.to_float x |> Cstr.Float.Positive.Vec.Coeff.of_float) cstr.Cstr.Rat.Positive.v in
-		let c = Cstr.Rat.Positive.Coeff.to_float cstr.Cstr.Rat.Positive.c |> Cstr.Float.Positive.Vec.Coeff.of_float in
-		Cstr.Float.Positive.mk2 cstr.Cstr.Rat.Positive.typ v c
-
-	let conversion_default = {
-		csInput_Cs = float_of_cstr;
-		vec_CsVec = id;
-		csVec_Vec = id;
-		csCoeff_Coeff = csCoeff_Coeff;
-		vecInput_Vec = vecInput_Vec;
-		vec_VecInput = vec_VecInput
-	}
-
-	let minimize = minimize conversion_default
-
-	let minimize_cone = minimize_cone conversion_default
-end
-
-module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
+module Glpk(Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
 	let name = "Glpk"
 
 	module Cs = Cstr.Rat.Positive
-	module Vec = Vec
+	module VecInput = Vec
 
 	let set_coeffs : Wrapper.polyhedron -> Cs.Vec.V.t list -> int -> Cs.t -> unit
   		= fun poly vars i_cstr cstr ->
@@ -944,29 +920,24 @@ module Glpk(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
 	let minimize_cone point constraints = minimize_witness point constraints
 end
 
-module Rat_Splx = Splx(Cstr.Rat.Positive.Vec)
-
 module Rat_Glpk = Glpk(Cstr.Rat.Positive.Vec)
 
-module Heuristic(Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M) = struct
+module Heuristic(Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
 	let name = "Heuristic"
-	module Vec = Vec
+	module VecInput = Vec
 
 	module Glpk = Glpk(Vec)
-	module Splx = Splx(Vec)
 	module Classic = Classic(Vec)
 
 	let minimize point constraints =
 		match Heuristic.min constraints with
-		| Flags.Raytracing (Flags.Glpk) -> Glpk.minimize point constraints
-		| Flags.Raytracing (Flags.Splx) -> Splx.minimize point constraints
+		| Flags.Raytracing -> Glpk.minimize point constraints
 		| Flags.Classic -> Classic.minimize point constraints
 		| _ -> Pervasives.invalid_arg "Min.Heuristic.minimize"
 
 	let minimize_cone point constraints =
 		match Heuristic.min constraints with
-		| Flags.Raytracing (Flags.Glpk) -> Glpk.minimize_cone point constraints
-		| Flags.Raytracing (Flags.Splx) -> Splx.minimize_cone point constraints
+		| Flags.Raytracing -> Glpk.minimize_cone point constraints
 		| Flags.Classic -> Classic.minimize_cone point constraints
 		| _ -> Pervasives.invalid_arg "Min.Heuristic.minimize_cone"
 end

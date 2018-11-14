@@ -88,7 +88,7 @@ let get_join_cert : 'c1 Cert.t -> 'c2 Cert.t ->  'c1 regionsT  -> 'c2 regionsT
         List.exists
             (fun (col,_) -> try
                 let (c,_) = PLP.MapV.find col map in
-                Cs.get_typ c = Cstr.Lt
+                Cs.get_typ c = Cstr_type.Lt
                 with Not_found -> false)
             basisValue
     in
@@ -111,7 +111,7 @@ let get_join_cert : 'c1 Cert.t -> 'c2 Cert.t ->  'c1 regionsT  -> 'c2 regionsT
                     and arg2 = List.filter (fun (i,q) -> p2_col_min <= i && i <= p2_col_max && Scalar.Rat.cmpz q < 0) basisValue
                     in
                     if is_strict arg1 map && is_strict arg2 map
-                    then let cstr' = {cstr with Cs.typ = Cstr.Lt} in
+                    then let cstr' = {cstr with Cs.typ = Cstr_type.Lt} in
                         ((cstr', get_cert_p1 factory1 arg1 map),
                          (cstr', get_cert_p2 factory2 arg2 map))
                     else (* TODO: dans ce cas, il faut élargir les deux certificats*)

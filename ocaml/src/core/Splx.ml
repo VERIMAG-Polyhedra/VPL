@@ -1,6 +1,7 @@
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module V = Vec.V
+module VT = Var_type
 
 module Defs
   = struct
@@ -88,21 +89,21 @@ type bck_t =
 
 module Witness = struct
 	type t = (int * Cs.Vec.Coeff.t) list
-	
+
 	let to_string : t -> string
 		= function
 		| [] -> "empty"
 		| _::_ as l ->
 			let pr (i, n) = Printf.sprintf "%s*(%i)" (Cs.Vec.Coeff.to_string n) i in
 			String.concat " + " (List.map pr l)
-	
+
 	let cmp (i1,_) (i2,_) =
 		match Pervasives.compare i1 i2 with
 		| 0 -> invalid_arg "Cert.cmp"
 		| n -> n
 
 	let sort a = List.sort cmp a
-	
+
 	let equal : t -> t -> bool
 		= fun f1 f2  ->
 		List.length f1 = List.length f2 &&
@@ -281,18 +282,18 @@ let mkBnd id (c: Cs.t) (a: Cs.Vec.Coeff.t): state_t =
 		invalid_arg "Splx.mkBnd"
 	else
 		match Cs.get_typ c with
-		| Cstr.Eq ->
-			let l = {id = id; scale = Cs.Vec.Coeff.inv (Cs.Vec.Coeff.neg a); bv = Scalar.Symbolic.ofRat b} in
-			let u = {id = id; scale = Cs.Vec.Coeff.inv a; bv = Scalar.Symbolic.ofRat b} in
+		| Cstr_type.Eq ->
+			let l = {id = id; scale = Cs.Vec.Coeff.inv (Cs.Vec.Coeff.neg a); bv = Scalar.Symbolic.ofQ b} in
+			let u = {id = id; scale = Cs.Vec.Coeff.inv a; bv = Scalar.Symbolic.ofQ b} in
 			{v = Scalar.Symbolic.z; low = Some l; up = Some u}
-		| Cstr.Le ->
+		| Cstr_type.Le ->
 			if aZ < 0 then
-				let u = {id = id; scale = Cs.Vec.Coeff.inv a; bv = Scalar.Symbolic.ofRat b} in
+				let u = {id = id; scale = Cs.Vec.Coeff.inv a; bv = Scalar.Symbolic.ofQ b} in
 				{v = Scalar.Symbolic.z; low = None; up = Some u}
 			else
-				let l = {id = id; scale = Cs.Vec.Coeff.inv (Cs.Vec.Coeff.neg a); bv = Scalar.Symbolic.ofRat b} in
+				let l = {id = id; scale = Cs.Vec.Coeff.inv (Cs.Vec.Coeff.neg a); bv = Scalar.Symbolic.ofQ b} in
 				{v = Scalar.Symbolic.z; low = Some l; up = None}
-		| Cstr.Lt ->
+		| Cstr_type.Lt ->
 			if aZ < 0 then
 				let u = {id = id; scale = Cs.Vec.Coeff.inv a; bv = Scalar.Symbolic.ndelta b} in
 				{v = Scalar.Symbolic.z; low = None; up = Some u}
@@ -405,10 +406,10 @@ type choiceT
 = {var : V.t; vec : Vec.t; st : state_t}
 
 let fromLeft : choiceT option -> choiceT option
-= function None -> None | Some c -> Some {c with var = V.XO c.var}
+= function None -> None | Some c -> Some {c with var = VT.XO c.var}
 
 let fromRight : choiceT option -> choiceT option
-= function None -> None | Some c -> Some {c with var = V.XI c.var}
+= function None -> None | Some c -> Some {c with var = VT.XI c.var}
 
 module type Strategy
 = sig
@@ -432,7 +433,7 @@ module Bland : Strategy
 				match _in_bound st with
 				| Ok -> None
 				| KoL _
-				| KoU _ -> Some {var = V.XH; vec = c; st = st}
+				| KoU _ -> Some {var = VT.XH; vec = c; st = st}
 		in
 		let rec find : Vec.t option Rtree.t -> state_t Rtree.t -> choiceT option
 		= fun m stree ->
@@ -452,14 +453,14 @@ module Bland : Strategy
 	let pickNBasic s d xiv =
 		let tryincr w a st =
 			match st.up with
-			| None -> NonBasic V.XH
-			| Some u when Scalar.Symbolic.cmp u.bv st.v > 0 -> NonBasic V.XH
+			| None -> NonBasic VT.XH
+			| Some u when Scalar.Symbolic.cmp u.bv st.v > 0 -> NonBasic VT.XH
 			| Some u -> UnsatSplx ((u.id, Cs.Vec.Coeff.mul u.scale a)::w)
 		in
 		let trydecr w a st =
 			match st.low with
-			| None -> NonBasic V.XH
-			| Some l when Scalar.Symbolic.cmp l.bv st.v < 0 -> NonBasic V.XH
+			| None -> NonBasic VT.XH
+			| Some l when Scalar.Symbolic.cmp l.bv st.v < 0 -> NonBasic VT.XH
 			| Some l -> UnsatSplx ((l.id, Cs.Vec.Coeff.mul l.scale a)::w)
 		in
 		let (fpos, fneg) =
@@ -476,16 +477,16 @@ module Bland : Strategy
 		let rec find a0 ve st =
 			match ve, st with
 			| Rtree.Nil, _ -> UnsatSplx a0
-			| Rtree.Sub _, Rtree.Nil -> NonBasic V.XH
+			| Rtree.Sub _, Rtree.Nil -> NonBasic VT.XH
 			| Rtree.Sub (l1, n1, r1), Rtree.Sub (l2, n2, r2) ->
 				match f a0 n1 n2 with
 				| NonBasic _ as r -> r
 				| UnsatSplx a1 ->
 					match find a1 l1 l2 with
-					| NonBasic v -> NonBasic (V.XO v)
+					| NonBasic v -> NonBasic (VT.XO v)
 					| UnsatSplx a2 ->
 						match find a2 r1 r2 with
-						| NonBasic v -> NonBasic (V.XI v)
+						| NonBasic v -> NonBasic (VT.XI v)
 						| UnsatSplx _ as r -> r
 		in
 		find [] xiv s.state
@@ -506,7 +507,7 @@ module Steep : Strategy
 			| Some ve -> fun st ->
 				match _in_bound st with
 				| Ok -> None
-				| KoL _ | KoU _ -> Some {var = V.XH; vec = ve; st = st}
+				| KoL _ | KoU _ -> Some {var = VT.XH; vec = ve; st = st}
 		in
 		let score: choiceT -> Scalar.Symbolic.t
 		= fun c ->
@@ -547,19 +548,19 @@ module Steep : Strategy
 		let tryDecr : state_t -> indepChoiceT option
 		= fun st ->
 			match st.low with
-			| None -> Some (Unbounded V.XH)
+			| None -> Some (Unbounded VT.XH)
 			| Some l ->
 				if Scalar.Symbolic.cmp l.bv st.v < 0
-				then Some (Bounded (V.XH, Scalar.Symbolic.sub st.v l.bv)) (* XXX: coefficient *)
+				then Some (Bounded (VT.XH, Scalar.Symbolic.sub st.v l.bv)) (* XXX: coefficient *)
 				else None
 		in
 		let tryIncr : state_t -> indepChoiceT option
 		= fun st ->
 			match st.up with
-			| None -> Some (Unbounded V.XH)
+			| None -> Some (Unbounded VT.XH)
 			| Some u ->
 				if Scalar.Symbolic.cmp st.v u.bv < 0
-				then Some (Bounded (V.XH, Scalar.Symbolic.sub u.bv st.v)) (* XXX: coefficient *)
+				then Some (Bounded (VT.XH, Scalar.Symbolic.sub u.bv st.v)) (* XXX: coefficient *)
 				else None
 		in
 		let candidate : chgDirT -> Cs.Vec.Coeff.t -> state_t -> indepChoiceT option
@@ -580,14 +581,14 @@ module Steep : Strategy
 		let fromLeft : indepChoiceT option -> indepChoiceT option
 		= function
 			| None -> None
-			| Some (Unbounded x) -> Some (Unbounded (V.XO x))
-			| Some (Bounded (x, sc)) -> Some (Bounded (V.XO x, sc))
+			| Some (Unbounded x) -> Some (Unbounded (VT.XO x))
+			| Some (Bounded (x, sc)) -> Some (Bounded (VT.XO x, sc))
 		in
 		let fromRight : indepChoiceT option -> indepChoiceT option
 		= function
 			| None -> None
-			| Some (Unbounded x) -> Some (Unbounded (V.XI x))
-			| Some (Bounded (x, sc)) -> Some (Bounded (V.XI x, sc))
+			| Some (Unbounded x) -> Some (Unbounded (VT.XI x))
+			| Some (Bounded (x, sc)) -> Some (Bounded (VT.XI x, sc))
 		in
 		let rec witness : chgDirT -> Vec.t -> state_t Rtree.t -> witness_t
 		=	let bound : Cs.Vec.Coeff.t -> chgDirT -> state_t -> bnd_t option
@@ -616,7 +617,7 @@ module Steep : Strategy
 		= fun d v st ->
 			match v, st with
 			| Rtree.Nil, _ -> None
-			| Rtree.Sub _, Rtree.Nil -> Some (Unbounded V.XH)
+			| Rtree.Sub _, Rtree.Nil -> Some (Unbounded VT.XH)
 			| Rtree.Sub (l1, n1, r1), Rtree.Sub (l2, n2, r2) ->
 				let l = fromLeft (find d l1 l2) in
 				let r = fromRight (find d r1 r2) in
@@ -685,14 +686,14 @@ module Preprocessing
 	      | None -> None
 	      | Some v ->
 		 if Cs.Vec.Coeff.cmpz (Vec.get v x) <> 0
-		 then Some (fcont V.XH)
+		 then Some (fcont VT.XH)
 		 else None)
 	     |> function
 	       | Some _ as r -> r
 	       | None ->
-		  match find x (fun x' -> fcont (V.XO x')) l with
+		  match find x (fun x' -> fcont (VT.XO x')) l with
 		  | Some _ as r -> r
-		  | None -> find x (fun x' -> fcont (V.XI x')) r
+		  | None -> find x (fun x' -> fcont (VT.XI x')) r
 	in
 	fun x sx -> find x (fun x' -> x') sx.mat
 
@@ -864,20 +865,19 @@ let forget s id =
 		  match Preprocessing.findOccurence v s1 with
 		  | None -> s1
 		  | Some xb -> Preprocessing.elim v xb s1
-		  
+
 let getAsgOpt : V.t -> (int * Cs.t) list -> Scalar.Symbolic.t Rtree.t option
 	= fun horizon cstrs ->
 	match mk horizon cstrs |> checkFromAdd with
 	| IsUnsat _ -> None
 	| IsOk sx -> Some (getAsg sx)
-	
+
 let getPointInside_cone : Cs.Vec.V.t -> Cs.t list -> Scalar.Symbolic.t Rtree.t option
-	= fun horizon cstrs -> 
+	= fun horizon cstrs ->
 	let cstrs' = List.mapi
-		(fun i cstr -> i, {cstr with 
+		(fun i cstr -> i, {cstr with
 		Cs.c = Cs.Vec.Coeff.sub cstr.Cs.c Cs.Vec.Coeff.u;
-		Cs.typ = Cstr.Le})
+		Cs.typ = Cstr_type.Le})
 		cstrs
 	in
 	getAsgOpt horizon cstrs'
-	

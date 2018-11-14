@@ -7,7 +7,7 @@
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module Var = Vec.V
-module CP = CstrPoly.Positive
+module CP = CstrPoly
 module Polynomial = CP.Poly
 module Coeff = Scalar.Rat
 

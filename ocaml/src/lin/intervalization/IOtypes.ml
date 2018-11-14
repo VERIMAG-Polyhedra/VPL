@@ -787,12 +787,12 @@ module DomainZ = struct
     module NAItv = ZNoneItv.NAItv
 
     module Poly = struct
-        include Poly.RelInt
+        include Poly.Make(Vector.RelInt.Positive)
 
         let coqvar_to_var : PVar.t -> Vec.V.t
             = fun var ->
             PedraQOracles.coqPosToZ var
-            |> Scalar.RelInt.toInt
+            |> Z.to_int
             |> Vec.V.fromInt
 
         let var_to_coqvar : Vec.V.t -> PVar.t
@@ -804,7 +804,7 @@ module DomainZ = struct
         let n_to_coeff : N.t -> Coeff.t
             = fun c ->
             PedraQOracles.coqZToZ c
-            |> Scalar.RelInt.toInt
+            |> Z.to_int
             |> Coeff.mk1
 
         let coeff_to_n : Coeff.t -> N.t
@@ -959,12 +959,13 @@ module DomainQ = struct
     end
 
     module Poly = struct
-        include Poly.Rat.Poly(Vector.Rat.Int)
+        (** Polynomials over integers ?*)
+        include Poly.Make(Vector.Rat.Positive)
 
         let coqvar_to_var : PVar.t -> Vec.V.t
             = fun var ->
             PedraQOracles.coqPosToZ var
-            |> Scalar.RelInt.toInt
+            |> Z.to_int
             |> Vec.V.fromInt
 
         let var_to_coqvar : Vec.V.t -> PVar.t

@@ -6,9 +6,6 @@ It represents only sets of inequalities with {b nonempty interior}, meaning that
 *)
 
 module Cs = Cstr.Rat.Positive
-module EqSet = PLP.EqSet
-module Cons = PLP.Cons
-module Cert = Cons.Cert
 module Vec = Cs.Vec
 module V = Vec.V
 
@@ -34,52 +31,6 @@ type 'c rel_t =
 type 'c simpl_t =
 | SimplMin of 'c t
 | SimplBot of 'c
-
-module Stats
-  = struct
-
-  let fmeGenCnt : Scalar.Rat.Z.t Pervasives.ref
-    = Pervasives.ref Scalar.Rat.Z.z
-
-  let fmeGen : int -> unit
-    = fun i -> fmeGenCnt := Scalar.Rat.Z.add !fmeGenCnt (Scalar.Rat.Z.mk i);;
-
-  let fmeRedKohlerCnt : Scalar.Rat.Z.t Pervasives.ref
-    = Pervasives.ref Scalar.Rat.Z.z
-
-  let fmeRedKohler : int -> unit
-    = fun i -> fmeRedKohlerCnt := Scalar.Rat.Z.add !fmeRedKohlerCnt (Scalar.Rat.Z.mk i);;
-
-  let fmeRedSynCnt : Scalar.Rat.Z.t Pervasives.ref
-    = Pervasives.ref Scalar.Rat.Z.z
-
-  let fmeRedSyn : int -> unit
-    = fun i -> fmeRedSynCnt := Scalar.Rat.Z.add !fmeRedSynCnt (Scalar.Rat.Z.mk i);;
-
-  let fmeRedSxCnt : Scalar.Rat.Z.t Pervasives.ref
-    = Pervasives.ref Scalar.Rat.Z.z
-
-  let fmeRedSx : int -> unit
-    = fun i -> fmeRedSxCnt := Scalar.Rat.Z.add !fmeRedSxCnt (Scalar.Rat.Z.mk i);;
-
-  let reset : unit -> unit
-    = fun () ->
-    begin
-      fmeGenCnt := Scalar.Rat.Z.z;
-      fmeRedKohlerCnt := Scalar.Rat.Z.z;
-      fmeRedSynCnt := Scalar.Rat.Z.z;
-      fmeRedSxCnt := Scalar.Rat.Z.z;
-    end
-
-  let pr : unit -> string
-    = fun () ->
-    Printf.sprintf "Fourier-Motzkin elimination generated %s constraints\n%s constraints were redundant by Kohler's criterion\n%s constraints were syntactically redundant\n%s constraints were remove using inclusion tests\n"
-		    (Scalar.Rat.Z.pr !fmeGenCnt)
-		    (Scalar.Rat.Z.pr !fmeRedKohlerCnt)
-		    (Scalar.Rat.Z.pr !fmeRedSynCnt)
-		    (Scalar.Rat.Z.pr !fmeRedSxCnt)
-
-end
 
 module Stat = struct
 
@@ -133,7 +84,7 @@ let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 				(Cs.get_c c2)
 				(Scalar.Rat.mul r (Cs.get_c c1))
 			in
-            if Cs.get_typ c2 = Cstr.Lt && Scalar.Rat.equal r Scalar.Rat.u && Scalar.Rat.equal cste Scalar.Rat.z
+            if Cs.get_typ c2 = Cstr_type.Lt && Scalar.Rat.equal r Scalar.Rat.u && Scalar.Rat.equal cste Scalar.Rat.z
             then cert1
 			else if Scalar.Rat.lt cste Scalar.Rat.z
 			then factory.Cert.mul r cert1
@@ -144,7 +95,7 @@ let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
 				|> factory.Cert.add cste_cert
 		in
 		match Cs.get_typ c1, Cs.get_typ c2 with
-		| Cstr.Lt, Cstr.Le -> factory.Cert.to_le cert
+		| Cstr_type.Lt, Cstr_type.Le -> factory.Cert.to_le cert
 		| _,_ -> cert
 		end
 	| None -> Pervasives.raise CertSyn
@@ -366,23 +317,13 @@ let fmElim: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t ->  'c t -> 'c t
 	let zs = List.rev z in
 	let add : 'c Cert.t -> 'c t -> 'c Cons.t -> 'c t
 	  = fun factory s c ->
-	  begin
-	    Stats.fmeGen 1;
-      let s' = synAdd factory es s c in
-		Stats.fmeRedSyn (List.length s + 1 - List.length s');
-		s'
-	  end
+	  synAdd factory es s c
 	in
 	let apply factory s0 c = List.fold_left
 		(fun s c1 -> add factory s (Cons.elimc factory x c c1)) s0 neg
 	in
-	let s' = List.fold_left (apply factory) zs pos in
-	let s'' = trimSet nxt s' in
-	begin
-	  Stats.fmeGen (List.length zs);
-	  Stats.fmeRedSx (List.length s' - List.length s'');
-	  s''
-	end
+    List.fold_left (apply factory) zs pos
+	|> trimSet nxt
 
 let pProjM : 'c Cert.t -> V.t list -> 'c t -> Flags.scalar -> 'c t
 	= fun factory xs s scalar_type ->
@@ -461,17 +402,6 @@ module RmRedAux = struct
 		in
 		s'
 
-	let splx: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
-		= fun s point ->
-		let point = Cstr.Rat.Positive.Vec.M.map Cstr.Rat.Positive.Vec.ofSymbolic point in
-		let cstrs = List.map Cons.get_c s in
-		let l = Min.Rat_Splx.minimize point cstrs in
-		let s' = List.filter
-			(fun (cstr,_) -> List.exists (fun (cstr',_) -> Cstr.Rat.Positive.equalSyn cstr cstr') l)
-			s
-		in
-		s'
-
 	let classic : Splx.t -> (int * 'c Cons.t) list -> 'c t
 		= fun sx conss ->
 		let classic: Splx.t * 'c t -> (int * 'c Cons.t) -> Splx.t * 'c t
@@ -500,9 +430,7 @@ let rmRedAux : 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
 		then s
 		else
 			match !Flags.min with
-			| Flags.Raytracing (Flags.Splx)->
-				RmRedAux.splx s point
-			| Flags.Raytracing (Flags.Glpk)->
+			| Flags.Raytracing ->
 				RmRedAux.glpk s point
 			| Flags.Classic -> begin
 				Stat.base_n_cstr := List.length s;

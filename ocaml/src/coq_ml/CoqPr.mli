@@ -20,8 +20,8 @@ val zPrRaw': BinNums.coq_Z -> char list
 val charListTr: char list -> string
 val stringTr: string -> char list
 
-val posTr: BinNums.positive -> Scalar.Rat.Z.t
-val zTr: BinNums.coq_Z -> Scalar.Rat.Z.t
+val posTr: BinNums.positive -> Z.t
+val zTr: BinNums.coq_Z -> Z.t
 
 val exprPr: Ring_polynom_AddOnQ.coq_PExpr -> string
 val exprPr': Ring_polynom_AddOnQ.coq_PExpr -> char list

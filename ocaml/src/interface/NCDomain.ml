@@ -1,9 +1,9 @@
-type cmpT = Cstr.cmpT_extended
+type cmpT = Cstr_type.cmpT_extended
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module Var = Vec.V
-module CP = CstrPoly.Positive
+module CP = CstrPoly
 module Polynomial = CP.Poly
 module Coeff = Scalar.Rat
 
@@ -24,7 +24,7 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
 
 	let top = NonBot Pol.top
 
-	let bottom = Bottom (F.mk (Cs.mk Cstr.Le [] Scalar.Rat.z))
+	let bottom = Bottom (F.mk (Cs.mk Cstr_type.Le [] Scalar.Rat.z))
 
 	let is_bottom = function
         | Bottom _ -> true
@@ -150,8 +150,8 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
 		| (Pol.Infty, Some _) -> Pervasives.raise (Wrong_Certificate error_string)
 		| (Pol.Open v, Some cert) ->
             let expected_cert = if upper
-                then (Cs.mk2 Cstr.Lt obj v)
-                else (Cs.mk2 Cstr.Lt (Vec.neg obj) (Scalar.Rat.neg v))
+                then (Cs.mk2 Cstr_type.Lt obj v)
+                else (Cs.mk2 Cstr_type.Lt (Vec.neg obj) (Scalar.Rat.neg v))
             in
 			if F.equal expected_cert cert
 			then Pol.Open v
@@ -163,8 +163,8 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
                     (F.to_string cert)))
 		| (Pol.Closed v, Some cert) ->
 			let expected_cert = if upper
-                then (Cs.mk2 Cstr.Le obj v)
-                else (Cs.mk2 Cstr.Le (Vec.neg obj) (Scalar.Rat.neg v))
+                then (Cs.mk2 Cstr_type.Le obj v)
+                else (Cs.mk2 Cstr_type.Le (Vec.neg obj) (Scalar.Rat.neg v))
             in
 			if F.equal expected_cert cert
 			then Pol.Closed v

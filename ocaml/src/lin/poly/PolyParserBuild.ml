@@ -4,7 +4,7 @@ type poly =
 	| Sub of poly * poly
 	| Mul of poly * poly
 
-type contrainte = poly * Cstr.cmpT_extended * poly
+type contrainte = poly * Cstr_type.cmpT_extended * poly
 
 type assign = string*poly
 

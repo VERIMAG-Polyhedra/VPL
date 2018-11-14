@@ -1,9 +1,6 @@
 (* see comments in ASTCert.mli *)
 
 module Rat = Scalar.Rat
-module EqSet = IneqSet.EqSet
-module Cons = IneqSet.Cons
-module Cert = Cons.Cert
 module Cs = EqSet.Cs
 module Vec = Cs.Vec
 module Var = Vec.V
@@ -11,7 +8,7 @@ module Var = Vec.V
 type 'c op =
   | Hyp of Cs.t                 (* an hypothesis (from the inputs) *)
   | Top
-  | Triv of Cstr.cmpT * Rat.t
+  | Triv of Cstr_type.cmpT * Rat.t
   | Add of 'c * 'c
   | Mul of Rat.t * 'c           (* in [Mul n c], [n] must be non-negative except if [c] is an equality ! *)
   | Merge of 'c * 'c            (* merge two inequalities an an equality *)

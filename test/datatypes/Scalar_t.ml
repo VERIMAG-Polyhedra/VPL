@@ -286,7 +286,7 @@ module Symbolic = struct
 	= fun () ->
         fun state ->
 		let z1 = Scalar.Symbolic.z in
-		let z2 = Scalar.Symbolic.ofRat Scalar.Rat.z in
+		let z2 = Scalar.Symbolic.ofQ Scalar.Rat.z in
 		if Scalar.Symbolic.cmp z1 z2 = 0 then
 			Test.succeed state
 		else
@@ -322,14 +322,14 @@ module Symbolic = struct
 			"znd", Scalar.Symbolic.z, Scalar.Symbolic.ndelta Scalar.Rat.z, gt;
 			"pdz", Scalar.Symbolic.pdelta Scalar.Rat.z, Scalar.Symbolic.z, gt;
 			"ndz", Scalar.Symbolic.ndelta Scalar.Rat.z, Scalar.Symbolic.z, lt;
-			"01", Scalar.Symbolic.ofRat Scalar.Rat.z, Scalar.Symbolic.ofRat Scalar.Rat.u, lt;
-			"10", Scalar.Symbolic.ofRat Scalar.Rat.u, Scalar.Symbolic.ofRat Scalar.Rat.z, gt;
-			"0-1", Scalar.Symbolic.ofRat Scalar.Rat.z, Scalar.Symbolic.ofRat Scalar.Rat.negU, gt;
-			"-10", Scalar.Symbolic.ofRat Scalar.Rat.negU, Scalar.Symbolic.ofRat Scalar.Rat.z, lt;
-			"12", Scalar.Symbolic.ofRat Scalar.Rat.u, Scalar.Symbolic.ofRat (Scalar.Rat.mk1 2), lt;
-			"21", Scalar.Symbolic.ofRat (Scalar.Rat.mk1 2), Scalar.Symbolic.ofRat Scalar.Rat.u, gt;
-			"-12", Scalar.Symbolic.ofRat Scalar.Rat.negU, Scalar.Symbolic.ofRat (Scalar.Rat.mk1 2), lt;
-			"2-1", Scalar.Symbolic.ofRat (Scalar.Rat.mk1 2), Scalar.Symbolic.ofRat Scalar.Rat.negU, gt
+			"01", Scalar.Symbolic.ofQ Scalar.Rat.z, Scalar.Symbolic.ofQ Scalar.Rat.u, lt;
+			"10", Scalar.Symbolic.ofQ Scalar.Rat.u, Scalar.Symbolic.ofQ Scalar.Rat.z, gt;
+			"0-1", Scalar.Symbolic.ofQ Scalar.Rat.z, Scalar.Symbolic.ofQ Scalar.Rat.negU, gt;
+			"-10", Scalar.Symbolic.ofQ Scalar.Rat.negU, Scalar.Symbolic.ofQ Scalar.Rat.z, lt;
+			"12", Scalar.Symbolic.ofQ Scalar.Rat.u, Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), lt;
+			"21", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Scalar.Symbolic.ofQ Scalar.Rat.u, gt;
+			"-12", Scalar.Symbolic.ofQ Scalar.Rat.negU, Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), lt;
+			"2-1", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Scalar.Symbolic.ofQ Scalar.Rat.negU, gt
 		] in
 		Test.suite "cmp" (List.map chk tcs)
 
@@ -344,10 +344,10 @@ module Symbolic = struct
 		in
 		let tcs = [
 			"z", false, Scalar.Symbolic.z;
-			"int0", false, Scalar.Symbolic.ofRat Scalar.Rat.u;
-			"int1", false, Scalar.Symbolic.ofRat (Scalar.Rat.mk1 2);
-			"int2", false, Scalar.Symbolic.ofRat (Scalar.Rat.mk1 (-2));
-			"rat0", false, Scalar.Symbolic.ofRat (Scalar.Rat.mk 3 2);
+			"int0", false, Scalar.Symbolic.ofQ Scalar.Rat.u;
+			"int1", false, Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2);
+			"int2", false, Scalar.Symbolic.ofQ (Scalar.Rat.mk1 (-2));
+			"rat0", false, Scalar.Symbolic.ofQ (Scalar.Rat.mk 3 2);
 			"pdelta0", true, Scalar.Symbolic.pdelta Scalar.Rat.z;
 			"pdelta1", true, Scalar.Symbolic.pdelta Scalar.Rat.u;
 			"pdelta2", true, Scalar.Symbolic.adddelta (Scalar.Symbolic.pdelta (Scalar.Rat.mk1 2));
@@ -373,8 +373,8 @@ module Symbolic = struct
 		in
 		let tcs = [
 			"z", Scalar.Symbolic.mulr Scalar.Rat.u Scalar.Symbolic.z, Scalar.Symbolic.z;
-			"u", Scalar.Symbolic.mulr Scalar.Rat.u (Scalar.Symbolic.ofRat Scalar.Rat.u),
-				Scalar.Symbolic.ofRat Scalar.Rat.u;
+			"u", Scalar.Symbolic.mulr Scalar.Rat.u (Scalar.Symbolic.ofQ Scalar.Rat.u),
+				Scalar.Symbolic.ofQ Scalar.Rat.u;
 			"pu", Scalar.Symbolic.mulr Scalar.Rat.u (Scalar.Symbolic.pdelta Scalar.Rat.u),
 				Scalar.Symbolic.pdelta Scalar.Rat.u;
 			"nu", Scalar.Symbolic.mulr Scalar.Rat.u (Scalar.Symbolic.ndelta Scalar.Rat.u),
@@ -401,9 +401,9 @@ module Symbolic = struct
 		in
 		let tcs = [
 			"z", Scalar.Symbolic.z, Scalar.Symbolic.pdelta Scalar.Rat.z;
-			"u", Scalar.Symbolic.ofRat Scalar.Rat.u, Scalar.Symbolic.pdelta Scalar.Rat.u;
-			"pos", Scalar.Symbolic.ofRat (Scalar.Rat.mk1 2), Scalar.Symbolic.pdelta (Scalar.Rat.mk1 2);
-			"ndelta", Scalar.Symbolic.ndelta Scalar.Rat.u, Scalar.Symbolic.ofRat Scalar.Rat.u;
+			"u", Scalar.Symbolic.ofQ Scalar.Rat.u, Scalar.Symbolic.pdelta Scalar.Rat.u;
+			"pos", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Scalar.Symbolic.pdelta (Scalar.Rat.mk1 2);
+			"ndelta", Scalar.Symbolic.ndelta Scalar.Rat.u, Scalar.Symbolic.ofQ Scalar.Rat.u;
 			"deltas", Scalar.Symbolic.pdelta Scalar.Rat.u,
 				Scalar.Symbolic.add (Scalar.Symbolic.pdelta Scalar.Rat.u) (Scalar.Symbolic.pdelta Scalar.Rat.z)
 		] in
@@ -425,9 +425,9 @@ module Symbolic = struct
 		in
 		let tcs = [
 			"z", Scalar.Symbolic.z, Scalar.Symbolic.ndelta Scalar.Rat.z;
-			"u", Scalar.Symbolic.ofRat Scalar.Rat.u, Scalar.Symbolic.ndelta Scalar.Rat.u;
-			"pos", Scalar.Symbolic.ofRat (Scalar.Rat.mk1 2), Scalar.Symbolic.ndelta (Scalar.Rat.mk1 2);
-			"pdelta", Scalar.Symbolic.pdelta Scalar.Rat.u, Scalar.Symbolic.ofRat Scalar.Rat.u;
+			"u", Scalar.Symbolic.ofQ Scalar.Rat.u, Scalar.Symbolic.ndelta Scalar.Rat.u;
+			"pos", Scalar.Symbolic.ofQ (Scalar.Rat.mk1 2), Scalar.Symbolic.ndelta (Scalar.Rat.mk1 2);
+			"pdelta", Scalar.Symbolic.pdelta Scalar.Rat.u, Scalar.Symbolic.ofQ Scalar.Rat.u;
 			"deltas", Scalar.Symbolic.ndelta Scalar.Rat.u,
 				Scalar.Symbolic.add (Scalar.Symbolic.ndelta Scalar.Rat.u) (Scalar.Symbolic.ndelta Scalar.Rat.z)
 		] in

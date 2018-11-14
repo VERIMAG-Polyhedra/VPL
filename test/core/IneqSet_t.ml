@@ -1,22 +1,19 @@
 open Vpl
 
 module Cs = Cstr.Rat.Positive
-module EqSet = IneqSet.EqSet
-module Cons = EqSet.Cons
-module Cert = Cons.Cert
 module Vec = Cs.Vec
 module V = Vec.V
 
 let factory : Cs.t Cert.t = {
 	Cert.name = "Cstr";
-	Cert.top = (Cs.mk Cstr.Eq [] Scalar.Rat.z);
+	Cert.top = (Cs.mk Cstr_type.Eq [] Scalar.Rat.z);
 	Cert.triv = (fun cmp n -> Cs.mk cmp [] n);
 	Cert.add = Cs.add;
 	Cert.mul = Cs.mulc;
-	Cert.to_le = (fun c -> {c with Cs.typ = Cstr.Le});
+	Cert.to_le = (fun c -> {c with Cs.typ = Cstr_type.Le});
 	Cert.merge = (fun c1 c2 ->
-		let c1' = {c1 with Cs.typ = Cstr.Eq}
-		and c2' = {c2 with Cs.typ = Cstr.Eq} in
+		let c1' = {c1 with Cs.typ = Cstr_type.Eq}
+		and c2' = {c2 with Cs.typ = Cstr_type.Eq} in
 		if Cs.equal c1' c2'
 		then c1'
 		else failwith "merge");
@@ -46,9 +43,9 @@ let varPr: V.t -> string
 let mkc t v c =
 	Cs.mk t (List.map (fun (n, x) -> (Scalar.Rat.mk1 n, x)) v) (Scalar.Rat.mk1 c)
 
-let eq = mkc Cstr.Eq
-let le = mkc Cstr.Le
-let lt = mkc Cstr.Lt
+let eq = mkc Cstr_type.Eq
+let le = mkc Cstr_type.Le
+let lt = mkc Cstr_type.Lt
 
 let mask l =
 	List.fold_left (fun m x -> Vec.M.set None m x (Some x)) Vec.M.empty l
@@ -79,7 +76,7 @@ let mkEqSet: Cs.t list -> Cs.t EqSet.t
 
 let iset: Cs.t list -> Cs.t IneqSet.t
 	= fun l ->
-	let l_stricten = List.mapi (fun i c -> i,{c with Cs.typ = Cstr.Lt}) l in
+	let l_stricten = List.mapi (fun i c -> i,{c with Cs.typ = Cstr_type.Lt}) l in
 	match Splx.checkFromAdd (Splx.mk nxt l_stricten) with
 	| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet_t.iset: unexpected empty interior"
 	| Splx.IsOk sx_strict ->
@@ -183,7 +180,7 @@ let chk (nm, s, l, r)
 	= fun st ->
 		let ilist = List.mapi (fun i cs -> i, cs) (l @ (List.map Pervasives.fst s))
 		in
-		let l_stricten = List.map (fun (i,c) -> i, {c with Cs.typ = Cstr.Lt}) ilist in
+		let l_stricten = List.map (fun (i,c) -> i, {c with Cs.typ = Cstr_type.Lt}) ilist in
 		match Splx.checkFromAdd (Splx.mk nxt l_stricten) with
 		| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet_t.iset: unexpected empty interior"
 		| Splx.IsOk sx_strict ->
@@ -249,13 +246,13 @@ let chk (nm, s, l, r)
 			le [1, y] 1];
 
     "raytracing_bug", iset [
-        Cs.mk Cstr.Le [Scalar.Rat.of_string "1/2" |> Cs.Vec.Coeff.ofQ, x] (Cs.Vec.Coeff.mk1 1);
-        Cs.mk Cstr.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ);
-        Cs.mk Cstr.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ);
+        Cs.mk Cstr_type.Le [Scalar.Rat.of_string "1/2" |> Cs.Vec.Coeff.ofQ, x] (Cs.Vec.Coeff.mk1 1);
+        Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ);
+        Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ);
         le [2, x] 1],
         [],
         iset [
-            Cs.mk Cstr.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ);
+            Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ);
             le [2, x] 1;
             ];
 	] in

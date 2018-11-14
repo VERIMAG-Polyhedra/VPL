@@ -27,7 +27,7 @@ module Build = struct
 			|> Poly.mk2
 		in
 		let eq = Poly.sub p coeff
-			|> CP.mk Cstr.Eq
+			|> CP.mk Cstr_type.Eq
 		in [eq]
 
 	(** These inequalities encode that lpvars_i = 1 if the upper bound if x_i is chosen, 0 otherwise. *)
@@ -36,12 +36,12 @@ module Build = struct
 		List.fold_left
 			(fun ineqs v ->
 					(CP.mk
-						Cstr.Le
+						Cstr_type.Le
 						(Poly.mk2_cste [([v],Scalar.Rat.u)] (Scalar.Rat.neg (LPMaps.hasSup v mapDB)))
 					)
 				::
 					(CP.mk
-						Cstr.Le
+						Cstr_type.Le
 						(Poly.mk2_cste [([v],Scalar.Rat.negU)] (Scalar.Rat.sub Scalar.Rat.u (LPMaps.hasInf v mapDB)))
 					)
 				::
@@ -64,7 +64,7 @@ module Build = struct
 		= fun vars ->
 	 	List.map
 	 		(fun v -> CP.mk
-	 			Cstr.Le
+	 			Cstr_type.Le
 	 			(Poly.mk2 [([v],Scalar.Rat.negU)]))
 	 		vars
 

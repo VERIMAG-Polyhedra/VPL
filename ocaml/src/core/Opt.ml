@@ -1,4 +1,5 @@
 open Splx
+module VT = Var_type
 
 module Debug = DebugTypes.Debug(struct let name = "Pol" end)
 
@@ -56,10 +57,10 @@ let pickNBasic z s =
   let rec find vec state =
     let walk l1 l2 r1 r2 =
       match find l1 l2 with
-      | Move (x, dir, bnd) -> Move (V.XO x, dir, bnd)
+      | Move (x, dir, bnd) -> Move (VT.XO x, dir, bnd)
       | Done ->
 	 match find r1 r2 with
-	 | Move (x, dir, bnd) -> Move (V.XI x, dir, bnd)
+	 | Move (x, dir, bnd) -> Move (VT.XI x, dir, bnd)
 	 | Done -> Done
     in
     match vec, state with
@@ -69,7 +70,7 @@ let pickNBasic z s =
        if nSign = 0 then
 	 walk l Rtree.Nil r Rtree.Nil
        else
-	 Move (V.XH, (if nSign < 0 then Decr else Incr), Unbnd)
+	 Move (VT.XH, (if nSign < 0 then Decr else Incr), Unbnd)
     | Rtree.Sub (l1, n, r1), Rtree.Sub (l2, st, r2) ->
        let nSign = Scalar.Rat.cmpz n in
        if nSign = 0 then
@@ -77,7 +78,7 @@ let pickNBasic z s =
        else
 	 let (dir, tryFn) = if nSign < 0 then (Decr, tryDecr) else (Incr, tryIncr) in
 	 match tryFn st with
-	 | Unbnd | UpTo _ as b -> Move (V.XH, dir, b)
+	 | Unbnd | UpTo _ as b -> Move (VT.XH, dir, b)
 	 | NoChange -> walk l1 l2 r1 r2
   in
   match Rtree.get None s.mat z with
@@ -104,7 +105,7 @@ let pickBasic s xN xNBnd dir =
   let rec find m st =
     match m, st with
     | Rtree.Nil, _ -> None
-    | _, Rtree.Nil -> Some (V.XH, Unbnd)
+    | _, Rtree.Nil -> Some (VT.XH, Unbnd)
     | Rtree.Sub (l1, n1, r1), Rtree.Sub (l2, n2, r2) ->
        let nN =
 	 match n1 with
@@ -121,12 +122,12 @@ let pickBasic s xN xNBnd dir =
        let maybeL = find l1 l2 in
        let maybeR = find r1 r2 in
        match maybeL, maybeR with
-       | None, None -> Some (V.XH, nN)
-       | Some (xL, nL), None -> Some (choose (V.XO xL) nL V.XH nN)
-       | None, Some (xR, nR) -> Some (choose (V.XI xR) nR V.XH nN)
+       | None, None -> Some (VT.XH, nN)
+       | Some (xL, nL), None -> Some (choose (VT.XO xL) nL VT.XH nN)
+       | None, Some (xR, nR) -> Some (choose (VT.XI xR) nR VT.XH nN)
        | Some (xL, nL), Some (xR, nR) ->
-	  let (xS, nS) = choose (V.XO xL) nL (V.XI xR) nR in
-	  Some (choose xS nS V.XH nN)
+	  let (xS, nS) = choose (VT.XO xL) nL (VT.XI xR) nR in
+	  Some (choose xS nS VT.XH nN)
   in
   match find s.mat s.state with
   | None -> (xN, xNBnd)
@@ -233,7 +234,7 @@ let getAsg_and_value : V.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t *
 					(fun (i,cstr) ->
 						i,
 						{  cstr with
-							Cs.typ = Cstr.Le;
+							Cs.typ = Cstr_type.Le;
 							Cs.v = Cs.Vec.set cstr.Cs.v epsilon Cs.Vec.Coeff.u})
 					cstrs)
 			in

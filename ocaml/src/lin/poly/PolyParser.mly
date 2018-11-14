@@ -62,12 +62,12 @@ contrainte_list :
 	| contrainte VRG contrainte_list {$1 :: $3}
 ;
 contrainte : 
-	| polynomial LE polynomial {($1, Cstr.LE, $3)}
-	| polynomial LT polynomial {($1, Cstr.LT, $3)}
-	| polynomial GE polynomial {($1, Cstr.GE, $3)}
-	| polynomial GT polynomial {($1, Cstr.GT, $3)}
-	| polynomial EQ polynomial {($1, Cstr.EQ, $3)}
-	| polynomial NEQ polynomial {($1, Cstr.NEQ, $3)}
+	| polynomial LE polynomial {($1, Cstr_type.LE, $3)}
+	| polynomial LT polynomial {($1, Cstr_type.LT, $3)}
+	| polynomial GE polynomial {($1, Cstr_type.GE, $3)}
+	| polynomial GT polynomial {($1, Cstr_type.GT, $3)}
+	| polynomial EQ polynomial {($1, Cstr_type.EQ, $3)}
+	| polynomial NEQ polynomial {($1, Cstr_type.NEQ, $3)}
 ;
 polynomial:
 	| element {PolyParserBuild.Leaf(fst $1, snd $1)}

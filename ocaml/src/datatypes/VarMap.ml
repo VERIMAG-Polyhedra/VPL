@@ -1,79 +1,8 @@
 (** Interface for the maps associating variables to values. *)
 
-module type Type = sig
-	type 'n t
+open VarMap_type
 
-	module V : Var.Type
-
-	(** Empty map. *)
-	val empty : 'n t
-
-	(** Returns true if the map is empty. *)
-	val is_empty : 'n t -> bool
-
-	(** [get z map v] returns the value associated to [v] in [map]. If there is no such binding, it returns [z]. *)
-	val get: 'n -> 'n t -> V.t -> 'n
-
-	(** [set z map var value] returns [map], with a binding from [var] to [value].
-	If the implemented map is {!module:Rtree}, value [z] is placed on each intermediate node.
-	This is not the case for {!module:IntMap}. *)
-	val set: 'n -> 'n t -> V.t -> 'n -> 'n t
-
-	(** [mk z l] builds a map from the list of association [l].
-		Is uses {!val:set} that needs a value [z] for the implementation {!module:Rtree}. *)
-	val mk: 'n -> (V.t * 'n) list -> 'n t
-
-	(** [map f m] applies function [f] for each binding in [m]. *)
-	val map: ('n -> 'm) -> 'n t -> 'm t
-
-	val fold: (V.t -> 'a -> 'n -> 'a) -> 'a -> 'n t -> 'a
-
-	(** Same as {!val:fold}, but with two maps.
-	Function identity is applied when a binding is missing in one map. *)
-	val fold2: (V.t -> 'a -> 'n -> 'm -> 'a) -> 'a -> 'n t -> 'm t -> 'a
-
-	(** Same as {!val:fold2}, but the function uses option types. *)
-	val fold2_opt: (V.t -> 'a -> 'n option -> 'm option -> 'a) -> 'a -> 'n t -> 'm t -> 'a
-
-	(** [find f rt] looks for a node [n] of [rt] for which [f] returns [Some b].
-	If such a node is found, the path to [n] in [rt] is returned along with the [b] returned by [f].
-	If [f] returns [None] for all the nodes of [rt], the function [find] returns [None].
-	The order in which [find] walks through [rt] is not specified. *)
-	val find: ('a -> 'b option) -> 'a t -> (V.t * 'b) option
-
-	(** Same as {!val:find} with two maps. *)
-	val find2: (V.t -> 'm -> 'n -> 'b option) -> 'm t -> 'n t -> (V.t * 'b) option
-
-	(** Same as {!val:find} where the given function is a predicate. *)
-	val findPred: ('a -> bool) -> 'a t -> (V.t * 'a) option
-
-	(** Same as {!val:find2} where the given function is a predicate. *)
-	val findPred2: ('a -> 'b -> bool) -> 'a t -> 'b t -> (V.t * 'a * 'b) option
-
-	val toList: 'a t -> (V.t * 'a) list
-	val to_string: string -> ('a -> string -> string) -> (V.t -> string) -> 'a t -> string
-
-	(** [mskBuild pred l] builds a mask tree where a node is true
-	if [pred] has returned [true] for at least one tree in [l] for that [node]. *)
-	val mskBuild: ('a -> bool) -> 'a t list -> bool t
-
-	(** [pathsGet m] returns the set of variables which value is [true] in map [m]. *)
-	val pathsGet: bool t -> V.Set.t
-
-	(** [basisBuild isNil pr l] builds a [string t] where a path leads to its associated string (provided by [pr])
-if there is at least a tree in [l] which associates a non-nil coefficient (determined by [isNil]) to this path. *)
-	val basisBuild: ('a -> bool) -> (V.t -> string) -> 'a t list -> string t
-
-	val merge : (V.t -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
-
-	val merge3 : (V.t -> 'a option -> 'b option -> 'c option -> 'res option) -> 'a t -> 'b t -> 'c t -> 'res t
-
-	val for_all2 : ('m option -> 'n option -> bool) -> 'm t -> 'n t -> bool
-
-	(** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are equal, that is, contain equal keys and associate them with equal data. @param cmp is the equality predicate used to compare the data associated with the keys. *)
-	val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-
-end
+module type Type = Type
 
 module VarMap (V : Var.Type) = struct
 

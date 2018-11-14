@@ -1,6 +1,6 @@
 (** /!\ Cas non géré : let x = <contrainte> in ...*)
 module type Type = sig
-	module CP : CstrPoly.Type
+    module CP = CstrPoly 
 	module Cs = CP.Cs
 	module Poly = CP.Poly
 	module V = Cs.Vec.V
@@ -22,7 +22,7 @@ end
 module Build (CP : CstrPoly.Type) = struct
 *)
 module Positive = struct
-	module CP = CstrPoly.Positive
+	module CP = CstrPoly
 	module Cs = CP.Cs
 	module Poly = CP.Poly
 	module V = Cs.Vec.V

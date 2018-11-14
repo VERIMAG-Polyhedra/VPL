@@ -1,5 +1,7 @@
 open Vpl
 
+module VT = Var_type
+
 module Positive = struct
 	module V = Var.Positive
 	(* V.next *)
@@ -12,13 +14,13 @@ module Positive = struct
 				Test.fail name "not equal" state
 		in
 		let tcs: (string * V.t * V.t) list = [
-		"nil", V.XH, V.XO V.XH;
-		"cons0", V.XO V.XH, V.XI V.XH;
-		"cons1", V.XI V.XH, V.XO (V.XO V.XH);
-		"rec0", V.XO (V.XO (V.XI (V.XI V.XH))),
-			V.XO (V.XI (V.XO (V.XO V.XH)));
-		"rec1", V.XI (V.XI (V.XI (V.XI V.XH))),
-			V.XO (V.XO (V.XO (V.XO (V.XO V.XH))));
+		"nil", VT.XH, VT.XO VT.XH;
+		"cons0", VT.XO VT.XH, VT.XI VT.XH;
+		"cons1", VT.XI VT.XH, VT.XO (VT.XO VT.XH);
+		"rec0", VT.XO (VT.XO (VT.XI (VT.XI VT.XH))),
+			VT.XO (VT.XI (VT.XO (VT.XO VT.XH)));
+		"rec1", VT.XI (VT.XI (VT.XI (VT.XI VT.XH))),
+			VT.XO (VT.XO (VT.XO (VT.XO (VT.XO VT.XH))));
 		] in
 		Test.suite "next" (List.map chk tcs)
 
@@ -33,32 +35,32 @@ module Positive = struct
 				Test.fail name (string_of_int res) state
 		in
 		let tcs = [
-			"eq0", 0, V.XH, V.XH;
-			"eq1", 0, V.XO V.XH, V.XO V.XH;
-			"eq2", 0, V.XI V.XH, V.XI V.XH;
-			"eq3", 0, V.XO (V.XI V.XH), V.XO (V.XI V.XH);
-			"eq4", 0, V.XI (V.XI V.XH), V.XI (V.XI V.XH);
-			"eq5", 0, V.XO (V.XO V.XH), V.XO (V.XO V.XH);
-			"eq6", 0, V.XI (V.XO V.XH), V.XI (V.XO V.XH);
+			"eq0", 0, VT.XH, VT.XH;
+			"eq1", 0, VT.XO VT.XH, VT.XO VT.XH;
+			"eq2", 0, VT.XI VT.XH, VT.XI VT.XH;
+			"eq3", 0, VT.XO (VT.XI VT.XH), VT.XO (VT.XI VT.XH);
+			"eq4", 0, VT.XI (VT.XI VT.XH), VT.XI (VT.XI VT.XH);
+			"eq5", 0, VT.XO (VT.XO VT.XH), VT.XO (VT.XO VT.XH);
+			"eq6", 0, VT.XI (VT.XO VT.XH), VT.XI (VT.XO VT.XH);
 
-			"lt0", -1, V.XH, V.XO V.XH;
-			"lt1", -1, V.XH, V.XI V.XH;
-			"lt2", -1, V.XO V.XH, V.XI V.XH;
-			"lt3", -1, V.XO V.XH, V.XO (V.XO V.XH);
-			"lt4", -1, V.XO V.XH, V.XI (V.XO V.XH);
+			"lt0", -1, VT.XH, VT.XO VT.XH;
+			"lt1", -1, VT.XH, VT.XI VT.XH;
+			"lt2", -1, VT.XO VT.XH, VT.XI VT.XH;
+			"lt3", -1, VT.XO VT.XH, VT.XO (VT.XO VT.XH);
+			"lt4", -1, VT.XO VT.XH, VT.XI (VT.XO VT.XH);
 
-			"gt0", 1, V.XO V.XH, V.XH;
-			"gt1", 1, V.XI V.XH, V.XH;
-			"gt2", 1, V.XO (V.XO V.XH), V.XH;
-			"gt3", 1, V.XO (V.XI V.XH), V.XO (V.XO V.XH);
-			"gt4", 1, V.XO (V.XO (V.XI V.XH)), V.XO (V.XO V.XH)
+			"gt0", 1, VT.XO VT.XH, VT.XH;
+			"gt1", 1, VT.XI VT.XH, VT.XH;
+			"gt2", 1, VT.XO (VT.XO VT.XH), VT.XH;
+			"gt3", 1, VT.XO (VT.XI VT.XH), VT.XO (VT.XO VT.XH);
+			"gt4", 1, VT.XO (VT.XO (VT.XI VT.XH)), VT.XO (VT.XO VT.XH)
 		] in
 		Test.suite "cmp" (List.map chk tcs)
 
 	(* V.horizon *)
 	let horizonTs : Test.t
 	   = fun () ->
-		let a = V.XH in
+		let a = VT.XH in
 		let b = V.next a in
 		let c = V.next b in
 		let d = V.next c in
@@ -88,10 +90,10 @@ module Positive = struct
 		Test.suite "horizon" (List.map chk tcs)
 
 	let intConvTcs = [
-		"one", 1, V.XH;
-		"two", 2, V.XO V.XH;
-		"three", 3, V.XI V.XH;
-		"four", 4, V.XO (V.XO V.XH)
+		"one", 1, VT.XH;
+		"two", 2, VT.XO VT.XH;
+		"three", 3, VT.XI VT.XH;
+		"four", 4, VT.XO (VT.XO VT.XH)
 	]
 
 	(* V.toInt *)

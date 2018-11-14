@@ -204,8 +204,7 @@ let str_compute_solution =
 let str_plot =
 "to_plot.show()"
 
-module Cs = PLPCore.Cs
-module Cons = PLPCore.Cons
+module Cs = Cstr.Rat.Positive
 
 module Plot (Minimization : Min.Type) = struct
 	include PLPCore.PLP(Minimization)

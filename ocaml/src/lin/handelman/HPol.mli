@@ -1,6 +1,5 @@
-module CP = CstrPoly.Positive
+module CP = CstrPoly
 module Poly = CP.Poly
-module Cert = Proj.EqSet.Cons.Cert
 
 class ['c] t : object
 	val mutable poly_rep : CP.t list
@@ -24,4 +23,3 @@ class ['c] t : object
 	method to_string : string
 	method private update : unit -> unit
 end
-

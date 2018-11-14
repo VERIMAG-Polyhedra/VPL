@@ -9,45 +9,43 @@ module Nb = Scalar.Rat
 module Var = Var.Positive
 module Vec = Vector.Rat.Positive
 module Cs = Cstr.Rat.Positive
-module Cons = IneqSet.Cons
-module Cert = IneqSet.Cert
-module EqSet = IneqSet.EqSet
+module VT = Var_type
 
 (* Preliminary functions:
     frontend data-structures <-> backend data-structures
  *)
-let coqPosToZ: BinNums.positive -> Nb.Z.t
+let coqPosToZ: BinNums.positive -> Z.t
 = fun p0 -> CoqPr.posTr p0
 
-let zToCoqPos: Nb.Z.t -> BinNums.positive
+let zToCoqPos: Z.t -> BinNums.positive
 = fun z0 ->
-	if Nb.Z.cmp Nb.Z.z z0 >= 0 then
+	if Z.compare Z.zero z0 >= 0 then
 		invalid_arg "Support.zToCoqPos"
 	else
-		let rec f (z: Nb.Z.t): BinNums.positive =
-			if Nb.Z.cmp z Nb.Z.u = 0 then
+		let rec f (z: Z.t): BinNums.positive =
+			if Z.compare z Z.one = 0 then
 				BinNums.Coq_xH
 			else
-				if Nb.Z.cmp (Nb.Z.lAnd z Nb.Z.u) Nb.Z.u = 0 then
-					BinNums.Coq_xI (f (Nb.Z.shiftR z 1))
+				if Z.compare (Z.logand z Z.one) Z.one = 0 then
+					BinNums.Coq_xI (f (Z.shift_right z 1))
 				else
-					BinNums.Coq_xO (f (Nb.Z.shiftR z 1))
+					BinNums.Coq_xO (f (Z.shift_right z 1))
 		in
 		f z0
 
-let coqZToZ: BinNums.coq_Z -> Nb.Z.t
+let coqZToZ: BinNums.coq_Z -> Z.t
 = fun z -> CoqPr.zTr z
 
-let zToCoqZ: Nb.Z.t -> BinNums.coq_Z
+let zToCoqZ: Z.t -> BinNums.coq_Z
 = fun z ->
-	let sign = Nb.Z.cmp Nb.Z.z z in
+	let sign = Z.compare Z.zero z in
 	if sign = 0 then
 		BinNums.Z0
 	else
 		if sign < 0 then
 			BinNums.Zpos (zToCoqPos z)
 		else
-			BinNums.Zneg (zToCoqPos (Nb.Z.neg z))
+			BinNums.Zneg (zToCoqPos (Z.neg z))
 
 let nToNb: NumC.QNum.t -> Nb.t
 = fun q ->
@@ -78,9 +76,9 @@ let progVarToVar: ProgVar.PVar.t -> Var.t
 = fun x ->
 	let rec posToVar: BinNums.positive -> Var.t
 	= function
-		| BinNums.Coq_xH -> Var.XH
-		| BinNums.Coq_xO p -> Var.XO (posToVar p)
-		| BinNums.Coq_xI p -> Var.XI (posToVar p)
+		| BinNums.Coq_xH -> VT.XH
+		| BinNums.Coq_xO p -> VT.XO (posToVar p)
+		| BinNums.Coq_xI p -> VT.XI (posToVar p)
 	in
 	posToVar (ProgVar.PVar.export x)
 
@@ -88,9 +86,9 @@ let varToProgVar: Var.t -> ProgVar.PVar.t
 = fun x ->
 	let rec varToPos: Var.t -> BinNums.positive
 	= function
-		| Var.XH -> BinNums.Coq_xH
-		| Var.XI p -> BinNums.Coq_xI (varToPos p)
-		| Var.XO p -> BinNums.Coq_xO (varToPos p)
+		| VT.XH -> BinNums.Coq_xH
+		| VT.XI p -> BinNums.Coq_xI (varToPos p)
+		| VT.XO p -> BinNums.Coq_xO (varToPos p)
 	in
 	ProgVar.PVar.import (varToPos x)
 
@@ -113,17 +111,17 @@ let vecToLt: Vec.t -> LinTerm.LinQ.t
 	in
 	LinTerm.LinQ.import (List.map convert (Rtree.toList v))
 
-let cToCmpT: NumC.cmpT -> Cstr.cmpT
+let cToCmpT: NumC.cmpT -> Cstr_type.cmpT
 = function
-	| NumC.EqT -> Cstr.Eq
-	| NumC.LeT -> Cstr.Le
-	| NumC.LtT -> Cstr.Lt
+	| NumC.EqT -> Cstr_type.Eq
+	| NumC.LeT -> Cstr_type.Le
+	| NumC.LtT -> Cstr_type.Lt
 
-let cToCmp: Cstr.cmpT -> NumC.cmpT
+let cToCmp: Cstr_type.cmpT -> NumC.cmpT
 = function
-	| Cstr.Eq -> NumC.EqT
-	| Cstr.Le -> NumC.LeT
-	| Cstr.Lt -> NumC.LtT
+	| Cstr_type.Eq -> NumC.EqT
+	| Cstr_type.Le -> NumC.LeT
+	| Cstr_type.Lt -> NumC.LtT
 
 let cToCstr: CstrC.Cstr.t -> Cs.t
 = fun c -> {

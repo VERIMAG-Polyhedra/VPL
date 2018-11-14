@@ -1,5 +1,3 @@
-module Cons = PLP.Cons
-module Cert = Cons.Cert
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module V = Cs.Vec.V
@@ -41,20 +39,20 @@ include B
 
 module BuildSx = struct
 
-	let build_paramCoeff : Cs.Vec.V.t list -> Cs.t -> PLP.PSplx.ParamCoeff.t
+	let build_paramCoeff : Cs.Vec.V.t list -> Cs.t -> ParamCoeff.t
 		= fun params cstr ->
 		let vec = List.map
 			(fun param ->
 				 Cs.get_v cstr |> fun vec -> Cs.Vec.get vec param)
 			params
 		in
-		PLP.PSplx.ParamCoeff.mk vec (Cs.get_c cstr |> Cs.Coeff.neg)
+		ParamCoeff.mk vec (Cs.get_c cstr |> Cs.Coeff.neg)
 
-	let objective : Cs.Vec.V.t list -> Cs.t list -> PLP.PSplx.Objective.t
+	let objective : Cs.Vec.V.t list -> Cs.t list -> Objective.t
 		= fun params cstrs ->
-		let null_paramCoeff = PLP.PSplx.ParamCoeff.mk (List.map (fun _ -> Scalar.Rat.z) params) Scalar.Rat.z in
+		let null_paramCoeff = ParamCoeff.mk (List.map (fun _ -> Scalar.Rat.z) params) Scalar.Rat.z in
 		let coeffs = List.map (fun cstr -> build_paramCoeff params (Cs.compl cstr)) cstrs in
-		PLP.PSplx.Objective.mk coeffs null_paramCoeff
+		Objective.mk coeffs null_paramCoeff
 
 	let build_norm_from_point : Vec.t -> Cs.t list -> Tableau.Vector.t
 		= fun init_point cstrs ->

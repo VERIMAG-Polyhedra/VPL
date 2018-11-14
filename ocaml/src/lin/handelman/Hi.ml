@@ -52,37 +52,37 @@ module Eval = struct
 			(Misc.range 0 i)
 
 	(** [eval_f vl l] returns a function associating [vl[i]] to [l[i]] *)
-	let (evalf : CstrPoly.Positive.Poly.V.t list -> 'a list -> CstrPoly.Positive.Poly.V.t -> 'a)
+	let (evalf : CstrPoly.Poly.V.t list -> 'a list -> CstrPoly.Poly.V.t -> 'a)
 			= fun vl l v ->
-			try let i = Misc.findi (fun x -> CstrPoly.Positive.Poly.V.equal x v) vl in
+			try let i = Misc.findi (fun x -> CstrPoly.Poly.V.equal x v) vl in
 				List.nth l i
 			with
 			| Not_found -> Pervasives.failwith "HOtypes.Hi.Eval.evalf : Not_found"
 			| Invalid_argument _ -> Pervasives.failwith "HOtypes.Hi.Eval.evalf : Invalid_argument"
 
-	let (eval_cIndex : cIndex -> CstrPoly.Positive.Poly.t list -> (CstrPoly.Positive.Poly.V.t -> Q.t) -> Q.t)
+	let (eval_cIndex : cIndex -> CstrPoly.Poly.t list -> (CstrPoly.Poly.V.t -> Q.t) -> Q.t)
 		= fun id pl eval  ->
 			List.fold_left2
-			(fun c i p -> Q.add c (if i = 0 then Q.zero else (pow (CstrPoly.Positive.Poly.eval p eval) i)))
+			(fun c i p -> Q.add c (if i = 0 then Q.zero else (pow (CstrPoly.Poly.eval p eval) i)))
 			Q.zero
 			(Index.Int.data id) pl
 
-	let (eval_varIndex : varIndex -> CstrPoly.Positive.Poly.V.t list -> (CstrPoly.Positive.Poly.V.t -> Q.t) -> Q.t)
+	let (eval_varIndex : varIndex -> CstrPoly.Poly.V.t list -> (CstrPoly.Poly.V.t -> Q.t) -> Q.t)
 		= fun id vl eval ->
 			List.fold_left2
-			(fun c i v -> let p = CstrPoly.Positive.Poly.mk2 [([v],Q.one)] in
-				Q.mul c (pow (CstrPoly.Positive.Poly.eval p eval) i))
+			(fun c i v -> let p = CstrPoly.Poly.mk2 [([v],Q.one)] in
+				Q.mul c (pow (CstrPoly.Poly.eval p eval) i))
 			Q.one
 			(Index.Int.data id) vl
 
-	let (eval_boundIndex : boundIndex -> CstrPoly.Positive.Poly.t list ->  (CstrPoly.Positive.Poly.V.t -> Q.t) -> Q.t)
+	let (eval_boundIndex : boundIndex -> CstrPoly.Poly.t list ->  (CstrPoly.Poly.V.t -> Q.t) -> Q.t)
 		= fun id pl eval  ->
 			List.fold_left2
-			(fun c i p -> Q.add c (if Q.equal i Q.zero then Q.zero else (Q.mul i (CstrPoly.Positive.Poly.eval p eval))))
+			(fun c i p -> Q.add c (if Q.equal i Q.zero then Q.zero else (Q.mul i (CstrPoly.Poly.eval p eval))))
 			Q.zero
 			(Index.Rat.data id) pl
 
-	let (eval_Hi : t -> CstrPoly.Positive.Poly.t list -> CstrPoly.Positive.Poly.V.t list -> Q.t list -> Q.t)
+	let (eval_Hi : t -> CstrPoly.Poly.t list -> CstrPoly.Poly.V.t list -> Q.t list -> Q.t)
 		= fun hi pl vl ci ->
 			let eval = evalf vl ci in
 			match hi with
@@ -91,13 +91,13 @@ module Eval = struct
 				|> Q.mul (eval_varIndex v_id vl eval)
 			| VarCi (v_id, c_id) -> Q.mul (eval_varIndex v_id vl eval) (eval_cIndex c_id pl eval)
 
-	let (eval_poly : CstrPoly.Positive.Poly.t -> CstrPoly.Positive.Poly.V.t list -> Q.t list -> Q.t)
+	let (eval_poly : CstrPoly.Poly.t -> CstrPoly.Poly.V.t list -> Q.t list -> Q.t)
 		= fun p vl ci ->
-		CstrPoly.Positive.Poly.eval p (evalf vl ci)
+		CstrPoly.Poly.eval p (evalf vl ci)
 end
 
 module Cert = struct
-	module Poly = CstrPoly.Positive.Poly
+	module Poly = CstrPoly.Poly
 	module V = Poly.V
 
 	type squares = (V.t * int) list
@@ -121,7 +121,7 @@ module Cert = struct
     let to_string : schweighofer list -> string
         = fun ss ->
         Misc.list_to_string schweighofer_to_string ss " ; "
-        
+
 	let varIndex_to_squares : V.t list -> varIndex -> squares
 		= fun vars id ->
 		Index.Int.data id

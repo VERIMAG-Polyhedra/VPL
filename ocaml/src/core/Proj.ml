@@ -1,8 +1,5 @@
 module Debug = DebugTypes.Debug(struct let name = "Proj" end)
 module Cs = Cstr.Rat.Positive
-module EqSet = PLP.EqSet
-module Cons = PLP.Cons
-module Cert = Cons.Cert
 module V = Cs.Vec.V
 
 (* x+1 car les identifiants commencent à 0 *)
@@ -89,17 +86,17 @@ module Proj (Min : Min.Type) = struct
 				 |> fun v -> v @ [Q.zero])
 				xs
 
-		let buildObj : bool -> V.t list -> Cstr.Rat.Positive.t list -> PLP.Objective.t
-		  = let buildCoeff : bool -> V.t list -> Cstr.Rat.Positive.t -> PLP.ParamCoeff.t
+		let buildObj : bool -> V.t list -> Cstr.Rat.Positive.t list -> Objective.t
+		  = let buildCoeff : bool -> V.t list -> Cstr.Rat.Positive.t -> ParamCoeff.t
 				= fun withConst params c ->
 				let v = Cstr.Rat.Positive.get_v c in
-				PLP.ParamCoeff.mk (List.map (fun x -> Cs.Vec.get v x |> Scalar.Rat.neg) params)
+				ParamCoeff.mk (List.map (fun x -> Cs.Vec.get v x |> Scalar.Rat.neg) params)
 					 (if withConst then Cstr.Rat.Positive.get_c c else Q.zero)
 			 in
 			 fun withConst params cs ->
-			 PLP.Objective.mk
+			 Objective.mk
 				(List.map (buildCoeff withConst params) cs)
-				(PLP.ParamCoeff.mkSparse (List.length params) [] Q.zero)
+				(ParamCoeff.mkSparse (List.length params) [] Q.zero)
 
 		let buildLambdaSum : 'a list -> Tableau.Vector.t
 			= fun cstrs -> List.map (fun _ -> Q.one) cstrs @ [Q.one]
@@ -124,7 +121,7 @@ module Proj (Min : Min.Type) = struct
 	  = {
 		 withCst : bool;
 		 withTrivial : bool;
-		 nBasicStrat : PLP.Objective.pivotStrgyT;
+		 nBasicStrat : Objective.pivotStrgyT;
 		 scalar : Flags.scalar
 	  }
 
@@ -142,7 +139,7 @@ module Proj (Min : Min.Type) = struct
 	  = {
 		 withCst = true;
 		 withTrivial = true;
-		 nBasicStrat = PLP.Objective.Bland;
+		 nBasicStrat = Objective.Bland;
 		 scalar = Flags.Float;
 	  }
 
@@ -157,7 +154,7 @@ module Proj (Min : Min.Type) = struct
 		let params = Cs.Vec.V.Set.diff bndSet projSet |> Cs.Vec.V.Set.elements in
 		if flags.withTrivial
 		then
-			let l' = l @ [(Cs.le [] Scalar.Rat.u, factory.Cert.triv Cstr.Le Scalar.Rat.u)] in
+			let l' = l @ [(Cs.le [] Scalar.Rat.u, factory.Cert.triv Cstr_type.Le Scalar.Rat.u)] in
 			let cstrs' = cstrs @ [Cs.le [] Scalar.Rat.u] in
 			 {
 				PSplx.obj = Build.buildObj flags.withCst params cstrs';
@@ -218,7 +215,7 @@ module Proj (Min : Min.Type) = struct
 			Debug.log DebugTypes.Title (lazy "Result has been built from regions");
 			(sols, regions)
 		in
-		let explore : 'c Cert.t -> projFlagsT -> PLP.Objective.pivotStrgyT -> PSplx.t -> 'c PLP.mapVar_t -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+		let explore : 'c Cert.t -> projFlagsT -> Objective.pivotStrgyT -> PSplx.t -> 'c PLP.mapVar_t -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
 			= fun factory _ strgy tab map ->
 			let config = {PLP.std_config with
 				PLP.reg_t = (if !Flags.sum_lambda_1 then PLP.NCone else PLP.Cone);
@@ -268,37 +265,19 @@ module Classic = struct
 end
 
 module Raytracing = struct
-	module Glpk = struct
-		module Rat = struct
-			module Min = Min.Glpk(Vector.Rat.Positive)
-			include Proj(Min)
-		end
-
-		module Float = struct
-			module Min = Min.Glpk(Vector.Float.Positive)
-			include Proj(Min)
-		end
-
-		module Symbolic = struct
-			module Min = Min.Glpk(Vector.Symbolic.Positive)
-			include Proj(Min)
-		end
+	module Rat = struct
+		module Min = Min.Glpk(Vector.Rat.Positive)
+		include Proj(Min)
 	end
-	module Splx = struct
-		module Rat = struct
-			module Min = Min.Splx(Vector.Rat.Positive)
-			include Proj(Min)
-		end
 
-		module Float = struct
-			module Min = Min.Splx(Vector.Float.Positive)
-			include Proj(Min)
-		end
+	module Float = struct
+		module Min = Min.Glpk(Vector.Float.Positive)
+		include Proj(Min)
+	end
 
-		module Symbolic = struct
-			module Min = Min.Splx(Vector.Symbolic.Positive)
-			include Proj(Min)
-		end
+	module Symbolic = struct
+		module Min = Min.Glpk(Vector.Symbolic.Positive)
+		include Proj(Min)
 	end
 end
 
@@ -314,17 +293,11 @@ let proj : 'c Cert.t -> Flags.scalar -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c 
   		= fun factory scalar xs ineqs ->
   		Debug.log DebugTypes.Title (lazy "Building Projection");
   		match !Flags.min with
-  		| Flags.Raytracing Flags.Glpk ->	begin
+  		| Flags.Raytracing -> begin
   			match scalar with
-	  		| Flags.Symbolic -> Raytracing.Glpk.Symbolic.projDefault factory xs ineqs
-  			| Flags.Float -> Raytracing.Glpk.Float.projDefault factory xs ineqs
-  			| Flags.Rat -> Raytracing.Glpk.Rat.projDefault factory xs ineqs
-  			end
-  		| Flags.Raytracing Flags.Splx -> begin
-			match scalar with
-	  		| Flags.Symbolic -> Raytracing.Splx.Symbolic.projDefault factory xs ineqs
-  			| Flags.Float -> Raytracing.Splx.Float.projDefault factory xs ineqs
-  			| Flags.Rat -> Raytracing.Splx.Rat.projDefault factory xs ineqs
+	  		| Flags.Symbolic -> Raytracing.Symbolic.projDefault factory xs ineqs
+  			| Flags.Float -> Raytracing.Float.projDefault factory xs ineqs
+  			| Flags.Rat -> Raytracing.Rat.projDefault factory xs ineqs
   			end
   		| Flags.Classic -> begin
   			match scalar with

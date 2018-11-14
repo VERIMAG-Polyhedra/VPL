@@ -1,6 +1,4 @@
 module Cs = Cstr.Rat.Positive
-module EqSet = EqSet.EqSet(Cs)
-module Cons = EqSet.Cons
 
 module Debug = DebugTypes.Debug(struct let name = "PLPCore" end)
 module Profile = Profile.Profile(struct let name = "PLPCore" end)
@@ -62,14 +60,11 @@ module Stat = struct
 end
 
 module PLP(Minimization : Min.Type) = struct
-	module Vec = Minimization.Vec
-	module PSplx_ = PSplx.PSplx(Cs)
-	module PSplx = PSplx_.PSplx(Vec)
+	module Vec = Minimization.VecInput
+	module PSplx = PSplx.Make(Vec)
 
 	module Explore = PSplx.Explore
 
-	module Objective = PSplx.Objective
-	module ParamCoeff = PSplx.ParamCoeff
 	module Pivot = PSplx.Pivot
 	module Naming = PSplx.Naming
 
@@ -113,12 +108,12 @@ module PLP(Minimization : Min.Type) = struct
 		= fun cstr ->
 		let cstr_comp = Cs.compl cstr in
 		(match Cs.get_typ cstr_comp with
-			| Cstr.Le -> {cstr_comp with Cs.typ = Cstr.Lt}
+			| Cstr_type.Le -> {cstr_comp with Cs.typ = Cstr_type.Lt}
 			| _ -> cstr_comp)
 
 	let (cstr_eq : Cs.t -> Cs.t)
 		= fun cstr ->
-		{cstr with Cs.typ = Cstr.Eq}
+		{cstr with Cs.typ = Cstr_type.Eq}
 
 	let is_trivial : Cs.t -> bool
 			= fun c ->
@@ -262,7 +257,7 @@ module PLP(Minimization : Min.Type) = struct
 						then begin(* the variable associated with the column is nonbasic *)
 							let pivot_rows = scan_col col in
 							if pivot_rows = []
-							then let new_frontier = (ParamCoeff.to_cstr naming ParamCoeff.GT0 paramCoeff) in
+							then let new_frontier = (ParamCoeff.to_cstr naming Cstr_type.GT paramCoeff) in
 								((new_frontier :: frontiers), pivots)
 							else let new_pivots =
 								List.map
@@ -323,7 +318,7 @@ module PLP(Minimization : Min.Type) = struct
 			 	(fun _ c l ->
 			  		(ParamCoeff.to_cstr
 					(Naming.to_vpl sx.PSplx.names)
-					ParamCoeff.GT0 c)
+					Cstr_type.GT c)
 			  		:: l)
 			 	sx.PSplx.obj
 			 	[]
@@ -380,14 +375,14 @@ module PLP(Minimization : Min.Type) = struct
 		let (contains_large : t -> Vec.t -> bool)
 			= fun reg p ->
 			List.for_all
-				(fun ((c,_),_) -> Cs.satisfy (Vec.toRat p) {c with Cs.typ = Cstr.Le})
+				(fun ((c,_),_) -> Cs.satisfy (Vec.toRat p) {c with Cs.typ = Cstr_type.Le})
 				reg.r
 
 		(** Returns true if the given point lies in the given relaxed ({i i.e.} non-strict) region. *)
 		let (contains'_large : Cs.t list -> Vec.t -> bool)
 			= fun cstrs p ->
 			List.for_all
-				(fun c -> Cs.satisfy (Vec.toRat p) {c with Cs.typ = Cstr.Le})
+				(fun c -> Cs.satisfy (Vec.toRat p) {c with Cs.typ = Cstr_type.Le})
 				cstrs
 
 		let contains_ep : t -> ExplorationPoint.t -> bool
@@ -485,9 +480,9 @@ module PLP(Minimization : Min.Type) = struct
 		let adjacent_cstr_lp : Region.t -> Region.t -> Cs.t -> Cs.t -> bool
 			= fun reg1 reg2 cstr1 cstr2->
 
-				let cstrs_reg1 = {cstr1 with Cs.typ = Cstr.Le}
+				let cstrs_reg1 = {cstr1 with Cs.typ = Cstr_type.Le}
 					:: (Misc.popAll Cs.equalSyn (Region.get_cstrs reg1) cstr1)
-				and cstrs_reg2 = {cstr2 with Cs.typ = Cstr.Le}
+				and cstrs_reg2 = {cstr2 with Cs.typ = Cstr_type.Le}
 					:: (Misc.popAll Cs.equal (Region.get_cstrs reg2) cstr2)
 				in
 				let cstrs = cstrs_reg1 @ cstrs_reg2 in
@@ -540,14 +535,14 @@ module PLP(Minimization : Min.Type) = struct
 	(** Several methods to choose the next point to explore. *)
 	module Next_Point = struct
 
-		module Min = Min.Min(Vec)(Vec)(Cs)(MinLP.Splx(Cs))
+		module Min = Min.Make(Vec)(Vec)(Cs)(MinLP.Splx(Cs))
 
-		let conv : Min.conversion
+		let conv
 			= Min.({vec_CsVec = (fun x -> Vec.toRat x);
 				csVec_Vec  = (fun x -> Vec.ofRat x) ;
 				csCoeff_Coeff = (fun x -> Vec.Coeff.ofQ x) ;
 				csInput_Cs = (fun x -> x) ;
-				vecInput_Vec = (fun x -> x) ;
+				vecInput_Vec = (fun x -> x);
 				vec_VecInput = (fun x -> x)
 			})
 
@@ -1124,7 +1119,7 @@ module PLP(Minimization : Min.Type) = struct
             in
 		 	Profile.stop "LP" ;
 		 	Debug.log DebugTypes.Normal
-		  		(lazy("Found solution " ^ (PSplx.obj_value sx' |> PSplx.ParamCoeff.to_string)));
+		  		(lazy("Found solution " ^ (PSplx.obj_value sx' |> ParamCoeff.to_string)));
 		 	let cstrs = Region.extract sx' in
 		 	match correct_point reg_t sx'.PSplx.names cstrs pointToExplore with
 		 	| None -> None

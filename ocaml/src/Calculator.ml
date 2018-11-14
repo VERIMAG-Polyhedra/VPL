@@ -1,5 +1,5 @@
 (** Test de Calculatrice avec la nouvelle UserInterface.ml*)
-module CP = CstrPoly.Positive
+module CP = CstrPoly
 module Poly = CP.Poly
 
 include UserInterface.MakeInterface(Scalar.Rat)
@@ -108,13 +108,13 @@ module Print = struct
 				in
 				{c with Pol.Cs.v = v'}
 			in
-			List.map (fun (_,c) -> Pol.Cons.get_c c |> convert) (Pol.get_eqs p')
-			@ List.map (fun c -> Pol.Cons.get_c c |> convert) (Pol.get_ineqs p')
+			List.map (fun (_,c) -> Cons.get_c c |> convert) (Pol.get_eqs p')
+			@ List.map (fun c -> Cons.get_c c |> convert) (Pol.get_ineqs p')
 
 	let get_eqs_and_ineqs : VPL.t -> Pol.Cs.t list * Pol.Cs.t list (*eqs, ineqs*)
 		= fun p ->
 			get_cstrs p
-			|> List.partition (fun c -> Pol.Cs.get_typ c = Cstr.Eq)
+			|> List.partition (fun c -> Pol.Cs.get_typ c = Cstr_type.Eq)
 
 	let cs_string : string list -> string
 		= fun l ->

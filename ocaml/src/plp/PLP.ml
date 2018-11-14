@@ -1,7 +1,4 @@
-module Cs = PLPCore.Cs
-module EqSet = PLPCore.EqSet
-module Cons = PLPCore.Cons
-module Cert = Cons.Cert
+module Cs = Cstr.Rat.Positive
 
 module Debug = DebugTypes.Debug(struct let name = "PLP" end)
 
@@ -23,7 +20,7 @@ module type Type = sig
 		type t = {
 			id : int;
 			r : (Boundary.t * int option) list;
-			point : Minimization.Vec.t; (* Un point dans la région *)
+			point : Minimization.VecInput.t; (* Un point dans la région *)
 			sx : PSplx.t option(* Tableau de simplexe dont l'objectif a donné cette région *)
 		}
 	end
@@ -33,7 +30,7 @@ module type Type = sig
 	module ExplorationPoint : sig
 		type t =
 			| Direction of int * Boundary.t (** (id of origin region, boundary*)
-			| Point of Minimization.Vec.t
+			| Point of Minimization.VecInput.t
 	end
 
 	type t
@@ -46,7 +43,7 @@ module type Type = sig
 		add_region : Region.t option -> Region.t -> ExplorationPoint.t -> t -> t;
 		reg_t : region_t;
 		points : ExplorationPoint.t list;
-		stgy : PSplx.Objective.pivotStrgyT;
+		stgy : Objective.pivotStrgyT;
 		regions : Region.t list;
 		}
 

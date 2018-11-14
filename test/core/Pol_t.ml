@@ -1,9 +1,6 @@
 open Vpl
 
-module EqSet = IneqSet.EqSet
-module Cons = EqSet.Cons
-module Cert = Cons.Cert
-module Cs = EqSet.Cs
+module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module Var = Vec.V
 
@@ -27,9 +24,9 @@ let factory = Factory.Cstr.factory
 let mkc t v c =
 	Cs.mk t (List.map (function (i, x) -> (Scalar.Rat.mk1 i, x)) v) (Scalar.Rat.mk1 c)
 
-let eq = mkc Cstr.Eq
-let le = mkc Cstr.Le
-let lt = mkc Cstr.Lt
+let eq = mkc Cstr_type.Eq
+let le = mkc Cstr_type.Le
+let lt = mkc Cstr_type.Lt
 
 let mkCons : Cs.t -> Cs.t Cons.t
 	= fun c -> (c,c)
@@ -629,7 +626,7 @@ module Make_Tests (F : sig
 		(*
 		"sylvain_while2", true, {
 		Pol.eqs = [
-			(x, mkCons (Cs.mk Cstr.Eq [Scalar.Rat.u, x ; Scalar.Rat.of_string "-1/3", y ; Scalar.Rat.of_string "1/3", z] Scalar.Rat.z))];
+			(x, mkCons (Cs.mk Cstr_type.Eq [Scalar.Rat.u, x ; Scalar.Rat.of_string "-1/3", y ; Scalar.Rat.of_string "1/3", z] Scalar.Rat.z))];
 		Pol.ineqs = [
 			mkCons (le [2, y] 20);
 			mkCons (le [-1, y] (-12));

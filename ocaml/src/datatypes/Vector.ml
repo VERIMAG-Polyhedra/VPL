@@ -2,94 +2,11 @@
 A vector is either a {!type:Rtree.t} with variables {!type:Var.Positive.t} or a {!type:VarMap.t} with variables {!type:Var.Int.t}.
 *)
 
-module type Type = sig
-	module M : VarMap.Type
-	module V = M.V
-	module Coeff : Scalar.Type
-	type t = Coeff.t M.t
+open Vector_type
 
-	val name : string
+module VT = Var_type
 
-	(** A vector with coefficients all set to zero. *)
-	val nil: t
-
-	val to_string : (V.t -> string) -> t -> string
-
-	val mk : (Coeff.t * V.t) list -> t
-
-	val toList : t -> (V.t * Coeff.t) list
-
-	(** [get vec v] returns the coefficient of variable [v] in vec. Returns {!val:Coeff.z} if [v] is not present in [vec]. *)
-	val get: t -> V.t -> Coeff.t
-
-	(** [set vec v n] sets the coefficient of variable [v] to [n] in vector [vec]. *)
-	val set: t -> V.t -> Coeff.t -> t
-
-	(** [getvars l] returns the set of variables that appear in the list of vectors [l]. *)
-	val getVars: t list -> V.Set.t
-
-	(** [neg vec] multiplies each coefficient in [vec] by -1. *)
-	val neg : t -> t
-
-
-	val add : t -> t -> t
-	val sub : t -> t -> t
-
-	(** Computes the multiplication componentwise.*)
-	val mul_t : t -> t -> t
-
-	(** Multiplication by a scalar. *)
-	val mulc : Coeff.t -> t -> t
-
-	(** Division by a scalar. *)
-	val divc : t -> Coeff.t -> t
-
-	(** Multiplication by a Rational. *)
-	val mulr : Scalar.Rat.t -> t -> t
-
-	(** Division by a Rational. *)
-	val divr : t -> Scalar.Rat.t -> t
-
-	(** [middle x y] returns the middle point of the segment [xy]. *)
-	val middle : t -> t -> t
-
-	(** Syntaxic comparison *)
-	val cmp : t -> t -> int
-
-	(** Syntaxic equality *)
-	val equal : t -> t -> bool
-
-	val dot_product : t -> t -> Coeff.t
-
-	(** Same as {!val:dot_product}, where the first vector has rational coefficients. *)
-	val dot_productr : Scalar.Rat.t M.t -> t -> Coeff.t
-
-	(** [isomorph v1 v2] returns [Some r] if [v1] is equal to [mult r v2].
-	If there is no such [r], [None] is returned. *)
-	val isomorph: t -> t -> Coeff.t option
-
-	(** [elim x v1 v2] eliminates the [x] from [v2] using [v1].
-	If [v2] has coefficient zero for variable [x], it is returned untouched.
-	Otherwise, if variable [x] has coefficient zero in [v1], [Invalid_argument "Vec.elim"] is raised. *)
-	val elim: V.t -> t -> t -> t
-
-	(**/**)
-	val shift: V.t -> t -> V.t option M.t -> V.t * t * V.t option M.t
-	(**/**)
-
-	val ofSymbolic : Scalar.Symbolic.t -> Coeff.t
-
-	val toRat : t -> Scalar.Rat.t M.t
-	val ofRat : Scalar.Rat.t M.t -> t
-
-    (** [projects vars v] eliminates all variables from [vars] into [v], by setting their value to 0. *)
-    val project : V.t list -> t -> t
-
-    (** [rename fromX toY vec] *)
-    val rename : V.t -> V.t -> t -> t
-
-	val rename_f : (V.t -> V.t) -> t -> t
-end
+module type Type = Type
 
 module VectorRtree (Coeff : Scalar.Type) = struct
 	module M = Rtree
@@ -109,17 +26,17 @@ module VectorRtree (Coeff : Scalar.Type) = struct
 		let z = (Coeff.cmp Coeff.z n0 = 0) in
 		let rec _set ve va =
 			match ve, va with
-			| Rtree.Nil, V.XH when z -> Rtree.Nil
-			| Rtree.Nil, V.XH -> Rtree.Sub (Rtree.Nil, n0, Rtree.Nil)
+			| Rtree.Nil, VT.XH when z -> Rtree.Nil
+			| Rtree.Nil, VT.XH -> Rtree.Sub (Rtree.Nil, n0, Rtree.Nil)
 
-			| Rtree.Sub (Rtree.Nil, _, Rtree.Nil), V.XH when z -> Rtree.Nil
-			| Rtree.Sub (l, _, r), V.XH -> Rtree.Sub (l, n0, r)
+			| Rtree.Sub (Rtree.Nil, _, Rtree.Nil), VT.XH when z -> Rtree.Nil
+			| Rtree.Sub (l, _, r), VT.XH -> Rtree.Sub (l, n0, r)
 
-			| Rtree.Nil, V.XO t -> cut (_set Rtree.Nil t) Coeff.z Rtree.Nil
-			| Rtree.Nil, V.XI t -> cut Rtree.Nil Coeff.z (_set Rtree.Nil t)
+			| Rtree.Nil, VT.XO t -> cut (_set Rtree.Nil t) Coeff.z Rtree.Nil
+			| Rtree.Nil, VT.XI t -> cut Rtree.Nil Coeff.z (_set Rtree.Nil t)
 
-			| Rtree.Sub (l, n, r), V.XO t -> cut (_set l t) n r
-			| Rtree.Sub (l, n, r), V.XI t -> cut l n (_set r t)
+			| Rtree.Sub (l, n, r), VT.XO t -> cut (_set l t) n r
+			| Rtree.Sub (l, n, r), VT.XI t -> cut l n (_set r t)
 		in
 		_set ve0 va0
 
@@ -356,6 +273,8 @@ module VectorRtree (Coeff : Scalar.Type) = struct
 		|> List.fold_left (
             fun vec' var -> rename var (f var) vec'
             ) vec
+
+    let gcd _ = failwith "unimplemented"
 end
 
 module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
@@ -594,20 +513,15 @@ module VectorMap (Coeff : Scalar.Type)(V : Var.Type) = struct
     		(fun vec' var -> rename var (f var) vec')
     		vec
     		(getVars [vec] |> V.Set.elements)
+
+    let gcd _ = failwith "unimplemented"
 end
 
 module Rat = struct
 
-	module type Type = sig
-		include Type with module Coeff = Scalar.Rat
-
-		(** Compute the greatest common divisor of the coefficients of a vector. *)
-		val gcd : t -> Scalar.Rat.t
-	end
-
 	module Positive = struct
-		module Coeff = Scalar.Rat
-		include VectorRtree (Coeff)
+        module Coeff = Scalar.Rat
+		include VectorRtree (Scalar.Rat)
 
 		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Rat.t
 			= fun v ->
@@ -623,19 +537,19 @@ module Rat = struct
 				if Scalar.Rat.cmpz a = 0 then
 					g
 				else
-					let sofRat = Scalar.Rat.ofRat in
+					let sofRat = Scalar.Rat.ofQ in
 					match g with
 					| None -> Some (Scalar.Rat.toZ (Scalar.Rat.abs a |> sofRat))
 					| Some g -> Some (Scalar.Rat.gcd g a)) None v
 			in
 			match gcd with
 			| None -> Scalar.Rat.u
-			| Some (nGcd, dGcd) -> Scalar.Rat.ofZ dGcd nGcd |> Scalar.Rat.toRat
+			| Some (nGcd, dGcd) -> Scalar.Rat.ofZ dGcd nGcd |> Scalar.Rat.toQ
 	end
 
-	module Int  = struct
-		module Coeff = Scalar.Rat
-		include VectorMap (Coeff)(Var.Int)
+	module Int = struct
+        module Coeff = Scalar.Rat
+		include VectorMap (Scalar.Rat)(Var.Int)
 
 		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Rat.t
 			= fun v ->
@@ -650,19 +564,19 @@ module Rat = struct
 				if Scalar.Rat.cmpz a = 0 then
 					g
 				else
-					let sofRat = Scalar.Rat.ofRat in
+					let sofRat = Scalar.Rat.ofQ in
 					match g with
 					| None -> Some (Scalar.Rat.toZ (Scalar.Rat.abs a |> sofRat))
 					| Some g -> Some (Scalar.Rat.gcd g a)) None v
 			in
 			match gcd with
 			| None -> Scalar.Rat.u
-			| Some (nGcd, dGcd) -> Scalar.Rat.ofZ dGcd nGcd |> Scalar.Rat.toRat
+			| Some (nGcd, dGcd) -> Scalar.Rat.ofZ dGcd nGcd |> Scalar.Rat.toQ
 	end
 
 	module String  = struct
-		module Coeff = Scalar.Rat
-		include VectorMap (Coeff)(Var.String)
+        module Coeff = Scalar.Rat
+		include VectorMap (Scalar.Rat)(Var.String)
 
 		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Rat.t
 			= fun v ->
@@ -677,22 +591,21 @@ module Rat = struct
 				if Scalar.Rat.cmpz a = 0 then
 					g
 				else
-					let sofRat = Scalar.Rat.ofRat in
+					let sofRat = Scalar.Rat.ofQ in
 					match g with
 					| None -> Some (Scalar.Rat.toZ (Scalar.Rat.abs a |> sofRat))
 					| Some g -> Some (Scalar.Rat.gcd g a)) None v
 			in
 			match gcd with
 			| None -> Scalar.Rat.u
-			| Some (nGcd, dGcd) -> Scalar.Rat.ofZ dGcd nGcd |> Scalar.Rat.toRat
+			| Some (nGcd, dGcd) -> Scalar.Rat.ofZ dGcd nGcd |> Scalar.Rat.toQ
 	end
-
 end
 
 module Float = struct
 	module Positive = struct
-		module Coeff = Scalar.Float
-		include VectorRtree(Coeff)
+        module Coeff = Scalar.Float
+		include VectorRtree(Scalar.Float)
 
 		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Float.t
 			= fun v ->
@@ -704,8 +617,8 @@ module Float = struct
 	end
 
 	module Int = struct
-		module Coeff = Scalar.Float
-		include VectorMap(Coeff)(Var.Int)
+        module Coeff = Scalar.Float
+		include VectorMap(Scalar.Float)(Var.Int)
 
 		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Float.t
 			= fun v ->
@@ -720,14 +633,14 @@ end
 
 module Symbolic = struct
 	module Positive = struct
-		module Coeff = Scalar.Symbolic
+        module Coeff = Scalar.Symbolic
 		include VectorRtree(Scalar.Symbolic)
 
 		let ofSymbolic v = v
 	end
 
 	module Int = struct
-		module Coeff = Scalar.Symbolic
+        module Coeff = Scalar.Symbolic
 		include VectorMap(Scalar.Symbolic)(Var.Int)
 
 		let ofSymbolic v = v
@@ -736,8 +649,8 @@ end
 
 module RelInt = struct
 	module Positive = struct
-		module Coeff = Scalar.RelInt
-		include VectorRtree(Coeff)
+        module Coeff = Scalar.RelInt
+		include VectorRtree(Scalar.RelInt)
 
 		let ofSymbolic : Scalar.Symbolic.t -> Scalar.RelInt.t
 			= fun _ ->
@@ -745,8 +658,8 @@ module RelInt = struct
 	end
 
 	module Int = struct
-		module Coeff = Scalar.RelInt
-		include VectorMap(Coeff)(Var.Int)
+        module Coeff = Scalar.RelInt
+		include VectorMap(Scalar.RelInt)(Var.Int)
 
 		let ofSymbolic : Scalar.Symbolic.t -> Scalar.RelInt.t
 			= fun _ ->
@@ -756,8 +669,8 @@ end
 
 module MachineInt = struct
 	module Positive = struct
-		module Coeff = Scalar.MachineInt
-		include VectorRtree(Coeff)
+        module Coeff = Scalar.MachineInt
+		include VectorRtree(Scalar.MachineInt)
 
 		let ofSymbolic : Scalar.Symbolic.t -> Scalar.MachineInt.t
 			= fun _ ->
@@ -765,8 +678,8 @@ module MachineInt = struct
 	end
 
 	module Int = struct
-		module Coeff = Scalar.MachineInt
-		include VectorMap(Coeff)(Var.Int)
+        module Coeff = Scalar.MachineInt
+		include VectorMap(Scalar.MachineInt)(Var.Int)
 
 		let ofSymbolic : Scalar.Symbolic.t -> Scalar.MachineInt.t
 			= fun _ ->

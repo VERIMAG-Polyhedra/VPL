@@ -1,7 +1,7 @@
-module Poly = Poly.Rat.Poly(Vector.Rat.Positive)
+module Poly = ParamCoeff.Poly
 module Coeff = Poly.Coeff
 module Var = Poly.V
-module CP = CstrPoly.Positive
+module CP = CstrPoly
 
 module MapMonomial = Map.Make(Poly.MonomialBasis)
 
@@ -11,7 +11,7 @@ module Translation = struct
 	let rec term_to_poly: ASTerm.BasicQTerm.term -> Poly.t
 		= fun t ->
 		ASTerm.BasicQTerm.(match t with
-		| Var x -> PedraQOracles.coqPosToZ x |> Scalar.RelInt.toInt |> Var.fromInt |> Poly.fromVar
+		| Var x -> PedraQOracles.coqPosToZ x |> Z.to_int |> Var.fromInt |> Poly.fromVar
 		| Cte x -> PedraQOracles.coq_QToNb x |> Poly.cste
 		| Add (x1,x2) -> Poly.add (term_to_poly x1) (term_to_poly x2)
   		| Opp x -> Poly.mul (Poly.cste Coeff.negU) (term_to_poly x)
@@ -24,7 +24,7 @@ module Translation = struct
   			(fun res (vars,coeff) ->
   				let vars_term = List.fold_left
   					(fun res v ->
-  						let v' = Var.toInt v |> Scalar.Rat.Z.mk |> PedraQOracles.zToCoqPos in
+  						let v' = Var.toInt v |> Scalar.RelInt.mk1 |> PedraQOracles.zToCoqPos in
   						Mul (res, Var v'))
   					(Cte NumC.QNum.u) vars
   				in
@@ -34,11 +34,11 @@ module Translation = struct
 
   	let var_to_PExpr : Var.t -> BinNums.positive
   		= fun v ->
-  		Var.toInt v |> Scalar.Rat.Z.mk |> PedraQOracles.zToCoqPos
+  		Var.toInt v |> Scalar.RelInt.mk1 |> PedraQOracles.zToCoqPos
 
   	let int_to_coq_N : int -> BinNums.coq_N
   		= fun i ->
-  		BinNums.Npos (Scalar.Rat.Z.mk i |> PedraQOracles.zToCoqPos)
+  		BinNums.Npos (Scalar.RelInt.mk1 i |> PedraQOracles.zToCoqPos)
 
 	let squares_trans : Hi.Cert.squares -> Map_poly.squares
 		= fun l ->
@@ -101,8 +101,8 @@ let oracle : PedraQBackend.t -> NumC.cmpG -> ASTerm.BasicQTerm.t -> Map_poly.Han
 	= fun pol cmp qt ->
     let poly = Translation.term_to_poly qt in
 	let cp = match cmp with
-	| NumC.Le -> CP.mk Cstr.Le poly
-	| NumC.Lt -> CP.mk Cstr.Lt poly
+	| NumC.Le -> CP.mk Cstr_type.Le poly
+	| NumC.Lt -> CP.mk Cstr_type.Lt poly
 	| _ -> Pervasives.invalid_arg "HOracle_backend.oracle"
 	in
     (* Constraints need to be reversed, because frontend ones are.

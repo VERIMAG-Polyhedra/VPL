@@ -13,7 +13,7 @@ module Annot = struct
   		| Unused -> "Unused"
 end
 
-type cmpT = Cstr.cmpT_extended
+type cmpT = Cstr_type.cmpT_extended
 
 type binl = AND | OR
 
@@ -21,7 +21,7 @@ let binl_to_string = function
 	| AND -> Symbols.s_and
 	| OR -> Symbols.s_or
 
-module CP = CstrPoly.Positive
+module CP = CstrPoly
 module Polynomial = CP.Poly
 
 module type TermType = sig
@@ -131,7 +131,7 @@ module Interface (Coeff: Scalar.Type) = struct
 			= fun (cmp,t) ->
 			let p = to_poly t in
 			let (cmp',p') =
-			Cstr.(match cmp with
+			Cstr_type.(match cmp with
 			| EQ -> (Eq, p)
 			| LE -> (Le, Polynomial.neg p)
 			| LT -> (Lt, Polynomial.neg p)
@@ -186,7 +186,7 @@ module Interface (Coeff: Scalar.Type) = struct
 		= fun cstrs ->
 		List.map Term.of_cstr cstrs
 		|> List.fold_left
-			(fun cond term -> let atom = Atom (term, Cstr.LE, Term.Cte Coeff.z) in
+			(fun cond term -> let atom = Atom (term, Cstr_type.LE, Term.Cte Coeff.z) in
 				BinL (cond, AND, atom))
 			(Basic true)
   end
@@ -288,25 +288,25 @@ let import_cmpT (f: 'a -> 'b) (t1: 'a) (c:cmpT) (t2:'a): 'b * NumC.cmpG * 'b
   = let t1 = f t1 in
     let t2 = f t2 in
     match c with
-    | Cstr.EQ -> (t1, NumC.Eq, t2)
-    | Cstr.NEQ -> (t1, NumC.Neq, t2)
-    | Cstr.LE -> (t1, NumC.Le, t2)
-    | Cstr.LT -> (t1, NumC.Lt, t2)
-    | Cstr.GE -> (t2, NumC.Le, t1)
-    | Cstr.GT -> (t2, NumC.Lt, t1)
+    | Cstr_type.EQ -> (t1, NumC.Eq, t2)
+    | Cstr_type.NEQ -> (t1, NumC.Neq, t2)
+    | Cstr_type.LE -> (t1, NumC.Le, t2)
+    | Cstr_type.LT -> (t1, NumC.Lt, t2)
+    | Cstr_type.GE -> (t2, NumC.Le, t1)
+    | Cstr_type.GT -> (t2, NumC.Lt, t1)
 
 let export_cmpT (c: NumC.cmpG): cmpT
   = match c with
-    | NumC.Eq -> Cstr.EQ
-    | NumC.Neq -> Cstr.NEQ
-    | NumC.Le -> Cstr.LE
-    | NumC.Lt -> Cstr.LT
+    | NumC.Eq -> Cstr_type.EQ
+    | NumC.Neq -> Cstr_type.NEQ
+    | NumC.Le -> Cstr_type.LE
+    | NumC.Lt -> Cstr_type.LT
 
 let export_s_cmpT (c: NumC.cmpT): cmpT
   = match c with
-    | NumC.EqT -> Cstr.EQ
-    | NumC.LeT -> Cstr.LE
-    | NumC.LtT -> Cstr.LT
+    | NumC.EqT -> Cstr_type.EQ
+    | NumC.LeT -> Cstr_type.LE
+    | NumC.LtT -> Cstr_type.LT
 
 (********************)
 (* translation on Q *)
@@ -409,7 +409,7 @@ module QAffTerm = struct
 		= fun (cmp,t) ->
 		let p = to_poly t in
 		let (cmp',p') =
-		Cstr.(match cmp with
+		Cstr_type.(match cmp with
 		| EQ -> (Eq, p)
 		| LE -> (Le, Polynomial.neg p)
 		| LT -> (Lt, Polynomial.neg p)

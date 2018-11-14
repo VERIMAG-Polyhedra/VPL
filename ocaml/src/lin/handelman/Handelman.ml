@@ -1,8 +1,7 @@
 module Debug = Hi.Debug
 
 module Cs = PLP.Cs
-module CP = CstrPoly.Positive
-module Cert = HPol.Cert
+module CP = CstrPoly
 
 let factory : unit Cert.t = {
 	Cert.name = "Unit";
@@ -19,8 +18,8 @@ let factory : unit Cert.t = {
 module Handelman (Minimization : Min.Type) = struct
 
 	module PLP = PLP.PLP(Minimization)
-	module Obj = PLP.PSplx.Objective
-	module Poly = Obj.ParamCoeff.Poly
+	module Obj = Objective
+	module Poly = CP.Poly
 	module Naming = PLP.Naming
 
 	module PLP_MODIF = struct
@@ -70,7 +69,7 @@ module Handelman (Minimization : Min.Type) = struct
 				Some (exec config plp)
 			else None
 
-		let run : 'c HPol.t -> config -> PSplx.t -> (PSplx.t -> 'c) -> (Region.t * 'c PLPCore.Cons.t) list option
+		let run : 'c HPol.t -> config -> PSplx.t -> (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
 			= fun ph config sx get_cert ->
 			PLPCore.Stat.reset();
 			Random.init 0;
@@ -110,7 +109,7 @@ module Handelman (Minimization : Min.Type) = struct
 							Region.sx = None})
 				(ph#get_ineqs())
 
-		let run_plp : 'c HPol.t -> Obj.pivotStrgyT -> PSplx.t -> bool -> (Region.t * 'c PLPCore.Cons.t) list option
+		let run_plp : 'c HPol.t -> Obj.pivotStrgyT -> PSplx.t -> bool -> (Region.t * 'c Cons.t) list option
 			= fun ph st sx is_normalized ->
 			let region_type = if is_normalized then Cone else NCone in
 			let config' = {std_config with
@@ -150,8 +149,8 @@ module Handelman (Minimization : Min.Type) = struct
 						 Naming.empty
 						 l
 				in
-				let lin' = List.map (Obj.ParamCoeff.ofPoly (Naming.to_index nm Naming.Param) (List.length l)) lin in
-				let cst' = Obj.ParamCoeff.ofPoly (Naming.to_index nm Naming.Param) (List.length l) cst in
+				let lin' = List.map (ParamCoeff.ofPoly (Naming.to_index nm Naming.Param) (List.length l)) lin in
+				let cst' = ParamCoeff.ofPoly (Naming.to_index nm Naming.Param) (List.length l) cst in
 				(Obj.mk lin' cst', nm)
 
 		let obj_of_polyList : Poly.t list -> Obj.t * Naming.t
@@ -216,9 +215,9 @@ module Handelman (Minimization : Min.Type) = struct
 				}
 				|> PLP.PSplx.addSlacks (List.length ineqs)
 
-		let polyToParamCoeff : PLP.PSplx.t -> Poly.t -> Obj.ParamCoeff.t
+		let polyToParamCoeff : PLP.PSplx.t -> Poly.t -> ParamCoeff.t
 		  = fun sx p ->
-		  Obj.ParamCoeff.ofPoly (Naming.to_index sx.PLP.PSplx.names Naming.Param)
+		  ParamCoeff.ofPoly (Naming.to_index sx.PLP.PSplx.names Naming.Param)
 				  (PLP.PSplx.nParams sx) p
 	end
 
@@ -305,10 +304,10 @@ module Handelman (Minimization : Min.Type) = struct
 			Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Change_of_var : %s"
 				(Misc.list_to_string Poly.to_string his_p' " ; ")))
 			;
-			let his_p'_cstr = List.map (CP.mk Cstr.Le) his_p'
+			let his_p'_cstr = List.map (CP.mk Cstr_type.Le) his_p'
 				|> List.map (fun p -> CP.compl p |> CP.toCstr)
 			in
-			let ineqs = List.map (fun c -> {c with Cs.typ = Cstr.Lt}) (ph#get_ineqs() @ his_p'_cstr)
+			let ineqs = List.map (fun c -> {c with Cs.typ = Cstr_type.Lt}) (ph#get_ineqs() @ his_p'_cstr)
 			in
 			Debug.log DebugTypes.Detail
 				(lazy (Printf.sprintf "get : ineqs = %s" (Cs.list_to_string ineqs)));
@@ -340,7 +339,7 @@ module Handelman (Minimization : Min.Type) = struct
 	end
 
 	let handelman : Obj.pivotStrgyT -> 'c HPol.t -> Poly.t list -> Poly.t
-		-> (PLP.Region.t * 'c Pol.Cons.t) list option
+		-> (PLP.Region.t * 'c Cons.t) list option
 		= fun st ph his_p f ->
 		let variables = ph#get_vars in
 		let nb_h = (List.length his_p) in
@@ -386,24 +385,24 @@ module Handelman (Minimization : Min.Type) = struct
 			Invalid_argument s -> Debug.exec None DebugTypes.Detail (lazy("Handelman : invalid_argument -> " ^ s))
 
 	(** It puts strict inequalities when possible (gathering this information from the certificate). *)
-	let adjustCmp : Cs.t list -> Hi.t list -> (int * Scalar.Rat.t) list -> Cstr.cmpT
-		= let cICmp : Cs.t list -> Hi.cIndex -> Cstr.cmpT
+	let adjustCmp : Cs.t list -> Hi.t list -> (int * Scalar.Rat.t) list -> Cstr_type.cmpT
+		= let cICmp : Cs.t list -> Hi.cIndex -> Cstr_type.cmpT
 			= fun cstrs cI ->
 			List.fold_left2
 			(fun cmp cstr i -> if i <> 0
 				then Cs.cmpAdd cmp (cstr.Cs.typ)
 				else cmp)
-			Cstr.Le
+			Cstr_type.Le
 			cstrs (Index.Int.data cI)
 			in
-		let hiCmp : Cs.t list -> Hi.t -> Cstr.cmpT
+		let hiCmp : Cs.t list -> Hi.t -> Cstr_type.cmpT
 			= fun cstrs hi ->
 			let cICmp_ins = cICmp cstrs in
 			match hi with
 			| Hi.Ci cI | Hi.VarCi (_,cI) -> cICmp_ins cI
-			| Hi.VarBounds (_,_) -> Cstr.Le
+			| Hi.VarBounds (_,_) -> Cstr_type.Le
 		in
-		let iCmp : Cs.t list -> Hi.t list -> int -> Cstr.cmpT
+		let iCmp : Cs.t list -> Hi.t list -> int -> Cstr_type.cmpT
 			= fun cstrs his i ->
 			hiCmp cstrs (List.nth his i)
 		in
@@ -411,10 +410,10 @@ module Handelman (Minimization : Min.Type) = struct
 		let iCmp_ins = iCmp cstrs his in
 		List.fold_left
 			(fun cmp (i,_) -> Cs.cmpAdd cmp (iCmp_ins i))
-			Cstr.Le
+			Cstr_type.Le
 			cert
 
-	let compute_certs : Hi.t list -> int -> Poly.V.t list -> (PLP.Region.t * 'c PLPCore.Cons.t) list
+	let compute_certs : Hi.t list -> int -> Poly.V.t list -> (PLP.Region.t * 'c Cons.t) list
 		-> (CP.t * Hi.Cert.schweighofer list) list
 		= fun his n_cstrs vars regs ->
 			let compute_cert : (int * Scalar.Rat.t) list -> Hi.Cert.schweighofer list
@@ -427,7 +426,7 @@ module Handelman (Minimization : Min.Type) = struct
 			in
 			List.map
 				(fun (reg, cons) ->
-					let cstr = PLPCore.Cons.get_c cons in
+					let cstr = Cons.get_c cons in
 					let cp = CP.ofCstr cstr in
 					match reg.PLP.Region.sx with
 					| Some sx ->
@@ -571,9 +570,9 @@ module Handelman (Minimization : Min.Type) = struct
 
 		let rewrite_polynomials : 'c Pol.t -> CP.t list -> CP.t list
 			(* returns the polynomial equal to v in Cons *)
-			= let get_eq : Cs.Vec.V.t -> 'c Pol.Cons.t -> Cs.t
+			= let get_eq : Cs.Vec.V.t -> 'c Cons.t -> Cs.t
 				= fun v cons ->
-				let cstr = Pol.Cons.get_c cons in
+				let cstr = Cons.get_c cons in
 				let vec = Cs.get_v cstr in
 				let coeff = Cs.Vec.get vec v in
 				Cs.add
@@ -594,12 +593,12 @@ module Handelman (Minimization : Min.Type) = struct
 					(Poly.data p)
 				|> Poly.sum
 			in
-			let rewrite_poly : 'c Pol.EqSet.t -> CP.t -> CP.t
+			let rewrite_poly : 'c EqSet.t -> CP.t -> CP.t
 				= fun eqs p ->
 				let p' =
 				List.fold_left
 					(fun p (v,cons) ->
-						print_endline (Printf.sprintf "%s -> %s" (Cs.Vec.V.to_string v) (Pol.Cons.to_string Cs.Vec.V.to_string cons));
+						print_endline (Printf.sprintf "%s -> %s" (Cs.Vec.V.to_string v) (Cons.to_string Cs.Vec.V.to_string cons));
 						let cstr = get_eq v cons in
 						let p' = Poly.ofCstr (Cs.get_v cstr) (Cs.get_c cstr) in
 						rewrite_var v p p'
@@ -701,9 +700,9 @@ module Float = Handelman(Min.Classic(Vector.Float.Positive))
 (*
 	let init_map : 'c Cert.t -> int -> 'c Cons.t PLP.MapV.t
 		= fun factory nb_his ->
-		let trivial_cstr = Cs.mk Cstr.Le [] Scalar.Rat.u in
+		let trivial_cstr = Cs.mk Cstr_type.Le [] Scalar.Rat.u in
 		List.fold_left
-			(fun map i -> PLP.MapV.add i (Pol.Cons.triv factory) map)
+			(fun map i -> PLP.MapV.add i (Cons.triv factory) map)
 			PLP.MapV.empty
 			(Misc.range 0 nb_his)
 	*)
@@ -724,7 +723,7 @@ module Float = Handelman(Min.Classic(Vector.Float.Positive))
 
 		let get : 'c HPol.t -> Poly.t -> Poly.t * (Poly.V.t -> Scalar.Rat.t option)
 			= fun ph objective ->
-			let ineqs = List.map (fun c -> {c with Cs.typ = Cstr.Lt}) (ph#get_ineqs()) in
+			let ineqs = List.map (fun c -> {c with Cs.typ = Cstr_type.Lt}) (ph#get_ineqs()) in
 			Debug.log DebugTypes.Detail
 				(lazy (Printf.sprintf "get : ineqs = %s" (Cs.list_to_string ineqs)));
 			(*List.map (Cs.mulc Scalar.Rat.negU) (ph#get_ineqs())*) (* XXX: mais purkwa? *)

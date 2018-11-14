@@ -5,10 +5,7 @@ Not that there is no handling of the empty polyhedron (i.e. the bottom value):
 a value of type [t] is assumed to be non-bottom and operators that may yield
 an empty polyhedron have an [option] type as return value. *)
 
-module EqSet = IneqSet.EqSet
-module Cons = IneqSet.Cons
-module Cert = Cons.Cert
-module Cs = EqSet.Cs
+module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module Var = Vec.V
 

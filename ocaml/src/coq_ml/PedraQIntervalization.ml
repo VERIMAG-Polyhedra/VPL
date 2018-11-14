@@ -1,4 +1,4 @@
-module Cstr_BE = Cstr
+module Cstr_BE = Cstr_type
 open ASAtomicCond
 open ASTerm
 open Debugging

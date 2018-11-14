@@ -5,100 +5,9 @@
 	{- {!module:Float}: floating points}
 }*)
 
-type roundT = Up | Down
+open Scalar_type
 
-module type Type = sig
-	type t
-
-	(** Name of the scalar type. *)
-	val name : string
-
-	(** Zero value. *)
-	val z: t
-
-	(** Value 1. *)
-	val u: t
-
-	(** Value -1. *)
-	val negU: t
-
-	(** Small value *)
-	val delta : t
-
-	val to_string : t -> string
-	val of_string : string -> t
-
-	(** [cmp x y] returns 0 if x = y, a negative integer if x < y, and a positive one otherwise. *)
-	val cmp : t -> t -> int
-
-	(** [le x y] returns true if x <= y, false otherwise. *)
-	val le: t -> t -> bool
-
-	(** [lt x y] returns true if x < y, false otherwise. *)
-	val lt: t -> t -> bool
-
-	(** [cmpz n] is equivalent to [cmp z n]. *)
-	val cmpz: t -> int
-
-	(** [equal x y] returns true if x = y, false otherwise. *)
-	val equal : t -> t -> bool
-
-	(** [equalApprox x y] returns true if [abs (x - y) <= delta]. *)
-	val equalApprox : t -> t -> bool
-
-	(** [isZ n] returns true is [n] is zero ([z]) and false otherwise. *)
-	val isZ : t -> bool
-
-	(** Compute the opposite of a number. *)
-	val neg: t -> t
-
-	(** Compute the inverse of a number. *)
-	val inv: t -> t
-
-	(** Compute the absolute value. *)
-	val abs: t -> t
-
-	val add : t -> t -> t
-	val sub : t -> t -> t
-	val mul : t -> t -> t
-	val pow : t -> int -> t
-
-	(** [div num den] *)
-	val div : t -> t -> t
-
-	(** Multiplication by a rational. *)
-	val mulr : Q.t -> t -> t
-
-	(** Division by a rational. *)
-	val divr : t -> Q.t -> t
-
-	val of_float : float -> t
-	val to_float : t -> float
-
-	val ofQ : Q.t -> t
-	val toQ : t -> Q.t
-
-	(** [toInt_round x Up] returns the smallest [i] such that [i >= x].
-		[toInt_round x Down] returns the greatest [i] such that [i <= x].
-		Returns None if x does not fit within a machine integer. *)
-	val toInt_round : t -> roundT -> int option
-
-	(** [mk ~den:i1 i2] builds an element of type {!type:t} and of value [i2]/[i1]. *)
-	val mk: int -> int -> t
-
-	(** [mk1 i] builds an element of type {!type:t} from integer [i]. *)
-	val mk1 : int -> t
-
-	(** [well_formed x] returns true if x is not +/- infinity *)
-	val well_formed : t -> bool
-
-	(** [well_formed_nonnull x] returns true if x is neither 0 nor +/- infinity *)
-	val well_formed_nonnull : t -> bool
-
-	(**/**)
-	(** Used in the simplex tableau sharing during the distributed PLP.*)
-	val plp_print : t -> string
-end
+module type Type = Type
 
 module Float = struct
 	type t = float
@@ -178,6 +87,9 @@ module Float = struct
 			| Down -> Some(i - 1)
 		else Some i
 
+    let gcd _ _ = failwith "unimplemented"
+    let toZ _ = failwith "unimplemented"
+    let ofZ _ _ = failwith "unimplemented"
 end
 
 (** Rationals are used everywhere in the VPL.
@@ -295,7 +207,7 @@ module Rat = struct
 		let ofString : string -> t
 		= Z.of_string
 
-		let toInt_round = Z.to_int
+		let toInt = Z.to_int
 		let pr = Z.to_string
 	end
 
@@ -329,8 +241,8 @@ module Rat = struct
 	let toInt_round q round =
 		try
 			let i = let (num,den) = toZ q in
-				let num = Z.toInt_round num
-				and den = Z.toInt_round den in
+				let num = Z.toInt num
+				and den = Z.toInt den in
 				num / den
 			in
 			if (match round with
@@ -388,6 +300,10 @@ module RelInt = struct
 	let ofQ _ = Pervasives.failwith "Scalar.RelInt.ofQ"
 	let toQ n = Rat.ofZ n u
 
+    let gcd _ _ = failwith "unimplemented"
+    let toZ _ = failwith "unimplemented"
+    let ofZ _ _ = failwith "unimplemented"
+
 	let mk1 : int -> t
 		= fun i ->
 		Z.of_int i
@@ -444,16 +360,19 @@ module RelInt = struct
 		Pervasives.failwith "Scalar.RelInt.divr"
 end
 
+type symbolic = { v: Q.t; d: Q.t }
+
 (** Symbolic values have the form [a + b.delta], where [a] and [b] are rationals, and [delta] is symbolic.
 They are used in module {!module:Splx} and {!module:Opt} to represent values with strict inequalities. *)
 module Symbolic = struct
 
-	type t = { v: Rat.t; d: Rat.t }
+	type t = symbolic
 
 	let name = "Symbolic"
 
 	let get_d (x : t) = x.d
-        let get_v (x : t) = x.v
+
+    let get_v (x : t) = x.v
 
 	let ofRat n = { v = n; d = Rat.z }
 
@@ -616,6 +535,10 @@ module Symbolic = struct
 
 	let toInt_round _ _ = Pervasives.failwith "Scalar.Symbolic.toInt_round : not implemented"
 
+    let gcd _ _ = failwith "unimplemented"
+    let toZ _ = failwith "unimplemented"
+    let ofZ _ _ = failwith "unimplemented"
+
 end
 
 module MachineInt = struct
@@ -689,4 +612,8 @@ module MachineInt = struct
 	let divr : t -> Q.t -> t
 		= fun _ _ ->
 		Pervasives.failwith "Scalar.MachineInt.divr"
+
+    let gcd _ _ = failwith "unimplemented"
+    let toZ _ = failwith "unimplemented"
+    let ofZ _ _ = failwith "unimplemented"
 end

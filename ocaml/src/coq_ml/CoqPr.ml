@@ -19,21 +19,19 @@ let stringTr: string -> char list
 	in
 	f ((String.length s) - 1) []
 
-module Nb = Scalar.Rat
-
-let posTr: BinNums.positive -> Nb.Z.t
+let posTr: BinNums.positive -> Z.t
 = fun p0 ->
-	let rec f: int -> Nb.Z.t -> BinNums.positive -> Nb.Z.t
+	let rec f: int -> Z.t -> BinNums.positive -> Z.t
 	= fun shift acc -> function
-		| BinNums.Coq_xH -> Nb.Z.orL acc (Nb.Z.shiftL Nb.Z.u shift)
+		| BinNums.Coq_xH -> Z.logor acc (Z.shift_left Z.one shift)
 		| BinNums.Coq_xO p -> f (shift + 1) acc p
-		| BinNums.Coq_xI p -> f (shift + 1) (Nb.Z.orL acc (Nb.Z.shiftL Nb.Z.u shift)) p
-	in f 0 Nb.Z.z p0
+		| BinNums.Coq_xI p -> f (shift + 1) (Z.logor acc (Z.shift_left Z.one shift)) p
+	in f 0 Z.zero p0
 
 let posPr: BinNums.positive -> string
 = fun p ->
 	let z = posTr p in
-	Nb.Z.pr z
+	Z.to_string z
 
 let posPr': BinNums.positive -> char list
 = fun p -> stringTr (posPr p)
@@ -50,14 +48,14 @@ let posPrRaw: BinNums.positive -> string
 let posPrRaw': BinNums.positive -> char list
 = fun p -> stringTr (posPrRaw p)
 
-let zTr: BinNums.coq_Z -> Nb.Z.t
+let zTr: BinNums.coq_Z -> Z.t
 = function
-	| BinNums.Z0 -> Nb.Z.z
+	| BinNums.Z0 -> Z.zero
 	| BinNums.Zpos p -> posTr p
-	| BinNums.Zneg p -> Nb.Z.neg (posTr p)
+	| BinNums.Zneg p -> Z.neg (posTr p)
 
 let zPr: BinNums.coq_Z -> string
-= fun z -> Nb.Z.pr (zTr z)
+= fun z -> Z.to_string (zTr z)
 
 let zPr': BinNums.coq_Z -> char list
 = fun z -> stringTr (zPr z)

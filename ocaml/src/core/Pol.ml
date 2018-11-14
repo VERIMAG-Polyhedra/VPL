@@ -1,7 +1,4 @@
-module EqSet = IneqSet.EqSet
-module Cons = IneqSet.Cons
-module Cert = Cons.Cert
-module Cs = EqSet.Cs
+module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module Var = Vec.V
 
@@ -465,7 +462,7 @@ let rec extract_implicit_eqs' : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) 
 		let cert = Cons.linear_combination_cert factory conss wit in
 		(Bot cert, None)
 	| Sat _ ->
-		let ilist_stricten = List.map (fun (i,c) -> i, {c with Cs.typ = Cstr.Lt}) ilist in
+		let ilist_stricten = List.map (fun (i,c) -> i, {c with Cs.typ = Cstr_type.Lt}) ilist in
 		match chkFeasibility nvar ilist_stricten with
 		| Sat sx_strict -> Ok lp, Some (Splx.getAsg sx_strict)
 		| Unsat wit ->
@@ -475,7 +472,7 @@ let rec extract_implicit_eqs' : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) 
 			let ijs = List.map2
 				(fun (i,(cstr,lower_bound)) (j,upper_bound) ->
 					assert (i = j);
-					(i, ({cstr with Cs.typ = Cstr.Eq}, factory.Cert.merge lower_bound upper_bound))
+					(i, ({cstr with Cs.typ = Cstr_type.Eq}, factory.Cert.merge lower_bound upper_bound))
 					) is js
 			in
 			let elist =
@@ -503,7 +500,7 @@ let extract_implicit_eqs : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) mayBo
 
 let logInit: 'c t -> 'c Cons.t list -> ('c logT, 'c) mayBotT
 	= let split: 'c Cons.t list -> 'c Cons.t list * 'c Cons.t list
-		= fun l -> List.partition (fun (c, _) -> Cs.get_typ c = Cstr.Eq) l
+		= fun l -> List.partition (fun (c, _) -> Cs.get_typ c = Cstr_type.Eq) l
 	in
 	fun p l ->
 		let (elist, ilist) = split l in
@@ -660,10 +657,10 @@ let joinSetup: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
 	let factory = Cons.discr_factory factory1 factory2 in
 	let alpha = varNxt in
 	let aIneqs = [
-		(Cs.mk Cstr.Le [Scalar.Rat.u, alpha] Scalar.Rat.u,
-			(factory1.Cert.triv Cstr.Le Cs.Vec.Coeff.z, factory2.Cert.triv Cstr.Le Cs.Vec.Coeff.u));
-		(Cs.mk Cstr.Le [Scalar.Rat.negU, alpha] Scalar.Rat.z,
-			(factory1.Cert.triv Cstr.Le Cs.Vec.Coeff.u, factory2.Cert.triv Cstr.Le Cs.Vec.Coeff.z))
+		(Cs.mk Cstr_type.Le [Scalar.Rat.u, alpha] Scalar.Rat.u,
+			(factory1.Cert.triv Cstr_type.Le Cs.Vec.Coeff.z, factory2.Cert.triv Cstr_type.Le Cs.Vec.Coeff.u));
+		(Cs.mk Cstr_type.Le [Scalar.Rat.negU, alpha] Scalar.Rat.z,
+			(factory1.Cert.triv Cstr_type.Le Cs.Vec.Coeff.u, factory2.Cert.triv Cstr_type.Le Cs.Vec.Coeff.z))
 		]
 	in
 	let (varNxt1, r, eqs1) = EqSet.joinSetup_1 factory2 (Var.next varNxt) Rtree.Nil alpha p1.eqs in
@@ -691,10 +688,10 @@ let joinSetup: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
 
 let fix_cmp: 'c Cert.t -> 'c Cons.t -> Cs.t list -> 'c Cons.t
 	= fun fac (c,cert) inputIneqs ->
-	if (Cs.get_typ c) = Cstr.Le
+	if (Cs.get_typ c) = Cstr_type.Le
 	then (c, fac.Cert.to_le cert)
 	else
-        let c_le = {c with Cs.typ = Cstr.Le} in
+        let c_le = {c with Cs.typ = Cstr_type.Le} in
         if List.exists (Cs.equalSyn c_le) inputIneqs
         then (c_le, fac.Cert.to_le cert)
         else (c, cert)
@@ -904,12 +901,12 @@ let opt2itv: (Scalar.Rat.t -> Scalar.Rat.t) -> 'c Cert.t -> 'c Cons.t list -> Op
 	function
 	| Opt.Finite (_, n, w) ->
 		let cert = Cons.linear_combination_cert factory conss w
-			|> factory.Cert.add (factory.Cert.triv Cstr.Le Scalar.Rat.z)
+			|> factory.Cert.add (factory.Cert.triv Cstr_type.Le Scalar.Rat.z)
 		in
 		(Closed (f n), Some cert)
 	| Opt.Sup (_, n, w) ->
 		let cert = Cons.linear_combination_cert factory conss w
-			|> factory.Cert.add (factory.Cert.triv Cstr.Le Scalar.Rat.z)
+			|> factory.Cert.add (factory.Cert.triv Cstr_type.Le Scalar.Rat.z)
 		in
 		(Open (f n), Some cert)
   | Opt.Infty -> (Infty, None)
@@ -1169,7 +1166,7 @@ let equal : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> bool
 
 let plot : 'c t -> string
 	= fun p ->
-	let (eqs, ineqs) = List.partition (fun c -> c.Cs.typ = Cstr.Eq) (get_cstr p)
+	let (eqs, ineqs) = List.partition (fun c -> c.Cs.typ = Cstr_type.Eq) (get_cstr p)
 	in
 	let vars = Cs.getVars (eqs @ ineqs)
 		|> Var.Set.elements
@@ -1246,7 +1243,7 @@ let set_point : Vec.t -> 'c t -> 'c t
     List.iter
         (fun cstr ->
             let cstr' = { cstr with
-                Cs.typ = (match Cs.get_typ cstr with | Cstr.Le -> Cstr.Lt | typ -> typ);
+                Cs.typ = (match Cs.get_typ cstr with | Cstr_type.Le -> Cstr_type.Lt | typ -> typ);
             } in
             if not (Cs.eval cstr' point)
             then Pervasives.invalid_arg (Printf.sprintf "Pol.set_point: point %s does not satisfy constraint %s"
@@ -1327,7 +1324,7 @@ let split_in_half : 'c Cert.t -> 'c t -> Cs.t option
         | Closed r | Open r -> Scalar.Rat.add r (Scalar.Rat.divr length (Scalar.Rat.mk1 2))
         in
         Profile.stop "split_in_half";
-        Some (Cs.mk Cstr.Le [Scalar.Rat.u, max_var] cste)
+        Some (Cs.mk Cstr_type.Le [Scalar.Rat.u, max_var] cste)
         end
 
 let satisfy : 'c t -> Vec.t -> bool
