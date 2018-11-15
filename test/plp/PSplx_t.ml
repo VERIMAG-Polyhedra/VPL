@@ -15,35 +15,31 @@ let addSlackAt_ts : Test.t
 	 in
 	 [
 		 "simplest", 0,
-		 {
+		 { PSplx.empty with
 			PSplx.obj = Objective.mk [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat =  [[Scalar.Rat.u]];
 			PSplx.basis = [];
 			PSplx.names = Naming.empty;
-            PSplx.pivots = [];
 		 },
-		 {
+		 { PSplx.empty with
 			PSplx.obj = Objective.mkSparse 1 [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]];
 			PSplx.basis = [0];
 			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty;
-            PSplx.pivots = [];
 		 };
 
 		 "two_cons", 0,
-		 {
+		 { PSplx.empty with
 			PSplx.obj = Objective.mk [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat = [[Scalar.Rat.u]; [Scalar.Rat.of_int 2]];
 			PSplx.basis = [];
 			PSplx.names = Naming.empty;
-            PSplx.pivots = [];
 		 },
-		 {
+		 { PSplx.empty with
 			PSplx.obj = Objective.mkSparse 1 [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]; [Scalar.Rat.z; Scalar.Rat.of_int 2]];
 			PSplx.basis = [0];
 			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty
-            PSplx.pivots = [];
 		 }
 	 ]
 	 |> List.map chk
@@ -58,7 +54,7 @@ let get_row_pivot_ts : Test.t
 	   = fun (nm, col, er, m) st ->
 	   let ar =
 			try Some (PSplx.get_row_pivot m col)
-			with Failure _ -> None
+			with PSplx.Unbounded_problem -> None
 	   in
 	   if ar = er
 	   then Test.succeed st
@@ -247,7 +243,7 @@ module Init
 	   in
 	   [
 	"selectionBug", 0, 1,
-	{
+	{ PSplx.empty with
 	  PSplx.obj = Objective.mk [
 				 ParamCoeff.mkSparse 1 [] Q.zero;
 				 ParamCoeff.mkSparse 1 [0, Q.one] Q.zero;
@@ -268,7 +264,7 @@ module Init
     let chk : string * PSplx.t -> (Test.stateT -> Test.stateT)
 	= fun (nm, sx) st ->
 	let sx' = PSplx.Explore.Init.buildInitFeasibilityPb sx in
-	if PSplx.Diag.isCanon sx'
+	if PSplx.isCanon sx'
 	then Test.succeed st
 	else
 	  let e = Printf.sprintf "\n%s: tableau is not in canonical form\n%s"
@@ -280,7 +276,7 @@ module Init
 	   let v = List.map Q.of_int in
 	   [
 	"rearchitecture_bug",
-	{
+	{ PSplx.empty with
 	  PSplx.obj =
 		 Objective.mkSparse
 		   5 [
@@ -311,7 +307,7 @@ module Init
 			else match PSplx.Explore.Init.findFeasibleBasis sx vec with
 				| None -> Test.fail nm "" st (* handled in chkFeasible *)
 				| Some sx' ->
-					if PSplx.Diag.isCanon sx'
+					if PSplx.isCanon sx'
 		  			then Test.succeed st
 		 			else Test.fail nm "tableau not in canonical form" st
 	   in

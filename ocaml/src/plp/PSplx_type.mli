@@ -121,6 +121,11 @@ module type Type = sig
         XXX: it uses an internal variable [a] which [VariablesInt.t] identifier is [-1].
         *)
         module Init : sig
+
+            val getReplacementForA : t -> int -> int
+            val buildInitFeasibilityPb : t -> t
+            val buildFeasibleTab : Objective.t -> t -> t
+            
             (** Tries to find a feasible basis.
                 @param sx the simplex tableau to initialize
                 @pararam the instantiation parametric point
