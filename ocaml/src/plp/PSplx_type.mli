@@ -102,17 +102,28 @@ module type Type = sig
         XXX: it uses an internal variable [a] which [VariablesInt.t] identifier is [-1].
         *)
         module Init : sig
-            val getReplacementForA : t -> int -> int
-            val buildInitFeasibilityPb : t -> t
-            val buildFeasibleTab : Objective.t -> t -> t
-            val correction : t -> t option
+            (** Tries to find a feasible basis.
+                @param sx the simplex tableau to initialize
+                @pararam the instantiation parametric point
+                @return None if the problem is infeasible *)
             val findFeasibleBasis : t -> Vec.t -> t option
         end
 
+        (** Run the optimization process of the simplex algorithm.
+            @param str pivoting strategy
+            @param point the parametric point on which the objective function is instantiated
+            @param sx the simplex tableau *)
         val push : Objective.pivotStrgyT -> Vec.t -> t -> t
+
+        (** Initializes the simplex tableau and launch the optimization.
+            @param str pivoting strategy
+            @param point the parametric point on which the objective function is instantiated
+            @param sx the simplex tableau
+            @return None if the problem is infeasible *)
         val init_and_push : Objective.pivotStrgyT -> Vec.t -> t -> t option
     end
 
+    (** Module for building a simplex tableau from polynomials. *)
     module Build : sig
         module Poly = ParamCoeff.Poly
 

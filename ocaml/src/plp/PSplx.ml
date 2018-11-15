@@ -234,7 +234,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 
 		module Init = struct
 
-			let a_value : Vec.V.t ref = ref Vec.V.u;;
+			let a_value : Vec.V.t ref = ref Vec.V.u
 
 			let getReplacementForA : t -> int -> int
 				= fun sx row ->
@@ -468,32 +468,5 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 			names = Naming.mkVar vars nm
 				}
 				|> addSlacks (List.length ineqs)
-
-		(*
-		(** Version for equalities only. *)
-		module Max = struct
-
-			let cstr_to_vector : V.t list -> Cs.t -> Tableau.Vector.t
-				= fun variables cstr ->
-				match cstr.Cs.typ with
-				| Cstr_type.Eq ->
-					let vec = Cs.get_v cstr in
-					List.map
-						(Vec.get vec)
-						variables
-					@ [Cs.get_c cstr]
-				| _ -> Pervasives.failwith "Psplx.Build.Max.cstr_to_vector -> expected Eq"
-
-			let cstrs_to_tableau : V.t list -> Cs.t -> Tableau.Vector.t list
-				= fun variables cstrs ->
-				List.map (cstr_to_vector variables) cstrs
-
-			let max : Naming.t -> Cs.t list -> Objective.t -> Vec.t -> t
-				= fun cstrs obj point ->
-
-
-
-		end
-		*)
 	end
 end
