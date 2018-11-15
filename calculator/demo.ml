@@ -62,8 +62,8 @@ VPL.leq p6 p5;;
 (******* Using Traces ********)
 (*****************************)
 
-(* Traces may be printed during execution (see src/misc/Debug.ml). 
-They can be enabled separatly in several modules. 
+(* Traces may be printed during execution (see src/misc/Debug.ml).
+They can be enabled separatly in several modules.
 The level of details can also be tuned (chosen from [MOutput ; MInput ; Title ; Normal ; Detail].
 For instance, to enable the traces in module PLPCore, without details : *)
 Join.Debug.enable DebugTypes.([MOutput ; MInput ; Title]);;
@@ -80,6 +80,7 @@ p3 || p4;;
 (* Again, with more detailed traces: *)
 Join.Debug.enable DebugTypes.([MOutput ; MInput ; Title ; Normal]);;
 PLPCore.Debug.enable DebugTypes.([MOutput ; MInput ; Title ; Normal ; Detail]);;
+PSplx.Debug.enable DebugTypes.([MOutput ; MInput ; Title ; Normal ; Detail]);;
 p3 || p4;;
 
 (* Traces for projection *)
@@ -88,4 +89,3 @@ Proj.Debug.enable DebugTypes.([MOutput ; MInput ; Title ; Normal ; Detail]);;
 Flags.proj := Flags.Proj_PLP (Flags.Float);;
 
 let p3 = p2 |- "z" ;;
-

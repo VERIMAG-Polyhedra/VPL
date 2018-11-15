@@ -19,13 +19,15 @@ let addSlackAt_ts : Test.t
 			PSplx.obj = Objective.mk [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat =  [[Scalar.Rat.u]];
 			PSplx.basis = [];
-			PSplx.names = Naming.empty
+			PSplx.names = Naming.empty;
+            PSplx.pivots = [];
 		 },
 		 {
 			PSplx.obj = Objective.mkSparse 1 [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]];
 			PSplx.basis = [0];
-			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty
+			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty;
+            PSplx.pivots = [];
 		 };
 
 		 "two_cons", 0,
@@ -33,13 +35,15 @@ let addSlackAt_ts : Test.t
 			PSplx.obj = Objective.mk [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat = [[Scalar.Rat.u]; [Scalar.Rat.of_int 2]];
 			PSplx.basis = [];
-			PSplx.names = Naming.empty
+			PSplx.names = Naming.empty;
+            PSplx.pivots = [];
 		 },
 		 {
 			PSplx.obj = Objective.mkSparse 1 [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]; [Scalar.Rat.z; Scalar.Rat.of_int 2]];
 			PSplx.basis = [0];
 			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty
+            PSplx.pivots = [];
 		 }
 	 ]
 	 |> List.map chk

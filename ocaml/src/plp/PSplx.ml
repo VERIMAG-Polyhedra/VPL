@@ -12,11 +12,14 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 	module Pivot = Objective.Pivot(Vec)
 	module Naming = Pivot.Naming
 
+    type pivotT = ParamCoeff.t * Tableau.Vector.t -> ParamCoeff.t * Tableau.Vector.t
+
 	type t = {
         obj : Objective.t;
         mat : Tableau.Matrix.t;
         basis : int list;
-        names : Naming.t
+        names : Naming.t;
+        pivot : pivotT;
 	}
 
 	let empty = {
@@ -24,7 +27,16 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		mat = [];
 		basis = [];
 		names = Naming.empty;
+        pivot = (fun x -> x);
 	}
+
+    let mk : Objective.t -> Tableau.Matrix.t -> int list -> Naming.t -> t
+        = fun obj mat basis names -> { empty with
+            obj = obj;
+            mat = mat;
+            basis = basis;
+            names = names;
+        }
 
 	let get_obj : t -> Objective.t
         = fun sx -> sx.obj
@@ -93,16 +105,32 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
             (xb, Tableau.Vector.last v)
         ) sx.basis sx.mat
 
+    let add_pivots: int -> int -> t -> pivotT
+        = fun row col sx (pcoeff, column) ->
+        let ak = Tableau.Matrix.get row col sx.mat in
+        let (pcoeff', column') = sx.pivot (pcoeff,column) in
+        let bk' = Q.div (Tableau.Vector.get row column') ak in
+        (
+        ParamCoeff.mul bk' (Objective.get col sx.obj)
+            |> ParamCoeff.sub pcoeff,
+        List.mapi (fun row' coeff ->
+            if row' = row then bk'
+            else Q.sub coeff
+                (Q.mul bk' (Tableau.Matrix.get row' col sx.mat))
+        ) column'
+        )
+
 	let pivot : t -> int -> int -> t
         = fun sx row col -> { sx with
             obj = Objective.elim sx.obj (Tableau.Matrix.getRow row sx.mat) col;
             mat = Tableau.Matrix.pivot sx.mat row col;
-            basis = List.mapi (fun i j -> if i = row then col else j) sx.basis
+            basis = List.mapi (fun i j -> if i = row then col else j) sx.basis;
+            pivot = (add_pivots row col sx)
         }
 
 	let addSlackAt : int -> t -> t
         = fun i sx ->
-        let idx = nVars sx in {
+        let idx = nVars sx in { sx with
             obj = Objective.add_col sx.obj
                 (ParamCoeff.mkSparse (Objective.nParams sx.obj) [] Scalar.Rat.z) idx;
             mat = Tableau.Matrix.add_col sx.mat
@@ -110,7 +138,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
                     if i' = i then Scalar.Rat.u else Scalar.Rat.z)
             	 ) idx;
             basis = sx.basis @ [idx];
-            names = Naming.allocAt Naming.Slack (Vec.V.fromInt (i+1)) idx sx.names (* +1 car on compte les slack à partir de 1*)
+            names = Naming.allocAt Naming.Slack (Vec.V.fromInt (i+1)) idx sx.names; (* +1 car on compte les slack à partir de 1*)
         }
 
 	let addSlacks : int -> t -> t
@@ -147,9 +175,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 			 {sx0 with basis = get_basis sx0 @ gen l}
 		in
 		let width_columns = t_get_width_column_vector sx in
-		(String.concat ""
-		(
-			["\n"]
+		(["\n"]
 		@ (List.mapi
 			(fun i width_col->
 			 let s = Naming.to_string sx.names Naming.Var i in
@@ -164,12 +190,28 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		@ ["\n"]
 		@ (List.map2
 			(fun vec var -> String.concat "" [(Tableau.Vector.pretty_print vec width_columns) ; Naming.to_string sx.names Naming.Var var; "\n"])
-				  sx.mat (get_basis sx))))
+				  sx.mat (get_basis sx))
+        )
+        |> String.concat ""
 
 	let print : t -> unit
         = fun sx ->
         to_string sx
         |> Pervasives.print_endline
+
+    let add_col : ParamCoeff.t -> Tableau.Vector.t -> t -> t
+        = fun pcoeff column sx ->
+        if Tableau.Vector.size column != nRows sx
+        then Pervasives.invalid_arg "PSplx.addCol: invalid column size"
+        else
+            let (pcoeff', column') = sx.pivot (pcoeff,column) in
+            let ncols = nCols sx in
+            { sx with
+                obj = Objective.add_col sx.obj pcoeff' ncols;
+                mat = Tableau.Matrix.add_col sx.mat column' ncols;
+            }
+
+
 
     exception Unbounded_problem
 
@@ -261,12 +303,19 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 				in
 				fun sx ->
 				a_value := Naming.slack_max sx.names;
-				let sx' = {
-					obj = Objective.mkSparse (nVars sx + 1) [0, ParamCoeff.mkCst Scalar.Rat.u] (ParamCoeff.mkCst Scalar.Rat.z);
-					mat = List.map (fun v -> (if Q.lt (Tableau.Vector.last v) Q.zero then Q.minus_one else Q.zero) :: v) sx.mat;
-					basis = List.map ((+) 1) sx.basis;
-					names = Naming.allocSlackShift !a_value sx.names
-				} in
+				let sx' = mk
+					(Objective.mkSparse
+                        (nVars sx + 1)
+                        [0, ParamCoeff.mkCst Scalar.Rat.u]
+                        (ParamCoeff.mkCst Scalar.Rat.z))
+					(List.map (fun v ->
+                        (if Q.lt (Tableau.Vector.last v) Q.zero
+                         then Q.minus_one
+                         else Q.zero) :: v
+                    ) sx.mat)
+					(List.map ((+) 1) sx.basis)
+					(Naming.allocSlackShift !a_value sx.names)
+				in
 				pivot sx' (getMinRhs sx.mat) 0
 
 			let buildFeasibleTab : Objective.t -> t -> t
@@ -277,12 +326,9 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 				fun o sx ->
 				let newMat = List.map List.tl sx.mat in
 				let b = List.map (fun i -> i - 1) sx.basis in
-				{
-					obj = syncObjWithBasis newMat b o;
-					mat = newMat;
-					basis = b;
-					names = Naming.freeSlackShift !a_value sx.names
-				}
+                mk
+					(syncObjWithBasis newMat b o)
+				    newMat b (Naming.freeSlackShift !a_value sx.names)
 
 			let correction : t -> t option
 				= let removeRow : int -> t -> t
@@ -310,7 +356,8 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 								{sx with
 								obj = Objective.elim sx.obj (Tableau.Matrix.getRow row sx.mat) col;
 								mat = Tableau.Matrix.pivot sx.mat row col;
-								basis = sx.basis @ [col]
+								basis = sx.basis @ [col];
+                                pivot = (add_pivots row col sx);
 								}
 								|> chooseBasicVar (row + 1)
 						with Not_found ->
@@ -452,21 +499,18 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		  | var :: tail -> let coeff = Poly.monomial_coefficient p (Poly.MonomialBasis.mk [var]) in
 					coeff::(row_from_constraint p tail);;
 
-		let from_poly : Poly.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> t
-		  = fun vars ineqs eqs obj ->
-		  if List.length vars + List.length ineqs < List.length ineqs + List.length eqs
-		  then Pervasives.invalid_arg "PSplx.Build.from_poly: variables"
-		  else
-			 if List.exists Poly.isZ ineqs || List.exists Poly.isZ eqs
-			 then Pervasives.invalid_arg "PSplx.Build.from_poly: constraints"
-			 else
-				let (o, nm) = obj_of_poly obj vars in
-				{
-			obj = o;
-			mat = List.map (fun r -> row_from_constraint r vars) (ineqs @ eqs);
-			basis = [];
-			names = Naming.mkVar vars nm
-				}
-				|> addSlacks (List.length ineqs)
+        let from_poly : Poly.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> t
+            = fun vars ineqs eqs obj ->
+            if List.length vars + List.length ineqs < List.length ineqs + List.length eqs
+            then Pervasives.invalid_arg "PSplx.Build.from_poly: variables"
+            else
+                if List.exists Poly.isZ ineqs || List.exists Poly.isZ eqs
+                then Pervasives.invalid_arg "PSplx.Build.from_poly: constraints"
+                else
+                    let (o, nm) = obj_of_poly obj vars in
+                    mk o
+                        (List.map (fun r -> row_from_constraint r vars) (ineqs @ eqs))
+                        [] (Naming.mkVar vars nm)
+                    |> addSlacks (List.length ineqs)
 	end
 end

@@ -156,31 +156,26 @@ module Proj (Min : Min.Type) = struct
 		then
 			let l' = l @ [(Cs.le [] Scalar.Rat.u, factory.Cert.triv Cstr_type.Le Scalar.Rat.u)] in
 			let cstrs' = cstrs @ [Cs.le [] Scalar.Rat.u] in
-			 {
-				PSplx.obj = Build.buildObj flags.withCst params cstrs';
-				PSplx.mat = (if !Flags.sum_lambda_1
+            PSplx.mk
+                (Build.buildObj flags.withCst params cstrs')
+				((if !Flags.sum_lambda_1
 					then Build.buildLambdaSum cstrs'
 					else Build.Norm.build projSet cstrs')
 					::
-					Build.buildProjCons (Cs.Vec.V.Set.elements projSet) cstrs';
-				PSplx.basis = [];
-				PSplx.names =
-				Naming.mkParam params Naming.empty
-				|> Naming.mkVar (List.mapi (fun i _ -> varEncode i) l')
-			 }
-		else
-			{
-				PSplx.obj = Build.buildObj flags.withCst params cstrs;
-				PSplx.mat = (if !Flags.sum_lambda_1
+					Build.buildProjCons (Cs.Vec.V.Set.elements projSet) cstrs')
+				[]
+				(Naming.mkParam params Naming.empty
+                    |> Naming.mkVar (List.mapi (fun i _ -> varEncode i) l'))
+		else PSplx.mk
+				(Build.buildObj flags.withCst params cstrs)
+				((if !Flags.sum_lambda_1
 					then Build.buildLambdaSum cstrs
 					else Build.Norm.build projSet cstrs)
 					::
-					Build.buildProjCons (Cs.Vec.V.Set.elements projSet) cstrs;
-				PSplx.basis = [];
-				PSplx.names =
-			Naming.mkParam params Naming.empty
-				|> Naming.mkVar (List.mapi (fun i _ -> varEncode i) l)
-			}
+					Build.buildProjCons (Cs.Vec.V.Set.elements projSet) cstrs)
+				[]
+				(Naming.mkParam params Naming.empty
+                    |> Naming.mkVar (List.mapi (fun i _ -> varEncode i) l))
 
 	module type Type = sig
 		val proj : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list

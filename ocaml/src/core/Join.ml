@@ -196,8 +196,7 @@ module Build (Min : Min.Type) = struct
 		let mat = build_constraints epsilon_opt init_point params p1 p2 in
 		let obj = build_obj params p1 p2 in
 		let map = build_map factory1 factory2 p1 p2 vars names in
-		{PSplx.obj = obj ; PSplx.mat = mat ; PSplx.basis = [] ; PSplx.names = names},
-		map
+        (PSplx.mk obj mat [] names, map)
 
 	(*
 	let rewrite_cons : V.t -> 'c Cons.t list -> 'c Cons.t list

@@ -79,6 +79,8 @@ val add : t -> t -> t
 (** Multiply a parametric coefficient by a scalar. *)
 val mul : Scalar.Rat.t -> t -> t
 
+val sub : t -> t -> t
+
 (** [is_constant c] returns true is [c] does not depend on any parameter. *)
 val is_constant : t -> bool
 

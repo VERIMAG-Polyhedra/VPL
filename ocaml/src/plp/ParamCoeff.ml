@@ -117,6 +117,10 @@ let mul : Scalar.Rat.t -> t -> t
         cst = Scalar.Rat.mul a c.cst
     }
 
+let sub : t -> t -> t
+    = fun c c' ->
+    add c (mul Scalar.Rat.negU c')
+
 let is_constant : t -> bool
       = fun c -> List.for_all (Scalar.Rat.equal Scalar.Rat.z) c.lin
 

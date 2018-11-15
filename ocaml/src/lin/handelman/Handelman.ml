@@ -205,14 +205,11 @@ module Handelman (Minimization : Min.Type) = struct
 			 then Pervasives.invalid_arg "PSplx.Build.from_poly: constraints"
 			 else
 				let (o, nm) = obj_of_poly obj vars in
-				{
-			PLP.PSplx.obj = o;
-			PLP.PSplx.mat = List.map
-				(fun r -> row_from_constraint r vars)
-				((match normalization with Some n -> [n] | None -> []) @ (ineqs @ eqs));
-			PLP.PSplx.basis = [];
-			PLP.PSplx.names = Naming.mkVar vars nm
-				}
+                PLP.PSplx.mk o
+                    (List.map
+                        (fun r -> row_from_constraint r vars)
+                        ((match normalization with Some n -> [n] | None -> []) @ (ineqs @ eqs)))
+                    [] (Naming.mkVar vars nm)
 				|> PLP.PSplx.addSlacks (List.length ineqs)
 
 		let polyToParamCoeff : PLP.PSplx.t -> Poly.t -> ParamCoeff.t

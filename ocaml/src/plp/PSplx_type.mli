@@ -12,13 +12,24 @@ module type Type = sig
     (** Naming module for decision variables and parameters. *)
     module Naming = Pivot.Naming
 
+    type pivotT = ParamCoeff.t * Tableau.Vector.t -> ParamCoeff.t * Tableau.Vector.t
+
     (** Type of simple tableau. *)
     type t = {
         obj : Objective.t; (** Objective function *)
         mat : Tableau.Matrix.t; (** Matrix of constraints *)
         basis : int list; (** Current basis *)
-        names : Naming.t (** Naming module *)
+        names : Naming.t; (** Naming module *)
+        (** Function that applies pivots to columns and objective *)
+        pivot : pivotT;
     }
+
+    (** Build a simplex tableau.
+        @param obj the objective function
+        @param mat the matrix of constraints
+        @param basis the basis
+        @param names the naming module*)
+    val mk : Objective.t -> Tableau.Matrix.t -> int list -> Naming.t -> t
 
     (** An empty simplex tableau.*)
     val empty : t
@@ -77,6 +88,14 @@ module type Type = sig
 
     (** [addSlacks n sx] adds slack variables for the first [n] rows of the tableau. *)
     val addSlacks : int -> t -> t
+
+    (** Adds a column to the simplex tableau, at the right side.
+        All pivots previously applied on the tableau are also applied on the column.
+        @param pcoeff the parametric coefficient of the column
+        @param column the column
+        @param sx the simplex tableau
+        @raise Invalid_argument if the column has not the right length. *)
+    val add_col : ParamCoeff.t -> Tableau.Vector.t -> t -> t
 
     (** Exception raised when a problem is unbounded. *)
     exception Unbounded_problem

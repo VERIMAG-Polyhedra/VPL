@@ -79,7 +79,7 @@ module BuildSx = struct
 		let (params, names) = build_params names cstrs in
 		let obj = objective params cstrs
 		and mat = [build_norm_from_point init_point cstrs] in
-		{PSplx.obj = obj ; PSplx.mat = mat ; PSplx.basis = [] ; PSplx.names = names}
+        PSplx.mk obj mat [] names
 end
 
 type 'c regionsT = {
