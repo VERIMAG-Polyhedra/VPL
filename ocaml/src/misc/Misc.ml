@@ -174,3 +174,7 @@ let fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 let string_equal : string -> string -> bool
 	= fun s1 s2 ->
 	String.compare s1 s2 = 0
+
+let init_list : int -> (int -> 'a) -> 'a list
+    = fun len f ->
+    List.init len f

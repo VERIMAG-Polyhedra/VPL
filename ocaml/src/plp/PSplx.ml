@@ -7,18 +7,16 @@ module Debug = DebugTypes.Debug(struct let name = "PSplx" end)
 
 module Cs = Cstr.Rat.Positive
 
-(* On fait un second foncteur pour forcer Cs et Vec à avoir le même type de variables *)
 module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive) = struct
     module Vec = Vec
 	module Pivot = Objective.Pivot(Vec)
 	module Naming = Pivot.Naming
 
-	type t
-	  = {
-	  obj : Objective.t;
-	  mat : Tableau.Matrix.t;
-	  basis : int list;
-	  names : Naming.t
+	type t = {
+        obj : Objective.t;
+        mat : Tableau.Matrix.t;
+        basis : int list;
+        names : Naming.t
 	}
 
 	let empty = {
@@ -29,16 +27,16 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 	}
 
 	let get_obj : t -> Objective.t
-	  = fun sx -> sx.obj
+        = fun sx -> sx.obj
 
 	let get_mat : t -> Tableau.Matrix.t
-	  = fun sx -> sx.mat
+        = fun sx -> sx.mat
 
 	let get_basis : t -> int list
-	= fun sx -> sx.basis
+	   = fun sx -> sx.basis
 
 	let nRows : t -> int
-	  = fun sx -> Tableau.Matrix.nRows sx.mat
+        = fun sx -> Tableau.Matrix.nRows sx.mat
 
 	let nCols : t -> int
 	  = fun sx ->
@@ -54,18 +52,18 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 
 	let getParams : t -> Vec.V.t list
 		= fun sx ->
-		List.map
-			(fun i -> Naming.to_user sx.names Naming.Param i |> fst)
-			(Misc.range 0 (nParams sx))
+		List.map (fun i ->
+            Naming.to_user sx.names Naming.Param i |> fst
+        ) (Misc.range 0 (nParams sx))
 
 	let getVars : t -> Vec.V.t list
 		= fun sx ->
-		List.map
-			(fun i -> Naming.to_user sx.names Naming.Var i |> fst)
-			(Misc.range 0 (nVars sx))
+		List.map (fun i ->
+            Naming.to_user sx.names Naming.Var i |> fst
+        ) (Misc.range 0 (nVars sx))
 
-	let obj_value : t -> ParamCoeff.t
-	  = fun sx -> Objective.value sx.obj
+    let obj_value : t -> ParamCoeff.t
+        = fun sx -> Objective.value sx.obj
 
 	let obj_value' : t -> Cs.t
 		= fun sx ->
@@ -76,44 +74,50 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		Cstr_type.LE pCoeff
 
 	let equal : t -> t -> bool
-	  = fun sx sx' ->
-	  Objective.equal sx.obj sx'.obj
-	  && Tableau.Matrix.equal sx.mat sx'.mat
-	  && List.length sx.basis = List.length sx'.basis
-	  && List.for_all2 (=) sx.basis sx'.basis
-	  && Naming.equal sx.names sx'.names
+        = fun sx sx' ->
+        Objective.equal sx.obj sx'.obj
+        && Tableau.Matrix.equal sx.mat sx'.mat
+        && List.length sx.basis = List.length sx'.basis
+        && List.for_all2 (=) sx.basis sx'.basis
+        && Naming.equal sx.names sx'.names
 
 	let isFeasible : t -> bool
-	  = fun sx -> List.fold_left (fun r v -> r && Q.geq (Tableau.Vector.last v) Q.zero) true sx.mat
+        = fun sx ->
+        List.fold_left (fun r v ->
+            r && Q.geq (Tableau.Vector.last v) Q.zero
+        ) true sx.mat
 
 	let getCurVal : t -> (int * Q.t) list
-	  = fun sx ->
-	  List.map2 (fun xb v -> (xb, Tableau.Vector.last v)) sx.basis sx.mat
+        = fun sx ->
+        List.map2 (fun xb v ->
+            (xb, Tableau.Vector.last v)
+        ) sx.basis sx.mat
 
 	let pivot : t -> int -> int -> t
-	  = fun sx row col ->
-	  {sx with
-		 obj = Objective.elim sx.obj (Tableau.Matrix.getRow row sx.mat) col;
-		 mat = Tableau.Matrix.pivot sx.mat row col;
-		 basis = List.mapi (fun i j -> if i = row then col else j) sx.basis
-	  }
+        = fun sx row col -> { sx with
+            obj = Objective.elim sx.obj (Tableau.Matrix.getRow row sx.mat) col;
+            mat = Tableau.Matrix.pivot sx.mat row col;
+            basis = List.mapi (fun i j -> if i = row then col else j) sx.basis
+        }
 
 	let addSlackAt : int -> t -> t
-	  = fun i sx ->
-	  let idx = nVars sx in
-	  {
-		 obj = Objective.add_col sx.obj (ParamCoeff.mkSparse (Objective.nParams sx.obj) [] Scalar.Rat.z) idx;
-		 mat = Tableau.Matrix.add_col sx.mat
-				 (Tableau.Vector.init (nRows sx)
-							(fun i' -> if i' = i then Scalar.Rat.u else Scalar.Rat.z)
-				 ) idx;
-		 basis = sx.basis @ [idx];
-		 names = Naming.allocAt Naming.Slack (Vec.V.fromInt (i+1)) idx sx.names (* +1 car on compte les slack à partir de 1*)
-	  }
+        = fun i sx ->
+        let idx = nVars sx in {
+            obj = Objective.add_col sx.obj
+                (ParamCoeff.mkSparse (Objective.nParams sx.obj) [] Scalar.Rat.z) idx;
+            mat = Tableau.Matrix.add_col sx.mat
+            	 (Tableau.Vector.init (nRows sx) (fun i' ->
+                    if i' = i then Scalar.Rat.u else Scalar.Rat.z)
+            	 ) idx;
+            basis = sx.basis @ [idx];
+            names = Naming.allocAt Naming.Slack (Vec.V.fromInt (i+1)) idx sx.names (* +1 car on compte les slack à partir de 1*)
+        }
 
 	let addSlacks : int -> t -> t
-	  = fun n sx ->
-	  List.fold_left (fun sx' i -> addSlackAt i sx') sx (Misc.range 0 n)
+        = fun n sx ->
+        List.fold_left (fun sx' i ->
+            addSlackAt i sx'
+        ) sx (Misc.range 0 n)
 
 	(* PRETTY PRINTERS *)
 	let (t_get_width_column_vector : t -> int list)
@@ -163,9 +167,11 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 				  sx.mat (get_basis sx))))
 
 	let print : t -> unit
-	  = fun sx ->
-	  to_string sx
-	  |> Pervasives.print_endline
+        = fun sx ->
+        to_string sx
+        |> Pervasives.print_endline
+
+    exception Unbounded_problem
 
 	let get_row_pivot : Tableau.Matrix.t -> int -> int
 	  = let bounds : Tableau.Matrix.t -> int -> Q.t option list
@@ -190,7 +196,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		 fun m col ->
 		 bounds m col |> List.fold_left min (None, 0)
 		 |> function
-			| None, _ -> Pervasives.failwith "t.get_row_pivot: unbounded"
+			| None, _ -> Pervasives.raise Unbounded_problem
 			| Some (a, i), _ ->
 		 if Q.sign a < 0
 		 then Pervasives.failwith "t.get_row_pivot: negative right-hand side"
@@ -198,9 +204,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 
 	module Explore = struct
 
-		module Obj = struct
-			include Objective.Pivot (Vec)
-		end
+		module Obj = Objective.Pivot (Vec)
 
 	 	let rec push' : Objective.pivotStrgyT -> Vec.t -> t -> t
 			= fun st point sx ->
@@ -351,27 +355,26 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 					DebugTypes.Detail (lazy (to_string sx))
 	end
 
-    module Diag = struct
-
-	  let isCanon : t -> bool
-		 = fun sx ->
-		 if List.length sx.basis <> nRows sx
-		 then false
-		 else
-			let chkOccur : int -> t -> bool
-		= let chkOccurMat : int -> Tableau.Matrix.t -> bool
-			 = fun i m ->
-			 1 = List.fold_left
-			  (fun cnt v -> if Q.sign (Tableau.Vector.get i v) = 0 then cnt else cnt + 1)
-			  0 m
-		  in
-		  fun i sx' ->
-		  chkOccurMat i sx'.mat &&
-			 Objective.get i sx'.obj |> ParamCoeff.is_zero
-			in
-			List.for_all2 (fun i r -> Q.equal (Tableau.Vector.get i r) Q.one && chkOccur i sx) sx.basis sx.mat
-
-    end
+    let isCanon : t -> bool
+        = fun sx ->
+        if List.length sx.basis <> nRows sx
+        then false
+        else
+            let chkOccurMat : int -> Tableau.Matrix.t -> bool
+                = fun i m ->
+                1 = List.fold_left (fun cnt v ->
+                    if Q.sign (Tableau.Vector.get i v) = 0 then cnt else cnt + 1
+                ) 0 m
+            in
+            let chkOccur : int -> t -> bool
+                = fun i sx' ->
+                chkOccurMat i sx'.mat
+                && Objective.get i sx'.obj |> ParamCoeff.is_zero
+            in
+            List.for_all2 (fun i r ->
+                Q.equal (Tableau.Vector.get i r) Q.one
+                && chkOccur i sx
+            ) sx.basis sx.mat
 
 	module Build = struct
 		module Poly = ParamCoeff.Poly
