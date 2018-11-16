@@ -293,7 +293,7 @@ module PLP(Minimization : Min.Type) = struct
 							let ((leaving_var_row, _), entering_var) = pivot in
 							Debug.log DebugTypes.Detail
 								(lazy(Printf.sprintf "Pivoting on %s" (pivot_to_string pivot)));
-							let sx' = PSplx.pivot sx leaving_var_row entering_var in
+							let sx' = PSplx.pivot false sx leaving_var_row entering_var in
 							let (frontiers', basiss') = extract_rec sx' (b :: basiss) in
 							(frontiers @ frontiers', basiss')
 						else (frontiers,basiss))
@@ -1112,7 +1112,7 @@ module PLP(Minimization : Min.Type) = struct
 		  	Debug.log DebugTypes.Normal
 		  		(lazy("Exec on the point " ^ (Vec.to_string V.to_string pointToExplore)));
 		  	Profile.start "LP" ;
-            let sx' = try Explore.push st pointToExplore sx with ex -> begin
+            let sx' = try Explore.push false st pointToExplore sx with ex -> begin
                 Profile.stop "LP" ;
                 raise ex
                 end

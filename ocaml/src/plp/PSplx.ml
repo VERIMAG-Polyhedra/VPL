@@ -105,27 +105,30 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
             (xb, Tableau.Vector.last v)
         ) sx.basis sx.mat
 
-    let add_pivots: int -> int -> t -> pivotT
-        = fun row col sx (pcoeff, column) ->
-        let ak = Tableau.Matrix.get row col sx.mat in
+    let add_pivots: bool -> int -> int -> t -> pivotT
+        = fun init_phase row col sx (pcoeff, column) ->
+        let column_pivot = Tableau.Matrix.getCol col sx.mat in
+        let ak = Tableau.Vector.get row column_pivot in
         let (pcoeff', column') = sx.pivot (pcoeff,column) in
         let bk' = Q.div (Tableau.Vector.get row column') ak in
-        (
-        ParamCoeff.mul bk' (Objective.get col sx.obj)
-            |> ParamCoeff.sub pcoeff,
-        List.mapi (fun row' coeff ->
+        let new_pcoeff = if init_phase
+            then pcoeff (* objective must not be affected by the initialization phase*)
+            else ParamCoeff.mul bk' (Objective.get col sx.obj)
+            |> ParamCoeff.sub pcoeff'
+        and new_column = List.mapi (fun row' coeff ->
             if row' = row then bk'
             else Q.sub coeff
-                (Q.mul bk' (Tableau.Matrix.get row' col sx.mat))
+                (Q.mul bk' (Tableau.Vector.get row' column_pivot))
         ) column'
-        )
+        in
+        (new_pcoeff, new_column)
 
-	let pivot : t -> int -> int -> t
-        = fun sx row col -> { sx with
+	let pivot : bool -> t -> int -> int -> t
+        = fun init_phase sx row col -> { sx with
             obj = Objective.elim sx.obj (Tableau.Matrix.getRow row sx.mat) col;
             mat = Tableau.Matrix.pivot sx.mat row col;
             basis = List.mapi (fun i j -> if i = row then col else j) sx.basis;
-            pivot = (add_pivots row col sx)
+            pivot = (add_pivots init_phase row col sx)
         }
 
 	let addSlackAt : int -> t -> t
@@ -248,8 +251,8 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 
 		module Obj = Objective.Pivot (Vec)
 
-	 	let rec push' : Objective.pivotStrgyT -> Vec.t -> t -> t
-			= fun st point sx ->
+	 	let rec push' : bool -> Objective.pivotStrgyT -> Vec.t -> t -> t
+			= fun init_phase st point sx ->
 			Debug.log DebugTypes.Detail
 				(lazy (Printf.sprintf "push' : \n%s"
 					(to_string sx)));
@@ -260,18 +263,18 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		  	with
 		  	| Objective.OptReached -> sx
 		  	| Objective.PivotOn i ->
-			  	pivot sx (get_row_pivot sx.mat i) i
-			  	|> push' st point
+			  	pivot init_phase sx (get_row_pivot sx.mat i) i
+			  	|> push' init_phase st point
 
-		let push : Objective.pivotStrgyT -> Vec.t -> t -> t
-			= fun st point sx ->
+		let push : bool -> Objective.pivotStrgyT -> Vec.t -> t -> t
+			= fun init_phase st point sx ->
 			Debug.log DebugTypes.Title
 				(lazy "Parametric simplex");
 		  	Debug.log DebugTypes.MInput
 		  		(lazy (Printf.sprintf "Point %s\n%s"
 		  			(Vec.to_string Vec.V.to_string point)
 		  			(to_string sx)));
-		  	let res = push' st point sx in
+		  	let res = push' init_phase st point sx in
 		  	Debug.exec res DebugTypes.MOutput (lazy (to_string res))
 
 		module Init = struct
@@ -316,19 +319,34 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 					(List.map ((+) 1) sx.basis)
 					(Naming.allocSlackShift !a_value sx.names)
 				in
-				pivot sx' (getMinRhs sx.mat) 0
+				pivot true sx' (getMinRhs sx.mat) 0
 
 			let buildFeasibleTab : Objective.t -> t -> t
 				= let syncObjWithBasis : Tableau.Matrix.t -> int list -> Objective.t -> Objective.t
 					= fun m b o ->
 					List.fold_left2 (fun o i v -> Objective.elim o v i) o b m
 				in
+                let fix_pivot : int list -> Objective.t -> pivotT -> pivotT
+                    = fun basis obj pivot_f ->
+                    Misc.fold_left_i (fun row pivot_f col ->
+                        fun (pcoeff, column) ->
+                        let (pcoeff', column') = pivot_f (pcoeff,column) in
+                        let new_pcoeff = ParamCoeff.sub pcoeff'
+                            (ParamCoeff.mul
+                                (Tableau.Vector.get row column')
+                                (Objective.get col obj))
+                        in (new_pcoeff, column')
+                    ) pivot_f basis
+                in
 				fun o sx ->
 				let newMat = List.map List.tl sx.mat in
-				let b = List.map (fun i -> i - 1) sx.basis in
-                mk
-					(syncObjWithBasis newMat b o)
-				    newMat b (Naming.freeSlackShift !a_value sx.names)
+				let b = List.map (fun i -> i - 1) sx.basis in {
+                    obj = syncObjWithBasis newMat b o;
+                    mat = newMat;
+                    basis = b;
+                    names = (Naming.freeSlackShift !a_value sx.names);
+                    pivot = fix_pivot b o sx.pivot;
+                }
 
 			let correction : t -> t option
 				= let removeRow : int -> t -> t
@@ -357,7 +375,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 								obj = Objective.elim sx.obj (Tableau.Matrix.getRow row sx.mat) col;
 								mat = Tableau.Matrix.pivot sx.mat row col;
 								basis = sx.basis @ [col];
-                                pivot = (add_pivots row col sx);
+                                pivot = (add_pivots true row col sx);
 								}
 								|> chooseBasicVar (row + 1)
 						with Not_found ->
@@ -375,7 +393,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 				 else
 			 let sx' =
 				buildInitFeasibilityPb sx
-				|> push Objective.Bland point
+				|> push true Objective.Bland point
 			 in
 			 if not (obj_value sx' |> ParamCoeff.is_zero) then None
 			 else
@@ -383,7 +401,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 				  try
 				     let row = Misc.findi ((=) 0) sx'.basis in
 				     getReplacementForA sx' row
-					  |> pivot sx' row
+					  |> pivot false sx' row
 				  with Not_found -> sx'
 				in
 				Some (buildFeasibleTab sx.obj sx')
@@ -398,7 +416,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 				None
 				end
 			| Some sx ->
-				Debug.exec (Some (push st point sx))
+				Debug.exec (Some (push false st point sx))
 					DebugTypes.Detail (lazy (to_string sx))
 	end
 

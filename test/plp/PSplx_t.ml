@@ -1,6 +1,7 @@
 open Vpl
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
+module PSplxDebug = PSplx.Debug
 module PSplx = PSplx.Make(Vec)
 
 module Naming = PSplx.Naming
@@ -158,21 +159,48 @@ module Explore = struct
 				(Scalar.Rat.to_string sol)
 				(Splx.pr Vec.V.to_string sx)) st
 
+    let check_pivot : string -> PSplx.t -> PSplx.t -> (Test.stateT -> Test.stateT)
+        = fun test_name sx_before sx_after st ->
+        List.fold_left (fun st i ->
+            let pcoeff = Objective.get i sx_before.PSplx.obj
+            and c = Tableau.Matrix.getCol i sx_before.PSplx.mat
+            in
+            let (pcoeff', c') = sx_after.PSplx.pivot (pcoeff, c) in
+            let pcoeff_expected = Objective.get i sx_after.PSplx.obj
+            and c_expected = Tableau.Matrix.getCol i sx_after.PSplx.mat
+            in
+            if ParamCoeff.equal pcoeff' pcoeff_expected
+                && Tableau.Vector.equal c' c_expected
+            then Test.succeed st
+            else let error_msg = Printf.sprintf
+                ("Reapplying pivots on each column: \nexpected %s\n%s\ngot %s\n%s")
+                (ParamCoeff.to_string pcoeff_expected)
+                (Tableau.Vector.to_string c_expected)
+                (ParamCoeff.to_string pcoeff')
+                (Tableau.Vector.to_string c')
+                in
+                Test.fail test_name error_msg st
+        ) st (Misc.range 0 ((PSplx.nCols sx_before) - 1))
+
 	let check : string * Poly.V.t list * Poly.V.t list * Poly.t list * Poly.t list * Poly.t * Vec.t -> (Test.stateT -> Test.stateT)
 		= fun (name,vars,params,ineqs,eqs,obj,point) st ->
 		let psx = PSplx.Build.from_poly vars ineqs eqs obj in
 		let res = PSplx.Explore.init_and_push Objective.Bland point psx in
 		let (sx, sx_obj, cste) = to_splx vars params ineqs eqs obj point in
 		let max = Opt.max' sx sx_obj in
+        let st' = match res with
+            | None -> st
+            | Some sx' -> check_pivot name psx sx' st
+        in
 		match res, max with
-		| None, Splx.IsUnsat _ | None, Splx.IsOk (Opt.Infty) -> Test.succeed st
+		| None, Splx.IsUnsat _ | None, Splx.IsOk (Opt.Infty) -> Test.succeed st'
 		| None, Splx.IsOk sx -> Test.fail name
 			(Printf.sprintf "PSplx unsat  : \n%s\nwhile Splx sat : \n%s"
 				(PSplx.to_string psx)
 				(Opt.prOpt sx))
-			st
-		| Some _, Splx.IsUnsat _ -> Test.fail name "PSplx sat while Splx unsat" st
-		| Some psx, Splx.IsOk opt -> check_sol name opt psx point cste st
+			st'
+		| Some _, Splx.IsUnsat _ -> Test.fail name "PSplx sat while Splx unsat" st'
+		| Some psx, Splx.IsOk opt -> check_sol name opt psx point cste st'
 
 	let ts : Test.t =
 		fun () ->

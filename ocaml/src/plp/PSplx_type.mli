@@ -106,8 +106,9 @@ module type Type = sig
         @raise Unbounded_problem if the problem is detected unbounded by this pivot. *)
     val get_row_pivot : Tableau.Matrix.t -> int -> int
 
-    (** [pivot sx row col] performs a pivot on the element at [row] and [col]. *)
-    val pivot : t -> int -> int -> t
+    (** [pivot sx row col] performs a pivot on the element at [row] and [col].
+        @param init_phase true if the pivot occurs during initialization phase *)
+    val pivot : bool -> t -> int -> int -> t
 
     (** [isCanon sx] returns true if the t tableau [sx] is in canonical form.
         It checks that each row of the matrix of constraints has a designated
@@ -125,7 +126,7 @@ module type Type = sig
             val getReplacementForA : t -> int -> int
             val buildInitFeasibilityPb : t -> t
             val buildFeasibleTab : Objective.t -> t -> t
-            
+
             (** Tries to find a feasible basis.
                 @param sx the simplex tableau to initialize
                 @pararam the instantiation parametric point
@@ -134,10 +135,11 @@ module type Type = sig
         end
 
         (** Run the optimization process of the simplex algorithm.
+            @param init_phase true if the push occurs at during initialization phase
             @param str pivoting strategy
             @param point the parametric point on which the objective function is instantiated
             @param sx the simplex tableau *)
-        val push : Objective.pivotStrgyT -> Vec.t -> t -> t
+        val push : bool -> Objective.pivotStrgyT -> Vec.t -> t -> t
 
         (** Initializes the simplex tableau and launch the optimization.
             @param str pivoting strategy
