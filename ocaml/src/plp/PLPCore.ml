@@ -3,62 +3,6 @@ module Cs = Cstr.Rat.Positive
 module Debug = DebugTypes.Debug(struct let name = "PLPCore" end)
 module Profile = Profile.Profile(struct let name = "PLPCore" end)
 
-module Stat = struct
-	let nb_regions : int ref = ref 0
-
-	let incr_nb_regions : unit -> unit
-		= fun () ->
-		nb_regions := !nb_regions + 1
-
-	(** (nb_redundancies, nb_true_bounds) *)
-	let ratio_redundancy : (int * int) ref = ref (0,0)
-
-	let incr_redundancy : int -> int -> unit
-		= fun i j ->
-		ratio_redundancy :=
-			((Pervasives.fst !ratio_redundancy) + i,
-			 (Pervasives.snd !ratio_redundancy) + j)
-
-	(** (nb_subdivisions, nb_regions) *)
-	let ratio_subdivisions : (int * int) ref = ref (0,0)
-
-	let incr_subdivisions : int -> int -> unit
-		= fun i j ->
-		ratio_subdivisions :=
-			((Pervasives.fst !ratio_subdivisions) + i,
-			 (Pervasives.snd !ratio_subdivisions) + j)
-
-	let nb_corrections : int ref = ref 0
-
-	let incr_nb_corrections : unit -> unit
-		= fun () ->
-		nb_corrections := !nb_corrections + 1
-
-	let reset : unit -> unit
-		= fun () ->
-		begin
-		nb_regions := 0;
-		ratio_redundancy := (0,0);
-		nb_corrections := 0;
-		ratio_subdivisions := (0,0);
-		end
-
-	let to_string : unit -> string
-		= fun () ->
-		Printf.sprintf ("PLP stats : \n\tnb_regions = %i\
-			\n\tnumber of redundancies (in region representations) = %i\
-			\n\tnumber of true boundaries = %i\
-			\n\t -> redundancy ratio = %f\
-			\n\tnumber of corrections = %i\
-			\n\ratio of subdivisions = %f")
-			!nb_regions
-			(Pervasives.fst !ratio_redundancy)
-			(Pervasives.snd !ratio_redundancy)
-			((Pervasives.fst !ratio_redundancy |> float_of_int) /. (Pervasives.snd !ratio_redundancy |> float_of_int))
-			!nb_corrections
-			((Pervasives.fst !ratio_subdivisions |> float_of_int) /. (Pervasives.snd !ratio_subdivisions |> float_of_int))
-end
-
 module PLP(Minimization : Min.Type) = struct
 	module Vec = Minimization.VecInput
 	module PSplx = PSplx.Make(Vec)
@@ -1099,13 +1043,9 @@ module PLP(Minimization : Min.Type) = struct
 		let (get_boundaries : region_t -> Cs.t list -> Vec.t -> Boundary.t list)
 			= fun reg_t cstrs point ->
 			Debug.log DebugTypes.Detail (lazy("Looking for true boundaries in new region"));
-			let res = match reg_t with
+			match reg_t with
 				| Cone -> Minimization.minimize_cone point cstrs
-				| NCone -> Minimization.minimize point cstrs in
-			let len = List.length cstrs
-			and len_res = List.length res in
-			Stat.incr_redundancy (len - len_res) len_res;
-			res
+				| NCone -> Minimization.minimize point cstrs
 
 		let exec' : region_t -> Objective.pivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
 		  	= fun reg_t st sx pointToExplore ->
@@ -1352,7 +1292,6 @@ module PLP(Minimization : Min.Type) = struct
 			|> Pervasives.snd
             |> List.map Region.canon
 		in
-		Stat.nb_regions := List.length regs;
 		let results = extract_sols get_cert regs in
 		Debug.log DebugTypes.MOutput
 			(lazy(result_to_string (Some results)));
@@ -1400,7 +1339,6 @@ module PLP(Minimization : Min.Type) = struct
 
 	let run : config -> PSplx.t -> (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
 		= fun config sx get_cert ->
-		Stat.reset();
 		Random.init 0;
 		Debug.log DebugTypes.Title
 			(lazy("PLP solver with scalar_type = " ^ (Vec.Coeff.name)));

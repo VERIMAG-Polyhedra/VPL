@@ -71,7 +71,6 @@ module Handelman (Minimization : Min.Type) = struct
 
 		let run : 'c HPol.t -> config -> PSplx.t -> (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
 			= fun ph config sx get_cert ->
-			PLPCore.Stat.reset();
 			Random.init 0;
 			Debug.log DebugTypes.Title
 				(lazy("PLP solver with scalar_type = " ^ (Vec.Coeff.name)));
