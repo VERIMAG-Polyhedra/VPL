@@ -50,6 +50,12 @@ module Vector = struct
         then List.map2 Scalar.Rat.add v v'
         else Pervasives.invalid_arg "Matrix.Vector.add"
 
+    let sub : t -> t -> t
+        = fun v v' ->
+        if size v = size v'
+        then List.map2 Scalar.Rat.sub v v'
+        else Pervasives.invalid_arg "Matrix.Vector.add"
+
     let mul : t -> t -> t
         = fun v1 v2 ->
         List.map2 Scalar.Rat.mul v1 v2;;
@@ -68,11 +74,20 @@ module Vector = struct
 			then String.concat "" [Misc.string_repeat " " (nb_spaces/2) ; Q.to_string p ; Misc.string_repeat " " (nb_spaces/2 + 1) ; " | " ; pretty_print tail1 tail2]
 			else String.concat "" [Misc.string_repeat " " (nb_spaces/2) ; Q.to_string p ; Misc.string_repeat " " (nb_spaces/2) ; " | " ; pretty_print tail1 tail2]
 
+    let rec is_lexpositive : t -> bool
+        = function
+        | [] -> false
+        | x :: tl ->
+            if Scalar.Rat.isZ x
+            then is_lexpositive tl
+            else Scalar.Rat.lt Scalar.Rat.z x
 end
 
 module Matrix = struct
 
     type t = Vector.t list
+
+    let empty = [[]]
 
     let nRows : t -> int = List.length
 
@@ -179,4 +194,14 @@ module Matrix = struct
 			else vec :: (add_multiple_of_row_rec tail row v coeff (k+1))
 		in fun m row1 row2 coeff ->
 		add_multiple_of_row_rec m row1 (getRow row2 m) coeff 0
+
+    let mul : t -> Q.t -> t
+        = fun m c ->
+        List.map (fun row -> Vector.mul_scalar row c) m
+
+    let transpose : t -> t
+        = fun m ->
+        Misc.fold_left_i (fun i m' row ->
+            add_col m' row i)
+        empty m
 end

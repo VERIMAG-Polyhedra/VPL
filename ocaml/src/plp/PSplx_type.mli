@@ -1,5 +1,10 @@
 module Cs = Cstr.Rat.Positive
 
+(** Type of pivoting strategy for the choice of the leaving variable. *)
+type rowPivotStrgyT =
+    | Standard
+    | LexPositive
+
 (** Type of simplex tableau. It is parametrized by a type of vectors, which defines the type of parametric points. *)
 module type Type = sig
 
@@ -101,10 +106,12 @@ module type Type = sig
     exception Unbounded_problem
 
     (** Returns the row at which the pivot must occur.
+        @param str the pivot strategy
+        @param basis the LP basis
         @param m the matrix of constraints
         @param col the column of the entering variable.
         @raise Unbounded_problem if the problem is detected unbounded by this pivot. *)
-    val get_row_pivot : Tableau.Matrix.t -> int -> int
+    val get_row_pivot : rowPivotStrgyT -> int list -> Tableau.Matrix.t -> int -> int
 
     (** [pivot sx row col] performs a pivot on the element at [row] and [col].
         @param init_phase true if the pivot occurs during initialization phase *)
@@ -128,25 +135,29 @@ module type Type = sig
             val buildFeasibleTab : Objective.t -> t -> t
 
             (** Tries to find a feasible basis.
+                @param st the pivoting strategy
+                @param st_row the pivoting strategy for the leaving variable
                 @param sx the simplex tableau to initialize
                 @pararam the instantiation parametric point
                 @return None if the problem is infeasible *)
-            val findFeasibleBasis : t -> Vec.t -> t option
+            val findFeasibleBasis : Objective.pivotStrgyT -> rowPivotStrgyT -> t -> Vec.t -> t option
         end
 
         (** Run the optimization process of the simplex algorithm.
             @param init_phase true if the push occurs at during initialization phase
             @param str pivoting strategy
+            @param str_row pivoting strategy for the leaving variable
             @param point the parametric point on which the objective function is instantiated
             @param sx the simplex tableau *)
-        val push : bool -> Objective.pivotStrgyT -> Vec.t -> t -> t
+        val push : bool -> Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> t -> t
 
         (** Initializes the simplex tableau and launch the optimization.
             @param str pivoting strategy
+            @param str_row pivoting strategy for the leaving variable
             @param point the parametric point on which the objective function is instantiated
             @param sx the simplex tableau
             @return None if the problem is infeasible *)
-        val init_and_push : Objective.pivotStrgyT -> Vec.t -> t -> t option
+        val init_and_push : Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> t -> t option
     end
 
     (** Module for building a simplex tableau from polynomials. *)

@@ -1047,12 +1047,12 @@ module PLP(Minimization : Min.Type) = struct
 				| Cone -> Minimization.minimize_cone point cstrs
 				| NCone -> Minimization.minimize point cstrs
 
-		let exec' : region_t -> Objective.pivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
-		  	= fun reg_t st sx pointToExplore ->
+		let exec' : region_t -> Objective.pivotStrgyT -> PSplx_type.rowPivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
+		  	= fun reg_t st st_row sx pointToExplore ->
 		  	Debug.log DebugTypes.Normal
 		  		(lazy("Exec on the point " ^ (Vec.to_string V.to_string pointToExplore)));
 		  	Profile.start "LP" ;
-            let sx' = try Explore.push false st pointToExplore sx with ex -> begin
+            let sx' = try Explore.push false st st_row pointToExplore sx with ex -> begin
                 Profile.stop "LP" ;
                 raise ex
                 end
@@ -1072,10 +1072,10 @@ module PLP(Minimization : Min.Type) = struct
 
 		 (** [exec strat sx map exp] returns the region resulting from the exploration of [exp].
 			If this region has empty interior, it returns [None]. *)
-		let exec : region_t -> Objective.pivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
-		  	= fun reg_t st sx pointToExplore ->
+		let exec : region_t -> Objective.pivotStrgyT -> PSplx_type.rowPivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
+		  	= fun reg_t st st_row sx pointToExplore ->
 		  	Profile.start "exec";
-		  	let res = try exec' reg_t st sx pointToExplore with ex -> begin
+		  	let res = try exec' reg_t st st_row sx pointToExplore with ex -> begin
                 Profile.stop "exec" ;
                 raise ex
                 end
@@ -1104,6 +1104,7 @@ module PLP(Minimization : Min.Type) = struct
 		reg_t : region_t;
 		points : ExplorationPoint.t list;
 		stgy : Objective.pivotStrgyT;
+        row_stgy: PSplx_type.rowPivotStrgyT;
 		regions : Region.t list;
 		}
 
@@ -1160,19 +1161,19 @@ module PLP(Minimization : Min.Type) = struct
 
 	module InitSx = struct
 		(** Leads to a feasible parametric simplex tableau. *)
-		let init_sx : Objective.pivotStrgyT -> PSplx.t -> Vec.t -> PSplx.t option
-			= fun _ sx point ->
+		let init_sx : Objective.pivotStrgyT -> PSplx_type.rowPivotStrgyT -> PSplx.t -> Vec.t -> PSplx.t option
+			= fun st st_row sx point ->
 			Debug.log DebugTypes.Normal
 				(lazy(Printf.sprintf "PLP initialization with point = %s"
 					(Vec.to_string Vec.V.to_string point)));
-		  	match Explore.Init.findFeasibleBasis sx point with
+		  	match Explore.Init.findFeasibleBasis st st_row sx point with
 		  	| None -> Debug.exec None DebugTypes.Normal (lazy "Problem Unsat")
 		  	| Some _ as r -> Debug.exec r DebugTypes.Normal (lazy "Problem Sat")
 
 		(** Returns true if the input simplex tableau is feasible, and initializes variable sx with it.*)
 		let init : Vec.t -> config -> PSplx.t -> bool
 			= fun point config sx ->
-			match init_sx config.stgy sx point with
+			match init_sx config.stgy config.row_stgy sx point with
 		  	| None -> false
 		  	| Some sx' -> begin
 		  		Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Initialized simplex tableau : \n%s"
@@ -1204,7 +1205,7 @@ module PLP(Minimization : Min.Type) = struct
 						(Cs.to_string Cs.Vec.V.to_string cstr)
 						(Vec.to_string Vec.V.to_string pointToExplore)));
 				let reg = MapV.find id plp'.regs in
-				match Exec.exec config.reg_t config.stgy (get_sx reg) pointToExplore with
+				match Exec.exec config.reg_t config.stgy config.row_stgy (get_sx reg) pointToExplore with
 				| None ->
 					let newPointToExplore = find_new_point reg.Region.point pointToExplore in
 					let newExplorationPoint = ExplorationPoint.Direction(id, (cstr, newPointToExplore)) in
@@ -1213,7 +1214,7 @@ module PLP(Minimization : Min.Type) = struct
 				| Some reg' -> exec config (Add_Region.add config (Some reg) reg' explorationPoint plp')
 				end
 			| ExplorationPoint.Point pointToExplore ->
-				match Exec.exec config.reg_t config.stgy !sx_glob pointToExplore with
+				match Exec.exec config.reg_t config.stgy config.row_stgy !sx_glob pointToExplore with
 				| None -> exec config {plp' with todo = (Add_Region.remove_point explorationPoint plp'.todo)}
 				| Some reg' -> exec config (Add_Region.add config None reg' explorationPoint plp')
 

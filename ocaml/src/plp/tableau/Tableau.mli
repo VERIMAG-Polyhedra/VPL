@@ -35,6 +35,10 @@ module Vector : sig
         @raise Invalid_argument is the two vectors have different lengths. *)
     val add : t -> t -> t
 
+    (** Pointwise substraction between two vectors.
+        @raise Invalid_argument is the two vectors have different lengths. *)
+    val sub : t -> t -> t
+
     (** Pointwise multiplication between two vectors. *)
     val mul : t -> t -> t
 
@@ -46,6 +50,9 @@ module Vector : sig
         @param l the list of column width*)
 	val pretty_print : t -> int list -> string
 
+    (** Returns true if the given vector is lex positive,
+        i.e. not null and the first non-null coeff is positive. *)
+    val is_lexpositive : t -> bool
 end
 
 (** The simplex tableau. *)
@@ -53,6 +60,9 @@ module Matrix : sig
 
     (** A simplex tableau is a list of vectors, representing constraints of the problem.*)
     type t = Vector.t list
+
+    (** En ampty matrix *)
+    val empty : t
 
     (** Returns the number of rows in the matrix. *)
     val nRows : t -> int
@@ -108,4 +118,10 @@ module Matrix : sig
 
 	(** [add_multiple_of_row m row1 row2 coeff] returns the matrix [m] where [row1] has been added [row2] multiplied by [coeff]. *)
 	val add_multiple_of_row : t -> int -> int -> Scalar.Rat.t -> t
+
+    (** Multiply all elements by a constant. *)
+    val mul : t -> Q.t -> t
+
+    (** Transposes the given matrix. *)
+    val transpose : t -> t
 end

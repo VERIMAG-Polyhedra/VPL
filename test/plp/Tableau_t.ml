@@ -90,6 +90,33 @@ module Matrix_t
           |> List.map chk
           |> Test.suite "add_col"
 
+    let add_col_ts : Test.t
+        = fun () ->
+        let chk : string * Tableau.Matrix.t * Tableau.Matrix.t -> (Test.stateT -> Test.stateT)
+        = fun (nm, m, m_res) st ->
+        let m' = Tableau.Matrix.transpose m in
+        Test.equals nm
+            (fun m -> Tableau.Matrix.get_width_column_vector m |> Tableau.Matrix.to_string m)
+            Tableau.Matrix.equal m_res m' st
+        in
+        let v = fun l -> List.map Q.of_int l in
+        let m = fun l -> List.map v l in
+        [
+            "row",
+            m [[0 ; 1]],
+            m [[0] ; [1]]
+        ;
+            "col",
+            m [[0] ; [1]],
+            m [[0 ; 1]]
+        ;
+            "2x2",
+            m [[1 ; 2] ; [3 ; 4]],
+            m [[1 ; 3] ; [2 ; 4]]
+        ]
+        |> List.map chk
+        |> Test.suite "transpose"
+
   let ts : Test.t
     =  fun () ->
     Test.suite "Matrix" [

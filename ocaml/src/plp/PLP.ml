@@ -44,6 +44,7 @@ module type Type = sig
 		reg_t : region_t;
 		points : ExplorationPoint.t list;
 		stgy : Objective.pivotStrgyT;
+        row_stgy : PSplx_type.rowPivotStrgyT;
 		regions : Region.t list;
 		}
 
@@ -111,6 +112,7 @@ module PLP(Minimization : Min.Type) = struct
 		reg_t = Cone;
 		points = [];
 		stgy = Objective.Bland;
+        row_stgy = PSplx_type.LexPositive;
 		regions = [];
 	}
 

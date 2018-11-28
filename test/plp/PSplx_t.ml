@@ -49,12 +49,16 @@ let addSlackAt_ts : Test.t
 let m : int list list -> Tableau.Matrix.t
   = List.map (List.map Q.of_int)
 
+let q : int -> int -> Q.t
+    = Q.mk
+
 let get_row_pivot_ts : Test.t
   = fun () ->
    let chk : string * int * int option * Tableau.Matrix.t -> (Test.stateT -> Test.stateT)
 	   = fun (nm, col, er, m) st ->
 	   let ar =
-			try Some (PSplx.get_row_pivot m col)
+            let basis = [] in (* The basis is not used in the standard pivot  *)
+			try Some (PSplx.get_row_pivot PSplx_type.Standard basis m col)
 			with PSplx.Unbounded_problem -> None
 	   in
 	   if ar = er
@@ -91,6 +95,22 @@ let get_row_pivot_ts : Test.t
 	 [1; 0]]
 	 ] in
 	 List.map chk tcs |> Test.suite "get_row_pivot"
+
+let get_row_pivot_lexpositive_ts : Test.t
+    = fun () ->
+    let chk : string * int * int list * int * Tableau.Matrix.t -> (Test.stateT -> Test.stateT)
+        = fun (nm, col, basis, m) st ->
+        let ar = PSplx.get_row_pivot PSplx_type.LexPositive basis m col in
+        if ar = er
+        then Test.succeed st
+        else
+        Printf.printf "%s: expected %i but got %i\n" nm er ar;
+        st
+    in
+    let tcs : (string * int * int list * Tableau.Matrix.t) list
+    = [
+    ] in
+    List.map chk tcs |> Test.suite "get_row_pivot"
 
 (** Comparison of PSplx with Splx. *)
 module Explore = struct
@@ -185,7 +205,7 @@ module Explore = struct
 	let check : string * Poly.V.t list * Poly.V.t list * Poly.t list * Poly.t list * Poly.t * Vec.t -> (Test.stateT -> Test.stateT)
 		= fun (name,vars,params,ineqs,eqs,obj,point) st ->
 		let psx = PSplx.Build.from_poly vars ineqs eqs obj in
-		let res = PSplx.Explore.init_and_push Objective.Bland point psx in
+		let res = PSplx.Explore.init_and_push Objective.Bland PSplx_type.Standard point psx in
 		let (sx, sx_obj, cste) = to_splx vars params ineqs eqs obj point in
 		let max = Opt.max' sx sx_obj in
         let st' = match res with
@@ -332,7 +352,7 @@ module Init
 			= fun (nm, sat, sx, vec) st ->
 			if not sat
 			then Test.succeed st
-			else match PSplx.Explore.Init.findFeasibleBasis sx vec with
+			else match PSplx.Explore.Init.findFeasibleBasis Objective.Bland PSplx_type.Standard sx vec with
 				| None -> Test.fail nm "" st (* handled in chkFeasible *)
 				| Some sx' ->
 					if PSplx.isCanon sx'
@@ -341,7 +361,7 @@ module Init
 	   in
 	   let chkFeasible : string * bool * PSplx.t * Vec.t -> (Test.stateT -> Test.stateT)
 			= fun (nm, sat, sx, vec) st ->
-			match PSplx.Explore.Init.findFeasibleBasis sx vec with
+			match PSplx.Explore.Init.findFeasibleBasis Objective.Bland PSplx_type.Standard sx vec with
 			| None ->
 				if sat then Test.fail nm "unsat" st
 				else Test.succeed st

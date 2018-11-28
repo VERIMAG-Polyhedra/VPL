@@ -5,7 +5,7 @@ INCLUDES = $(TEST)
 USE_VPL =
 #-cflags '-I ../ocaml/_build/src' -lflags '-I ../ocaml/_build/src vpl.cmxa'
 
-OCB_FLAGS = -use-ocamlfind $(INCLUDES)
+OCB_FLAGS = -cflag -g -use-ocamlfind $(INCLUDES)
 # -package vpl
 
 OCB = ocamlbuild $(OCB_FLAGS)
