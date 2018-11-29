@@ -217,7 +217,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 
     exception Unbounded_problem
 
-    let get_row_pivot_standard : int list -> Tableau.Matrix.t -> int -> int
+    let get_row_pivot_standard : int list -> Tableau.Matrix.t -> int -> int option
         = let bounds : Tableau.Matrix.t -> int -> Q.t option list
            = fun m col ->
            List.map2
@@ -244,10 +244,11 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
            | Some (a, i), _ ->
         if Q.sign a < 0
         then Pervasives.failwith "t.get_row_pivot: negative right-hand side"
-        else i
+        else Some i
 
-    let get_row_pivot_lexpositive : int list -> Tableau.Matrix.t -> int -> int
+    let get_row_pivot_lexpositive : int list -> Tableau.Matrix.t -> int -> int option
         = fun basis m col ->
+        Debug.log DebugTypes.Detail (lazy (Printf.sprintf "lex_positive on column %i" col));
         let n_cols = List.length basis in
         let transpose_matrix = List.fold_right (fun i m ->
                 Tableau.Vector.init n_cols
@@ -261,25 +262,31 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
             0
         |> Tableau.Matrix.mapi (fun i_row row ->
             Tableau.Matrix.get i_row col m
+            |> Scalar.Rat.inv
             |> Tableau.Vector.mul_scalar row)
         in
+        Debug.log DebugTypes.Detail (lazy (Printf.sprintf "matrix : %s"
+            (Tableau.Matrix.to_string matrix
+                (Tableau.Matrix.get_width_column_vector matrix))));
         let range = Misc.range 0 n_cols in
-        let rec find_min : int ->  Tableau.Matrix.t -> Tableau.Matrix.t -> Tableau.Vector.t -> int
+        let rec find_min : int ->  Tableau.Matrix.t -> Tableau.Matrix.t -> Tableau.Vector.t -> int option
             = fun row_number rest_matrix matrix column ->
             match rest_matrix with
-            | [] -> Pervasives.failwith "get_row_pivot_lexpositive: did not found any minimum"
+            | [] -> None
             | row :: tl ->
                 if Scalar.Rat.lt Scalar.Rat.z (Tableau.Vector.get row_number column)
                     && List.for_all2 (fun row' i ->
                         i = row_number
-                        || (Tableau.Vector.sub row row' |> Tableau.Vector.is_lexpositive)
+                        (* if row' has a negative coefficient in column, it must not be tested*)
+                        || Scalar.Rat.lt (Tableau.Vector.get i column) Scalar.Rat.z
+                        || (Tableau.Vector.sub row' row |> Tableau.Vector.is_lexpositive)
                     ) matrix range
-                then row_number
-                else find_min (row_number + 1) tl matrix
+                then Some (row_number)
+                else find_min (row_number + 1) tl matrix column
         in
         find_min 0 matrix matrix (Tableau.Matrix.getCol col m)
 
-	let get_row_pivot : rowPivotStrgyT -> int list -> Tableau.Matrix.t -> int -> int
+	let get_row_pivot : rowPivotStrgyT -> int list -> Tableau.Matrix.t -> int -> int option
         = function
         | Standard -> get_row_pivot_standard
         | LexPositive ->  get_row_pivot_lexpositive
@@ -291,17 +298,20 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 	 	let rec push' : bool -> Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> t -> t
 			= fun init_phase st st_row point sx ->
 			Debug.log DebugTypes.Detail
-				(lazy (Printf.sprintf "push' : \n%s"
-					(to_string sx)));
+				(lazy (Printf.sprintf "push' : \n%s" (to_string sx)));
 		  	match Pivot.getPivotCol
 			  	(Naming.to_vpl sx.names)
 			  	(Naming.vpl_max sx.names)
 			  	st sx.names point sx.obj
 		  	with
 		  	| Objective.OptReached -> sx
-		  	| Objective.PivotOn i ->
-			  	pivot init_phase sx (get_row_pivot st_row sx.basis sx.mat i) i
-			  	|> push' init_phase st st_row point
+		  	| Objective.PivotOn i_col -> begin
+                match get_row_pivot st_row sx.basis sx.mat i_col with
+                | Some i_row ->
+                    let sx' = pivot init_phase sx i_row i_col in
+			        push' init_phase st st_row point sx'
+                | None -> failwith "LexPositive"
+            end
 
 		let push : bool -> Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> t -> t
 			= fun init_phase st str_row point sx ->

@@ -1338,6 +1338,23 @@ module PLP(Minimization : Min.Type) = struct
 			Some (exec config plp)
 		else None
 
+    (* for testing purpose only *)
+    (*
+    let check_pivots
+        = function
+        | None -> ()
+        | Some regs ->
+            List.iter (fun (reg,_) ->
+                match reg.Region.sx with
+                | None -> ()
+                | Some sx ->
+                    List.iter (fun col ->
+                            let _ = PSplx.get_row_pivot PSplx_type.LexPositive sx.basis sx.mat col in
+                            ()
+                    ) (Misc.range 0 (PSplx.nCols sx))
+            ) regs
+    *)
+
 	let run : config -> PSplx.t -> (PSplx.t -> 'c) -> (Region.t * 'c Cons.t) list option
 		= fun config sx get_cert ->
 		Random.init 0;

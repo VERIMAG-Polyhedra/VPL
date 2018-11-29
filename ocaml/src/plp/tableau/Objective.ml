@@ -156,11 +156,7 @@ module type PivotType = sig
 
     module Naming : Naming.Type with module Vec = Vec
 
-    (** [getPivotCol f h s cx o] returns what the next step is according to
-    context [cx] and pivoting strategy [s]. Function [f] defines the correspondence
-    between parameter indices and VPL variables. [h] must be greater than any
-    [Vec.V.t] returned by [f] and is used to generated internal variables. *)
-    val getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
+    val getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> int -> choiceT
 end
 
 module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
@@ -194,8 +190,9 @@ module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtre
 		else StrictPos
 
 	let getCol_Bland : (int -> Vec.V.t) -> Vec.V.t -> Naming.t -> Vec.t -> t -> choiceT
-		= let f = fun tr h names _ point i c ->
-			function None ->
+		= let f = fun tr h names _ point i c res ->
+            function
+			    | None ->
 				(if ParamCoeff.is_constant c
 					then if Q.sign (ParamCoeff.getCst c) < 0 then Some (PivotOn i) else None
 					else match decide_sign tr h names point c with
@@ -208,7 +205,7 @@ module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtre
 			| None -> OptReached
 			| Some ch -> ch
 
-	let getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
+	let getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> int -> choiceT
 		  	= fun f h ->
 		  	function
 		  	| Bland -> getCol_Bland f h

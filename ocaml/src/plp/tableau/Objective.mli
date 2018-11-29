@@ -96,10 +96,10 @@ module type PivotType = sig
 
     module Naming : Naming.Type with module Vec = Vec
 
-    (** [getPivotCol f h s cx o] returns what the next step is according to
+    (** [getPivotCol f h s cx o from_col] returns what the next step is according to
     context [cx] and pivoting strategy [s]. Function [f] defines the correspondence
     between parameter indices and VPL variables. [h] must be greater than any
-    [Vec.V.t] returned by [f] and is used to generated internal variables. *)
+    [Vec.V.t] returned by [f] and is used to generated internal variables.*)
     val getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
 end
 

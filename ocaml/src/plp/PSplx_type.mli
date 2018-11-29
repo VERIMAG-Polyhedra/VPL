@@ -110,8 +110,9 @@ module type Type = sig
         @param basis the LP basis
         @param m the matrix of constraints
         @param col the column of the entering variable.
-        @raise Unbounded_problem if the problem is detected unbounded by this pivot. *)
-    val get_row_pivot : rowPivotStrgyT -> int list -> Tableau.Matrix.t -> int -> int
+        @raise Unbounded_problem if the problem is detected unbounded by this pivot.
+        @return None if no suitable row has been found*)
+    val get_row_pivot : rowPivotStrgyT -> int list -> Tableau.Matrix.t -> int -> int option
 
     (** [pivot sx row col] performs a pivot on the element at [row] and [col].
         @param init_phase true if the pivot occurs during initialization phase *)
