@@ -217,7 +217,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 
     exception Unbounded_problem
 
-    let get_row_pivot_standard : int list -> Tableau.Matrix.t -> int -> int option
+    let get_row_pivot_standard : int list -> Tableau.Matrix.t -> Tableau.Matrix.t -> int -> int option
         = let bounds : Tableau.Matrix.t -> int -> Q.t option list
            = fun m col ->
            List.map2
@@ -237,7 +237,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
                in
                (mcur', idx + 1)
         in
-        fun _ m col ->
+        fun _ _ m col ->
         bounds m col |> List.fold_left min (None, 0)
         |> function
            | None, _ -> Pervasives.raise Unbounded_problem
@@ -246,16 +246,50 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
         then Pervasives.failwith "t.get_row_pivot: negative right-hand side"
         else Some i
 
-    let get_row_pivot_lexpositive : int list -> Tableau.Matrix.t -> int -> int option
-        = fun basis m col ->
-        Debug.log DebugTypes.Detail (lazy (Printf.sprintf "lex_positive on column %i" col));
-        let n_cols = List.length basis in
-        let transpose_matrix = List.fold_right (fun i m ->
-                Tableau.Vector.init n_cols
-                    (fun j -> if List.nth basis j == i then Q.one else Q.zero)
-                :: m
-            ) (List.fast_sort Pervasives.compare basis) []
+    let get_row_pivot_lexpositive : int list -> Tableau.Matrix.t -> Tableau.Matrix.t -> int -> int option
+        = fun basis init_matrix m i_col ->
+        Debug.log DebugTypes.Detail (lazy (Printf.sprintf "lex_positive on column %i" i_col));
+        let init_A = Misc.fold_left_i (fun i res i_col ->
+                Tableau.Matrix.add_col res
+                    (Tableau.Matrix.getCol i_col init_matrix)
+                    i
+            )
+            (Tableau.Matrix.empty)
+            (List.fast_sort Pervasives.compare basis)
+        and b = Tableau.Matrix.getCol ((Tableau.Matrix.nCols m) - 1) m
+        and column = Tableau.Matrix.getCol i_col m
         in
+        let n_rows = List.length basis in
+        let pivot_maker = Pivot_wrapper.create n_rows in
+        (* Filling matrix A:*)
+        List.iteri (fun i_row row ->
+            List.iteri (fun i_col value ->
+                let num = Q.num value |> Z.to_string |> int_of_string
+                and den = Q.den value |> Z.to_string |> int_of_string
+                in
+                Pivot_wrapper.set_A pivot_maker i_row i_col num den
+            ) row
+        ) init_A;
+        (* Filling column b:*)
+        List.iteri (fun i_row value ->
+            let num = Q.num value |> Z.to_string |> int_of_string
+            and den = Q.den value |> Z.to_string |> int_of_string
+            in
+            Pivot_wrapper.set_b pivot_maker i_row num den
+        ) b;
+        (* Filling column b:*)
+        List.iteri (fun i_row value ->
+            let num = Q.num value |> Z.to_string |> int_of_string
+            and den = Q.den value |> Z.to_string |> int_of_string
+            in
+            Pivot_wrapper.set_column pivot_maker i_row num den
+        ) column;
+        Pivot_wrapper.print pivot_maker;
+        let row = Pivot_wrapper.solve pivot_maker in
+        if row < 0
+        then failwith "Not found any row!"
+        else Some row
+        (*
         let matrix = Tableau.Matrix.add_col
             transpose_matrix
             (Tableau.Matrix.getCol ((Tableau.Matrix.nCols m) - 1) m)
@@ -285,8 +319,9 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
                 else find_min (row_number + 1) tl matrix column
         in
         find_min 0 matrix matrix (Tableau.Matrix.getCol col m)
+        *)
 
-	let get_row_pivot : rowPivotStrgyT -> int list -> Tableau.Matrix.t -> int -> int option
+	let get_row_pivot : rowPivotStrgyT -> int list -> Tableau.Matrix.t -> Tableau.Matrix.t -> int -> int option
         = function
         | Standard -> get_row_pivot_standard
         | LexPositive ->  get_row_pivot_lexpositive
@@ -295,8 +330,8 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 
 		module Obj = Objective.Pivot (Vec)
 
-	 	let rec push' : bool -> Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> t -> t
-			= fun init_phase st st_row point sx ->
+	 	let rec push' : bool -> Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> Tableau.Matrix.t -> t -> t
+			= fun init_phase st st_row point init_matrix sx ->
 			Debug.log DebugTypes.Detail
 				(lazy (Printf.sprintf "push' : \n%s" (to_string sx)));
 		  	match Pivot.getPivotCol
@@ -306,22 +341,22 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		  	with
 		  	| Objective.OptReached -> sx
 		  	| Objective.PivotOn i_col -> begin
-                match get_row_pivot st_row sx.basis sx.mat i_col with
+                match get_row_pivot st_row sx.basis init_matrix sx.mat i_col with
                 | Some i_row ->
                     let sx' = pivot init_phase sx i_row i_col in
-			        push' init_phase st st_row point sx'
+			        push' init_phase st st_row point init_matrix sx'
                 | None -> failwith "LexPositive"
             end
 
-		let push : bool -> Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> t -> t
-			= fun init_phase st str_row point sx ->
+		let push : bool -> Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> Tableau.Matrix.t -> t -> t
+			= fun init_phase st str_row point init_matrix sx ->
 			Debug.log DebugTypes.Title
 				(lazy "Parametric simplex");
 		  	Debug.log DebugTypes.MInput
 		  		(lazy (Printf.sprintf "Point %s\n%s"
 		  			(Vec.to_string Vec.V.to_string point)
 		  			(to_string sx)));
-		  	let res = push' init_phase st str_row point sx in
+		  	let res = push' init_phase st str_row point init_matrix sx in
 		  	Debug.exec res DebugTypes.MOutput (lazy (to_string res))
 
 		module Init = struct
@@ -431,8 +466,8 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 				fun sx ->
 				chooseBasicVar (List.length sx.basis) sx
 
-		  let (findFeasibleBasis : Objective.pivotStrgyT -> rowPivotStrgyT -> t -> Vec.t -> t option)
-			 = fun st st_row sx0 point ->
+		  let (findFeasibleBasis : Objective.pivotStrgyT -> rowPivotStrgyT -> t -> Vec.t -> Tableau.Matrix.t -> t option)
+			 = fun st st_row sx0 point init_matrix ->
 			 match correction sx0 with
 			 | None -> None
 			 | Some sx ->
@@ -440,7 +475,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 				 else
 			 let sx' =
 				buildInitFeasibilityPb sx
-				|> push true st st_row point
+				|> push true st st_row point init_matrix
 			 in
 			 if not (obj_value sx' |> ParamCoeff.is_zero) then None
 			 else
@@ -455,15 +490,15 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 
 		end
 
-		let init_and_push : Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> t -> t option
-			= fun st st_row point sx ->
-			match Init.findFeasibleBasis st st_row sx point with
+		let init_and_push : Objective.pivotStrgyT -> rowPivotStrgyT -> Vec.t -> Tableau.Matrix.t -> t -> t option
+			= fun st st_row point init_matrix sx ->
+			match Init.findFeasibleBasis st st_row sx point init_matrix with
 			| None -> begin
 				print_endline ("init -> unfeasible");
 				None
 				end
 			| Some sx ->
-				Debug.exec (Some (push false st st_row point sx))
+				Debug.exec (Some (push false st st_row point init_matrix sx))
 					DebugTypes.Detail (lazy (to_string sx))
 	end
 

@@ -17,6 +17,11 @@ module PLP(Minimization : Min.Type) = struct
 
 	module MapV = Map.Make(struct type t = int let compare = Pervasives.compare end)
 
+    (** A reference to the initial (not initialized) simplex tableau.
+        It is used in the lexpositive pivot. *)
+    let init_matrix : Tableau.Matrix.t ref
+        = ref Tableau.Matrix.empty
+
 	(** This map is used for the certificate generation.
 	Is associates to each simplex column an element of {!type:Cons.t}. *)
 	type 'c mapVar_t = ('c Cons.t) MapV.t
@@ -1052,7 +1057,7 @@ module PLP(Minimization : Min.Type) = struct
 		  	Debug.log DebugTypes.Normal
 		  		(lazy("Exec on the point " ^ (Vec.to_string V.to_string pointToExplore)));
 		  	Profile.start "LP" ;
-            let sx' = try Explore.push false st st_row pointToExplore sx with ex -> begin
+            let sx' = try Explore.push false st st_row pointToExplore !init_matrix sx with ex -> begin
                 Profile.stop "LP" ;
                 raise ex
                 end
@@ -1166,7 +1171,7 @@ module PLP(Minimization : Min.Type) = struct
 			Debug.log DebugTypes.Normal
 				(lazy(Printf.sprintf "PLP initialization with point = %s"
 					(Vec.to_string Vec.V.to_string point)));
-		  	match Explore.Init.findFeasibleBasis st st_row sx point with
+		  	match Explore.Init.findFeasibleBasis st st_row sx point !init_matrix with
 		  	| None -> Debug.exec None DebugTypes.Normal (lazy "Problem Unsat")
 		  	| Some _ as r -> Debug.exec r DebugTypes.Normal (lazy "Problem Sat")
 
@@ -1365,6 +1370,7 @@ module PLP(Minimization : Min.Type) = struct
 				(Misc.list_to_string ExplorationPoint.to_string config.points " ; ")
 				(PSplx.to_string sx)));
 		Profile.start "run";
+        init_matrix := sx.mat;
 		let res = match init_and_exec config sx get_cert with
 		| None -> None
 		| Some plp -> get_results plp get_cert

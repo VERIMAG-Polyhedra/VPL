@@ -156,7 +156,7 @@ module type PivotType = sig
 
     module Naming : Naming.Type with module Vec = Vec
 
-    val getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> int -> choiceT
+    val getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
 end
 
 module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
@@ -190,7 +190,7 @@ module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtre
 		else StrictPos
 
 	let getCol_Bland : (int -> Vec.V.t) -> Vec.V.t -> Naming.t -> Vec.t -> t -> choiceT
-		= let f = fun tr h names _ point i c res ->
+		= let f = fun tr h names _ point i c ->
             function
 			    | None ->
 				(if ParamCoeff.is_constant c
@@ -205,7 +205,7 @@ module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtre
 			| None -> OptReached
 			| Some ch -> ch
 
-	let getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> int -> choiceT
+	let getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
 		  	= fun f h ->
 		  	function
 		  	| Bland -> getCol_Bland f h
