@@ -50,7 +50,7 @@ let m : int list list -> Tableau.Matrix.t
   = List.map (List.map Q.of_int)
 
 let q : int -> int -> Q.t
-    = Q.mk
+    = Scalar.Rat.mk
 
 let get_row_pivot_ts : Test.t
   = fun () ->
@@ -58,7 +58,7 @@ let get_row_pivot_ts : Test.t
 	   = fun (nm, col, er, m) st ->
 	   let ar =
             let basis = [] in (* The basis is not used in the standard pivot  *)
-			try Some (PSplx.get_row_pivot PSplx_type.Standard basis m col)
+			try PSplx.get_row_pivot PSplx_type.Standard basis m col
 			with PSplx.Unbounded_problem -> None
 	   in
 	   if ar = er
@@ -96,21 +96,6 @@ let get_row_pivot_ts : Test.t
 	 ] in
 	 List.map chk tcs |> Test.suite "get_row_pivot"
 
-let get_row_pivot_lexpositive_ts : Test.t
-    = fun () ->
-    let chk : string * int * int list * int * Tableau.Matrix.t -> (Test.stateT -> Test.stateT)
-        = fun (nm, col, basis, m) st ->
-        let ar = PSplx.get_row_pivot PSplx_type.LexPositive basis m col in
-        if ar = er
-        then Test.succeed st
-        else
-        Printf.printf "%s: expected %i but got %i\n" nm er ar;
-        st
-    in
-    let tcs : (string * int * int list * Tableau.Matrix.t) list
-    = [
-    ] in
-    List.map chk tcs |> Test.suite "get_row_pivot"
 
 (** Comparison of PSplx with Splx. *)
 module Explore = struct
