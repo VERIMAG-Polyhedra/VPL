@@ -10,7 +10,7 @@ OASISFormat: 0.4
 BuildTools: ocamlbuild
 Plugins: META (0.4), DevFiles (0.4)
 
-Library vpl
+Library "vpl"
   Path: src
   Pack: true
   CompiledObject: best
@@ -22,3 +22,11 @@ SourceRepository vpl
   Location: https://github.com/VERIMAG-Polyhedra/VPL
   Branch:  master
   Subdir:  ocaml/
+
+AlphaFeatures: ocamlbuild_more_args
+Document VPL_api
+  Title: API reference for VPL
+  Type: ocamlbuild (0.4)
+  BuildTools: ocamldoc, ocamlbuild
+  XOCamlbuildPath: src
+  XOCamlbuildModules:  datatypes/Scalar, datatypes/Var, datatypes/VarMap, datatypes/Vector, datatypes/Cstr
