@@ -32,9 +32,10 @@ module type Type = sig
     (** Builds a vector from a list of pairs coefficient * variable.*)
 	val mk : (Coeff.t * V.t) list -> t
 
+    (** Retrieve coefficients and variables of a vector. *)
 	val toList : t -> (V.t * Coeff.t) list
 
-	(** [get vec v] returns the coefficient of variable [v] in vec. Returns {!val:Coeff.z} if [v] is not present in [vec]. *)
+	(** [get vec v] returns the coefficient of variable [v] in vec. Returns zero if [v] is not present in [vec]. *)
 	val get: t -> V.t -> Coeff.t
 
 	(** [set vec v n] sets the coefficient of variable [v] to [n] in vector [vec]. *)
@@ -46,8 +47,10 @@ module type Type = sig
 	(** [neg vec] multiplies each coefficient in [vec] by -1. *)
 	val neg : t -> t
 
-
+    (** Adding two vectors. *)
 	val add : t -> t -> t
+
+    (** Substracting two vectors. *)
 	val sub : t -> t -> t
 
 	(** Computes the multiplication componentwise.*)
@@ -74,6 +77,7 @@ module type Type = sig
 	(** Syntaxic equality *)
 	val equal : t -> t -> bool
 
+    (** Dot product of two vectors. *)
 	val dot_product : t -> t -> Coeff.t
 
 	(** Same as {!val:dot_product}, where the first vector has rational coefficients. *)
@@ -92,18 +96,32 @@ module type Type = sig
 	val shift: V.t -> t -> V.t option M.t -> V.t * t * V.t option M.t
 	(**/**)
 
+    (** Conversion from a vector with symbolic error.
+        @raise Failure if called with integer coefficients. *)
 	val ofSymbolic : Scalar.Symbolic.t -> Coeff.t
 
+    (** Conversion into a rational vector. *)
 	val toRat : t -> Scalar.Rat.t M.t
+
+    (** Conversion from a rational vector.*)
 	val ofRat : Scalar.Rat.t M.t -> t
 
-    (** [projects vars v] eliminates all variables from [vars] into [v], by setting their value to 0. *)
+    (** Eliminates a list of variables from a vector, by setting their value to 0.
+        @param vars the variables to eliminate
+        @param vec the vector *)
     val project : V.t list -> t -> t
 
-    (** [rename fromX toY vec] *)
+    (** Renames a variable.
+        @param fromX the variable to rename
+        @param toY the new variable name
+        @param vec the vector *)
     val rename : V.t -> V.t -> t -> t
 
+    (** Renames all variables of a vector according to a renaming function
+        @param f the renaming function
+        @param vec the vector to rename *)
 	val rename_f : (V.t -> V.t) -> t -> t
 
+    (** @return the gcd of the coefficients in the vector. *)
     val gcd : t -> Q.t
 end

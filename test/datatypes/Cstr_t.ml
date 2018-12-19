@@ -24,11 +24,11 @@ module Make_Tests (Cs : Cstr.Type) = struct
 
 	let v iv = Cs.Vec.mk (List.map (fun (i, v) -> (Cs.Vec.Coeff.of_int i, v)) iv)
 
-	(* Cs.eval *)
-	let evalTs: Test.t
+	(* Cs.satisfy *)
+	let satisfyTs: Test.t
 	= fun () ->
 		let chk (name, c, p, r) = fun state ->
-			if r = Cs.eval c p then
+			if r = Cs.satisfy p c then
 				Test.succeed state
 			else
 				let err =
@@ -45,7 +45,7 @@ module Make_Tests (Cs : Cstr.Type) = struct
 			"le0", le [1, x] 2, v [1, x; 2, y], true;
 			"eq0", eq [1, x] 2, v [2, x; 2, y], true;
 		] in
-		Test.suite "eval" (List.map chk tcs)
+		Test.suite "satisfy" (List.map chk tcs)
 
 	(* Cs.compl *)
 	let complOkTs: Test.t
@@ -53,10 +53,10 @@ module Make_Tests (Cs : Cstr.Type) = struct
 		let chk (name, c, inpts, outpts) = fun state ->
 			let cbar: Cs.t = Cs.compl c in
 			let r_in = List.fold_left
-				(fun r pt -> r && Cs.eval cbar pt) true inpts
+				(fun r pt -> r && Cs.satisfy pt cbar) true inpts
 			in
 			let r_out = List.fold_left
-				(fun r pt -> r && not (Cs.eval cbar pt)) true outpts
+				(fun r pt -> r && not (Cs.satisfy pt cbar)) true outpts
 			in
 			if r_in && r_out then
 				Test.succeed state
@@ -374,7 +374,7 @@ module Make_Tests (Cs : Cstr.Type) = struct
 
     let ts: Test.t
         = fun () ->
-        List.map Test.run [evalTs; complTs; splitTs; isInclSynTs; isEqTs; isInclTs; tellPropTs]
+        List.map Test.run [satisfyTs; complTs; splitTs; isInclSynTs; isEqTs; isInclTs; tellPropTs]
         |> Test.suite Cs.Vec.Coeff.name
 end
 
@@ -511,7 +511,7 @@ module Rat = struct
 
 		let ts : Test.t
 			=  fun () ->
-            List.map Test.run [evalTs; complTs; elimTs; splitTs ; isInclSynTs; isEqTs; isInclTs; tellPropTs]
+            List.map Test.run [satisfyTs; complTs; elimTs; splitTs ; isInclSynTs; isEqTs; isInclTs; tellPropTs]
             |> Test.suite Cstr.Vec.Coeff.name
 	end
 

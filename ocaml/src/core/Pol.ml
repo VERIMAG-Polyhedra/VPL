@@ -1245,7 +1245,7 @@ let set_point : Vec.t -> 'c t -> 'c t
             let cstr' = { cstr with
                 Cs.typ = (match Cs.get_typ cstr with | Cstr_type.Le -> Cstr_type.Lt | typ -> typ);
             } in
-            if not (Cs.eval cstr' point)
+            if not (Cs.satisfy point cstr')
             then Pervasives.invalid_arg (Printf.sprintf "Pol.set_point: point %s does not satisfy constraint %s"
                 (Vec.to_string Var.to_string point)
                 (Cs.to_string Var.to_string cstr))
@@ -1365,7 +1365,7 @@ let spawn : 'c Cert.t -> 'c t -> Vec.t
             let cstr = { (Cons.get_c cons) with
                 Cs.v = Vec.add (Cs.get_v (Cons.get_c cons)) (Vec.mk [Scalar.Rat.negU, var]);
             } in
-            let coeff = Cs.eval' cstr point in
+            let coeff = Cs.eval cstr point in
             Vec.set point var coeff
         )
         point p.eqs

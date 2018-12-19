@@ -1,5 +1,3 @@
-(** Interface for the maps associating variables to values. *)
-
 open VarMap_type
 
 module type Type = Type

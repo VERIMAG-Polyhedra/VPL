@@ -1,7 +1,11 @@
+(** Type of maps from variables to values. *)
+
 open VarMap_type
 
+(** Interface of maps from variables to values. *)
 module type Type = Type
 
+(** Functor that takes a variable module, and generates a map. *)
 module VarMap : functor (V : Var.Type) -> sig
     include Type with module V = V
 

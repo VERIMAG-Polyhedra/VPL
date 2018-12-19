@@ -50,10 +50,6 @@ module Positive = struct
 	let plp_print : t -> string
 		= to_string' ""
 
-	(** [next v] gives the path to the next variable in a breadth-first search in a tree.
-Next of [... XO XH] is [... XI XH],
-next of [... XO (XI XH)] is [... XI (XO XH)] and
-next of [XI (XI XH)] is [XO (XO (XO XH))]. *)
 	let next (bp: t): t =
 		let rec next_rec (bp': t): t * bool =
 			match bp' with
@@ -182,8 +178,7 @@ module Int = struct
 	(* XXX: ou -1? *)
 	let u : t
 		= 1
-
-	(** [next v] returns [v+1]. *)
+        
 	let next : t -> t
 		= fun v ->
 		v + 1

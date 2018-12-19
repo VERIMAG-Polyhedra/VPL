@@ -16,8 +16,7 @@ module type Type = sig
 	val get: 'n -> 'n t -> V.t -> 'n
 
 	(** [set z map var value] returns [map], with a binding from [var] to [value].
-	If the implemented map is {!module:Rtree}, value [z] is placed on each intermediate node.
-	This is not the case for {!module:IntMap}. *)
+	If the implemented map is {!module:Rtree}, value [z] is placed on each intermediate node. *)
 	val set: 'n -> 'n t -> V.t -> 'n -> 'n t
 
 	(** [mk z l] builds a map from the list of association [l].

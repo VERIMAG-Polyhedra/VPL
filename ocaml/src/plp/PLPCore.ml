@@ -311,9 +311,7 @@ module PLP(Minimization : Min.Type) = struct
 		(** Returns true if the given point lies in the given region. *)
 		let (contains' : Cs.t list -> Vec.t -> bool)
 			= fun cstrs p ->
-			List.for_all
-				(fun c -> Cs.satisfy (Vec.toRat p) c)
-				cstrs
+			List.for_all (Cs.satisfy (Vec.toRat p)) cstrs
 
 		(** Returns true if the given point lies in the given relaxed ({i i.e.} non-strict) region. *)
 		let (contains_large : t -> Vec.t -> bool)
@@ -360,7 +358,7 @@ module PLP(Minimization : Min.Type) = struct
 			| None -> None
 			| Some sx ->
 				let cstr = PSplx.obj_value' sx in
-				Some (Cs.eval' cstr p)
+				Some (Cs.eval cstr p)
 	end
 
 	type mapRegs_t = Region.t MapV.t
@@ -449,7 +447,7 @@ module PLP(Minimization : Min.Type) = struct
 					let obj1 = PSplx.obj_value' sx1
 					and obj2 = PSplx.obj_value' sx2
 					in
-					Cs.Vec.Coeff.equal (Cs.eval' obj1 p) (Cs.eval' obj2 p)
+					Cs.Vec.Coeff.equal (Cs.eval obj1 p) (Cs.eval obj2 p)
 				| _,_ -> adjacent_cstr_lp reg1 reg2 cstr1 cstr2
 
 		let adjacent' : int -> Cs.t -> ((int * Cs.t) * 'a) list -> mapRegs_t -> int option
@@ -553,7 +551,7 @@ module PLP(Minimization : Min.Type) = struct
 		(** Module that chooses the next point to explore by raytracing. *)
 		module RayTracing = struct
 
-			let eval' : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
+			let eval : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
 				= fun regs dir_type ->
 				List.fold_left
 					(fun res (id,reg) ->
@@ -567,7 +565,7 @@ module PLP(Minimization : Min.Type) = struct
 			let eval : (int * Region.t) list -> Min.direction_type -> ((int * Cs.t) * Min.direction) list
 				= fun regs dir_type ->
 				Profile.start "raytracing";
-				let res = eval' regs dir_type in
+				let res = eval regs dir_type in
 				Profile.stop "raytracing";
 				res
 

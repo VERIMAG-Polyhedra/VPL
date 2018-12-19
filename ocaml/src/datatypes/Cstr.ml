@@ -42,7 +42,7 @@ module Make (Vec : Vector.Type) = struct
 	exception NoElim
 
 	let cmpAdd : cmpT -> cmpT -> cmpT
-	= fun o1 o2 ->
+	   = fun o1 o2 ->
 		match o1 with
 		| Eq -> o2
 		| Lt as o -> o
@@ -51,15 +51,9 @@ module Make (Vec : Vector.Type) = struct
 			| Eq | Le -> o
 			| Lt as o -> o
 
-	let eval' : t -> Vec.t -> Coeff.t
+	let eval : t -> Vec.t -> Coeff.t
 		= fun c pt ->
 		Coeff.sub (M.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t c.v pt)) c.c
-
-	let eval : t -> Vec.t -> bool
-		= fun c pt ->
-		let r = Coeff.cmp (M.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t c.v pt)) c.c
-		in
-		match c.typ with Eq -> r = 0 | Le -> r <= 0 | Lt -> r < 0
 
 	let add : t -> t -> t
 		= fun c1 c2 ->

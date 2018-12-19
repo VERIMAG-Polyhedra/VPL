@@ -21,7 +21,7 @@ module type Type = sig
 	(** Value -1. *)
 	val negU: t
 
-	(** Small value used for conversions from {!type:symbolic}. *)
+	(** Small value used for conversions from {!type:Scalar.symbolic}. *)
 	val delta : t
 
 	(** [cmp x y] returns 0 if x = y, a negative integer if x < y, and a positive one otherwise. *)
@@ -101,7 +101,7 @@ module type Type = sig
     (** Conversion from rational. *)
 	val ofQ : Q.t -> t
 
-    (** Conversion to rational. *)
+    (** Conversion into rational. *)
 	val toQ : t -> Q.t
 
     (** Conversion into string. *)

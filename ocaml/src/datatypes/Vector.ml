@@ -1,7 +1,3 @@
-(** Module of vectors, which associate variables from {!modtype:Var.Type} to values from {!modtype:Scalar.Type}.
-A vector is either a {!type:Rtree.t} with variables {!type:Var.Positive.t} or a {!type:VarMap.t} with variables {!type:Var.Int.t}.
-*)
-
 open Vector_type
 
 module VT = Var_type

@@ -1,130 +1,154 @@
-type cmpT_extended
-	= EQ | LE | LT | GE | GT | NEQ
+(** Interface of affine constraints.
+@section Datatypes *)
 
+(** Type of comparators*)
 type cmpT
 	= Eq | Le | Lt
 
-(** Affine constraints and operations on them. *)
+(** Extended type of comparators. *)
+type cmpT_extended
+	= EQ | LE | LT | GE | GT | NEQ
+
+(** Interface of affine constraints. *)
 module type Type = sig
+
+    (** A module of vectors. *)
 	module Vec : Vector.Type
+
+    (** The coefficients of {!module:Vec}. *)
     module Coeff : Scalar.Type
+
+    (** The variables of {!module:Vec}. *)
     module V : Var.Type
 
-	(** The main type for affine contraints.
-	A constraint [c] of type [t] represents [c.v c.typ c.c]. *)
+	(** Type of affine constraints, of the form [c.v c.typ c.c]. *)
 	type t = {
 		typ : cmpT; (** the comparison operator *)
 		v: Vec.t; (** the linear term *)
 		c: Vec.Coeff.t (** the constant *) }
 
+    (** Module name. *)
 	val name : string
 
+    (** Returns the contraint comparator. *)
 	val get_typ : t -> cmpT
+
+    (** Returns the constraint linear term. *)
 	val get_v : t -> Vec.t
+
+    (** Returns the constraint constant term. *)
 	val get_c : t -> Vec.Coeff.t
 
 
-	(** [pr b c] pretty-prints contraint [c] using the variables and their names from [b]. *)
+	(** Pretty-printer for constraints.
+        @param var_to_string a pretty-printer for variables
+        @param cstr the constraint to print *)
 	val to_string : (Vec.V.t -> string) -> t -> string
 
+    (** Pretty-printers for lists of constraints. *)
 	val list_to_string : t list -> string
 
-	val plot : Vec.V.t list -> t -> string
+	(** See {!val:mulc}. *)
+	exception BadMult
 
-	val list_plot : t list -> string
+	(** Exception that may be raised when trying to eliminate a variable *)
+	exception CannotElim
 
-	(** The type of properties the can be told by examining a constraint on its own. *)
+	(** Exception that may be raised when trying to eliminate a variable *)
+	exception NoElim
+
+    (** Computes the comparator resulting from the addition of two comparators. *)
+	val cmpAdd: cmpT -> cmpT -> cmpT
+
+	(** Compute the complement constraint to the given inequality.
+	   @raise Invalid_argument if the supplied linear constraint is an equality *)
+	val compl: t -> t
+
+	(** Splits the given equality (e.g. x = 1) into the two equivalent inequalities (e.g. x <= 1 and -x <= -1).
+	   @raise Invalid_argument if the supplied constraint is not an equality *)
+	val split: t -> t * t
+
+	(** Builds a linear constraint
+        @param cmp the comparison operator
+        @param l the list of pairs (coefficient * variable), representing the
+        linear term. Zero coefficients can be left implicit.
+        @param cst the constant term *)
+	val mk: cmpT -> (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+
+    (** Builds a linear constraint
+        @param cmp the comparison operator
+        @param vec the linear term
+        @param cst the constant term *)
+	val mk2: cmpT -> Vec.t -> Vec.Coeff.t -> t
+
+	(** Builds an equality.
+        @param l the list of pairs (coefficient * variable), representing the
+        linear term. Zero coefficients can be left implicit.
+        @param cst the constant term *)
+	val eq: (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+
+	(** Builds a large inequality.
+        @param l the list of pairs (coefficient * variable), representing the
+        linear term. Zero coefficients can be left implicit.
+        @param cst the constant term *)
+	val le: (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+
+	(** Builds a strict inequality.
+        @param l the list of pairs (coefficient * variable), representing the
+        linear term. Zero coefficients can be left implicit.
+        @param cst the constant term *)
+	val lt: (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+
+	(** Same as {!val:mk} but transforms [coefs] < [cst] into [coefs] <= ([cst] - 1).
+        @param cmp the comparison operator
+        @param l the list of pairs (coefficient * variable), representing the
+        linear term. Zero coefficients can be left implicit.
+        @param cst the constant term *)
+	val mkInt: cmpT -> (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+
+	(** Checks the syntactical equality between two constraints.
+	   [x = 1] and [x = 1] are syntactically equal, but not 2 * x = 2 and x = 1. *)
+	val equalSyn: t -> t -> bool
+
+	(** Check the syntactical inclusion of one constraint in another.
+	   The linear term of both constraints must be syntactically equal.
+	      x = 0 is included in x < 1, but not is 2 * x < 2. *)
+	val inclSyn: t -> t -> bool
+
+	(** Checks if two constraints describe the same space. *)
+	val equal: t -> t -> bool
+
+	(** Checks if the subspace described by [c1] is included in that of [c2]. *)
+	val incl: t -> t -> bool
+
+    (** Comparison between to constraints. *)
+	val cmp : t -> t -> int
+
+	(** Adds two constraints. *)
+	val add: t -> t -> t
+
+	(** Multiplies a constraint by a constant.
+	   @raise BadMult if a negative constant is provided and the constraint is an inequality *)
+	val mulc: Vec.Coeff.t -> t -> t
+
+    (** The type of properties the can be told by examining a constraint on its own. *)
 	type prop_t =
 	| Trivial (** 0 = 0 or 0 < 1 are Trivial *)
 	| Contrad (** trivialy contradictory: e.g. 0 = 1 or 0 <  -1 *)
 	| Nothing (** neither trivial nor trivialy contradictory *)
 
-	(** See [mult]. *)
-	exception BadMult
-
-	(** See [elim]. *)
-	exception CannotElim
-
-	(** See [elim]. *)
-	exception NoElim
-
-	val cmpAdd: cmpT -> cmpT -> cmpT
-
-	(** Compute the complement constraint to the given inequality.
-	If the supplied linear constraint is an equality, [Invalid_argument "Cstr.compl"] is raised. *)
-	val compl: t -> t
-
-	(** Split the given equality (e.g. x = 1) into the two equivalent inequalities (e.g. x <= 1 and -x <= -1).
-	If the supplied constraint is not an equality, [Invalid_argument "Cstr.split"] is raised. *)
-	val split: t -> t * t
-
-	(** [mk typ coefs cst] builds the linear constraint [coefs typ cst],
-	where each member of [coefs] gives the coefficient of a given variable.
-	Zero coefficients can be left implicit. *)
-	val mk: cmpT -> (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
-
-	val mk2: cmpT -> Vec.t -> Vec.Coeff.t -> t
-
-	(** [eq lin cst] builds the equality [lin = cst],
-	where each member of [lin] is the coefficient of a variable.
-	Zero coefficients can be left implicit. *)
-	val eq: (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
-
-	(** [le lin cst] builds the non-strict inequality [lin <= cst],
-	where each member of [lin] is the coefficient of a variable.
-	Zero coefficients can be left implicit. *)
-	val le: (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
-
-	(** [lt lin cst] builds the strict inequality [lin < cst],
-	where each member of [lin] is the coefficient of a variable.
-	Zero coefficients can be left implicit. *)
-	val lt: (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
-
-	(** [mkInt] is equivalent to [mk] but transforms [coefs] < [cst] into [coefs] <= ([cst] - 1). *)
-	val mkInt: cmpT -> (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
-
-	(** Check the syntactical equality of two constraints.
-	x = 1 and x = 1 are syntactically equal, but not 2 * x = 2 and x = 1. *)
-	val equalSyn: t -> t -> bool
-
-	(** Check the syntactical inclusion of one constraint in another.
-	The linear term of both constraints must be syntactically equal.
-	x = 0 is included in x < 1, but not is 2 * x < 2. *)
-	val inclSyn: t -> t -> bool
-
-	(** [equal c1 c2] checks whether the subspace described by [c1] is equal to that of [c2]. *)
-	val equal: t -> t -> bool
-
-	(** [incl c1 c2] checks whether the subspace described by [c1] is included in that of [c2]. *)
-	val incl: t -> t -> bool
-
-	(** Add two constraints. *)
-	val add: t -> t -> t
-
-	(** Multiply a constraint by a constant.
-	If a negative constant is provided and the constraint is an inequality, then [BadMult] is raised. *)
-	val mulc: Vec.Coeff.t -> t -> t
-
-	(** Tell what can be infered on a constraint on its own.  See [prop_t]. *)
+	(** Tells what can be infered on a constraint on its own.
+        See {!type:prop_t} *)
 	val tellProp: t -> prop_t
 
-	(** Build the set of variables which appear with non-zero coefficients in the constraints. *)
+	(** Builds the set of variables which appear with non-zero coefficients in the constraints. *)
 	val getVars: t list -> Vec.V.Set.t
 
-	(** [getCoefsFor mx l] gathers the "coefficient" of [mx] in the constraints
-	in [l]. If [mx] is [None] then the constants are gathered. If [mx] is
-	[Some x], the coefficients of variable [x] are gathered. The order of the
-	numbers in the returned list matches that of the constraints in [l]. *)
+	(** [getCoefsFor mx l] gathers the "coefficient" of [mx] in the constraints in [l].
+        If [mx] is [None] then the constants are gathered.
+        If [mx] is [Some x], the coefficients of variable [x] are gathered.
+        The order of the numbers in the returned list matches that of the constraints in [l]. *)
 	val getCoefsFor : Vec.V.t option -> t list -> Vec.Coeff.t list
-
-	(** Syntaxic comparison *)
-	val cmp : t -> t -> int
-
-	(** [eval c x] checks that the given point [x] satisfies the constraint [c]. *)
-	val eval: t -> Vec.t -> bool
-
-	(** [eval' c point] computes [a.point - b], where [c : ax cmp b]. *)
-	val eval': t -> Vec.t -> Vec.Coeff.t
 
 	(** [satisfy vec cstr] returns true if point [vec] satisfies constraint [cstr]. *)
 	val satisfy : Vec.t -> t -> bool
@@ -132,18 +156,33 @@ module type Type = sig
 	(** [saturate vec cstr] returns true if [vec] satisfies constraint [cstr] where [cstr.typ] has been replaced by {!const:cmpT.Eq}. *)
 	val saturate : Vec.t -> t -> bool
 
-	(** Rename fromX toY c *)
+    (** Evaluates a constraint on a point.
+        Computes [a.point - b], where [c : ax cmp b]. *)
+	val eval: t -> Vec.t -> Vec.Coeff.t
+
+	(** Renames a variable.
+        @param fromX the variable to rename
+        @param toY the new variable name
+        @param cstr the constraint *)
 	val rename : Vec.V.t -> Vec.V.t -> t -> t
 
+    (** Renames all variables of a constraint according to a renaming function
+        @param f the renaming function
+        @param vec the vector to rename *)
 	val rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
 
-	(** [change_variable x lin c cstr] proceeds to the change of variable [x = lin + c] in [cstr]. *)
+	(** [change_variable x lin c cstr] applies the change of variable [x = lin + c] in [cstr]. *)
 	val change_variable : Vec.V.t -> Vec.t -> Vec.Coeff.t -> t -> t
 
-	(** Returns a point that saturates the hyperplane defined by the given constraint. *)
+	(** @return a point that saturates the hyperplane defined by the given constraint. *)
 	val get_saturating_point : t -> Vec.t
 
     (** Returns the euclidian distance between the given point and the line defined by the constraint. *)
     val distance_point_cstr : Vec.t -> t -> Vec.Coeff.t
 
+    (**/*)
+	val plot : Vec.V.t list -> t -> string
+
+	val list_plot : t list -> string
+    (**/*)
 end

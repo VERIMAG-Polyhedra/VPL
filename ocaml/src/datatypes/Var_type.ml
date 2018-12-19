@@ -56,7 +56,15 @@ module type Type = sig
     (** @return the maximum of a given list of variables, w.r.t. {!val: cmp}. *)
 	val max : t list -> t
 
-	(** Depend on the kind of variables. See {!val:Positive.next} and {!val:Int.next}. *)
+	(** Depends on the module of variables.
+        {ul
+            {- For {!module:Var.Positive}, [next v] gives the path to the next variable in a breadth-first search in a tree.
+            Next of [... XO XH] is [... XI XH],
+            next of [... XO (XI XH)] is [... XI (XO XH)] and
+            next of [XI (XI XH)] is [XO (XO (XO XH))].
+            }
+            {- For {!module:Var.Int}, [next v] returns [v + 1]}
+        } *)
 	val next: t -> t
 
 	(**/**)

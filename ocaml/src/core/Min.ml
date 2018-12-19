@@ -279,9 +279,9 @@ module Make
 				try
 					let lp = LP.MapC.find cstr !mapLP in
 					let x_lp = LP.get_solution lp in
-					let eval'' = Cs.eval' cstr x''
-					and eval_lp = Cs.eval' cstr x_lp in
-					if Cs.Vec.Coeff.cmp (Cs.Vec.Coeff.abs eval_lp) (Cs.Vec.Coeff.abs eval'') < 0
+					let eval' = Cs.eval cstr x''
+					and eval_lp = Cs.eval cstr x_lp in
+					if Cs.Vec.Coeff.cmp (Cs.Vec.Coeff.abs eval_lp) (Cs.Vec.Coeff.abs eval') < 0
 					then !conv.csVec_Vec x_lp |> !conv.vec_VecInput
 					else x'
 				with Not_found -> x'

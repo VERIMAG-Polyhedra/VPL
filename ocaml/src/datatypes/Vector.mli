@@ -1,33 +1,60 @@
+(** Type fo vector values.
+
+A vector associates variables from {!modtype:Var.Type} to values from {!modtype:Scalar.Type}.
+A vector is either a {!type:Rtree.t} with variables {!type:Var.Positive.t} or a {!type:VarMap.t} with variables {!type:Var.Int.t}.
+*)
+
 open Vector_type
 
+(** Interface of vectors. *)
 module type Type = Type
 
+(** Module of vectors with rational coefficients. *)
 module Rat : sig
+
+    (** Module of vectors with rational coefficients and mapped with {!module:Rtree}. *)
     module Positive : Type with module Coeff = Scalar.Rat and module M = Rtree and module V = Var.Positive
 
+    (** Module of vectors with rational coefficients and mapped with {!module:VarMap}. *)
     module Int : Type with module Coeff = Scalar.Rat and module M = VarMap.VarMap(Var.Int) and module V = Var.Int
 end
 
+(** Module of vectors with float coefficients. *)
 module Float : sig
+
+    (** Module of vectors with float coefficients and mapped with {!module:Rtree}. *)
     module Positive : Type with module Coeff = Scalar.Float and module M = Rtree and module V = Var.Positive
 
+    (** Module of vectors with float coefficients and mapped with {!module:VarMap}. *)
     module Int : Type with module Coeff = Scalar.Float and module M = VarMap.VarMap(Var.Int) and module V = Var.Int
 end
 
+(** Module of vectors with symbolic error rational coefficients. *)
 module Symbolic : sig
+
+    (** Module of vectors with symbolic error rational coefficients and mapped with {!module:Rtree}. *)
     module Positive : Type with module Coeff = Scalar.Symbolic and module M = Rtree and module V = Var.Positive
 
+    (** Module of vectors with symbolic error rational coefficients and mapped with {!module:VarMap}. *)
     module Int : Type with module Coeff = Scalar.Symbolic and module M = VarMap.VarMap(Var.Int) and module V = Var.Int
 end
 
+(** Module of vectors with integer coefficients. *)
 module Int : sig
+
+    (** Module of vectors with integer coefficients and mapped with {!module:Rtree}. *)
     module Positive : Type with module Coeff = Scalar.Int and module M = Rtree and module V = Var.Positive
 
+    (** Module of vectors with integer coefficients and mapped with {!module:VarMap}. *)
     module Int : Type with module Coeff = Scalar.Int and module M = VarMap.VarMap(Var.Int) and module V = Var.Int
 end
 
+(** Module of vectors with machine integer coefficients. *)
 module MachineInt : sig
+
+    (** Module of vectors with machine integer coefficients and mapped with {!module:Rtree}. *)
     module Positive : Type with module Coeff = Scalar.MachineInt and module M = Rtree and module V = Var.Positive
 
+    (** Module of vectors with machine integer coefficients and mapped with {!module:VarMap}. *)
     module Int : Type with module Coeff = Scalar.MachineInt and module M = VarMap.VarMap(Var.Int) and module V = Var.Int
 end
