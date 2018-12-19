@@ -1,16 +1,35 @@
+(** Interface of vector types.*)
+
+(** Interface of vector types.
+
+A vector is a map associating variables to scalar coefficients.
+They are represented as sparse structures: only non-zero coefficients are stored
+in the map. *)
 module type Type = sig
+
+    (** A type of maps associating variables to values. *)
 	module M : VarMap.Type
+
+    (** The type of variables used by {!module:M}. *)
 	module V : Var.Type
+
+    (** A type of scalars. *)
 	module Coeff : Scalar.Type
+
+    (** Type of vectors associating variables to coefficients. *)
 	type t = Coeff.t M.t
 
+    (** Name of the module. *)
 	val name : string
 
 	(** A vector with coefficients all set to zero. *)
 	val nil: t
 
+    (** Conversion into string.
+        @param var_to_string a pretty-printer for variables. *)
 	val to_string : (V.t -> string) -> t -> string
 
+    (** Builds a vector from a list of pairs coefficient * variable.*)
 	val mk : (Coeff.t * V.t) list -> t
 
 	val toList : t -> (V.t * Coeff.t) list

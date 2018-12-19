@@ -1,6 +1,12 @@
+(** Interface of scalar types. *)
+
+(** Rouding type when converting into integers. *)
 type roundT = Up | Down
 
+(** Interface of scalar types. *)
 module type Type = sig
+
+    (** Type of scalar value *)
 	type t
 
 	(** Name of the scalar type. *)

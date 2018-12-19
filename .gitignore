@@ -27,6 +27,10 @@ ocaml/src/Wrapper.ml
 ocaml/_oasis
 test/Run_tests.byte
 
+ocaml/src/VPL_api.odocl
+ocaml/VPL_api.docdir
+ocaml/VPL_api.docdir/*
+
 test/*.native
 test/_build/*
 test/coq_extracted/*

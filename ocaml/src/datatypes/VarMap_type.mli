@@ -1,8 +1,9 @@
-(** Type of maps associating variables to values. *)
+(** Interface of maps associating variables to values. *)
 
 module type Type = sig
 	type 'n t
 
+    (** A module of variables *)
 	module V : Var.Type
 
 	(** Empty map. *)

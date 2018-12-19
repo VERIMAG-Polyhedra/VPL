@@ -1,17 +1,27 @@
-(** Most of the VPL modules are functors working with integer of positive variables. These two types of variables are defined here.
-VPl works only with positives in modules {!module:Splx}, {!module:Opt}, {!module:IneqSet} and {!module:Pol}.
-Even with {!module:Int}, variables are only strictly positive.
+(** Types of variables.
+
+{ul
+    {- {!module:Positive}: Positive integers represented as binary trees}
+    {- {!module:Int}: Positive integers representedas machine integers}
+    {- {!module:String}: String}
+}
+
+VPL main module {!module:Pol} works only with variables of type {!module:Positive},
+because the simplex algorithm (implemented in {!module:Splx}) deeply builds on
+the internal structure of positive variables.
 *)
 
-(** A value of type [t] identifies a variable and represents a path in a tree.
-[XH] is the end of a path, [XO] means "take the left branch" and [XI] means "take the right branch". *)
 
 open Var_type
 
+(** Interface of variables. *)
 module type Type = Type
 
-module Int : Type with type t = int
-
+(** Positive variables represent paths in a tree. *)
 module Positive : Type with type t = positive
 
+(** Positive variables represented as machine integers. *)
+module Int : Type with type t = int
+
+(** Variables represented as strings. *)
 module String : Type with type t = string

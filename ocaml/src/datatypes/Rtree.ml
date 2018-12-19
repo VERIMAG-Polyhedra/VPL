@@ -1,23 +1,24 @@
-(** This module is the basis of the VPL.
-The type [t] defined below is used in almost every module.
-It is an association table of variable identifiers (see {! V.t}) to some data. *)
+(** Module of radix trees.
+
+This module implements module type {!modtype:VarMap_type.Type}.
+@see "VarMap_type.mli" for details.*)
 
 module V = Var.Positive
 module VT = Var_type
 
+(** Type of radix trees.*)
 type 'n t =
-| Nil
-| Sub of ('n t * 'n * 'n t)
+| Nil (** Leaf *)
+| Sub of ('n t * 'n * 'n t) (** Left branch, value, right branch. *)
 
-type 'n rtree_t = 'n t
-
+(**/**)
 let empty = Nil
 
 let is_empty = function
 	| Nil -> true
 	| _ -> false
 
-let rec get (z: 'n) (rt: 'n rtree_t) (v: V.t) =
+let rec get (z: 'n) (rt: 'n t) (v: V.t) =
 	match rt with
 	| Nil -> z
 	| Sub (l, n, r) ->
@@ -26,8 +27,8 @@ let rec get (z: 'n) (rt: 'n rtree_t) (v: V.t) =
 		| VT.XO t -> get z l t
 		| VT.XI t -> get z r t
 
-let set (z: 'n) (rt0: 'n rtree_t) (v0: V.t) (n0: 'n) =
-	let rec _set rt v: 'n rtree_t =
+let set (z: 'n) (rt0: 'n t) (v0: V.t) (n0: 'n) =
+	let rec _set rt v: 'n t =
 		match rt, v with
 		| Nil, VT.XH -> Sub (Nil, n0, Nil)
 		| Sub (l, _, r), VT.XH -> Sub (l, n0, r)
@@ -40,7 +41,7 @@ let set (z: 'n) (rt0: 'n rtree_t) (v0: V.t) (n0: 'n) =
 
 let mk z l = List.fold_left (fun a (x, n) -> set z a x n) Nil l
 
-let map (f: 'n -> 'm) (rt0: 'n rtree_t) =
+let map (f: 'n -> 'm) (rt0: 'n t) =
 	let rec _map rt =
 		match rt with
 		| Nil -> Nil
@@ -48,8 +49,8 @@ let map (f: 'n -> 'm) (rt0: 'n rtree_t) =
 	in
 		_map rt0
 
-let map_cut (f: 'n -> 'm) (nul: 'm -> bool) (rt0: 'n rtree_t) =
-	let cut : 'm rtree_t -> 'm -> 'm rtree_t -> 'm rtree_t
+let map_cut (f: 'n -> 'm) (nul: 'm -> bool) (rt0: 'n t) =
+	let cut : 'm t -> 'm -> 'm t -> 'm t
 		= fun l m r ->
 		if nul m && l = Nil && r = Nil then
 			Nil
@@ -64,23 +65,23 @@ let map_cut (f: 'n -> 'm) (nul: 'm -> bool) (rt0: 'n rtree_t) =
 	_map rt0
 
 
-let rec fold_rec (f: V.t -> 'a -> 'n -> 'a) (a: 'a) (rt: 'n rtree_t) (v:V.t) : 'a =
+let rec fold_rec (f: V.t -> 'a -> 'n -> 'a) (a: 'a) (rt: 'n t) (v:V.t) : 'a =
 	match rt with
 	| Nil -> a
 	| Sub (l, n, r) -> fold_rec f (fold_rec f (f v a n) l (VT.XO v)) r (VT.XI v)
 
-let fold (f: V.t -> 'a -> 'n -> 'a) (a: 'a) (rt: 'n rtree_t): 'a =
+let fold (f: V.t -> 'a -> 'n -> 'a) (a: 'a) (rt: 'n t): 'a =
 	fold_rec f a rt VT.XH
 
-let rec fold2_rec (f: V.t -> 'a -> 'n -> 'm -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt2: 'm rtree_t) (v:V.t) : 'a =
+let rec fold2_rec (f: V.t -> 'a -> 'n -> 'm -> 'a) (a: 'a) (rt1: 'n t) (rt2: 'm t) (v:V.t) : 'a =
 	match rt1,rt2 with
 	| Nil,_ | _,Nil-> a
 	| Sub (l1, n, r1), Sub (l2,m,r2) -> fold2_rec f (fold2_rec f (f v a n m) l1 l2 (VT.XO v)) r1 r2 (VT.XI v)
 
-let fold2 (f: V.t -> 'a -> 'n -> 'm -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt2: 'm rtree_t): 'a =
+let fold2 (f: V.t -> 'a -> 'n -> 'm -> 'a) (a: 'a) (rt1: 'n t) (rt2: 'm t): 'a =
 	fold2_rec f a rt1 rt2 VT.XH
 
-let rec fold2_opt_rec (f: V.t -> 'a -> 'n option -> 'm option -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt2: 'm rtree_t) (v:V.t) : 'a =
+let rec fold2_opt_rec (f: V.t -> 'a -> 'n option -> 'm option -> 'a) (a: 'a) (rt1: 'n t) (rt2: 'm t) (v:V.t) : 'a =
 	match rt1,rt2 with
 	| Nil, Nil -> f v a None None
 	| Nil, Sub (l2,m,r2) ->
@@ -90,7 +91,7 @@ let rec fold2_opt_rec (f: V.t -> 'a -> 'n option -> 'm option -> 'a) (a: 'a) (rt
 	| Sub (l1, n, r1), Sub (l2,m,r2) ->
 	fold2_opt_rec f (fold2_opt_rec f (f v a (Some n) (Some m)) l1 l2 (VT.XO v)) r1 r2 (VT.XI v)
 
-let fold2_opt (f: V.t -> 'a -> 'n option -> 'm option -> 'a) (a: 'a) (rt1: 'n rtree_t) (rt2: 'm rtree_t): 'a =
+let fold2_opt (f: V.t -> 'a -> 'n option -> 'm option -> 'a) (a: 'a) (rt1: 'n t) (rt2: 'm t): 'a =
 	fold2_opt_rec f a rt1 rt2 VT.XH
 
 
@@ -275,7 +276,7 @@ let merge3 : (V.t -> 'a option -> 'b option -> 'c option -> 'res option) -> 'a t
 	= fun f r1 r2 r3 ->
 	merge3_rec VT.XH f r1 r2 r3
 
-let rec for_all2 : ('m option -> 'n option -> bool) -> 'm rtree_t -> 'n rtree_t -> bool
+let rec for_all2 : ('m option -> 'n option -> bool) -> 'm t -> 'n t -> bool
 	= fun f m n ->
 	match m,n with
 	| Nil, Nil -> f None None
@@ -286,7 +287,7 @@ let rec for_all2 : ('m option -> 'n option -> bool) -> 'm rtree_t -> 'n rtree_t 
 	| Sub (l1, m, r1), Sub (l2,n,r2) ->
 		(f (Some m) (Some n)) && (for_all2 f l1 l2) && (for_all2 f r1 r2)
 
-let rec equal : ('a -> 'a -> bool) -> 'a rtree_t -> 'a rtree_t -> bool
+let rec equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 	= fun cmp m1 m2 ->
 	match (m1,m2) with
 	| Nil, Nil -> true
@@ -294,7 +295,8 @@ let rec equal : ('a -> 'a -> bool) -> 'a rtree_t -> 'a rtree_t -> bool
 		cmp m n && (equal cmp l1 l2) && (equal cmp r1 r2)
 	| _,_ -> false
 
-let rec size : 'a option rtree_t -> int
+let rec size : 'a option t -> int
 	= function
 	| Nil -> 0
 	| Sub (l, m, r) -> (match m with Some _ -> 1 | None -> 0) + (size l) + (size r)
+(**/**)

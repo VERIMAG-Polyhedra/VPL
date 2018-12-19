@@ -29,4 +29,4 @@ Document VPL_api
   Type: ocamlbuild (0.4)
   BuildTools: ocamldoc, ocamlbuild
   XOCamlbuildPath: src
-  XOCamlbuildModules:  datatypes/Scalar, datatypes/Var, datatypes/VarMap, datatypes/Vector, datatypes/Cstr
+  XOCamlbuildModules:  datatypes/Scalar_type, datatypes/Scalar, datatypes/Var_type, datatypes/Var, datatypes/VarMap_type, datatypes/Rtree, datatypes/Vector, datatypes/Cstr
