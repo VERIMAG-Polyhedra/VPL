@@ -12,12 +12,14 @@ module CW = CWrappers
 (**
  * This functor builds a {!modtype:NCInterface.PolyhedronDomain} by instantiating operators in {!module:Pol} with the given factory.
  *)
-module MakePolyhedronDomain (F : Factory.Type) = struct
+module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
 
-    type cert = F.t
+    module F = FactoryMaker.Make(FM)
+
+    type cert = F.cert
 
 	type t =
-		| NonBot of F.t Pol.t
+		| NonBot of cert Pol.t
 		| Bottom of cert
 
 	exception Wrong_Certificate of string
@@ -121,7 +123,7 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
 			check (NonBot p')
 
 	(* TODO: lever une exception spécifique*)
-	let check_incl : F.t list -> t -> unit
+	let check_incl : cert list -> t -> unit
 		= fun rel -> function
 		| Bottom _ -> ()
 		| NonBot p ->
@@ -138,7 +140,7 @@ module MakePolyhedronDomain (F : Factory.Type) = struct
 			| Pol.Incl cert -> (check_incl cert (NonBot p2');true)
 			| Pol.NoIncl -> false
 
-	let check_bound : bool -> Vec.t -> Pol.bndT * F.t option -> Pol.bndT
+	let check_bound : bool -> Vec.t -> Pol.bndT * cert option -> Pol.bndT
 		= fun upper obj (bnd,cert) ->
         let error_string = if upper
             then "check_upper_bound"
@@ -259,24 +261,16 @@ let translate_cstr : Cs.t -> Vec.t -> Cs.t
 (** High level domain with ocaml verification of certificates. *)
 module NCVPL_Cstr = struct
 	module P = struct
-		include MakePolyhedronDomain (Factory.Cstr)
+		include MakePolyhedronDomain (FactoryMaker.Cstr)
 
 		(** Careful : addNLM is UNcertified. *)
 		let addNLM : t -> CP.t list -> t
 			= fun p cps ->
 			match p with
 			| Bottom _ -> bottom
-			| NonBot pol -> match Lin.addPolyM Factory.Cstr.factory pol cps with
+			| NonBot pol -> match Lin.addPolyM F.factory pol cps with
 				| None -> bottom
-				| Some pol' -> NonBot {
-					Pol.eqs = List.map
-						(fun (var, (cstr, _)) -> (var, Factory.Cstr.mkCons cstr))
-						(Pol.get_eqs pol');
-					Pol.ineqs = List.map
-						(fun (cstr, _) -> Factory.Cstr.mkCons cstr)
-						(Pol.get_ineqs pol');
-                    Pol.point = pol'.Pol.point;
-					}
+				| Some pol' -> NonBot (F.convert pol')
 
 	end
 	module I = NCInterface.Lift (P)
@@ -290,13 +284,13 @@ end
 (** High level domain with NO certificates. *)
 module NCVPL_Unit = struct
 	module P = struct
-		include MakePolyhedronDomain (Factory.Unit)
+		include MakePolyhedronDomain (FactoryMaker.Unit)
 
 		let addNLM : t -> CP.t list -> t
 			= fun p cps ->
 			match p with
 			| Bottom _ -> bottom
-			| NonBot pol -> match Lin.addPolyM Factory.Unit.factory pol cps with
+			| NonBot pol -> match Lin.addPolyM F.factory  pol cps with
 				| None -> bottom
 				| Some pol' -> NonBot pol'
 

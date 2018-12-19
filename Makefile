@@ -6,7 +6,7 @@ vpl: setup
 dev: setup_dev
 	$(MAKE) -C ocaml/
 
-doc:
+doc: setup
 	$(MAKE) -C ocaml/ doc
 
 setup:
@@ -25,7 +25,7 @@ clean: test_clean
 	$(MAKE) -C ocaml/ clean
 	$(MAKE) -C test/ clean
 	$(MAKE) oasis_clean
-	
+
 to_opam:
 	cd ocaml
 	oasis2opam --local
@@ -38,7 +38,7 @@ install:
 uninstall:
 	ocamlfind remove vpl
 
-check:
+check: vpl
 	$(MAKE) -C test/ check
 
 test_clean:

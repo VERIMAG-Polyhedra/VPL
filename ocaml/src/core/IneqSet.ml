@@ -59,7 +59,7 @@ let nil : 'c t = []
 let to_string: (V.t -> string) -> 'c t -> string
 = fun varPr s -> List.fold_left (fun str c -> str ^ (Cons.to_string varPr c) ^ "\n") "" s
 
-let to_string_ext: 'c Cert.t -> (V.t -> string) -> 'c t -> string
+let to_string_ext: 'c Factory.t -> (V.t -> string) -> 'c t -> string
 = fun factory varPr s ->
 	List.fold_left (fun str c -> str ^ (Cons.to_string_ext factory varPr c) ^ "\n") "" s
 
@@ -72,7 +72,7 @@ let equal s1 s2 =
 
 exception CertSyn
 
-let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
+let certSyn: 'c Factory.t -> 'c Cons.t -> Cs.t -> 'c
 	= fun factory (c1,cert1) c2 ->
 	let v1 = Cs.get_v c1 in
 	let v2 = Cs.get_v c2 in
@@ -87,24 +87,24 @@ let certSyn: 'c Cert.t -> 'c Cons.t -> Cs.t -> 'c
             if Cs.get_typ c2 = Cstr_type.Lt && Scalar.Rat.equal r Scalar.Rat.u && Scalar.Rat.equal cste Scalar.Rat.z
             then cert1
 			else if Scalar.Rat.lt cste Scalar.Rat.z
-			then factory.Cert.mul r cert1
+			then factory.Factory.mul r cert1
 			else
-                let cste_cert = factory.Cert.triv (Cs.get_typ c2) cste
+                let cste_cert = factory.Factory.triv (Cs.get_typ c2) cste
 				in
-				factory.Cert.mul r cert1
-				|> factory.Cert.add cste_cert
+				factory.Factory.mul r cert1
+				|> factory.Factory.add cste_cert
 		in
 		match Cs.get_typ c1, Cs.get_typ c2 with
-		| Cstr_type.Lt, Cstr_type.Le -> factory.Cert.to_le cert
+		| Cstr_type.Lt, Cstr_type.Le -> factory.Factory.to_le cert
 		| _,_ -> cert
 		end
 	| None -> Pervasives.raise CertSyn
 
-let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
+let synIncl : 'c1 Factory.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 	= fun factory es s c ->
 	match Cs.tellProp c with
 	| Cs.Trivial -> Trivial
-	| Cs.Contrad -> Empty (factory.Cert.top)
+	| Cs.Contrad -> Empty (factory.Factory.top)
 	| Cs.Nothing -> begin
 		let (cstr1, cons1) = EqSet.filter2 factory es c in
 		let cert1 = try certSyn factory cons1 c
@@ -116,13 +116,13 @@ let synIncl : 'c1 Cert.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 		| Cs.Nothing ->
 		try
 			let consI = List.find (fun (cstr2,_) -> Cs.incl cstr2 cstr1) s in
-			Implied (factory.Cert.add cert1 (certSyn factory consI cstr1))
+			Implied (factory.Factory.add cert1 (certSyn factory consI cstr1))
 		with Not_found ->
 			Check (cstr1,cert1)
 		end
 
 (* the coefficient whose id is -1 is the constraint to compute*)
-let mkCert : 'c Cert.t -> 'c Cons.t list -> Cs.t -> (int * Scalar.Rat.t) list -> 'c
+let mkCert : 'c Factory.t -> 'c Cons.t list -> Cs.t -> (int * Scalar.Rat.t) list -> 'c
 	= fun factory conss cstr combination ->
 	try
 		let a0 = List.assoc (-1) combination in
@@ -139,7 +139,7 @@ let mkCert : 'c Cert.t -> 'c Cons.t list -> Cs.t -> (int * Scalar.Rat.t) list ->
 	with
 		Not_found -> Pervasives.failwith "IneqSet.mkCert"
 
-let incl: 'c1 Cert.t -> V.t -> 'c1 EqSet.t -> 'c1 t ->  'c2 t -> 'c1 rel_t
+let incl: 'c1 Factory.t -> V.t -> 'c1 EqSet.t -> 'c1 t ->  'c2 t -> 'c1 rel_t
 	= fun factory nxt es s1 s2 ->
 	let rec _isIncl : 'c1 list -> Splx.t Splx.mayUnsatT option -> 'c2 t -> 'c1 rel_t
 		= fun certs optSx ->
@@ -161,7 +161,7 @@ let incl: 'c1 Cert.t -> V.t -> 'c1 EqSet.t -> 'c1 t ->  'c2 t -> 'c1 rel_t
 				| Splx.IsOk _ -> NoIncl
 				| Splx.IsUnsat w ->
 					let cert = mkCert factory s1 (Cons.get_c c1) w
-						|> factory.Cert.add (Cons.get_cert c1)
+						|> factory.Factory.add (Cons.get_cert c1)
 					in
 					_isIncl (cert::certs) (Some sx) t
 	in
@@ -173,7 +173,7 @@ type 'c satChkT = Sat of Splx.t | Unsat of 'c
 simplex object with a satisfied state if it is. If it is not satisfiable, then
 a linear combination of the input constraints is returned. [nvar] is used for
 fresh variable generation. *)
-let chkFeasibility: 'c Cert.t -> V.t -> 'c t -> 'c satChkT
+let chkFeasibility: 'c Factory.t -> V.t -> 'c t -> 'c satChkT
 = fun factory nvar s ->
 	let cs = List.mapi (fun i c -> (i, Cons.get_c c)) s in
 	match Splx.checkFromAdd (Splx.mk nvar cs) with
@@ -257,7 +257,7 @@ let trimSet : V.t -> 'c t -> 'c t
 	| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.trimSet"
 	| Splx.IsOk sx -> Pervasives.fst (trim s sx)
 
-let simpl: 'c Cert.t -> V.t -> 'c EqSet.t -> 'c t -> 'c simpl_t
+let simpl: 'c Factory.t -> V.t -> 'c EqSet.t -> 'c t -> 'c simpl_t
 	= fun factory nxt es s ->
 	let rec filter s1
 		= function
@@ -278,7 +278,7 @@ let simpl: 'c Cert.t -> V.t -> 'c EqSet.t -> 'c t -> 'c simpl_t
 (* XXX: À revoir?
 Cette fonction n'est utilisée que dans la projection?
 A priori, si synIncl renvoie Check c, c n'aura pas été réécrit car il vient d'une contrainte déjà présente dans le polyèdre.*)
-let synAdd : 'c Cert.t -> 'c EqSet.t -> 'c t -> 'c Cons.t -> 'c t
+let synAdd : 'c Factory.t -> 'c EqSet.t -> 'c t -> 'c Cons.t -> 'c t
 	= fun factory es s cons ->
 	match synIncl factory es s (Cons.get_c cons) with
 	| Trivial | Implied _ -> s
@@ -286,7 +286,7 @@ let synAdd : 'c Cert.t -> 'c EqSet.t -> 'c t -> 'c Cons.t -> 'c t
 	| Check _ ->
 		cons::(List.filter (fun c2 -> not (Cons.implies cons c2)) s)
 
-let subst: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t -> 'c Cons.t -> 'c t -> 'c t
+let subst: 'c Factory.t -> V.t -> 'c EqSet.t -> V.t -> 'c Cons.t -> 'c t -> 'c t
 	= fun factory nxt es x e s ->
 	let gen s c =
 		let c1 =
@@ -301,12 +301,12 @@ let subst: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t -> 'c Cons.t -> 'c t -> 'c t
 
 
 (* XXX: le new_horizon renvoyé devrait être la nouvelle next variable *)
-let pProj : 'c Cert.t -> V.t -> 'c t -> Flags.scalar -> 'c t
+let pProj : 'c Factory.t -> V.t -> 'c t -> Flags.scalar -> 'c t
 	= fun factory x s scalar_type ->
 	Proj.proj factory scalar_type [x] s
 		|> Pervasives.fst
 
-let fmElim: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t ->  'c t -> 'c t
+let fmElim: 'c Factory.t -> V.t -> 'c EqSet.t -> V.t ->  'c t -> 'c t
 	= fun factory nxt es x s ->
 	let (pos, z, neg) = List.fold_left (fun (p, z, n) c ->
 		match Scalar.Rat.cmpz (Vec.get (Cs.get_v (Cons.get_c c)) x) with
@@ -315,7 +315,7 @@ let fmElim: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t ->  'c t -> 'c t
 		| _ -> (p, z, c::n)) ([], [], []) s
 	in
 	let zs = List.rev z in
-	let add : 'c Cert.t -> 'c t -> 'c Cons.t -> 'c t
+	let add : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t
 	  = fun factory s c ->
 	  synAdd factory es s c
 	in
@@ -325,12 +325,12 @@ let fmElim: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t ->  'c t -> 'c t
     List.fold_left (apply factory) zs pos
 	|> trimSet nxt
 
-let pProjM : 'c Cert.t -> V.t list -> 'c t -> Flags.scalar -> 'c t
+let pProjM : 'c Factory.t -> V.t list -> 'c t -> Flags.scalar -> 'c t
 	= fun factory xs s scalar_type ->
 	Proj.proj factory scalar_type xs s
 		|> Pervasives.fst
 
-let fmElimM: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t option Rtree.t -> 'c t -> 'c t
+let fmElimM: 'c Factory.t -> V.t -> 'c EqSet.t -> V.t option Rtree.t -> 'c t -> 'c t
 = fun factory nxt es msk s ->
 	let rec elim s1 =
 		match pick msk s1 with
@@ -341,7 +341,7 @@ let fmElimM: 'c Cert.t -> V.t -> 'c EqSet.t -> V.t option Rtree.t -> 'c t -> 'c 
 	in
 	elim s
 
-let joinSetup_1: 'c2 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c1 t
+let joinSetup_1: 'c2 Factory.t -> V.t -> V.t option Rtree.t -> V.t -> 'c1 t
 	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory2 nxt relocTbl alpha s ->
 	let apply (nxt1, relocTbl1, s1) c =
@@ -350,7 +350,7 @@ let joinSetup_1: 'c2 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c1 t
 	in
 	List.fold_left apply (nxt, relocTbl, nil) s
 
-let joinSetup_2: 'c1 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c2 t
+let joinSetup_2: 'c1 Factory.t -> V.t -> V.t option Rtree.t -> V.t -> 'c2 t
 	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory1 nxt relocTbl alpha s ->
 	let apply (nxt1, relocTbl1, s1) c =
@@ -359,7 +359,7 @@ let joinSetup_2: 'c1 Cert.t -> V.t -> V.t option Rtree.t -> V.t -> 'c2 t
 	in
 	List.fold_left apply (nxt, relocTbl, nil) s
 
-let minkowskiSetup_1: 'c2 Cert.t -> V.t -> V.t option Rtree.t -> 'c1 t
+let minkowskiSetup_1: 'c2 Factory.t -> V.t -> V.t option Rtree.t -> 'c1 t
 	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory2 nxt relocTbl s ->
 	let apply (nxt1, relocTbl1, s1) c =
@@ -368,7 +368,7 @@ let minkowskiSetup_1: 'c2 Cert.t -> V.t -> V.t option Rtree.t -> 'c1 t
 	in
 	List.fold_left apply (nxt, relocTbl, nil) s
 
-let minkowskiSetup_2: 'c1 Cert.t -> V.t -> V.t option Rtree.t -> 'c2 t
+let minkowskiSetup_2: 'c1 Factory.t -> V.t -> V.t option Rtree.t -> 'c2 t
 	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory1 nxt relocTbl s ->
 	let apply (nxt1, relocTbl1, s1) c =
@@ -518,13 +518,13 @@ let addM: V.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 (** Returns the partition into regions of the given polyhedron, according to the given normalization point.
     Certificates are lost during the process: frontiers of regions have no certificate.
 *)
-let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> (unit t * Vector.Symbolic.Positive.t) list
+let get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> ('c t * Vector.Symbolic.Positive.t) list
     = fun factory p point ->
     let regions = PoltoPLP.minimize_and_plp factory point p in
     List.map
         (fun (reg,cons) ->
             let ineqs = List.map
-                (fun cstr -> cstr, ())
+                (fun cstr -> cstr, factory.top)
                 ((Cons.get_c cons) :: PoltoPLP.PLP.Region.get_cstrs reg)
             and point = Vector.Symbolic.Positive.ofRat reg.PoltoPLP.PLP.Region.point
             in

@@ -865,6 +865,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 				lazy (get_regions' point p)
 				|> handle
 
+            module FactoryUnit = FactoryMaker.Make(FactoryMaker.Unit)
             (**
              * This version of get_regions can be used with a certified factory.
              *)
@@ -876,7 +877,8 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                             (p', toVar')
     					| _ -> Pervasives.failwith "get_regions"
     				in
-                    let regions = Pol.get_regions Factory.Unit.factory None rep in
+                    let regions = FactoryUnit.convert rep
+                        |> Pol.get_regions FactoryUnit.factory None in
                     List.map
                         (fun reg ->
                             let cond = Pol.get_cstr reg
@@ -914,7 +916,8 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                             (p', toVar')
     					| _ -> Pervasives.failwith "split_in_half"
     				in
-                    match Pol.split_in_half Factory.Unit.factory rep with
+                    let rep_unit = FactoryUnit.convert rep in
+                    match Pol.split_in_half FactoryUnit.factory rep_unit with
                     | None -> Pervasives.failwith "split_in_half: unbounded polyhedron"
                     | Some cstr ->
                         let cond1 = [Pol.Cs.rename_f toVar cstr]
@@ -973,7 +976,8 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                         (p', ofVar')
                     | _ -> Pervasives.failwith "get_vars"
                 in
-                Pol.spawn Factory.Unit.factory rep
+                FactoryUnit.convert rep
+                |> Pol.spawn FactoryUnit.factory
                 |> Vec.rename_f ofVar
 		end
 

@@ -7,7 +7,7 @@ module Cs = EqSet.Cs
 module Vec = Cs.Vec
 module Var = Vec.V
 
-(* [op] = type of operations in the factory see file Cert.ml.
+(* [op] = type of operations in the factory see file Factory.ml.
  (i.e. a Farkas operation).
 Here parameter 'c = the type of AST (representing a constraint)
 
@@ -50,7 +50,7 @@ val make_smart: unit -> input
 val make_invalid: unit -> input
 
 
-val factory: input -> dcstr Cert.t
+val factory: input -> dcstr Factory.t
 
 (* [import_pol i p] returns [p'] where [p'] has the same constraints than [p]
    but with fresh certificates marked as "hypotheses" in input.

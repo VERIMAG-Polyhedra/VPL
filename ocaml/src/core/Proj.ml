@@ -105,7 +105,7 @@ module Proj (Min : Min.Type) = struct
 	module PSplx = PLP.PSplx
 	module Naming = PLP.Naming
 	(*
-	let rec removeTrivAndDups : (Cs.t * Cons.Cert.frag_t) list -> (Cs.t * Cons.Cert.frag_t) list
+	let rec removeTrivAndDups : (Cs.t * Cons.Factory.frag_t) list -> (Cs.t * Cons.Factory.frag_t) list
 	  = function
 	  | [] -> []
 	  | (c, f) :: l ->
@@ -144,7 +144,7 @@ module Proj (Min : Min.Type) = struct
 	  }
 
 	(* XXX: Is it necessary to add the trivial constraint at the end? *)
-	let projToTab : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> PSplx.t
+	let projToTab : 'c Factory.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> PSplx.t
 		= fun factory flags xs l ->
 		if !Flags.sum_lambda_1
 		then print_endline "Caution : sum_lambda = true in the projection by PLP";
@@ -154,7 +154,7 @@ module Proj (Min : Min.Type) = struct
 		let params = Cs.Vec.V.Set.diff bndSet projSet |> Cs.Vec.V.Set.elements in
 		if flags.withTrivial
 		then
-			let l' = l @ [(Cs.le [] Scalar.Rat.u, factory.Cert.triv Cstr_type.Le Scalar.Rat.u)] in
+			let l' = l @ [(Cs.le [] Scalar.Rat.u, factory.Factory.triv Cstr_type.Le Scalar.Rat.u)] in
 			let cstrs' = cstrs @ [Cs.le [] Scalar.Rat.u] in
             PSplx.mk
                 (Build.buildObj flags.withCst params cstrs')
@@ -178,10 +178,10 @@ module Proj (Min : Min.Type) = struct
                     |> Naming.mkVar (List.mapi (fun i _ -> varEncode i) l))
 
 	module type Type = sig
-		val proj : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+		val proj : 'c Factory.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
 	end
 
-	let exec : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+	let exec : 'c Factory.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
 	  = let rec rmTrivAndDups : 'c Cons.t list -> 'c Cons.t list
 			= function
 			| [] -> []
@@ -210,7 +210,7 @@ module Proj (Min : Min.Type) = struct
 			Debug.log DebugTypes.Title (lazy "Result has been built from regions");
 			(sols, regions)
 		in
-		let explore : 'c Cert.t -> projFlagsT -> Objective.pivotStrgyT -> PSplx.t -> 'c PLP.mapVar_t -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+		let explore : 'c Factory.t -> projFlagsT -> Objective.pivotStrgyT -> PSplx.t -> 'c PLP.mapVar_t -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
 			= fun factory _ strgy tab map ->
 			let config = {PLP.std_config with
 				PLP.reg_t = (if !Flags.sum_lambda_1 then PLP.NCone else PLP.Cone);
@@ -240,12 +240,12 @@ module Proj (Min : Min.Type) = struct
             (*check cs l (tab.PSplx.names);*)
             (l,regs)
 
-	let proj : 'c Cert.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+	let proj : 'c Factory.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
   		= fun factory flags xs ineqs ->
   		Debug.log DebugTypes.Title (lazy "Building Projection");
   		exec factory flags xs ineqs
 
-  	let projDefault : 'c Cert.t -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+  	let projDefault : 'c Factory.t -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
   		= fun factory xs ineqs ->
   		Debug.log DebugTypes.Title (lazy "Building Default Projection");
   		exec factory projFlagsDflt xs ineqs
@@ -284,7 +284,7 @@ module Heuristic = struct
 	module Float = Proj(Min.Heuristic(Vector.Float.Positive))
 end
 
-let proj : 'c Cert.t -> Flags.scalar -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+let proj : 'c Factory.t -> Flags.scalar -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
   		= fun factory scalar xs ineqs ->
   		Debug.log DebugTypes.Title (lazy "Building Projection");
   		match !Flags.min with

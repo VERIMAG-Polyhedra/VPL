@@ -4,21 +4,21 @@ module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
 module V = Vec.V
 
-let factory : Cs.t Cert.t = {
-	Cert.name = "Cstr";
-	Cert.top = (Cs.mk Cstr_type.Eq [] Scalar.Rat.z);
-	Cert.triv = (fun cmp n -> Cs.mk cmp [] n);
-	Cert.add = Cs.add;
-	Cert.mul = Cs.mulc;
-	Cert.to_le = (fun c -> {c with Cs.typ = Cstr_type.Le});
-	Cert.merge = (fun c1 c2 ->
+let factory : Cs.t Factory.t = {
+	Factory.name = "Cstr";
+	Factory.top = (Cs.mk Cstr_type.Eq [] Scalar.Rat.z);
+	Factory.triv = (fun cmp n -> Cs.mk cmp [] n);
+	Factory.add = Cs.add;
+	Factory.mul = Cs.mulc;
+	Factory.to_le = (fun c -> {c with Cs.typ = Cstr_type.Le});
+	Factory.merge = (fun c1 c2 ->
 		let c1' = {c1 with Cs.typ = Cstr_type.Eq}
 		and c2' = {c2 with Cs.typ = Cstr_type.Eq} in
 		if Cs.equal c1' c2'
 		then c1'
 		else failwith "merge");
-	Cert.to_string = Cs.to_string Cs.Vec.V.to_string;
-	Cert.rename = Cs.rename;
+	Factory.to_string = Cs.to_string Cs.Vec.V.to_string;
+	Factory.rename = Cs.rename;
 }
 
 let x = V.fromInt 1
@@ -58,9 +58,9 @@ let optxpr =
 let mkN = List.map (fun (i, n) -> (i, Scalar.Rat.of_int n))
 *)
 let propPr = function
-	| IneqSet.Empty f -> Printf.sprintf "Empty: %s" (factory.Cert.to_string f)
+	| IneqSet.Empty f -> Printf.sprintf "Empty: %s" (factory.Factory.to_string f)
 	| IneqSet.Trivial -> "Trivial"
-	| IneqSet.Implied c -> Printf.sprintf "Implied %s" (factory.Cert.to_string c)
+	| IneqSet.Implied c -> Printf.sprintf "Implied %s" (factory.Factory.to_string c)
 	| IneqSet.Check c -> Printf.sprintf "Check: %s" (Cons.to_string_ext factory varPr c)
 
 let mkCons : Cs.t -> Cs.t Cons.t

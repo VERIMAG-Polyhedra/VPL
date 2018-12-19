@@ -117,15 +117,15 @@ let pmake_dcstr (i: input) (def: dcstr op) : dcstr =
   r
 
 let profiling_factory i = {
-  Cert.name = "ASTCert Profiling Factory";
-  Cert.top = top;
-  Cert.triv = (fun t n -> pmake_dcstr i (Triv (t,n)));
-  Cert.add = (fun c1 c2 -> pmake_dcstr i (Add (c1,c2)));
-  Cert.mul = (fun n c -> pmake_dcstr i (Mul (n,c)));
-  Cert.merge = (fun c1 c2 -> pmake_dcstr i (Merge (c1,c2)));
-  Cert.to_le = (fun c -> pmake_dcstr i (To_le c));
-  Cert.to_string = (fun _ -> failwith "ASTCert LCF: to_string not yet implemented");
-  Cert.rename = (fun _ -> failwith "No rename in ASTCert LCF")
+  Factory.name = "ASTCert Profiling Factory";
+  Factory.top = top;
+  Factory.triv = (fun t n -> pmake_dcstr i (Triv (t,n)));
+  Factory.add = (fun c1 c2 -> pmake_dcstr i (Add (c1,c2)));
+  Factory.mul = (fun n c -> pmake_dcstr i (Mul (n,c)));
+  Factory.merge = (fun c1 c2 -> pmake_dcstr i (Merge (c1,c2)));
+  Factory.to_le = (fun c -> pmake_dcstr i (To_le c));
+  Factory.to_string = (fun _ -> failwith "ASTCert LCF: to_string not yet implemented");
+  Factory.rename = (fun _ -> failwith "No rename in ASTCert LCF")
 }
 
 let basic_mul n c =
@@ -169,15 +169,15 @@ let smart_merge c1 c2 =
   | _, _ -> make_dcstr (Merge(c1, c2))
 
 let smart_factory = {
-  Cert.name = "ASTCert Smart Factory";
-  Cert.top = top;
-  Cert.triv = (fun t n -> make_dcstr (Triv (t,n)));
-  Cert.add = smart_add;
-  Cert.mul = smart_mul;
-  Cert.merge = smart_merge;
-  Cert.to_le = (fun c -> make_dcstr (To_le c));
-  Cert.to_string = (fun _ -> failwith "ASTCert LCF: to_string not yet implemented");
-  Cert.rename = (fun _ -> failwith "No rename in ASTCert LCF")
+  Factory.name = "ASTCert Smart Factory";
+  Factory.top = top;
+  Factory.triv = (fun t n -> make_dcstr (Triv (t,n)));
+  Factory.add = smart_add;
+  Factory.mul = smart_mul;
+  Factory.merge = smart_merge;
+  Factory.to_le = (fun c -> make_dcstr (To_le c));
+  Factory.to_string = (fun _ -> failwith "ASTCert LCF: to_string not yet implemented");
+  Factory.rename = (fun _ -> failwith "No rename in ASTCert LCF")
 }
 
 let factory i =

@@ -35,9 +35,9 @@ module type Type = sig
 
 	type t
 
-	val get_cert_default : 'c Cert.t -> 'c mapVar_t -> PSplx.t -> 'c
+	val get_cert_default : 'c Factory.t -> 'c mapVar_t -> PSplx.t -> 'c
 
-	val get_no_cert : 'c Cert.t -> PSplx.t -> 'c
+	val get_no_cert : 'c Factory.t -> PSplx.t -> 'c
 
     type config = {
 		add_region : Region.t option -> Region.t -> ExplorationPoint.t -> t -> t;
@@ -61,7 +61,7 @@ module PLP(Minimization : Min.Type) = struct
 	module Minimization = Minimization
 	include PLPDistrib.PLP(Minimization)
 
-	let get_cert_default : 'c Cert.t -> 'c mapVar_t -> PSplx.t -> 'c
+	let get_cert_default : 'c Factory.t -> 'c mapVar_t -> PSplx.t -> 'c
 		= fun factory map sx ->
 		let basisValue = PSplx.getCurVal sx in
 		List.fold_left
@@ -74,11 +74,11 @@ module PLP(Minimization : Min.Type) = struct
 					with Not_found -> l)
 			[]
 			basisValue
-		|> Cert.linear_combination factory
+		|> Factory.linear_combination factory
 
-	let get_no_cert : 'c Cert.t -> PSplx.t -> 'c
+	let get_no_cert : 'c Factory.t -> PSplx.t -> 'c
 		= fun factory _ ->
-		factory.Cert.top
+		factory.Factory.top
 
 	let standard : Region.t option -> Region.t -> ExplorationPoint.t -> t -> t
 			= fun origin_reg reg point plp ->

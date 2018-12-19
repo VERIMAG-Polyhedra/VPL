@@ -4,11 +4,11 @@ module Debug = Join.Debug
 
 module type Type = sig
 
-	val join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
+	val join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
 end
 
 (** [keep factory next cons conss] returns either a {!val:Cons.t} that proves that [conss] is included in [cons], or None. *)
-let keep : 'a Cert.t -> Cs.Vec.V.t -> 'b Cons.t -> 'a Cons.t list -> 'a Cons.t option
+let keep : 'a Factory.t -> Cs.Vec.V.t -> 'b Cons.t -> 'a Cons.t list -> 'a Cons.t option
     = fun factory next cons conss ->
     match IneqSet.incl factory next [] conss [cons] with
     | IneqSet.NoIncl -> None
@@ -16,7 +16,7 @@ let keep : 'a Cert.t -> Cs.Vec.V.t -> 'b Cons.t -> 'a Cons.t list -> 'a Cons.t o
     | _ -> Pervasives.failwith "PoltoPLP:discard_constraints:keep"
 
 (* int list -> list of discarded regions indices *)
-let discard_constraints : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 regionsT -> 'c2 regionsT
+let discard_constraints : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 regionsT -> 'c2 regionsT
     -> ('c1 regionsT * 'c2 regionsT) * ('c1 Cons.t list * 'c2 Cons.t list) * PLP.ExplorationPoint.t list * int list
     = fun factory1 factory2 regs1 regs2 ->
     let conss1 = List.split regs1.mapping |> Pervasives.snd
@@ -58,29 +58,29 @@ let explorationPointsFromCstrs : (Cs.t * Vec.t) list -> Cs.t list -> PLP.Explora
     List.map (fun cs -> PLP.ExplorationPoint.Point (List.assoc cs l)) cstrs
 *)
 
-let get_join_cert : 'c1 Cert.t -> 'c2 Cert.t ->  'c1 regionsT  -> 'c2 regionsT
+let get_join_cert : 'c1 Factory.t -> 'c2 Factory.t ->  'c1 regionsT  -> 'c2 regionsT
     -> (('c1,'c2) certT) PLP.mapVar_t -> (PLP.Region.t * (('c1,'c2) certT) Cons.t) list
     -> 'c1 Cons.t list * 'c2 Cons.t list
-    = let get_cert_p1 : 'c1 Cert.t -> (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> 'c1
+    = let get_cert_p1 : 'c1 Factory.t -> (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> 'c1
         = fun factory1 basisValue map ->
         List.fold_left
             (fun r_cert (col,q) -> try
                 match PLP.MapV.find col map with
-                | (_, C1 cert) -> factory1.Cert.add r_cert (factory1.Cert.mul q cert)
-                | (_,_) -> Pervasives.failwith "Join.get_join_cert.get_cert_p1"
+                | (_, C1 cert) -> factory1.Factory.add r_cert (factory1.Factory.mul q cert)
+                | (_,_) -> Pervasives.failwith "Join.get_join_Factory.get_cert_p1"
                 with Not_found -> r_cert)
-            factory1.Cert.top
+            factory1.Factory.top
             basisValue
     in
-    let get_cert_p2 : 'c2 Cert.t -> (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> 'c2
+    let get_cert_p2 : 'c2 Factory.t -> (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> 'c2
         = fun factory2 basisValue map ->
         List.fold_left
             (fun r_cert (col,q) -> try
                 match PLP.MapV.find col map with
-                | (_, C2 cert) -> factory2.Cert.add r_cert (factory2.Cert.mul q cert)
-                | (_,_) -> Pervasives.failwith "Join.get_join_cert.get_cert_p1"
+                | (_, C2 cert) -> factory2.Factory.add r_cert (factory2.Factory.mul q cert)
+                | (_,_) -> Pervasives.failwith "Join.get_join_Factory.get_cert_p1"
                 with Not_found -> r_cert)
-            factory2.Cert.top
+            factory2.Factory.top
             basisValue
     in
     let is_strict : (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> bool
@@ -115,12 +115,12 @@ let get_join_cert : 'c1 Cert.t -> 'c2 Cert.t ->  'c1 regionsT  -> 'c2 regionsT
                         ((cstr', get_cert_p1 factory1 arg1 map),
                          (cstr', get_cert_p2 factory2 arg2 map))
                     else (* TODO: dans ce cas, il faut élargir les deux certificats*)
-                        ((cstr, get_cert_p1 factory1 arg1 map |> factory1.Cert.to_le),
-                         (cstr, get_cert_p2 factory2 arg2 map |> factory2.Cert.to_le)))
+                        ((cstr, get_cert_p1 factory1 arg1 map |> factory1.Factory.to_le),
+                         (cstr, get_cert_p2 factory2 arg2 map |> factory2.Factory.to_le)))
         sols
     |> List.split
 
-let make_certs : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 regionsT -> 'c2 regionsT -> 'c1 regionsT -> 'c2 regionsT
+let make_certs : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 regionsT -> 'c2 regionsT -> 'c1 regionsT -> 'c2 regionsT
     -> (('c1,'c2) certT) PLP.mapVar_t -> (PLP.Region.t * (('c1,'c2) certT) Cons.t) list option
     -> 'c1 Cons.t list * 'c2 Cons.t list
     = fun factory1 factory2 regs1 regs2 p1 p2 map ->
@@ -210,7 +210,7 @@ let update_frontiers : int list -> 'c1 regionsT -> 'c2 regionsT -> ('c1 regionsT
     (update id_list regs1, update id_list regs2)
 
 (** Both polyhedra are assumed to be normalized on the same point *)
-let join' : 'c1 Cert.t -> 'c2 Cert.t -> Vec.V.t option -> 'c1 regionsT -> 'c2 regionsT -> 'c1 Cons.t list * 'c2 Cons.t list
+let join' : 'c1 Factory.t -> 'c2 Factory.t -> Vec.V.t option -> 'c1 regionsT -> 'c2 regionsT -> 'c1 Cons.t list * 'c2 Cons.t list
     = fun factory1 factory2 epsilon_opt p1 p2 ->
     let conss1 = List.split p1.mapping |> Pervasives.snd
     and conss2 = List.split p2.mapping |> Pervasives.snd
@@ -253,7 +253,7 @@ let join' : 'c1 Cert.t -> 'c2 Cert.t -> Vec.V.t option -> 'c1 regionsT -> 'c2 re
 
 (** Returns the convex hull of the given inequalities (no equality should be given).
     Computes the region partitioning of both polyhedra. *)
-let join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Vector.Symbolic.Positive.t -> Vector.Symbolic.Positive.t
+let join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.Positive.t -> Vector.Symbolic.Positive.t
     -> 'c1 Cons.t list -> 'c2 Cons.t list
     -> 'c1 Cons.t list * 'c2 Cons.t list
     = fun factory1 factory2 epsilon_opt init_point1 init_point2 p1 p2 ->

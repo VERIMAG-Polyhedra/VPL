@@ -128,7 +128,7 @@ class ['c] t =
 		poly_rep <- cl;
 		vars <- variables
 
-	method addM : 'c Cert.t -> (CP.t * 'c) list -> 'c t
+	method addM : 'c Factory.t -> (CP.t * 'c) list -> 'c t
 		= fun factory l ->
 		let ph' = new t in
 		begin
@@ -146,7 +146,7 @@ class ['c] t =
 		end;
 		ph'
 
-	method equal : 'c Cert.t -> 'c2 Cert.t -> 'c2 t -> bool
+	method equal : 'c Factory.t -> 'c2 Factory.t -> 'c2 t -> bool
 		= fun factory1 factory2 p' ->
 		match (vpl_rep,p'#get_vpl_rep) with
 		| (None,None) -> true

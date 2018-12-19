@@ -162,29 +162,29 @@ let debug = false
 
 type 'c pedraCert = (unit Pol.t, CstrC.Cstr.t, 'c) CstrLCF.pedraInput
 
-let cstrLCF_from_frontend: (CstrC.Cstr.t, 'c) CstrLCF.cstrLCF -> 'c Cert.t
+let cstrLCF_from_frontend: (CstrC.Cstr.t, 'c) CstrLCF.cstrLCF -> 'c Factory.t
 = fun lcf ->
-  { Cert.name = "LCF from frontend";
-    Cert.top = lcf.top;
-    Cert.triv = (fun t n -> lcf.triv (cToCmp t) (nToNumC n));
-    Cert.add = lcf.add;
-    Cert.mul = (fun n c -> lcf.mul (nToNumC n) c);
-    Cert.merge = lcf.merge;
-    Cert.to_le = lcf.to_le;
-    Cert.to_string = (fun c -> cstrCPr (lcf.export c)); (* TO IMPROVE ? *)
-    Cert.rename = (fun _ -> failwith "No rename in frontend's LCF")
+  { Factory.name = "LCF from frontend";
+    Factory.top = lcf.top;
+    Factory.triv = (fun t n -> lcf.triv (cToCmp t) (nToNumC n));
+    Factory.add = lcf.add;
+    Factory.mul = (fun n c -> lcf.mul (nToNumC n) c);
+    Factory.merge = lcf.merge;
+    Factory.to_le = lcf.to_le;
+    Factory.to_string = (fun c -> cstrCPr (lcf.export c)); (* TO IMPROVE ? *)
+    Factory.rename = (fun _ -> failwith "No rename in frontend's LCF")
   }
 
-let trivLCF: unit Cert.t
-= { Cert.name = "Trivial LCF";
-    Cert.top = ();
-    Cert.triv = (fun _ _ -> ());
-    Cert.add = (fun _ _ -> ());
-    Cert.mul = (fun _ _ -> ());
-    Cert.merge = (fun _ _ -> ());
-    Cert.to_le = (fun _ -> ());
-    Cert.to_string = (fun _ -> "");
-    Cert.rename = (fun _ _ _ -> ())
+let trivLCF: unit Factory.t
+= { Factory.name = "Trivial LCF";
+    Factory.top = ();
+    Factory.triv = (fun _ _ -> ());
+    Factory.add = (fun _ _ -> ());
+    Factory.mul = (fun _ _ -> ());
+    Factory.merge = (fun _ _ -> ());
+    Factory.to_le = (fun _ -> ());
+    Factory.to_string = (fun _ -> "");
+    Factory.rename = (fun _ _ _ -> ())
   }
 
 (*** IMPORT certificates into backend representation
@@ -197,9 +197,9 @@ let direct_import: (CstrC.Cstr.t, 'c) CstrLCF.cstrLCF -> ('c list) -> ('c Cons.t
   | c::l' -> direct_import lcf l' ((cToCstr (lcf.export c), c)::acc)
   in fun lcf l -> direct_import lcf l []
 
-let check_cstr_synchro: 'c Cert.t -> Cs.t -> 'c -> bool
+let check_cstr_synchro: 'c Factory.t -> Cs.t -> 'c -> bool
 = fun lcf c cert ->
-  let actual = lcf.Cert.to_string cert in
+  let actual = lcf.Factory.to_string cert in
   let expected = cstrCPr (cToCstrC c) in
   if actual <> expected then (
     Printf.printf "failed synchro: %s versus %s expected\n" actual expected;
@@ -208,7 +208,7 @@ let check_cstr_synchro: 'c Cert.t -> Cs.t -> 'c -> bool
     true
   )
 
-let rec ineqs_import: 'c Cert.t -> (unit Cons.t) list -> 'c list -> ('c Cons.t) list -> ('c Cons.t) list * ('c list)
+let rec ineqs_import: 'c Factory.t -> (unit Cons.t) list -> 'c list -> ('c Cons.t) list -> ('c Cons.t) list * ('c list)
 = fun lcf p l acc ->
   match p with
   | [] -> (acc, l)
@@ -220,7 +220,7 @@ let rec ineqs_import: 'c Cert.t -> (unit Cons.t) list -> 'c list -> ('c Cons.t) 
       assert (not debug || check_cstr_synchro lcf c cert);
       ineqs_import lcf p' l' ((c, cert)::acc)
 
-let rec eqs_import: 'c Cert.t -> ('a * unit Cons.t) list -> 'c list -> ('a * 'c Cons.t) list -> ('a * 'c Cons.t) list * ('c list)
+let rec eqs_import: 'c Factory.t -> ('a * unit Cons.t) list -> 'c list -> ('a * 'c Cons.t) list -> ('a * 'c Cons.t) list * ('c list)
 = fun lcf p l acc ->
   match p with
   | [] -> (acc, l)
@@ -232,7 +232,7 @@ let rec eqs_import: 'c Cert.t -> ('a * unit Cons.t) list -> 'c list -> ('a * 'c 
       assert (not debug || check_cstr_synchro lcf c cert);
       eqs_import lcf p' l' ((a, (c, cert))::acc)
 
-let import: 'c Cert.t -> unit Pol.t -> 'c list -> 'c Pol.t
+let import: 'c Factory.t -> unit Pol.t -> 'c list -> 'c Pol.t
 = fun lcf p l ->
   let (eqs, l0) = eqs_import lcf p.Pol.eqs l [] in
   let (ineqs, l1) = ineqs_import lcf p.Pol.ineqs l0 [] in

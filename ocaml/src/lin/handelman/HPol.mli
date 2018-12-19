@@ -5,9 +5,9 @@ class ['c] t : object
 	val mutable poly_rep : CP.t list
 	val mutable vars : Poly.V.t list
 	val mutable vpl_rep : 'c Pol.t option
-	method addM : 'c Cert.t -> (CP.t * 'c) list -> 'c t
+	method addM : 'c Factory.t -> (CP.t * 'c) list -> 'c t
 	method cstrInPol : CP.Cs.t -> bool
-	method equal : 'c Cert.t -> 'c Cert.t -> 'c t -> bool
+	method equal : 'c Factory.t -> 'c Factory.t -> 'c t -> bool
 	method get_cstr : unit -> CP.Cs.t list
 	method get_ineqs : unit -> CP.Cs.t list
 	method get_noneq_poly : CP.t list

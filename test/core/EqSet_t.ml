@@ -2,21 +2,21 @@ open Vpl
 
 module Cs = Cstr.Rat.Positive
 
-let factory : Cs.t Cert.t = {
-	Cert.name = "Cstr";
-	Cert.top = (Cs.mk Cstr_type.Eq [] Scalar.Rat.z);
-	Cert.triv = (fun cmp n -> Cs.mk cmp [] n);
-	Cert.add = Cs.add;
-	Cert.mul = Cs.mulc;
-	Cert.to_le = (fun c -> {c with Cs.typ = Cstr_type.Le});
-	Cert.merge = (fun c1 c2 ->
+let factory : Cs.t Factory.t = {
+	Factory.name = "Cstr";
+	Factory.top = (Cs.mk Cstr_type.Eq [] Scalar.Rat.z);
+	Factory.triv = (fun cmp n -> Cs.mk cmp [] n);
+	Factory.add = Cs.add;
+	Factory.mul = Cs.mulc;
+	Factory.to_le = (fun c -> {c with Cs.typ = Cstr_type.Le});
+	Factory.merge = (fun c1 c2 ->
 		let c1' = {c1 with Cs.typ = Cstr_type.Eq}
 		and c2' = {c2 with Cs.typ = Cstr_type.Eq} in
 		if Cs.equal c1' c2'
 		then c1'
 		else failwith "merge");
-	Cert.to_string = Cs.to_string Cs.Vec.V.to_string;
-	Cert.rename = Cs.rename;
+	Factory.to_string = Cs.to_string Cs.Vec.V.to_string;
+	Factory.rename = Cs.rename;
 }
 
 
@@ -126,7 +126,7 @@ let filterTs: Test.t
 		if Cs.equal cert1 cert then
 			Test.succeed state
 		else
-			let err = Printf.sprintf "expected: %s\nbut got: %s" (factory.Cert.to_string cert) (factory.Cert.to_string cert1) in
+			let err = Printf.sprintf "expected: %s\nbut got: %s" (factory.Factory.to_string cert) (factory.Factory.to_string cert1) in
 			Test.fail name err state
 	in
 	let tcs = [

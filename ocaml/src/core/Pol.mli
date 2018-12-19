@@ -70,8 +70,8 @@ val equalSyn: 'c1 t -> 'c2 t -> bool
 (** [mk l] builds the polyhedron representing the conjunction of constraints in [l].
 If the resulting polyhedron is empty (i.e. the conjunction is unsatisfiable),
 [None] is returned. *)
-val mk: 'c Cert.t -> 'c Cons.t list -> 'c t option
-val mkSub: 'c Cert.t -> Var.t -> 'c Cons.t list -> 'c t option
+val mk: 'c Factory.t -> 'c Cons.t list -> 'c t option
+val mkSub: 'c Factory.t -> Var.t -> 'c Cons.t list -> 'c t option
 
 (** A value of type [meetT] represents the result of an intersection of two
 sets of constraints [s1] and [s2]. Either this intersection is empty, or it is
@@ -85,78 +85,78 @@ type 'c meetT =
 	| Contrad of 'c
 
 (** Pretty-printer for values of type meetPr. *)
-val meetPr: 'c Cert.t -> (Var.t -> string) -> 'c meetT -> string
+val meetPr: 'c Factory.t -> (Var.t -> string) -> 'c meetT -> string
 
 (** Equality t*est for values of type meetT.
-Certificate equality is tested using [Cert.isEq] and
+Certificate equality is tested using [Factory.isEq] and
 polyhedron equality is test with [isEqSyn]. *)
 val meetEq: 'c meetT -> 'c meetT -> bool
 
 (** Intersect a polyhedron with a new constraint. *)
-val add: 'c Cert.t -> 'c t -> 'c Cons.t -> 'c meetT
-val addSub: 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t -> 'c meetT
+val add: 'c Factory.t -> 'c t -> 'c Cons.t -> 'c meetT
+val addSub: 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t -> 'c meetT
 
 (** Intersect a polyhedron with a list of new constraints. *)
-val addM: 'c Cert.t -> 'c t -> 'c Cons.t list -> 'c meetT
-val addMSub: 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
+val addM: 'c Factory.t -> 'c t -> 'c Cons.t list -> 'c meetT
+val addMSub: 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 
 (** Compute the intersection of two polyhedra. *)
-val meet: 'c Cert.t -> 'c t -> 'c t -> 'c meetT
-val meetSub: 'c Cert.t -> Var.t -> 'c t -> 'c t -> 'c meetT
+val meet: 'c Factory.t -> 'c t -> 'c t -> 'c meetT
+val meetSub: 'c Factory.t -> Var.t -> 'c t -> 'c t -> 'c meetT
 
 (** Forget all information about a given variable [v] in a polyhedron [p].
 The certificate proves that the result includes the geometric projection of the [p] with respect to [v].
 The certificate can be checked using function [check]. *)
-val project: 'c Cert.t -> 'c t -> Var.t -> 'c t
-val projectSub: 'c Cert.t -> Var.t -> 'c t -> Var.t -> 'c t
+val project: 'c Factory.t -> 'c t -> Var.t -> 'c t
+val projectSub: 'c Factory.t -> Var.t -> 'c t -> Var.t -> 'c t
 
 (** Forget all information about a set of variables.
 Although the result is identical to projecting the variables one by one,
 heuristic choices on the projection order make [projectM] more efficient. *)
-val projectM: 'c Cert.t -> 'c t -> Var.t list -> 'c t
-val projectMSub: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> 'c t
+val projectM: 'c Factory.t -> 'c t -> Var.t list -> 'c t
+val projectMSub: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
 
 (** [join p1 p2] computes the convex hull [p] of [p1] and [p2].
 The certificate provides the necessary arguments to show inclusion of [p1] and [p2] in [p]. *)
-val join: 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
-val joinSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+val join: 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+val joinSub: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 
 (** [minkowski p1 p2] computes the minkowski sum [p] of [p1] and [p2]. *)
-val minkowski: 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
-val minkowskiSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+val minkowski: 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+val minkowskiSub: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 
 (** Widening operator.
 The result includes the two operands, although no certificate is created.
 Note that [widen p1 p2] relies on [p1] being included in [p2]. *)
-val widen: 'c Cert.t -> 'c t -> 'c t -> 'c t
+val widen: 'c Factory.t -> 'c t -> 'c t -> 'c t
 
 (** [incl factory p1 p2] checks the (geometrical) inclusion of [p1] in [p2]. *)
-val incl: 'c1 Cert.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
-val inclSub: 'c1 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
+val incl: 'c1 Factory.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
+val inclSub: 'c1 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 
 (** [let (itv, lProof, uProof) = itvize p v] computes the bounds imposed on the linear form [v]
 by the constraints of the polyhedron [p].
 For each bound (upper and lower), an inclusion certificate is returned if it is finite,
 allowing the prove that the returned interval is indeed correct.
 [lProof] and [uProof] are the certificates for the lower and upper bounds, respectively. *)
-val itvize: 'c Cert.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
-val itvizeSub: 'c Cert.t -> Var.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
+val itvize: 'c Factory.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
+val itvizeSub: 'c Factory.t -> Var.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
 
 (** [getUpperBound p v] computes the upper bound on the linear form [v]
 implied by polyhedron [p].  If the bound is finite, a certificate is
 provided. *)
-val getUpperBound : 'c Cert.t -> 'c t -> Vec.t -> bndT * 'c option
-val getUpperBoundSub : 'c Cert.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
+val getUpperBound : 'c Factory.t -> 'c t -> Vec.t -> bndT * 'c option
+val getUpperBoundSub : 'c Factory.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
 
 (** [getLowerBound p v] computes the lower bound on the linear form [v]
 implied by polyhedron [p].  If the bound is finite, a certificate is
 provided. *)
-val getLowerBound : 'c Cert.t -> 'c t -> Vec.t -> bndT * 'c option
-val getLowerBoundSub : 'c Cert.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
+val getLowerBound : 'c Factory.t -> 'c t -> Vec.t -> bndT * 'c option
+val getLowerBoundSub : 'c Factory.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
 
 (** [rename x y p] renames variable [x] to variable [y] in polyhedron [p].
 [y] must be fresh in [p]. *)
-val rename: 'c Cert.t -> Var.t -> Var.t -> 'c t -> 'c t
+val rename: 'c Factory.t -> Var.t -> Var.t -> 'c t -> 'c t
 
 (** This function checks that the given polyhedron satisfies the following
 invariants. It returns [(true, "")] if it does and [(false, reason)] if not,
@@ -169,14 +169,14 @@ where [reason] lists the checks that have failed.
  {- a defined variable does not appear in the equalities before it}}
 - invariants on the set of inequalities {ul
  {- none of the variables defined by an equality appears in an inequality}} *)
-val invChk: 'c Cert.t -> 'c t -> bool * string
+val invChk: 'c Factory.t -> 'c t -> bool * string
 
 (** Pretty-printer for a polyhedron. *)
 val to_string: (Var.t -> string) -> 'c t -> string
-val to_string_ext: 'c Cert.t -> (Var.t -> string) -> 'c t -> string
+val to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 val to_string_itv: (Var.t -> string) -> Vec.t -> itvT -> string
 val to_string_raw: 'c t -> string
-val to_string_ext_raw: 'c Cert.t -> 'c t -> string
+val to_string_ext_raw: 'c Factory.t -> 'c t -> string
 val to_string_itv_raw: Vec.t -> itvT -> string
 
 (** For Sage plot. *)
@@ -197,27 +197,27 @@ val get_cstr_ineqs : 'c t -> Cs.t list
 (*
 val inter : 'c t -> 'c t -> 'c t option
 *)
-val equal : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> bool
+val equal : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> bool
 
 val to_unit : 'c t -> unit t
 
 (** Returns the partition into regions of the given polyhedron, according to the given normalization point.
     Certificates are lost during the process: frontiers of regions have no certificate.
 *)
-val get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
+val get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> 'c t list
 
 (** Returns the partition into regions of the given polyhedron.
     The normalization point is chosen using {!val:Opt.get_asg}.
     Certificates are lost during the process: frontiers of regions have no certificate.
 *)
-val get_regions : 'c Cert.t -> Vector.Rat.Positive.t option -> 'c t -> unit t list
+val get_regions : 'c Factory.t -> Vector.Rat.Positive.t option -> 'c t -> 'c t list
 
 (** Returns an estimation of the size of the polyhedron. *)
 val size : 'c t -> Scalar.Rat.t option
 
 (** Returns the constraint on which the polyhedron must be split, if there is one.
     This constraint splits the polyhedron in two halfs along the longuest axis-aligned interval. *)
-val split_in_half : 'c Cert.t -> 'c t -> Cs.t option
+val split_in_half : 'c Factory.t -> 'c t -> Cs.t option
 
 (** [set_point point p] returns the polyhedron [p] with its interior point set to [p].
     @raise Invalid_argument if [point] is not inside [p]'s interior. *)
@@ -230,4 +230,4 @@ val satisfy : 'c t -> Vec.t -> bool
 (**
  * Randomly generates a point in the polyhedron.
  *)
-val spawn : 'c Cert.t -> 'c t -> Vec.t
+val spawn : 'c Factory.t -> 'c t -> Vec.t

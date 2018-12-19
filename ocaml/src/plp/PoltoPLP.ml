@@ -100,7 +100,7 @@ let regions_to_string : 'c regionsT -> string
 	= fun regs ->
 	regions_to_string' regs.mapping
 
-let to_plp : 'c Cert.t -> Vec.t -> ('c Cons.t * Vec.t) list -> 'c regionsT
+let to_plp : 'c Factory.t -> Vec.t -> ('c Cons.t * Vec.t) list -> 'c regionsT
 	= let build_map : 'c Cons.t list -> 'c PLP.mapVar_t
 		= fun conss ->
 		Misc.fold_left_i (fun i map cons -> PLP.MapV.add i cons map)
@@ -117,7 +117,7 @@ let to_plp : 'c Cert.t -> Vec.t -> ('c Cons.t * Vec.t) list -> 'c regionsT
 	| None -> Pervasives.failwith "PoltoPLP.to_plp"
 	| Some regs -> {mapping = regs ; interior_point = x0}
 
-let minimize_and_plp : 'c Cert.t -> Vec.t -> 'c Cons.t list -> 'c regionsT
+let minimize_and_plp : 'c Factory.t -> Vec.t -> 'c Cons.t list -> 'c regionsT
 	= fun factory init_point conss ->
 	(* TODO: ces étapes devraient être évitée, la minimization devrait pouvoir gérer des Cons.t directement*)
 	MinFloat.minimize init_point (List.map Cons.get_c conss)

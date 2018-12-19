@@ -35,7 +35,7 @@ let to_string: (Var.t -> string) -> 'c t -> string
 let to_string_raw: 'c t -> string
 	= fun p -> to_string Var.to_string  p
 
-let to_string_ext: 'c Cert.t -> (Var.t -> string) -> 'c t -> string
+let to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 	= fun factory varPr p ->
 	let estr =
 		if EqSet.isTop p.eqs
@@ -53,7 +53,7 @@ let to_string_ext: 'c Cert.t -> (Var.t -> string) -> 'c t -> string
     in
 	Printf.sprintf "{\n\teqs = %s;\n\tineqs = %s;\n\tpoint = %s}" estr istr pstr
 
-let to_string_ext_raw: 'c Cert.t -> 'c t -> string
+let to_string_ext_raw: 'c Factory.t -> 'c t -> string
 	= fun factory p -> to_string_ext factory Var.to_string  p
 
 let get_point : 'c t -> Vector.Symbolic.Positive.t
@@ -194,8 +194,8 @@ type 'c rewriteT =
 (** [rewriteIneqs es s] projects from [s] all variables defined in [es].
 The produced certificates prove that the result [s'] is implied by [s].
 No redundancy elimination is performed on [s']. *)
-let rewriteIneqs: 'c Cert.t -> 'c EqSet.t -> 'c IneqSet.t -> 'c rewriteT
-=	let rewrite: 'c Cert.t -> 'c EqSet.t -> 'c rewriteT -> 'c Cons.t -> 'c rewriteT
+let rewriteIneqs: 'c Factory.t -> 'c EqSet.t -> 'c IneqSet.t -> 'c rewriteT
+=	let rewrite: 'c Factory.t -> 'c EqSet.t -> 'c rewriteT -> 'c Cons.t -> 'c rewriteT
 	= fun factory es -> function
 		| RewriteBot _ as r -> fun _ -> r
 		| Rewritten s -> fun c ->
@@ -213,8 +213,8 @@ type 'c rewriteBisT =
 	| Rewritten' of 'c Cons.t list
 	| RewriteBot' of 'c
 
-let listRw: 'c Cert.t -> 'c EqSet.t -> 'c Cons.t list -> 'c rewriteBisT
-=	let rw1: 'c Cert.t -> 'c EqSet.t -> 'c rewriteBisT -> 'c Cons.t -> 'c rewriteBisT
+let listRw: 'c Factory.t -> 'c EqSet.t -> 'c Cons.t list -> 'c rewriteBisT
+=	let rw1: 'c Factory.t -> 'c EqSet.t -> 'c rewriteBisT -> 'c Cons.t -> 'c rewriteBisT
 	= fun factory eset -> function
 		| RewriteBot' _ as rw -> fun _ -> rw
 		| Rewritten' ilist -> fun cons ->
@@ -273,9 +273,9 @@ type 'c meetT =
 	| Added of 'c t
 	| Contrad of 'c
 
-let meetPr: 'c Cert.t -> (Var.t -> string) -> 'c meetT -> string
+let meetPr: 'c Factory.t -> (Var.t -> string) -> 'c meetT -> string
 = fun factory varPr -> function
-	| Contrad ce -> Printf.sprintf "Contrad ce, with ce:\n%s" (factory.Cert.to_string ce)
+	| Contrad ce -> Printf.sprintf "Contrad ce, with ce:\n%s" (factory.Factory.to_string ce)
 	| Added p -> Printf.sprintf
 		"Added p with p:\n%s"
 		(to_string_ext factory varPr p)
@@ -314,7 +314,7 @@ let logAddEqs: 'c logT -> 'c Cons.t list -> 'c logT
 	then p
 	else logEset p (EAdd (l, p.eset))
 
-let logEqSetAddM: 'c Cert.t -> 'c logT -> ('c logT, 'c) mayBotT
+let logEqSetAddM: 'c Factory.t -> 'c logT -> ('c logT, 'c) mayBotT
 	= fun factory lp1 ->
 	let rec flatten: 'c Cons.t list -> 'c ependingT -> ('c logT, 'c) mayBotT
 		= fun l -> function
@@ -330,7 +330,7 @@ let logEqSetAddM: 'c Cert.t -> 'c logT -> ('c logT, 'c) mayBotT
 	flatten [] lp1.eset
 
 (* XXX: If there is nothing to rewrite, the log should not be changed. *)
-let logrewriteIneqs: 'c Cert.t -> 'c logT -> ('c logT, 'c) mayBotT
+let logrewriteIneqs: 'c Factory.t -> 'c logT -> ('c logT, 'c) mayBotT
 	= fun factory lp ->
 	let rec rw: 'c logT -> 'c EqSet.t -> 'c ipendingT -> ('c ipendingT, 'c) mayBotT
 		= fun lp eset ip ->
@@ -403,7 +403,7 @@ let chkFeasibility: Var.t -> (int * Cs.t) list -> satChkT
 	Profile.stop "chkFeasibility";
 	res
 
-let rec extract_implicit_eqs' : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) mayBotT) * (Scalar.Symbolic.t Rtree.t) option
+let rec extract_implicit_eqs' : 'c Factory.t -> Var.t -> 'c logT -> (('c logT, 'c) mayBotT) * (Scalar.Symbolic.t Rtree.t) option
 	= fun factory nvar lp ->
 	(* TODO: peut-on factoriser le calcul des Is et Js?*)
 	let compute_Is : 'c Cons.t list -> (int * Cs.Vec.Coeff.t) list -> (int * 'c Cons.t) list
@@ -430,12 +430,12 @@ let rec extract_implicit_eqs' : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) 
 		let (i_n, coeff_n) = List.nth wit len in
 		List.fold_right
 			(fun (i, coeff) res ->
-				let cert = factory.Cert.mul coeff (List.nth conss i |> Cons.get_cert)
-					|> factory.Cert.add (List.hd res |> Pervasives.snd)
+				let cert = factory.Factory.mul coeff (List.nth conss i |> Cons.get_cert)
+					|> factory.Factory.add (List.hd res |> Pervasives.snd)
 				in
 				(compute_index i,cert) :: res)
 			(Misc.sublist wit 1 len)
-			[(compute_index i_n,factory.Cert.mul coeff_n (List.nth conss i_n |> Cons.get_cert))]
+			[(compute_index i_n,factory.Factory.mul coeff_n (List.nth conss i_n |> Cons.get_cert))]
 		|> List.rev
 	in
 	(* Remove trivial constraints from a given list of constraints. *)
@@ -472,7 +472,7 @@ let rec extract_implicit_eqs' : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) 
 			let ijs = List.map2
 				(fun (i,(cstr,lower_bound)) (j,upper_bound) ->
 					assert (i = j);
-					(i, ({cstr with Cs.typ = Cstr_type.Eq}, factory.Cert.merge lower_bound upper_bound))
+					(i, ({cstr with Cs.typ = Cstr_type.Eq}, factory.Factory.merge lower_bound upper_bound))
 					) is js
 			in
 			let elist =
@@ -491,7 +491,7 @@ let rec extract_implicit_eqs' : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) 
 				| Bot _ as b -> b, None
 				| Ok lp -> extract_implicit_eqs' factory nvar lp
 
-let extract_implicit_eqs : 'c Cert.t -> Var.t -> 'c logT -> (('c logT, 'c) mayBotT) * (Scalar.Symbolic.t Rtree.t) option
+let extract_implicit_eqs : 'c Factory.t -> Var.t -> 'c logT -> (('c logT, 'c) mayBotT) * (Scalar.Symbolic.t Rtree.t) option
 	= fun factory nvar lp ->
 	Profile.start "extract_implicit_eqs";
 	let res = extract_implicit_eqs' factory nvar lp in
@@ -525,7 +525,7 @@ let (<*>) = logBind
 
 (* XXX: it is a bit awkward that [p.nxt] is supposed to take into account
 the identifiers used in [l]. *)
-let addAux': 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
+let addAux': 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 	= fun factory nvar p l ->
 	logOut
 	(logInit p l
@@ -539,30 +539,30 @@ let addAux': 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 			| Ok _, None -> Pervasives.failwith "Pol.addAux"
 			| Ok lp, Some point -> logIneqSetAddM nvar point lp)
 
-let addAux: 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
+let addAux: 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 	= fun factory nvar p conss ->
 	Profile.start "addAux" ;
 	let res = addAux' factory nvar p conss in
 	Profile.stop "addAux";
 	res
 
-let addMSub: 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
+let addMSub: 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 	= fun factory nvar p conss -> addAux factory nvar p conss
 
-let addSub: 'c Cert.t -> Var.t -> 'c t -> 'c Cons.t -> 'c meetT
+let addSub: 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t -> 'c meetT
 	= fun factory nvar p c -> addAux factory nvar p [c]
 
-let meetSub: 'c Cert.t -> Var.t -> 'c t -> 'c t -> 'c meetT
+let meetSub: 'c Factory.t -> Var.t -> 'c t -> 'c t -> 'c meetT
 	= fun factory nvar p1 p2 ->
 	addAux factory nvar p1 (EqSet.list p2.eqs @ IneqSet.list p2.ineqs)
 
-let mkSub: 'c Cert.t -> Var.t -> 'c Cons.t list -> 'c t option
+let mkSub: 'c Factory.t -> Var.t -> 'c Cons.t list -> 'c t option
 	= fun factory nvar l ->
 	match addMSub factory nvar top l with
 	| Added p -> Some p
 	| Contrad _ -> None
 
-let projectSub: 'c Cert.t -> Var.t -> 'c t -> Var.t -> 'c t
+let projectSub: 'c Factory.t -> Var.t -> 'c t -> Var.t -> 'c t
 	= fun factory nxtVar p x ->
 	let (opte, eqs) = EqSet.trySubst factory x p.eqs in
 	let ineqs =
@@ -584,7 +584,7 @@ let projectSub: 'c Cert.t -> Var.t -> 'c t -> Var.t -> 'c t
      eqs = eqs;
      point = point';}
 
-let projectMSubFM: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> 'c t
+let projectMSubFM: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
 	= fun factory nxtVar p l ->
 	let msk =
 		List.fold_left (fun m x -> Rtree.set None m x (Some x)) Rtree.Nil l
@@ -608,7 +608,7 @@ let projectMSubFM: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> 'c t
 	in
 	project1 p.eqs p.ineqs
 
-let projectMSubPLP: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> Flags.scalar -> 'c t
+let projectMSubPLP: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> Flags.scalar -> 'c t
 	= fun factory nxtVar p l scalar_type ->
 	let msk =
 		List.fold_left (fun m x -> Rtree.set None m x (Some x)) Rtree.Nil l
@@ -637,7 +637,7 @@ let projectMSubPLP: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> Flags.scalar -> 
      point = point';}
 
 
-let projectMSub: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> 'c t
+let projectMSub: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
 	= fun factory nxt p l ->
 	match !Flags.proj with
 	| Flags.Proj_PLP scalar_type -> projectMSubPLP factory nxt p l scalar_type
@@ -650,7 +650,7 @@ let projectMSub: 'c Cert.t -> Var.t -> 'c t -> Var.t list -> 'c t
 type discr_t = Op1 of int | Op2 of int | Other
 *)
 (* note: x = y1 + y2 and alpha1 + alpha2 = 1 are substituted on the fly *)
-let joinSetup: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
+let joinSetup: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t
 	-> Var.t * (('c1,'c2) Cons.discr_t) t * Var.t list * ('c1,'c2) Cons.discr_cert
 	= fun factory1 factory2 varNxt p1 p2 ->
 	Debug.log DebugTypes.Detail (lazy "Entering joinSetup");
@@ -658,9 +658,9 @@ let joinSetup: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
 	let alpha = varNxt in
 	let aIneqs = [
 		(Cs.mk Cstr_type.Le [Scalar.Rat.u, alpha] Scalar.Rat.u,
-			(factory1.Cert.triv Cstr_type.Le Cs.Vec.Coeff.z, factory2.Cert.triv Cstr_type.Le Cs.Vec.Coeff.u));
+			(factory1.Factory.triv Cstr_type.Le Cs.Vec.Coeff.z, factory2.Factory.triv Cstr_type.Le Cs.Vec.Coeff.u));
 		(Cs.mk Cstr_type.Le [Scalar.Rat.negU, alpha] Scalar.Rat.z,
-			(factory1.Cert.triv Cstr_type.Le Cs.Vec.Coeff.u, factory2.Cert.triv Cstr_type.Le Cs.Vec.Coeff.z))
+			(factory1.Factory.triv Cstr_type.Le Cs.Vec.Coeff.u, factory2.Factory.triv Cstr_type.Le Cs.Vec.Coeff.z))
 		]
 	in
 	let (varNxt1, r, eqs1) = EqSet.joinSetup_1 factory2 (Var.next varNxt) Rtree.Nil alpha p1.eqs in
@@ -686,21 +686,21 @@ let joinSetup: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
     in
 	(varNxt4, {ineqs = ineqs; eqs = eqs; point = point'}, vars, factory)
 
-let fix_cmp: 'c Cert.t -> 'c Cons.t -> Cs.t list -> 'c Cons.t
+let fix_cmp: 'c Factory.t -> 'c Cons.t -> Cs.t list -> 'c Cons.t
 	= fun fac (c,cert) inputIneqs ->
 	if (Cs.get_typ c) = Cstr_type.Le
-	then (c, fac.Cert.to_le cert)
+	then (c, fac.Factory.to_le cert)
 	else
         let c_le = {c with Cs.typ = Cstr_type.Le} in
         if List.exists (Cs.equalSyn c_le) inputIneqs
-        then (c_le, fac.Cert.to_le cert)
+        then (c_le, fac.Factory.to_le cert)
         else (c, cert)
 
 (**
  * Splits the joined certificates into two lists of certificates.
  * Also relaxes the comparison sign of certificates when necessary.
  *)
-let split_certificates : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> (('c1,'c2) Cons.discr_t) t -> 'c1 t * 'c2 t
+let split_certificates : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> (('c1,'c2) Cons.discr_t) t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 p1 p2 p ->
     let inputIneqs1 = p1.ineqs
     and inputIneqs2 = p2.ineqs in
@@ -718,7 +718,7 @@ let split_certificates : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> (('c1,'c2
 	in
 	{eqs = eqs1 ; ineqs = ineqs1 ; point = p1.point}, {eqs = eqs2 ; ineqs = ineqs2 ; point = p2.point}
 
-let joinSub_classic: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+let joinSub_classic: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 nxtVar p1 p2 ->
 	let (nxtVar1, p0, vars, factory) = joinSetup factory1 factory2 nxtVar p1 p2 in
 	let p = projectMSub factory nxtVar1 p0 vars in
@@ -727,7 +727,7 @@ let joinSub_classic: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 
 
 module Join_PLP = struct
 
-	let split_eq : 'c Cert.t -> 'c t -> 'c Cons.t list
+	let split_eq : 'c Factory.t -> 'c t -> 'c Cons.t list
 		= fun factory p ->
 		List.fold_left
 			(fun res (_,cons) ->
@@ -749,7 +749,7 @@ module Join_PLP = struct
 					| EMin eset -> {eqs = eset; ineqs = iset ; point = point}
 			end
 
-	let extract_implicit_eq : 'c Cert.t -> Var.t -> 'c t -> 'c t
+	let extract_implicit_eq : 'c Factory.t -> Var.t -> 'c t -> 'c t
 		= fun factory nxtVar p ->
 		logOut
 		(logInit p []
@@ -785,7 +785,7 @@ module Join_PLP = struct
 				 Cons.get_cert cons))
 			l
 
-	let joinSub_epsilon: Flags.scalar -> 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+	let joinSub_epsilon: Flags.scalar -> 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 		= fun scalar_type factory1 factory2 nxtVar p1 p2 ->
 		let epsilon = nxtVar in
 		let p1_eqs = split_eq factory1 p1
@@ -818,7 +818,7 @@ module Join_PLP = struct
 
 end
 
-let inclSub: 'c1 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
+let inclSub: 'c1 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 	= fun factory nxtVar p1 p2 ->
 	Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Checking inclusion %s ⊂ %s"
 		(to_string_ext factory Var.to_string p1)
@@ -828,17 +828,17 @@ let inclSub: 'c1 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 	| EqSet.NoIncl -> NoIncl
 	| EqSet.Incl certE -> begin
 		Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Inclusion holds for equalities: %s"
-			(Misc.list_to_string factory.Cert.to_string certE "\n")));
+			(Misc.list_to_string factory.Factory.to_string certE "\n")));
 		match IneqSet.incl factory nxtVar p1.eqs p1.ineqs p2.ineqs with
 		| IneqSet.NoIncl -> NoIncl
 		| IneqSet.Incl certI -> begin
 			Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Inclusion holds for inequalities: %s"
-			(Misc.list_to_string factory.Cert.to_string certI "\n")));
+			(Misc.list_to_string factory.Factory.to_string certI "\n")));
 			Incl (List.append certI certE)
 			end
 		end
 
-let joinSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+let joinSub: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= let check_incl
 		= fun factory nxtVar p1 p2 ->
 		match inclSub factory nxtVar p1 p2 with
@@ -875,7 +875,7 @@ let joinSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 
     				| Flags.JHeuristic -> Pervasives.invalid_arg "Pol.joinSub"
     		end
 
-let widen : 'c Cert.t -> 'c t -> 'c t -> 'c t
+let widen : 'c Factory.t -> 'c t -> 'c t -> 'c t
 	= fun factory p1 p2 ->
 	let elect s c =
 		let c1 = EqSet.filter factory p1.eqs c in
@@ -896,48 +896,48 @@ let mkplist p =
 	let i = IneqSet.list p.ineqs in
 	List.map (fun c -> (Cons.get_c c)) (List.append e i)
 
-let opt2itv: (Scalar.Rat.t -> Scalar.Rat.t) -> 'c Cert.t -> 'c Cons.t list -> Opt.optT -> bndT * 'c option
+let opt2itv: (Scalar.Rat.t -> Scalar.Rat.t) -> 'c Factory.t -> 'c Cons.t list -> Opt.optT -> bndT * 'c option
 	= fun f factory conss ->
 	function
 	| Opt.Finite (_, n, w) ->
 		let cert = Cons.linear_combination_cert factory conss w
-			|> factory.Cert.add (factory.Cert.triv Cstr_type.Le Scalar.Rat.z)
+			|> factory.Factory.add (factory.Factory.triv Cstr_type.Le Scalar.Rat.z)
 		in
 		(Closed (f n), Some cert)
 	| Opt.Sup (_, n, w) ->
 		let cert = Cons.linear_combination_cert factory conss w
-			|> factory.Cert.add (factory.Cert.triv Cstr_type.Le Scalar.Rat.z)
+			|> factory.Factory.add (factory.Factory.triv Cstr_type.Le Scalar.Rat.z)
 		in
 		(Open (f n), Some cert)
   | Opt.Infty -> (Infty, None)
 
-let getUpperBoundImpl : 'c Cert.t -> 'c Cons.t list -> Vec.t -> Splx.t Splx.mayUnsatT -> bndT * 'c option
+let getUpperBoundImpl : 'c Factory.t -> 'c Cons.t list -> Vec.t -> Splx.t Splx.mayUnsatT -> bndT * 'c option
   = fun factory conss v sx ->
   match Opt.max' sx v with
   | Splx.IsUnsat _ -> Pervasives.failwith "Pol.getUpperBoundSub"
   | Splx.IsOk u -> opt2itv (fun n -> n) factory conss u
 
-let getUpperBoundSub : 'c Cert.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
+let getUpperBoundSub : 'c Factory.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
   = fun factory x p v ->
   let conss = EqSet.list p.eqs @ IneqSet.list p.ineqs in
   let i_cstr = List.mapi (fun i cons -> (i, Cons.get_c cons)) conss in
   Splx.mk x i_cstr
     |> getUpperBoundImpl factory conss v
 
-let getLowerBoundImpl : 'c Cert.t -> 'c Cons.t list -> Vec.t -> Splx.t Splx.mayUnsatT -> bndT * 'c option
+let getLowerBoundImpl : 'c Factory.t -> 'c Cons.t list -> Vec.t -> Splx.t Splx.mayUnsatT -> bndT * 'c option
   = fun factory conss v sx ->
   match Opt.max' sx (Vec.neg v) with
   | Splx.IsUnsat _ -> Pervasives.failwith "Pol.getLowerBoundSub"
   | Splx.IsOk l -> opt2itv Scalar.Rat.neg factory conss l
 
-let getLowerBoundSub : 'c Cert.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
+let getLowerBoundSub : 'c Factory.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
   = fun factory x p v ->
   let conss = EqSet.list p.eqs @ IneqSet.list p.ineqs in
   let i_cstr = List.mapi (fun i cons -> (i, Cons.get_c cons)) conss in
   Splx.mk x i_cstr
     |> getLowerBoundImpl factory conss v
 
-let itvizeSub: 'c Cert.t -> Var.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
+let itvizeSub: 'c Factory.t -> Var.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
 	= fun factory nxtVar p v ->
 	let conss = EqSet.list p.eqs @ IneqSet.list p.ineqs in
 	let i_cstr = List.mapi (fun i cons -> (i, Cons.get_c cons)) conss in
@@ -949,7 +949,7 @@ let itvizeSub: 'c Cert.t -> Var.t -> 'c t -> Vec.t -> itvT * 'c option * 'c opti
 let varSet: 'c t -> Var.Set.t
 	= fun p -> Cs.getVars (mkplist p)
 
-let add: 'c Cert.t -> 'c t -> 'c Cons.t -> 'c meetT
+let add: 'c Factory.t -> 'c t -> 'c Cons.t -> 'c meetT
 	= fun factory p c ->
 	Debug.log DebugTypes.Title (lazy "Building add");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "c = %s\nP = %s"
@@ -961,11 +961,11 @@ let add: 'c Cert.t -> 'c t -> 'c Cons.t -> 'c meetT
 	Debug.log DebugTypes.MOutput (lazy (Printf.sprintf "%s"
 			(match res with
 			| Added p -> to_string_raw p
-			| Contrad cert -> "Contrad " ^ (factory.Cert.to_string cert))))
+			| Contrad cert -> "Contrad " ^ (factory.Factory.to_string cert))))
 	;
 	res
 
-let addM: 'c Cert.t -> 'c t -> 'c Cons.t list -> 'c meetT
+let addM: 'c Factory.t -> 'c t -> 'c Cons.t list -> 'c meetT
 = fun factory p l ->
 	Debug.log DebugTypes.Title (lazy "Building add");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "c = %s\nP = %s"
@@ -977,20 +977,20 @@ let addM: 'c Cert.t -> 'c t -> 'c Cons.t list -> 'c meetT
 	Debug.log DebugTypes.MOutput (lazy (Printf.sprintf "%s"
 			(match res with
 			| Added p -> to_string_raw p
-			| Contrad cert -> "Contrad " ^ (factory.Cert.to_string cert))))
+			| Contrad cert -> "Contrad " ^ (factory.Factory.to_string cert))))
 	;
 	res
 
-let meet: 'c Cert.t -> 'c t -> 'c t -> 'c meetT
+let meet: 'c Factory.t -> 'c t -> 'c t -> 'c meetT
 	= fun factory p1 p2 ->
 	let nxt = Var.Set.union (varSet p1) (varSet p2) |> Var.horizon in
 	meetSub factory nxt p1 p2
 
-let mk: 'c Cert.t -> 'c Cons.t list -> 'c t option
+let mk: 'c Factory.t -> 'c Cons.t list -> 'c t option
 	= fun factory l ->
 	mkSub factory (List.map Pervasives.fst l |> Cs.getVars |> Var.horizon) l
 
-let project: 'c Cert.t -> 'c t -> Var.t -> 'c t
+let project: 'c Factory.t -> 'c t -> Var.t -> 'c t
 	= fun factory p x ->
 	Debug.log DebugTypes.Title (lazy "Building Projection");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "v = %s\nP = %s"
@@ -1003,7 +1003,7 @@ let project: 'c Cert.t -> 'c t -> Var.t -> 'c t
 	;
 	res
 
-let projectM: 'c Cert.t -> 'c t -> Var.t list -> 'c t
+let projectM: 'c Factory.t -> 'c t -> Var.t list -> 'c t
 	= fun factory p l ->
 	Debug.log DebugTypes.Title (lazy "Building Projection");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "v = %s\nP = %s"
@@ -1016,7 +1016,7 @@ let projectM: 'c Cert.t -> 'c t -> Var.t list -> 'c t
 	;
 	res
 
-let join: 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+let join: 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 p1 p2 ->
 	Debug.log DebugTypes.Title (lazy "Building Join");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P1 = %s\nP2 = %s\n"
@@ -1030,7 +1030,7 @@ let join: 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	;
 	res
 
-let incl: 'c1 Cert.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
+let incl: 'c1 Factory.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 	= fun factory p1 p2 ->
     Debug.log DebugTypes.Title (lazy "Testing inclusion");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "%s ⊂ %s"
@@ -1042,26 +1042,26 @@ let incl: 'c1 Cert.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
     Debug.log DebugTypes.MOutput (lazy (match res with
         | NoIncl -> "Inclusion does not hold"
         | Incl certs -> Printf.sprintf "Inclusion holds, the first polyhedron can be expressed as %s"
-            (Misc.list_to_string factory.Cert.to_string certs " ; ")
+            (Misc.list_to_string factory.Factory.to_string certs " ; ")
     ));
     res
 
-let itvize: 'c Cert.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
+let itvize: 'c Factory.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
 	= fun factory p v ->
 	let nxt = Var.Set.union (Vec.getVars [v]) (varSet p) |> Var.horizon in
 	itvizeSub factory nxt p v
 
-let getUpperBound : 'c Cert.t -> 'c t -> Vec.t -> bndT * 'c option
+let getUpperBound : 'c Factory.t -> 'c t -> Vec.t -> bndT * 'c option
 	= fun factory p v ->
 	let nxt = Var.Set.union (Vec.getVars [v]) (varSet p) |> Var.horizon in
 	getUpperBoundSub factory nxt p v
 
-let getLowerBound : 'c Cert.t -> 'c t -> Vec.t -> bndT * 'c option
+let getLowerBound : 'c Factory.t -> 'c t -> Vec.t -> bndT * 'c option
 	= fun factory p v ->
 	let nxt = Var.Set.union (Vec.getVars [v]) (varSet p) |> Var.horizon in
 	getLowerBoundSub factory nxt p v
 
-let rename: 'c Cert.t -> Var.t -> Var.t -> 'c t -> 'c t
+let rename: 'c Factory.t -> Var.t -> Var.t -> 'c t -> 'c t
 	= fun factory x y p -> {
 	eqs = EqSet.rename factory p.eqs x y;
 	ineqs = IneqSet.rename factory p.ineqs x y;
@@ -1074,7 +1074,7 @@ let rename: 'c Cert.t -> Var.t -> Var.t -> 'c t -> 'c t
 let inter factory p1 p2 =
   mk factory ((get_cstr p1) @ (get_cstr p2))
 *)
-let invChk: 'c Cert.t -> 'c t -> bool * string
+let invChk: 'c Factory.t -> 'c t -> bool * string
 	= fun factory p ->
 	let chkTriv: 'c t -> bool
 		= let chk1: 'c Cons.t -> bool
@@ -1158,7 +1158,7 @@ let invChk: 'c Cert.t -> 'c t -> bool * string
 		let errs = List.map snd log in
 		String.concat "\n" (List.filter (fun s -> String.length s > 0) errs))
 
-let equal : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> bool
+let equal : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> bool
 	= fun fac1 fac2 p1 p2 ->
 	match (incl fac1 p1 p2, incl fac2 p2 p1) with
 	| (Incl _, Incl _) -> true
@@ -1193,7 +1193,7 @@ let to_unit : 'c t -> unit t
 	}
 
 
-let minkowskiSetup : 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
+let minkowskiSetup : 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t
 -> Var.t * (('c1,'c2) Cons.discr_t) t * Var.t list * ('c1,'c2) Cons.discr_cert
 	= fun factory1 factory2 nxt p1 p2 ->
 	let factory = Cons.discr_factory factory1 factory2 in
@@ -1212,23 +1212,23 @@ let minkowskiSetup : 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t
     in
 	(varNxt4, {ineqs = ineqs; eqs = eqs; point = point'}, vars, factory)
 
-let minkowskiSub: 'c1 Cert.t -> 'c2 Cert.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+let minkowskiSub: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 nxtVar p1 p2 ->
 	let (nxtVar1, p0, vars, factory) = minkowskiSetup factory1 factory2 nxtVar p1 p2 in
 	let p = projectMSub factory nxtVar1 p0 vars in
 	split_certificates factory1 factory2 p1 p2 p
 
-let minkowski : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
+let minkowski : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 p1 p2 ->
 	let nxt = Var.Set.union (varSet p1) (varSet p2)
 		|> Var.horizon
 	in
 	minkowskiSub factory1 factory2 nxt p1 p2
 
-let get_regions_from_point : 'c Cert.t -> 'c t -> Vec.t -> unit t list
+let get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> 'c t list
     = fun factory p point ->
     let regions = IneqSet.get_regions_from_point factory p.ineqs point
-    and eqs = List.map (fun (var, (cstr,_)) -> (var, (cstr, ()))) p.eqs
+    and eqs = List.map (fun (var, (cstr,_)) -> (var, (cstr, factory.top))) p.eqs
     in
     List.map
         (fun (ineqs,point) -> {
@@ -1254,7 +1254,7 @@ let set_point : Vec.t -> 'c t -> 'c t
     ;
     {p with point = Some (Vector.Symbolic.Positive.ofRat point)}
 
-let get_regions : 'c Cert.t -> Vector.Rat.Positive.t option -> 'c t -> unit t list
+let get_regions : 'c Factory.t -> Vector.Rat.Positive.t option -> 'c t -> 'c t list
     = fun factory point p ->
 	Debug.log DebugTypes.Title (lazy "Getting regions");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
@@ -1294,7 +1294,7 @@ let size : 'c t -> Scalar.Rat.t option
             | Some r -> Printf.sprintf "%s: %f" (Scalar.Rat.to_string r) (Scalar.Rat.to_float r)));
     res
 
-let split_in_half : 'c Cert.t -> 'c t -> Cs.t option
+let split_in_half : 'c Factory.t -> 'c t -> Cs.t option
     = fun factory p ->
     Debug.log DebugTypes.Title (lazy "Splitting in half");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
@@ -1331,7 +1331,7 @@ let satisfy : 'c t -> Vec.t -> bool
     = fun p point ->
     EqSet.satisfy p.eqs point && IneqSet.satisfy p.ineqs point
 
-let spawn : 'c Cert.t -> 'c t -> Vec.t
+let spawn : 'c Factory.t -> 'c t -> Vec.t
     = let rec spawn_rec : 'c t -> (Var.t * float * float) list -> Vec.t
         = fun p itvs ->
         let point = List.map

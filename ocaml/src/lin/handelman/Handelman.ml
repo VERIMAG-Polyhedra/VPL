@@ -3,17 +3,7 @@ module Debug = Hi.Debug
 module Cs = PLP.Cs
 module CP = CstrPoly
 
-let factory : unit Cert.t = {
-	Cert.name = "Unit";
-	Cert.top = ();
-	Cert.triv = (fun _ _ -> ());
-	Cert.add = (fun _ _ -> ());
-	Cert.mul = (fun _ _ -> ());
-	Cert.to_le = (fun _ -> ());
-	Cert.merge = (fun _ _ -> ());
-	Cert.to_string = (fun _ -> "unit");
-	Cert.rename = (fun _ _ _ -> ());
-}
+module FactoryUnit = FactoryMaker.Make(FactoryMaker.Unit)
 
 module Handelman (Minimization : Min.Type) = struct
 
@@ -116,7 +106,7 @@ module Handelman (Minimization : Min.Type) = struct
 				stgy = st;
 				regions = init_region ph region_type;
 				} in
-			run ph config' sx (get_no_cert factory)
+			run ph config' sx (get_no_cert FactoryUnit.factory)
 	end
 
 	module Build = struct
@@ -314,8 +304,8 @@ module Handelman (Minimization : Min.Type) = struct
 							(fun v' -> Cs.Vec.V.equal v v') variables))
 							(Cs.getVars ineqs |> Cs.Vec.V.Set.elements)
 					in
-					Proj.proj Factory.Unit.factory Flags.Float vars_to_project
-						(List.map Factory.Unit.mkCons ineqs)
+					Proj.proj FactoryUnit.factory Flags.Float vars_to_project
+						(List.map FactoryUnit.mkCons ineqs)
 					|> Pervasives.fst
 					|> List.map Pervasives.fst
 					|> List.map Cs.canon
@@ -476,11 +466,11 @@ module Handelman (Minimization : Min.Type) = struct
 
 	module type Type = sig
 		type t = {
-			ph : unit HPol.t ;
+			ph : FactoryUnit.cert HPol.t ;
 			g : Poly.t;
 		}
 
-		val mkHPol : 'c Pol.t -> unit HPol.t
+		val mkHPol : 'c Pol.t -> FactoryUnit.cert HPol.t
 
 		(** Used for Coq only *)
 		val run_oracle : 'c Pol.t -> CP.t -> (CP.t * Hi.Cert.schweighofer list) list option
@@ -494,7 +484,7 @@ module Handelman (Minimization : Min.Type) = struct
 	  		= Pervasives.ref 0.0
 
 		type t =
-			{ph : unit HPol.t ;
+			{ph : FactoryUnit.cert HPol.t ;
 			 g : Poly.t}
 
 		let (is_empty : t -> bool)
@@ -514,14 +504,14 @@ module Handelman (Minimization : Min.Type) = struct
 				let p = result
 					|> List.split
 					|> Pervasives.fst
-					|> List.map (fun cp -> (cp, factory.Cert.top))
+					|> List.map (fun cp -> (cp, FactoryUnit.factory.top))
 				in
-				let ph' = pb.ph#addM factory p in
+				let ph' = pb.ph#addM FactoryUnit.factory p in
 				{pb with ph = ph'}
 
 		let (poly_equal : t -> t -> bool)
 			= fun pb1 pb2 ->
-			pb1.ph#equal factory factory pb2.ph
+			pb1.ph#equal FactoryUnit.factory FactoryUnit.factory pb2.ph
 
 		let (poly_equal_opt : t -> t option -> bool)
 			= fun pb1 pb2 ->
@@ -617,9 +607,9 @@ module Handelman (Minimization : Min.Type) = struct
 		let remove_timeout : _ -> unit
 			= fun _ -> ()
 
-		let mkHPol : 'c Pol.t -> unit HPol.t
+		let mkHPol : 'c Pol.t -> FactoryUnit.cert HPol.t
 			= fun phPol ->
-			let phPol_unit = Pol.to_unit phPol in
+			let phPol_unit = FactoryUnit.convert phPol in
 			let ph = new HPol.t in
 			ph#mkPol phPol_unit;
 			ph
@@ -694,7 +684,7 @@ module Float = Handelman(Min.Classic(Vector.Float.Positive))
 
 
 (*
-	let init_map : 'c Cert.t -> int -> 'c Cons.t PLP.MapV.t
+	let init_map : 'c Factory.t -> int -> 'c Cons.t PLP.MapV.t
 		= fun factory nb_his ->
 		let trivial_cstr = Cs.mk Cstr_type.Le [] Scalar.Rat.u in
 		List.fold_left

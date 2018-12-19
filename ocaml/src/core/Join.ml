@@ -11,7 +11,7 @@ module type Type = sig
 		| C1 of 'c1
 		| C2 of 'c2
 
-	val build_map : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 Cons.t list -> 'c2 Cons.t list -> V.t list -> PLP.Naming.t -> (('c1,'c2) certT) PLP.mapVar_t
+	val build_map : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 Cons.t list -> 'c2 Cons.t list -> V.t list -> PLP.Naming.t -> (('c1,'c2) certT) PLP.mapVar_t
 
 	val build_params : PLP.Naming.t -> 'c1 Cons.t list -> 'c2 Cons.t list -> V.t list * PLP.Naming.t
 
@@ -25,14 +25,14 @@ module type Type = sig
 
 	val get_init_point : V.t list -> 'c1 Cons.t list -> 'c2 Cons.t list -> Cs.Vec.t
 
-	val build : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Cs.Vec.t -> 'c1 Cons.t list -> 'c2 Cons.t list
+	val build : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Cs.Vec.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> PLP.PSplx.t * (('c1,'c2) certT) PLP.mapVar_t
 
 	val filter_trivial : (PLP.Region.t * (('c1,'c2) certT) Cons.t) list option -> (PLP.Region.t * (('c1,'c2) certT) Cons.t) list option
 
 	val rem_dupl : (PLP.Region.t * (('c1,'c2) certT) Cons.t) list option -> (PLP.Region.t * (('c1,'c2) certT) Cons.t) list option
 
-	val get_join_cert : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 Cons.t list -> 'c2 Cons.t list
+	val get_join_cert : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> (('c1,'c2) certT) PLP.mapVar_t -> (PLP.Region.t * (('c1,'c2) certT) Cons.t) list option
 		-> 'c1 Cons.t list * 'c2 Cons.t list
 
@@ -40,9 +40,9 @@ module type Type = sig
 
 	val print_sxs : (PLP.Region.t * (('c1,'c2) certT) Cons.t) list option -> unit
 
-	val get_no_cert : 'c1 Cert.t -> 'c2 Cert.t -> PLP.PSplx.t -> ('c1, 'c2) certT
+	val get_no_cert : 'c1 Factory.t -> 'c2 Factory.t -> PLP.PSplx.t -> ('c1, 'c2) certT
 
-	val join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
+	val join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
 
 end
 
@@ -56,7 +56,7 @@ module Build (Min : Min.Type) = struct
 		| C1 of 'c1
 		| C2 of 'c2
 
-	let build_map : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 Cons.t list -> 'c2 Cons.t list -> V.t list -> Naming.t -> (('c1,'c2) certT) PLP.mapVar_t
+	let build_map : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 Cons.t list -> 'c2 Cons.t list -> V.t list -> Naming.t -> (('c1,'c2) certT) PLP.mapVar_t
 		= fun factory1 factory2 p1 p2 vars names ->
 		let to_index = Naming.to_index names Naming.Var in
 		let trivial_cstr1 = Cons.mkTriv factory1 Cstr_type.Le Scalar.Rat.u in
@@ -186,7 +186,7 @@ module Build (Min : Min.Type) = struct
 			Cs.Vec.divc (Cs.Vec.add x1 x2) (Scalar.Rat.of_float 2.)
 			end
 
-	let build : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Cs.Vec.t -> 'c1 Cons.t list -> 'c2 Cons.t list
+	let build : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Cs.Vec.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> PSplx.t * (('c1,'c2) certT) PLP.mapVar_t
 		= fun factory1 factory2 epsilon_opt init_point p1 p2 ->
 		let (vars, names) = build_vars p1 p2 in
@@ -224,29 +224,29 @@ module Build (Min : Min.Type) = struct
 			(fun (_,cons1) (_,cons2) -> Cs.equal (Cons.get_c cons1) (Cons.get_c cons2))
 			sols)
 
-	let get_join_cert : 'c1 Cert.t -> 'c2 Cert.t -> 'c1 Cons.t list -> 'c2 Cons.t list
+	let get_join_cert : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> (('c1,'c2) certT) PLP.mapVar_t -> (PLP.Region.t * (('c1,'c2) certT) Cons.t) list option
 		-> 'c1 Cons.t list * 'c2 Cons.t list
-		= let get_cert_p1 : 'c1 Cert.t -> (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> 'c1
+		= let get_cert_p1 : 'c1 Factory.t -> (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> 'c1
 			= fun factory1 basisValue map ->
 			List.fold_left
 				(fun r_cert (col,q) -> try
 					match PLP.MapV.find col map with
-					| (_, C1 cert) -> factory1.Cert.add r_cert (factory1.Cert.mul q cert)
-					| (_,_) -> Pervasives.failwith "Join.get_join_cert.get_cert_p1"
+					| (_, C1 cert) -> factory1.Factory.add r_cert (factory1.Factory.mul q cert)
+					| (_,_) -> Pervasives.failwith "Join.get_join_Factory.get_cert_p1"
 					with Not_found -> r_cert)
-				factory1.Cert.top
+				factory1.Factory.top
 				basisValue
 		in
-		let get_cert_p2 : 'c2 Cert.t -> (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> 'c2
+		let get_cert_p2 : 'c2 Factory.t -> (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> 'c2
 			= fun factory2 basisValue map ->
 			List.fold_left
 				(fun r_cert (col,q) -> try
 					match PLP.MapV.find col map with
-					| (_, C2 cert) -> factory2.Cert.add r_cert (factory2.Cert.mul q cert)
-					| (_,_) -> Pervasives.failwith "Join.get_join_cert.get_cert_p1"
+					| (_, C2 cert) -> factory2.Factory.add r_cert (factory2.Factory.mul q cert)
+					| (_,_) -> Pervasives.failwith "Join.get_join_Factory.get_cert_p1"
 					with Not_found -> r_cert)
-				factory2.Cert.top
+				factory2.Factory.top
 				basisValue
 		in
 		let is_strict : (int * Q.t) list -> (('c1,'c2) certT) PLP.mapVar_t -> bool
@@ -283,8 +283,8 @@ module Build (Min : Min.Type) = struct
 							((cstr', get_cert_p1 factory1 arg1 map),
 						 	 (cstr', get_cert_p2 factory2 arg2 map))
 						else (* TODO: dans ce cas, il faut élargir les deux certificats*)
-							((cstr, get_cert_p1 factory1 arg1 map |> factory1.Cert.to_le),
-						 	 (cstr, get_cert_p2 factory2 arg2 map |> factory2.Cert.to_le)))
+							((cstr, get_cert_p1 factory1 arg1 map |> factory1.Factory.to_le),
+						 	 (cstr, get_cert_p2 factory2 arg2 map |> factory2.Factory.to_le)))
 				sols
 			|> List.split
 
@@ -313,11 +313,11 @@ module Build (Min : Min.Type) = struct
 					(match reg.PLP.Region.sx with | None -> "none" | Some sx -> PSplx.to_string sx))
 				sols "\n")
 
-	let get_no_cert : 'c1 Cert.t -> 'c2 Cert.t -> PSplx.t -> ('c1, 'c2) certT
+	let get_no_cert : 'c1 Factory.t -> 'c2 Factory.t -> PSplx.t -> ('c1, 'c2) certT
 		= fun factory1 _ _ ->
-		C1 factory1.Cert.top
+		C1 factory1.Factory.top
 
-	let join' : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Vector.Symbolic.Positive.t -> 'c1 Cons.t list -> 'c2 Cons.t list
+	let join' : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.Positive.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> 'c1 Cons.t list * 'c2 Cons.t list
 		= fun factory1 factory2 epsilon_opt _ p1 p2 ->
 		let cs = List.map Cons.get_c p1 @ List.map Cons.get_c p2 in
@@ -332,7 +332,7 @@ module Build (Min : Min.Type) = struct
 		get_join_cert factory1 factory2 p1 p2 map regs_filtered
 
 	(** Returns the convex hull of the given inequalities (no equality should be given), and the next identifer. *)
-	let join : 'c1 Cert.t -> 'c2 Cert.t -> V.t option -> Vector.Symbolic.Positive.t
+	let join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.Positive.t
         -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
 		= fun factory1 factory2 epsilon_opt init_point p1 p2 ->
 		Debug.log DebugTypes.Title
@@ -374,7 +374,7 @@ module Heuristic = struct
 	module Float = Build(Min.Heuristic(Vector.Float.Positive))
 end
 
-let join : Flags.scalar -> 'c1 Cert.t -> 'c2 Cert.t -> V.t option ->  Vector.Symbolic.Positive.t -> 'c1 Cons.t list -> 'c2 Cons.t list
+let join : Flags.scalar -> 'c1 Factory.t -> 'c2 Factory.t -> V.t option ->  Vector.Symbolic.Positive.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 	-> 'c1 Cons.t list * 'c2 Cons.t list
 	= fun scalar factory1 factory2 epsilon_opt init_point p1 p2 ->
 	Debug.log DebugTypes.Title (lazy "Building Convex Hull");
