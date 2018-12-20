@@ -70,7 +70,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
                 Coeff.mul c (Coeff.pow (f_eval v) e)
             ) Coeff.u m
 
-        let isLinear : t -> bool
+        let is_linear : t -> bool
             = fun m ->
             List.length m = 0
             || (List.length m = 1 && Pervasives.snd (List.hd m) <= 1)
@@ -88,19 +88,21 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 			else Pervasives.invalid_arg ("SxPoly.Poly.MonomialBasis.mk")
 
 		let mk_list : V.t list -> t
-			= fun l ->
-			List.fast_sort V.cmp l
-			|> List.fold_left
-				(fun res v ->
-					let (v',e') = List.hd res in
-					if V.equal v v'
-					then (v',e'+1) :: List.tl res
-					else (v,1)::res)
-				[]
-			|> List.rev
-			|> fun l -> if well_formed l
-				then l
-				else Pervasives.invalid_arg ("SxPoly.Poly.MonomialBasis.mk_list")
+			= function
+            | [] -> []
+            | l ->
+    			let l_sorted = List.fast_sort V.cmp l in
+                let res = List.fold_left (fun res v ->
+    					let (v',e') = List.hd res in
+    					if V.equal v v'
+    					then (v',e'+1) :: List.tl res
+    					else (v,1)::res
+                ) [List.hd l_sorted, 1] (List.tl l_sorted)
+    			|> List.rev
+    			in
+                if well_formed res
+    			then res
+    			else Pervasives.invalid_arg ("SxPoly.Poly.MonomialBasis.mk_list")
 
 		let data : t -> (V.t * exp) list
 			= fun m -> m
@@ -161,7 +163,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 
 		let equal : t -> t -> bool
 			= fun (m1,c1) (m2,c2) ->
-			MonomialBasis.compare m1 m2 = 0 && Coeff.equal c1 c2
+			MonomialBasis.equal m1 m2 && Coeff.equal c1 c2
 
 		let canonO : t -> t option
 			= fun (m, a) ->
@@ -211,17 +213,21 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
         then null
         else (mul_list m1 m2), coeff
 
-		let isConstant : t -> bool
+		let is_constant : t -> bool
             = fun (m,_) ->
             MonomialBasis.is_null m
 
-		let isLinear : t -> bool
+		let is_linear : t -> bool
             = fun (m,c) ->
-            MonomialBasis.isLinear m
+            MonomialBasis.is_linear m
+
+        let is_affine : t -> bool
+            = fun m ->
+            is_linear m || is_constant m
 
 		let eval : t -> (V.t -> Coeff.t) -> Coeff.t
 			= fun (m,c) e ->
-			if isConstant (m,c)
+			if is_constant (m,c)
 			then c
 			else Coeff.mul (MonomialBasis.eval m e) c
 
@@ -233,11 +239,14 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 				| None -> mul (m',c') ([v,e], Coeff.u)
 			) ([], c) m
 
+        let get_vars : t -> V.t list
+            = fun (m,_) ->
+            List.map Pervasives.fst m
 	end
 
 	type t = Monomial.t list
 
-	let (compare : t -> t -> int)
+	let compare : t -> t -> int
 		= fun p1 p2 ->
 			match (p1,p2) with
 			| ([],[]) -> 0
@@ -330,26 +339,27 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 		= fun p ->
 		List.map Monomial.data_list p
 
-	let (cste : Coeff.t -> t)
+	let cste : Coeff.t -> t
 		= fun i ->
 		[(MonomialBasis.null,i)] |> canon
 
-	let (z : t)
+	let z : t
 		= cste Coeff.z
 
-	let (u : t)
+	let u : t
 		= cste Coeff.u
 
-	let (negU : t) = cste Coeff.negU
+	let negU : t
+        = cste Coeff.negU
 
-	let rec(is_constant : t -> bool)
+	let is_constant : t -> bool
 		= fun p ->
 		match p with
 		| [] -> true
-		| [(m,coeff)] -> MonomialBasis.compare m MonomialBasis.null = 0
-		| (m,coeff) :: tail -> false
+		| [m] -> Monomial.is_constant m
+		| _ :: tail -> false
 
-	let rec(isZ : t -> bool)
+	let isZ : t -> bool
 		= fun p ->
 		if p = [] then true (* nécessaire? *)
 		else if List.length p = 1
@@ -359,10 +369,10 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 
 	(* [is_affine] assumes that [p] is in canonical form. *)
 	let is_affine : t -> bool
-	  = fun p -> List.for_all (fun m -> Monomial.isConstant m || Monomial.isLinear m) p
+	  = List.for_all Monomial.is_affine
 
-	let rec(add : t -> t -> t)
-		= let rec(add_rec : t -> t -> t)
+	let add : t -> t -> t
+		= let rec add_rec
 			= fun p1 p2 ->
 			match (p1,p2) with
 			| ([],poly2) -> poly2
@@ -379,8 +389,8 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 		in fun p1 p2 ->
 		add_rec p1 p2 |> canon
 
-	let rec(mul : t -> t -> t)
-		= let rec(mul_rec : t -> t -> t)
+	let mul : t -> t -> t
+		= let rec mul_rec
 			= fun p1 p2 ->
 			match (p1,p2) with
 			| ([],_) -> []
@@ -390,117 +400,133 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 		mul_rec p1 p2 |> canon
 
 	(* XXX: naïve implem*)
-	let (mulc : t -> Coeff.t -> t)
+	let mulc : t -> Coeff.t -> t
 		= fun p c ->
 		mul p (cste c)
 
-	let (neg : t -> t)
+	let neg : t -> t
 		= fun p ->
 		mulc p Coeff.negU
 
 	(* XXX: naïve implem *)
-	let (sub : t -> t -> t)
+	let sub : t -> t -> t
 		= fun p1 p2 ->
 		add p1 (mul negU p2)
 
-	let (sum : t list -> t)
+	let sum : t list -> t
 		= fun l ->
 		List.fold_left (fun r p -> add r p) z l
 
-	let (prod : t list -> t)
+	let prod : t list -> t
 		= fun l ->
 		List.fold_left (fun r p -> mul r p) u l
 
-	let (pow : t -> int -> t)
+	let pow : t -> int -> t
 		= fun p i ->
 		List.map (fun _ -> p) (Misc.range 0 i) |> prod
 
-	let (equal : t -> t -> bool)
+	let equal : t -> t -> bool
 		= fun p1 p2 ->
-		List.length p1 <> List.length p2
+		List.length p1 = List.length p2
 		&&
 		List.for_all2 Monomial.equal p1 p2
 
-	let (rename : t -> V.t -> V.t -> t)
+	let rename : t -> V.t -> V.t -> t
 		= fun p v v'->
 		List.map (fun (m,c) -> (MonomialBasis.rename m v v',c)) p
 		|> canon
 
-	let rec(monomial_coefficient : t -> MonomialBasis.t -> Coeff.t)
+	let rec monomial_coefficient : t -> MonomialBasis.t -> Coeff.t
 		= fun p m ->
 		match (p,m) with
 		| ([],_) -> Coeff.z
-		| ((m1,c)::tail, m2) -> if MonomialBasis.compare m1 m2 = 0
+		| ((m1,c)::tail, m2) ->
+            let cmp = MonomialBasis.compare m1 m2 in
+            if cmp = 0
 			then c
-			else if MonomialBasis.compare m1 m2 < 0
+			else if cmp < 0
 				then monomial_coefficient tail m
 				else Coeff.z
-(*
-	let rec(sub_monomial : MonomialBasis.t -> MonomialBasis.t -> (MonomialBasis.t * bool))
-	= fun m1 m2 ->
-	match (m1,m2) with
-	| (_,[]) -> (m1,true)
-	| ([],_) -> ([],false)
-	| (v1::tail1,v2::tail2) -> if V.cmp v1 v2 = 0
-		then sub_monomial tail1 tail2
-		else let (l,b) = sub_monomial tail1 m2 in (v1::l,b)
 
-	let (monomial_coefficient_poly : t -> MonomialBasis.t -> t)
-		= let rec(monomial_coefficient_poly_rec : t -> MonomialBasis.t -> t)
-			= fun p m ->
-			match (p,m) with
-			| ([],_) -> []
-			| ((m1,c)::tail, m2) -> if List.length m1 >= List.length m2 && MonomialBasis.compare (Misc.sublist m1 0 (List.length m2)) m2 > 0 (* m1 > m2 *)
-				then []
-				else let (l,b) = sub_monomial m1 m in if b
-					then add [(l,c)] (monomial_coefficient_poly_rec tail m2)
-					else monomial_coefficient_poly_rec tail m2
-		in fun p m ->
-		monomial_coefficient_poly_rec p m |> canon
-
-	let (get_constant : t -> Coeff.t)
+    let get_constant : t -> Coeff.t
 		= fun p ->
 		monomial_coefficient p MonomialBasis.null
 
-	let rec(get_affine_part : t -> V.t list -> t)
-		= fun p variables ->
-		let res = match p with
-			| [] -> []
-			| (vlist,coeff) :: tail -> let q = get_affine_part tail variables in
-				let vlist2 = List.filter (fun x -> List.mem x variables) vlist in
-					if List.length vlist2 <= 1
-						then add [(vlist,coeff)] q
-						else q
-		in canon res
+	let sub_monomial : t -> MonomialBasis.t -> t
+		= fun p m ->
+		Misc.pop
+			(fun (m1,_) (m2,_) -> MonomialBasis.equal m1 m2)
+			p (m,Vec.Coeff.z)
 
-	let (get_vars : t -> V.t list)
+    let monomial_coefficient_poly : t -> MonomialBasis.t -> t
+		= let rec sub_monomial : MonomialBasis.t -> MonomialBasis.t -> (MonomialBasis.t * bool)
+			= fun m1 m2 ->
+			match (m1,m2) with
+			| (_,[]) -> (m1,true)
+			| ([],_) -> ([],false)
+			| ((v1,e1)::tail1, (v2,e2)::tail2) ->
+                if V.equal v1 v2
+				then
+                    if e1 >= e2
+                    then
+                        if e1 = e2
+                        then sub_monomial tail1 tail2
+                        else
+                            let (l,b) = sub_monomial tail1 tail2 in
+                            ((v1, e1 - e2) :: l, b)
+                    else ([],false)
+				else
+                    let (l,b) = sub_monomial tail1 m2 in
+                    ((v1,e1)::l,b)
+		in
+		let rec monomial_coefficient_poly_rec : t -> MonomialBasis.t -> t
+			= fun p m ->
+			match p with
+			| [] -> []
+			| (m1,c)::tail ->
+                if List.length m1 >= List.length m
+                    && MonomialBasis.compare (Misc.sublist m1 0 (List.length m)) m > 0 (* m1 > m *)
+				then []
+				else let (l,b) = sub_monomial m1 m in
+                    if b
+					then add [(l,c)] (monomial_coefficient_poly_rec tail m)
+					else monomial_coefficient_poly_rec tail m
+		in fun p m ->
+		monomial_coefficient_poly_rec p m |> canon
+
+
+	let get_affine_part : t -> V.t list -> t
+		= fun p vars ->
+		List.filter Monomial.is_affine p
+        |> canon
+
+	let get_vars : t -> V.t list
 		= fun p ->
-		List.map (fun (m,c) -> Misc.rem_dupl V.equal m) p
+		List.map Monomial.get_vars p
 		|> List.concat
 		|> Misc.rem_dupl V.equal
 
-	let (eval : t -> (V.t -> Coeff.t) -> Coeff.t)
-			= fun p e ->
-			List.fold_left
-			(fun c m -> Coeff.add c (Monomial.eval m e))
-			Coeff.z p
+	let eval : t -> (V.t -> Coeff.t) -> Coeff.t
+		= fun p e ->
+		List.fold_left (fun c m ->
+            Coeff.add c (Monomial.eval m e)
+        ) Coeff.z p
 
-	let (eval_partial : t -> (V.t -> Coeff.t option) -> t)
-			= fun p e ->
-			List.fold_left
-			(fun p m -> add p [(Monomial.eval_partial m e)])
-			[] p
+	let eval_partial : t -> (V.t -> Coeff.t option) -> t
+		= fun p e ->
+		List.fold_left (fun p m ->
+            add p [(Monomial.eval_partial m e)]
+        ) [] p
 
 	let toCstr : t -> (Vec.t * Coeff.t)
 		= fun p ->
 		if is_affine p
 		then
-			let vec = (List.fold_left
-				(fun l (m,c) ->
-					if MonomialBasis.compare m MonomialBasis.null <> 0
-					then (c, List.nth (MonomialBasis.data m) 0) :: l
-					else l)
-				[] (List.map Monomial.data (data p)))
+			let vec = List.fold_left (fun l (m,c) ->
+        			if not (MonomialBasis.is_null m)
+        			then (c, List.hd m |> Pervasives.fst) :: l
+        			else l
+                ) [] (List.map Monomial.data (data p))
 				|> Vec.mk
 			and cste = get_constant p
 			in
@@ -511,11 +537,10 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 		= fun vec cste ->
 		let l = vec
 		|> Vec.toList
-			|> List.map (fun (x,n) -> Monomial.mk2 [x] n)
+			|> List.map (fun (x,n) -> Monomial.mk2 [x,1] n)
 			|> mk
 		in
 		mk_cste l cste
-    *)
 
 	let of_string : string -> t
    	    = fun s ->

@@ -1,3 +1,5 @@
+Printexc.record_backtrace true;;
+
 let datatypes =
     let tcs = List.map Test.run [Var_t.ts ; VarMap_t.ts ; Scalar_t.ts ; Cstr_t.ts] in
     Test.prState "Datatypes" (Test.suite "Datatypes" tcs Test.stateZ)
