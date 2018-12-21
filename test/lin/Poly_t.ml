@@ -1,14 +1,13 @@
 open Vpl
 
-module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Positive) = struct
+module Make_Tests (Vec : Vector.Type) = struct
 
 	module Poly = Poly.Make(Vec)
 	module Coeff = Poly.Coeff
-	module V = Poly.V
 
-	let x = V.fromInt 1
-	let y = V.fromInt 2
-	let z = V.fromInt 3
+	let x = Var.fromInt 1
+	let y = Var.fromInt 2
+	let z = Var.fromInt 3
 
     let mk_mb = Poly.MonomialBasis.mk
     let mk_m = Poly.Monomial.mk_list
@@ -410,10 +409,10 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
                 = fun (nm, p, (ev,ec)) state ->
                 let (v,c) = Poly.toCstr p in
                 Test.equals nm (fun (v,c) ->
-                    Printf.sprintf "(%s,%s)" (Vec.to_string V.to_string v) (Coeff.to_string c))
+                    Printf.sprintf "(%s,%s)" (Vec.to_string Var.to_string v) (Coeff.to_string c))
                     (fun (v1,c1) (v2,c2)-> Vec.equal v1 v2 && Coeff.equal c1 c2) (ev,ec) (v,c) state
             in
-            let var = Poly.V.fromInt in
+            let var = Var.fromInt in
             let tcs : (string * Poly.t * (Vec.t * Coeff.t)) list = Poly.([
                 "nil",
                 Poly.z,
@@ -443,7 +442,7 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
 			let ap = Poly.ofCstr v c in
 			Test.equals nm Poly.to_string Poly.equal ep ap state
 		in
-		let var = Poly.V.fromInt in
+		let var = Var.fromInt in
 		let tcs : (string * Poly.t * (Vec.t * Coeff.t)) list
 		= Poly.([
 	  		"nil",
@@ -489,7 +488,7 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
 
 	let ts : Test.t
 	  = fun () ->
-      Test.suite (Coeff.name ^ ":" ^ V.name) [
+      Test.suite (Coeff.name) [
 			  Invariant_t.ts();
 			  Monomial_t.ts();
 			  Poly_t.ts();

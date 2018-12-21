@@ -1,19 +1,19 @@
 open Vpl
 
 module Make_Tests (Cs : Cstr.Type) = struct
-	let x = Cs.Vec.V.fromInt 1
-	let y = Cs.Vec.V.fromInt 2
-	let z = Cs.Vec.V.fromInt 3
+	let x = Var.fromInt 1
+	let y = Var.fromInt 2
+	let z = Var.fromInt 3
 
-	let varPr: Cs.Vec.V.t -> string
+	let varPr: Var.t -> string
 	= fun _x ->
-		let vars: (Cs.Vec.V.t * string) list
+		let vars: (Var.t * string) list
 		= [x, "x"; y, "y"; z, "z"]
 		in
 		try
 			List.assoc _x vars
 		with
-		| Not_found -> "v" ^ (Cs.Vec.V.to_string _x)
+		| Not_found -> "v" ^ (Var.to_string _x)
 
 	let mkc t v c =
 		Cs.mk t (List.map (fun (i, v) -> (Cs.Vec.Coeff.of_int i, v)) v) (Cs.Vec.Coeff.of_int c)
@@ -382,7 +382,7 @@ module Rat = struct
 
 	module Make_Tests (Cstr : sig
         include Cstr.Type
-        val elim : t -> t -> Vec.V.t -> (t * Vec.Coeff.t * Vec.Coeff.t)
+        val elim : t -> t -> Var.t -> (t * Vec.Coeff.t * Vec.Coeff.t)
         val canon : t -> t
         end) = struct
 
@@ -517,30 +517,10 @@ module Rat = struct
 
 	module Positive = Make_Tests(Cstr.Rat.Positive)
 
-	module Int = Make_Tests(Cstr.Rat.Int)
-
 	let ts : Test.t
-		= fun () -> Test.suite "Rat" [Positive.ts() ; Int.ts()]
-end
-
-module Float = struct
-	module Cstr = Cstr.Float
-
-	module Positive = struct
-		module Cstr = Cstr.Positive
-		include Make_Tests(Cstr)
-	end
-
-	module Int = struct
-		module Cstr = Cstr.Int
-		include Make_Tests(Cstr)
-	end
-
-	let ts : Test.t
-		= fun () ->
-        Test.suite "Float" [Positive.ts() ; Int.ts()]
+		= fun () -> Test.suite "Rat" [Positive.ts()]
 end
 
 let ts : Test.t
 	= fun () ->
-    Test.suite "Cstr" [Rat.ts() ; Float.ts()]
+    Test.suite "Cstr" [Rat.ts()]

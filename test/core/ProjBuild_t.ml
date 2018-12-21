@@ -1,7 +1,6 @@
 open Vpl
 
 module Cs = Cstr.Rat.Positive
-module Var = Var.Positive
 
 module Make_Tests (Min : Min.Type) = struct
 

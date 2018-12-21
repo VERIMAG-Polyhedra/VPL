@@ -15,27 +15,27 @@ let factory : Cs.t Factory.t = {
 		if Cs.equal c1' c2'
 		then c1'
 		else failwith "merge");
-	Factory.to_string = Cs.to_string Cs.Vec.V.to_string;
+	Factory.to_string = Cs.to_string Var.to_string;
 	Factory.rename = Cs.rename;
 }
 
 
 (* EqSet *)
-let x = Cs.Vec.V.fromInt 1
-let y = Cs.Vec.V.fromInt 2
-let z = Cs.Vec.V.fromInt 3
-let t = Cs.Vec.V.fromInt 4
+let x = Var.fromInt 1
+let y = Var.fromInt 2
+let z = Var.fromInt 3
+let t = Var.fromInt 4
 let nxt = 5
 
-let varPr: Cs.Vec.V.t -> string
+let varPr: Var.t -> string
 = fun _x ->
-	let vars: (Cs.Vec.V.t * string) list
+	let vars: (Var.t * string) list
 	= [x, "x"; y, "y"; z, "z"; t, "t"]
 	in
 	try
 		List.assoc _x vars
 	with
-	| Not_found -> "v" ^ (Cs.Vec.V.to_string _x)
+	| Not_found -> "v" ^ (Var.to_string _x)
 
 let mkc t v c =
 	Cs.mk t (List.map (fun (n, x) -> (Cs.Vec.Coeff.of_int n, x)) v) (Cs.Vec.Coeff.of_int c)
@@ -45,7 +45,7 @@ let le = mkc Cstr_type.Le
 let lt = mkc Cstr_type.Lt
 
 let mask l =
-	List.fold_left (fun m x -> Cs.Vec.M.set None m x (Some x)) Cs.Vec.M.empty l
+	List.fold_left (fun m x -> Rtree.set None m x (Some x)) Rtree.empty l
 
 (* XXX: This function does not do any check on the inputs. *)
 
@@ -53,7 +53,7 @@ let mkCons : Cs.t -> Cs.t Cons.t
 	= fun c ->
 		(c, c)
 
-let mk: (Cs.Vec.V.t * Cs.t) list -> Cs.t EqSet.t
+let mk: (Var.t * Cs.t) list -> Cs.t EqSet.t
 	= fun l ->
 	List.fold_left
 		(fun s (x,c) -> (x, (mkCons c))::s)
@@ -414,10 +414,10 @@ let trySubstMTs: Test.t
 (* EqSet.joinSetup *)
 let joinSetupTs: Test.t
 =
-	let alpha = Cs.Vec.V.fromInt nxt in
+	let alpha = Var.fromInt nxt in
 	let nxt' = nxt + 1 in
 	let chk_id0 dup (t, idOff, s) = fun state ->
-		let (_, _, s1) = EqSet.joinSetup dup (Cs.Vec.V.fromInt nxt') Cs.Vec.M.empty alpha idOff s in
+		let (_, _, s1) = EqSet.joinSetup dup (Var.fromInt nxt') Rtree.empty alpha idOff s in
 		let sorted =
 			let ids = List.map (fun c -> (Cons.get_id c)) (EqSet.list s) in
 			List.sort Pervasives.compare ids
@@ -432,13 +432,13 @@ let joinSetupTs: Test.t
 			Test.fail t "not equal" state
 	in
 	let chk_def0 dup (t, i0, s) = fun state ->
-		let (_, reloc, s1) = EqSet.joinSetup dup (Cs.Vec.V.fromInt nxt') Cs.Vec.M.empty alpha i0 s in
+		let (_, reloc, s1) = EqSet.joinSetup dup (Var.fromInt nxt') Rtree.empty alpha i0 s in
 		let a =
 			let chk (x1, _) (x2, _) =
 				if dup then
 					x1 = x2
 				else
-					Cs.Vec.M.get None reloc x1 = Some x2
+					Rtree.get None reloc x1 = Some x2
 			in
 			List.for_all2 chk s s1
 		in
@@ -452,7 +452,7 @@ let joinSetupTs: Test.t
 			Test.fail t err state
 	in
 	let chk_frag0 dup (t, i0, s) = fun state ->
-		let (_, _, s1) = EqSet.joinSetup dup (Cs.Vec.V.fromInt nxt') Cs.Vec.M.empty alpha i0 s in
+		let (_, _, s1) = EqSet.joinSetup dup (Var.fromInt nxt') Rtree.empty alpha i0 s in
 		let a =
 			let chk c =
 				match Cons.get_f c with
@@ -519,7 +519,7 @@ let inclTs: Test.t
 (* EqSet.rename *)
 let renameTs: Test.t
 = fun () ->
-	let x' = Cs.Vec.V.fromInt nxt in
+	let x' = Var.fromInt nxt in
 	let chkVar (t, fromX, toY, s0) = fun state ->
 		let defVars s = List.map (fun (v, _) -> v) s in
 		let s = EqSet.rename factory s0 fromX toY in

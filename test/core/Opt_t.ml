@@ -2,22 +2,20 @@
 open Vpl
 open Splx
 
-module VT = Var_type
+let x = Var.fromInt 1
+let y = Var.fromInt 2
+let z = Var.fromInt 3
+let t = Var.fromInt 4
 
-let x = V.fromInt 1
-let y = V.fromInt 2
-let z = V.fromInt 3
-let t = V.fromInt 4
+let nxt = Var.fromInt 5
 
-let nxt = V.fromInt 5
-
-let varPr: V.t -> string
+let varPr: Var.t -> string
 = fun x ->
 	let vars = [x, "x"; y, "y"; z, "z"; t, "t"] in
 	try
 		List.assoc x vars
 	with
-	| Not_found -> "v" ^ (V.to_string x)
+	| Not_found -> "v" ^ (Var.to_string x)
 
 let mkc t v c =
 	Cs.mk t (List.map (fun (c, v) -> (Scalar.Rat.of_int c, v)) v) (Scalar.Rat.of_int c)
@@ -243,7 +241,7 @@ let pickBasicTs: Test.t
 			Test.fail t (Opt.prProgress xNBnd1) state
 	in
 	let sx1 = nxt in
-	let sx2 = V.next sx1 in
+	let sx2 = Var.next sx1 in
 	let tcs = [
 		"nil0", x, Opt.Unbnd, Opt.Incr, x, Opt.Unbnd,
 			Opt.setObj (sxLift (Splx.mk nxt []))
@@ -359,7 +357,7 @@ let maxTs: Test.t
 	(* XXX: should do without dummySx *)
 	let tcs
 	  = let dummySx
-	      = match Splx.mk VT.XH [] with
+	      = match Splx.mk Var.XH [] with
 	      | Splx.IsUnsat _ -> Pervasives.failwith "Opt_t.maxTs"
 	      | Splx.IsOk sx -> sx
 	    in
@@ -396,7 +394,7 @@ let maxTs: Test.t
 				2, le [1, x; 1, y] 5 ];
 
 		"distant_nxt0", Opt.Infty, Vec.mk [Scalar.Rat.negU, x],
-			Splx.mk (VT.XI (VT.XO (VT.XO VT.XH))) [
+			Splx.mk (Var.XI (Var.XO (Var.XO Var.XH))) [
 				1, Cs.eq [Scalar.Rat.u, x; Scalar.Rat.u, y; Scalar.Rat.negU, z] Scalar.Rat.z;
 				2, Cs.eq [Scalar.Rat.u, y; Scalar.Rat.negU, t] Scalar.Rat.negU;
 				3, Cs.le [Scalar.Rat.negU, z] Scalar.Rat.u;

@@ -2,7 +2,6 @@ open Vpl
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module Var = Vec.V
 
 let x = Var.fromInt 1
 let y = Var.fromInt 2
@@ -48,7 +47,7 @@ module Factory = struct
 			if Cs.equal c1' c2'
 			then c1'
 			else failwith "merge");
-		Factory.to_string = Cs.to_string Cs.Vec.V.to_string;
+		Factory.to_string = Cs.to_string Var.to_string;
 		Factory.rename = Cs.rename;
 	}
 
@@ -327,8 +326,8 @@ module Make_Tests (F : sig
 				  	a_conss e_conss
 				then None
 				else let e = Printf.sprintf "bad certificate:\nExpected %s\ngot %s"
-					(Misc.list_to_string (Cons.to_string_ext factory Cs.Vec.V.to_string) e_conss "\n")
-					(Misc.list_to_string (Cons.to_string_ext factory Cs.Vec.V.to_string) a_conss "\n")
+					(Misc.list_to_string (Cons.to_string_ext factory Var.to_string) e_conss "\n")
+					(Misc.list_to_string (Cons.to_string_ext factory Var.to_string) a_conss "\n")
 					in
 					Some e
 			in
@@ -1243,7 +1242,7 @@ module Make_Tests (F : sig
 	= fun () ->
 		let chk (name, v, itv, p) = fun state ->
 			let (itv1, lower_cert, upper_cert) = Pol.itvize factory p v in
-			let var = Cs.Vec.getVars [v] |> Cs.Vec.V.Set.elements |> List.hd in
+			let var = Cs.Vec.getVars [v] |> Var.Set.elements |> List.hd in
 			if eqItv itv itv1
 			 &&
 			 	chk_upper_bound var (Pol.get_up itv) upper_cert

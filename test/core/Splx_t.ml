@@ -1,7 +1,6 @@
 open Vpl
 
 module Cs = Cstr.Rat.Positive (* XXX: à retirer pour généraliser à Var.Int *)
-module Var = Cs.Vec.V
 module Vec = Cs.Vec
 
 let x = Var.fromInt 1
@@ -37,7 +36,7 @@ let checknbasic s =
 		|None -> true)
 	in
 	let rec _check m st =
-		Cs.Vec.M.for_all2
+		Rtree.for_all2
 			(fun mopt nopt -> match mopt,nopt with
 			| Some _, _ -> true
 			| None, None -> true
@@ -47,11 +46,11 @@ let checknbasic s =
 
 let checkmat s =
 	let rec eval a ve st =
-		Cs.Vec.M.fold2
+		Rtree.fold2
 			(fun _ a x y -> Scalar.Symbolic.add a (Scalar.Symbolic.mulr x (Splx.get_v y)))
 			a ve st
 	in
-	Cs.Vec.M.fold
+	Rtree.fold
 		(fun _ a n ->
 			match n with
 			| None -> a
@@ -69,7 +68,7 @@ let checkBasic : Splx.t -> bool
 	(fun x b ->
 	 if not b then b
 	 else
-	   Cs.Vec.M.fold
+	   Rtree.fold
 	 (fun _ b' ->
 	  if not b' then fun _ -> b'
 	  else
@@ -78,10 +77,10 @@ let checkBasic : Splx.t -> bool
 		| Some v -> Vec.Coeff.cmpz (Cs.Vec.get v x) = 0
 	 )
 	 true
-	 (Cs.Vec.M.set None (Splx.get_mat sx) x None)
+	 (Rtree.set None (Splx.get_mat sx) x None)
 	)
-	(Cs.Vec.M.mskBuild (function None -> false | Some _ -> true) [Splx.get_mat sx]
-	 |> Cs.Vec.M.pathsGet)
+	(Rtree.mskBuild (function None -> false | Some _ -> true) [Splx.get_mat sx]
+	 |> Rtree.pathsGet)
 	true
 
 let checkinv s = checknbasic s && checkmat s && checkBasic s
@@ -112,7 +111,7 @@ let ccheckFromAdd : Splx.t Splx.mayUnsatT -> invChkT
 	| Splx.IsOk sx -> ccheck sx
 
 
-let asgEquiv : Scalar.Symbolic.t Cs.Vec.M.t -> (Var.t * Scalar.Symbolic.t) list -> bool
+let asgEquiv : Scalar.Symbolic.t Rtree.t -> (Var.t * Scalar.Symbolic.t) list -> bool
   = fun t l ->
   let xs = List.map Pervasives.fst l |> Var.Set.of_list in
   if not
@@ -121,10 +120,10 @@ let asgEquiv : Scalar.Symbolic.t Cs.Vec.M.t -> (Var.t * Scalar.Symbolic.t) list 
 	   if Var.Set.mem x xs then b
 	   else b && Scalar.Symbolic.cmp Scalar.Symbolic.z a = 0
 	  )
-	  true (Cs.Vec.M.toList t)
+	  true (Rtree.toList t)
 	   )
   then false
-  else List.for_all (fun (x, a) -> Scalar.Symbolic.cmp a (Cs.Vec.M.get Scalar.Symbolic.z t x) = 0) l
+  else List.for_all (fun (x, a) -> Scalar.Symbolic.cmp a (Rtree.get Scalar.Symbolic.z t x) = 0) l
 
 (* Splx.mergeB *)
 let mergeBTs: Test.t
@@ -297,12 +296,12 @@ let setSymbolicTs: Test.t
 		else
 			Test.fail t (Scalar.Symbolic.to_string aRes) state
 	in
-	let mapMk = Cs.Vec.M.mk {Splx.v = Scalar.Symbolic.z; Splx.low = None; Splx.up = None} in
+	let mapMk = Rtree.mk {Splx.v = Scalar.Symbolic.z; Splx.low = None; Splx.up = None} in
 	let stMk v = {Splx.v = v; Splx.low = None; Splx.up = None} in
 	let valMk i = Scalar.Symbolic.ofQ (Vec.Coeff.of_int i) in
 	let tcs = [
-		"nil0", valMk 0, Cs.Vec.nil, Cs.Vec.M.empty;
-		"nil1", valMk 0, Cs.Vec.mk [Vec.Coeff.u, x], Cs.Vec.M.empty;
+		"nil0", valMk 0, Cs.Vec.nil, Rtree.empty;
+		"nil1", valMk 0, Cs.Vec.mk [Vec.Coeff.u, x], Rtree.empty;
 		"nil2", valMk 0, Cs.Vec.nil, mapMk [x, stMk (valMk 1)];
 		"u0", valMk (-1), Cs.Vec.mk [Vec.Coeff.u, x], mapMk [x, stMk (valMk 1)];
 		"u1", valMk (-2), Cs.Vec.mk [Vec.Coeff.u, x], mapMk [x, stMk (valMk 2)];
@@ -390,7 +389,7 @@ let addOkTs: Test.t
 					Splx.low = None;
 					Splx.up = None
 				} in
-				Cs.Vec.M.get state_z (Splx.get_state s1) v
+				Rtree.get state_z (Splx.get_state s1) v
 			in
 			if Splx.obnd_equal l (Splx.get_low stV) && Splx.obnd_equal u (Splx.get_up stV)
 			then Test.succeed state
@@ -402,7 +401,7 @@ let addOkTs: Test.t
 		match Splx.addAcc s (i, c) with
 		| Splx.IsUnsat _ -> Test.fail t "unsat" state
 		| Splx.IsOk s1 ->
-			let e1 = Cs.Vec.M.get None (Splx.get_mat s1) v in
+			let e1 = Rtree.get None (Splx.get_mat s1) v in
 			match e with
 			| None ->
 				if e1 = None
@@ -561,7 +560,7 @@ let addIncrTs : Test.t
 	   else
 		 let e =
 		   Printf.sprintf "got: %s\n\n%s\n"
-				  (Cs.Vec.M.to_string "; " (fun a s -> s ^ ": " ^ Scalar.Symbolic.to_string a) varPr asg')
+				  (Rtree.to_string "; " (fun a s -> s ^ ": " ^ Scalar.Symbolic.to_string a) varPr asg')
 				  (Splx.pr varPr sx)
 		 in
 		 Test.fail nm e st
@@ -701,7 +700,7 @@ let pivotTs: Test.t
 		| Splx.IsUnsat _ -> Test.fail t "unsat" state
 		| Splx.IsOk s ->
 			let m = Splx.pivot (Splx.get_mat s) xB xN in
-			match Cs.Vec.M.get None m xB with
+			match Rtree.get None m xB with
 			| None -> Test.succeed state
 			| Some _ -> Test.fail t "basic still basic" state
 	in
@@ -710,8 +709,8 @@ let pivotTs: Test.t
 		| Splx.IsUnsat _ -> Test.fail t "unsat" state
 		| Splx.IsOk s ->
 			let m = Splx.pivot (Splx.get_mat s) xB xN in
-			let nodeB = Cs.Vec.M.get None (Splx.get_mat s) xB in
-			let nodeN = Cs.Vec.M.get None m xN in
+			let nodeB = Rtree.get None (Splx.get_mat s) xB in
+			let nodeN = Rtree.get None m xN in
 			match nodeB, nodeN with
 			| None, _ | _, None -> Test.fail t "not basic" state
 			| Some consB, Some consN ->
@@ -732,7 +731,7 @@ let pivotTs: Test.t
 				| None -> i
 				| Some cons -> if Vec.Coeff.cmpz (Cs.Vec.get cons xN) = 0 then i else i + 1
 			in
-		if Cs.Vec.M.fold (fun _ -> cnt) 0 m = 1
+		if Rtree.fold (fun _ -> cnt) 0 m = 1
 		then Test.succeed state
 		else Test.fail t "cnt > 1" state
 	in
@@ -923,7 +922,7 @@ let chk : (string * Splx.t Splx.mayUnsatT * (Var.t * Scalar.Symbolic.t) list) ->
 	 else
 	   let estr =
 		 Printf.sprintf "assignement: %s\n\nfinal tableau:\n%s\n"
-				(Cs.Vec.M.to_string "; " (fun a s -> s ^ ": " ^ Scalar.Symbolic.to_string a) varPr asg')
+				(Rtree.to_string "; " (fun a s -> s ^ ": " ^ Scalar.Symbolic.to_string a) varPr asg')
 				(Splx.pr varPr sx')
 	   in
 	   Test.fail nm estr st
@@ -992,7 +991,7 @@ let chkInv : string * Var.t * Cs.Vec.t * Splx.t -> Test.stateT -> Test.stateT
   let chkCons : string * Var.t * Cs.Vec.t * Splx.t -> Test.stateT -> Test.stateT
 	= fun (nm, x, v, sx) st ->
 	let sx' = Splx.insertBack x sx in
-	match Cs.Vec.M.get None (Splx.get_mat sx') x with
+	match Rtree.get None (Splx.get_mat sx') x with
 	| None ->
 	   let e = Printf.sprintf "not a basic variable\n%s" (Splx.pr varPr sx') in
 	   Test.fail nm e st
@@ -1040,7 +1039,7 @@ let complOkTs: Test.t
 = fun () ->
 	let getstate s x =
 		let z = { Splx.v = Scalar.Symbolic.z; Splx.low = None; Splx.up = None } in
-			Cs.Vec.M.get z (Splx.get_state s) x
+			Rtree.get z (Splx.get_state s) x
 	in
 	let chk_inv (t, id, _, s) = fun state ->
 		match Splx.checkFromAdd s with
@@ -1196,7 +1195,7 @@ let strictenOkTs: Test.t
 		let getstate s x =
 			let z = { Splx.v = Scalar.Symbolic.z; Splx.low = None; Splx.up = None }
 			in
-				Cs.Vec.M.get z (Splx.get_state s) x
+				Rtree.get z (Splx.get_state s) x
 		in
 		match s with
 		| Splx.IsUnsat _ -> Test.fail t "unsat" state
@@ -1388,7 +1387,7 @@ let forgetOkTs: Test.t
 			else failwith "Splx_t.forget_ok_ts"
 	in
 	let chk_bnd (t, id, x, s) = fun state ->
-		let getbnd s x = Cs.Vec.M.get
+		let getbnd s x = Rtree.get
 			{ Splx.v = Scalar.Symbolic.z; Splx.low = None; Splx.up = None }
 				(Splx.get_state s) x
 		in
@@ -1418,12 +1417,12 @@ let forgetOkTs: Test.t
 		match s with
 		| Splx.IsUnsat _ -> Test.fail t "unsat" state
 		| Splx.IsOk s ->
-			let xbnd = Cs.Vec.M.get
+			let xbnd = Rtree.get
 				{ Splx.v = Scalar.Symbolic.z; Splx.low = None; Splx.up = None }
 					(Splx.get_state s) x
 			in
 			if (Splx.get_up xbnd) = None || (Splx.get_low xbnd) = None then
-				let count = Cs.Vec.M.fold
+				let count = Rtree.fold
 					(fun _ n -> function None -> n | Some _ -> n + 1) 0
 				in
 				let s2 = Splx.forget s id in

@@ -6,8 +6,8 @@ module Make_Tests (Min : Min.Type) = struct
 
 	module Vec = Min.VecInput
 
-	let x = Vec.V.fromInt 1
-	let y = Vec.V.fromInt 2
+	let x = Var.fromInt 1
+	let y = Var.fromInt 2
 
 	let minimizeTs: Test.t
 		(* The boolean is true if the points can saturate constraints. *)
@@ -25,8 +25,8 @@ module Make_Tests (Min : Min.Type) = struct
 				in
 				Test.fail name
 					(Printf.sprintf "Point %s, associated with constraint %s, does not satisfy compl(cstr)."
-						(Vec.to_string Vec.V.to_string point)
-						(Cs.to_string Cs.Vec.V.to_string cstr))
+						(Vec.to_string Var.to_string point)
+						(Cs.to_string Var.to_string cstr))
 					state
 			with Not_found ->
 			try
@@ -40,8 +40,8 @@ module Make_Tests (Min : Min.Type) = struct
 				in
 				Test.fail name
 					(Printf.sprintf "Point %s, associated with constraint %s, saturates the constraint."
-						(Vec.to_string Vec.V.to_string point)
-						(Cs.to_string Cs.Vec.V.to_string cstr))
+						(Vec.to_string Var.to_string point)
+						(Cs.to_string Var.to_string cstr))
 					state
 			with Not_found ->
 			try
@@ -57,8 +57,8 @@ module Make_Tests (Min : Min.Type) = struct
 				in
 				Test.fail name
 					(Printf.sprintf "Point %s, associated with constraint %s, does not saturate other constraints."
-						(Vec.to_string Vec.V.to_string point)
-						(Cs.to_string Cs.Vec.V.to_string cstr))
+						(Vec.to_string Var.to_string point)
+						(Cs.to_string Var.to_string cstr))
 					state
 			with Not_found -> Test.succeed state
 		in
@@ -67,7 +67,7 @@ module Make_Tests (Min : Min.Type) = struct
 			let acstrs = List.split cstrs |> Pervasives.fst in
 			Test.equals
 				name
-				(fun l -> Misc.list_to_string (Cs.to_string Cs.Vec.V.to_string) l " ; ")
+				(fun l -> Misc.list_to_string (Cs.to_string Var.to_string) l " ; ")
 				(Misc.list_eq (fun cstr cstrs -> List.exists (fun c -> Cs.equal c cstr) cstrs))
 				ecstrs acstrs state
 		in

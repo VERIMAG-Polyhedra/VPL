@@ -1,10 +1,10 @@
 open Vpl
 open HOtypes
 
-let x = V.fromInt 1
-let y = V.fromInt 2
-let z = V.fromInt 3
-let t = V.fromInt 4
+let x = Var.fromInt 1
+let y = Var.fromInt 2
+let z = Var.fromInt 3
+let t = Var.fromInt 4
 
 let mk = Index.Int.mk
 let mkl l = List.map Index.Int.mk l
@@ -14,12 +14,12 @@ module MapIndexP = struct
 
 	let poly_to_deg_max_ts : Test.t
 		= fun () ->
-        let chk : string * (Poly.t * V.t list) * Index.Int.t -> (Test.stateT -> Test.stateT)
+        let chk : string * (Poly.t * Var.t list) * Index.Int.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, (p,vl), ei) state ->
 		let ai = poly_to_deg_max p vl in
 		Test.equals nm Index.Int.to_string Index.Int.equal ei ai state
 		   in
-		   let tcs : (string * (Poly.t * V.t list) * Index.Int.t ) list
+		   let tcs : (string * (Poly.t * Var.t list) * Index.Int.t ) list
 		= [
 			 "null polynomial", (Poly.z, [x;y;z]), mk [0;0;0] ;
 			 "empty variable list", (Poly.of_string "x1 + 2*x2 + -1*x4", []), mk [] ;
@@ -56,7 +56,7 @@ end
 module LPMaps = struct
 	open LPMaps
 
-	let check_v_left : V.t -> mapDetBound -> mapBound -> bool
+	let check_v_left : Var.t -> mapDetBound -> mapBound -> bool
 		= fun v mapDB mapB ->
 		let (opt,_) = MapV.find v mapDB in
 		let (inf,_) = MapV.find v mapB in
@@ -64,7 +64,7 @@ module LPMaps = struct
 		| (Some true, Some bound) -> true (* XXX: vérifier aussi la valeur de la borne *)
 		| (_,_) -> false
 
-	let check_v_right : V.t -> mapDetBound -> mapBound -> bool
+	let check_v_right : Var.t -> mapDetBound -> mapBound -> bool
 		= fun v mapDB mapB ->
 		let (_,opt) = MapV.find v mapDB in
 		let (_,sup) = MapV.find v mapB in
@@ -98,19 +98,19 @@ module LPMaps = struct
 
 	let init_ts : Test.t
 		= fun () ->
-        let chk : string * (Poly.t list * V.t list) -> (Test.stateT -> Test.stateT)
+        let chk : string * (Poly.t list * Var.t list) -> (Test.stateT -> Test.stateT)
 		= fun (nm, (pl,vl)) state ->
 		let bounds = init pl vl in
 		if check_maps pl bounds.mapDB bounds.mapB
 			then Test.succeed state
 			else Test.fail nm (Printf.sprintf "map check failed : from polynomials %s and variables %s\nmapDB : %s\nmapB : %s"
 				(Misc.list_to_string Poly.to_string pl " ; ")
-				(Misc.list_to_string V.to_string vl ";")
+				(Misc.list_to_string Var.to_string vl ";")
 				(mapDB_to_string bounds.mapDB)
 				(mapB_to_string bounds.mapB))
 				state
 		   in
-		   let tcs : (string * (Poly.t list * V.t list)) list
+		   let tcs : (string * (Poly.t list * Var.t list)) list
 		= [
 			"empty polynomial list", ([], [x;y;z]) ;
 			"empty variable list", ([Poly.of_string "x1 + 2*x1*x2"], []) ;

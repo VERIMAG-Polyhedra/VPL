@@ -2,7 +2,6 @@ open Vpl
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module V = Vec.V
 
 let factory : Cs.t Factory.t = {
 	Factory.name = "Cstr";
@@ -17,28 +16,28 @@ let factory : Cs.t Factory.t = {
 		if Cs.equal c1' c2'
 		then c1'
 		else failwith "merge");
-	Factory.to_string = Cs.to_string Cs.Vec.V.to_string;
+	Factory.to_string = Cs.to_string Var.to_string;
 	Factory.rename = Cs.rename;
 }
 
-let x = V.fromInt 1
-let y = V.fromInt 2
-let z = V.fromInt 3
-let t1 = V.fromInt 4
-let t3 = V.fromInt 5
-let t2 = V.fromInt 6
+let x = Var.fromInt 1
+let y = Var.fromInt 2
+let z = Var.fromInt 3
+let t1 = Var.fromInt 4
+let t3 = Var.fromInt 5
+let t2 = Var.fromInt 6
 
-let nxt = V.fromInt 7
+let nxt = Var.fromInt 7
 
-let varPr: V.t -> string
+let varPr: Var.t -> string
 = fun _x ->
-	let vars: (V.t * string) list
+	let vars: (Var.t * string) list
 	= [x, "x"; y, "y"; z, "z"; t1, "t1"; t2, "t2"; t3, "t3"]
 	in
 	try
 		List.assoc _x vars
 	with
-	| Not_found -> "v" ^ (V.to_string _x)
+	| Not_found -> "v" ^ (Var.to_string _x)
 
 let mkc t v c =
 	Cs.mk t (List.map (fun (n, x) -> (Scalar.Rat.of_int n, x)) v) (Scalar.Rat.of_int c)
@@ -48,7 +47,7 @@ let le = mkc Cstr_type.Le
 let lt = mkc Cstr_type.Lt
 
 let mask l =
-	List.fold_left (fun m x -> Vec.M.set None m x (Some x)) Vec.M.empty l
+	List.fold_left (fun m x -> Rtree.set None m x (Some x)) Rtree.empty l
 
 let optxpr =
 	function
@@ -94,7 +93,7 @@ let relEq: Cs.t IneqSet.rel_t -> Cs.t IneqSet.rel_t -> bool
 let relPr: Cs.t IneqSet.rel_t -> string
 = function
 	| IneqSet.NoIncl -> "NoIncl"
-	| IneqSet.Incl l -> Printf.sprintf "Incl l with l:\n%s" (Misc.list_to_string (Cs.to_string Cs.Vec.V.to_string) l " ; ")
+	| IneqSet.Incl l -> Printf.sprintf "Incl l with l:\n%s" (Misc.list_to_string (Cs.to_string Var.to_string) l " ; ")
 
 (* IneqSet.synIncl *)
 let synInclCheckTs: Test.t
@@ -532,4 +531,4 @@ let isInclTs: Test.t
 let ts: Test.t
     = fun () ->
     List.map Test.run [synInclTs; addMTs; substTs; isInclTs ; pickTs ; fmElimTs; fmElimMTs]
-    |> Test.suite Vec.V.name
+    |> Test.suite "IneqSet"

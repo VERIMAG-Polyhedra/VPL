@@ -26,7 +26,7 @@ let addSlackAt_ts : Test.t
 			PSplx.obj = Objective.mkSparse 1 [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]];
 			PSplx.basis = [0];
-			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty;
+			PSplx.names = Naming.allocAt Naming.Slack (Var.u) 0 Naming.empty;
 		 };
 
 		 "two_cons", 0,
@@ -40,7 +40,7 @@ let addSlackAt_ts : Test.t
 			PSplx.obj = Objective.mkSparse 1 [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]; [Scalar.Rat.z; Scalar.Rat.of_int 2]];
 			PSplx.basis = [0];
-			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty
+			PSplx.names = Naming.allocAt Naming.Slack (Var.u) 0 Naming.empty
 		 }
 	 ]
 	 |> List.map chk
@@ -110,14 +110,14 @@ module Explore = struct
 		CstrPoly.mk Cstr_type.Eq eq
 		|> CstrPoly.toCstr
 
-	let positivity_constraints : Vec.V.t list -> Cs.t list
+	let positivity_constraints : Var.t list -> Cs.t list
 		= fun vars ->
 		List.map (fun v -> Cs.mk Cstr_type.Le [Vec.Coeff.negU,v] Vec.Coeff.z) vars
 
 	(* On évalue les paramètres *)
-	let obj_to_vec : Vec.V.t list -> Poly.t -> Vec.t -> Vec.t * Vec.Coeff.t
+	let obj_to_vec : Var.t list -> Poly.t -> Vec.t -> Vec.t * Vec.Coeff.t
 		= fun params obj point ->
-		let eval : Vec.V.t -> Vec.Coeff.t option
+		let eval : Var.t -> Vec.Coeff.t option
 			= fun v ->
 			if not (List.mem v params)
 			then None
@@ -129,19 +129,19 @@ module Explore = struct
 		|> CstrPoly.toCstr
 		|> fun c -> (Cs.get_v c, Cs.get_c c)
 
-	let to_splx : Vec.V.t list -> Vec.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> Vec.t -> Splx.t Splx.mayUnsatT * Vec.t * Vec.Coeff.t
+	let to_splx : Var.t list -> Var.t list -> Poly.t list -> Poly.t list -> Poly.t -> Vec.t -> Splx.t Splx.mayUnsatT * Vec.t * Vec.Coeff.t
 		= fun vars params ineqs eqs obj point ->
 		let cstrs = List.mapi
 			(fun i c -> (i,c))
 			((List.map ineq_to_cstr ineqs) @ (List.map eq_to_cstr eqs) @ (positivity_constraints vars))
 		in
 		let (obj,cste) = obj_to_vec params obj point in
-		(Splx.mk (Vec.V.next (Vec.V.max vars)) cstrs
+		(Splx.mk (Var.next (Var.max vars)) cstrs
 			|> Splx.checkFromAdd,
 		obj,
 		cste)
 
-	let eval : Vec.t -> Vec.V.t -> Vec.Coeff.t
+	let eval : Vec.t -> Var.t -> Vec.Coeff.t
 		= fun point v ->
 		Vec.get point v
 
@@ -162,7 +162,7 @@ module Explore = struct
 				(Scalar.Rat.to_string res)
 				(PSplx.to_string psx)
 				(Scalar.Rat.to_string sol)
-				(Splx.pr Vec.V.to_string sx)) st
+				(Splx.pr Var.to_string sx)) st
 
     let check_pivot : string -> PSplx.t -> PSplx.t -> (Test.stateT -> Test.stateT)
         = fun test_name sx_before sx_after st ->
@@ -187,7 +187,7 @@ module Explore = struct
                 Test.fail test_name error_msg st
         ) st (Misc.range 0 ((PSplx.nCols sx_before) - 1))
 
-	let check : string * Poly.V.t list * Poly.V.t list * Poly.t list * Poly.t list * Poly.t * Vec.t -> (Test.stateT -> Test.stateT)
+	let check : string * Var.t list * Var.t list * Poly.t list * Poly.t list * Poly.t * Vec.t -> (Test.stateT -> Test.stateT)
 		= fun (name,vars,params,ineqs,eqs,obj,point) st ->
 		let psx = PSplx.Build.from_poly vars ineqs eqs obj in
 		let res = PSplx.Explore.init_and_push Objective.Bland PSplx_type.Standard point psx in
@@ -209,9 +209,9 @@ module Explore = struct
 
 	let ts : Test.t =
 		fun () ->
-        let var = Vec.V.fromInt
+        let var = Var.fromInt
 		in
-		let tcs : (string * Poly.V.t list * Poly.V.t list * Poly.t list * Poly.t list * Poly.t * Vec.t) list
+		let tcs : (string * Var.t list * Var.t list * Poly.t list * Poly.t list * Poly.t * Vec.t) list
 		= [
 			"no_param_triangle",
 			[var 1 ; var 2],
@@ -290,7 +290,7 @@ module Init
 	   |> List.map chk
 	   |> Test.suite "getReplacementForA"
 
-	let var : int -> Vec.V.t = Vec.V.fromInt
+	let var : int -> Var.t = Var.fromInt
 
   let buildInitFeasibilityPb_ts : Test.t
 	=  fun () ->
@@ -466,4 +466,4 @@ let ts : Test.t
 		  Explore.ts;
 		  Init.ts
 		]
-  |> Test.suite Vec.V.name
+  |> Test.suite "PSplx"

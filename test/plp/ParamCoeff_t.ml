@@ -2,10 +2,10 @@ open Vpl
 
 module Cs = Cstr.Rat.Positive
 
-let x = Cs.Vec.V.fromInt 1
-let y = Cs.Vec.V.fromInt 2
-let z = Cs.Vec.V.fromInt 3
-let t = Cs.Vec.V.fromInt 4
+let x = Var.fromInt 1
+let y = Var.fromInt 2
+let z = Var.fromInt 3
+let t = Var.fromInt 4
 
 let equalTs : Test.t
   = fun () ->
@@ -120,39 +120,39 @@ let mkSparseTs : Test.t
   = fun () ->
   [mkSparsesucceedTs(); mkSparseFailureTs()] |> Test.suite "mkSparse"
 
-let paramCoeffPolyTcs : (string * (Cs.Vec.V.t -> int) *
-				(int -> Cs.Vec.V.t) * int *
+let paramCoeffPolyTcs : (string * (Var.t -> int) *
+				(int -> Var.t) * int *
 				  ParamCoeff.t * ParamCoeff.Poly.t) list
   = [
-  "zero", (fun i -> (Cs.Vec.V.toInt i) - 1), (fun i -> Cs.Vec.V.fromInt (i + 1)), 0,
+  "zero", (fun i -> (Var.toInt i) - 1), (fun i -> Var.fromInt (i + 1)), 0,
   ParamCoeff.mkCst Scalar.Rat.z,
   ParamCoeff.Poly.cste Scalar.Rat.z
 ;
-  "zero1", (fun i -> (Cs.Vec.V.toInt i) - 1), (fun i -> Cs.Vec.V.fromInt (i + 1)), 1,
+  "zero1", (fun i -> (Var.toInt i) - 1), (fun i -> Var.fromInt (i + 1)), 1,
   ParamCoeff.mkSparse 1 [] Scalar.Rat.z,
   ParamCoeff.Poly.cste Scalar.Rat.z
 ;
-  "one", (fun i -> (Cs.Vec.V.toInt i) - 1), (fun i -> Cs.Vec.V.fromInt (i + 1)), 0,
+  "one", (fun i -> (Var.toInt i) - 1), (fun i -> Var.fromInt (i + 1)), 0,
   ParamCoeff.mkCst Scalar.Rat.u,
   ParamCoeff.Poly.cste Scalar.Rat.u
 ;
-  "unit", (fun i -> (Cs.Vec.V.toInt i) - 1), (fun i -> Cs.Vec.V.fromInt (i + 1)), 1,
+  "unit", (fun i -> (Var.toInt i) - 1), (fun i -> Var.fromInt (i + 1)), 1,
   ParamCoeff.mkSparse 1 [0, Scalar.Rat.u] Scalar.Rat.u,
   ParamCoeff.Poly.mk_list [([x,1],Scalar.Rat.u) ; ([],Scalar.Rat.u)]
 ;
-  "multi", (fun i -> (Cs.Vec.V.toInt i) - 1), (fun i -> Cs.Vec.V.fromInt (i + 1)), 2,
+  "multi", (fun i -> (Var.toInt i) - 1), (fun i -> Var.fromInt (i + 1)), 2,
   ParamCoeff.mkSparse 2 [0, Scalar.Rat.u; 1, Scalar.Rat.of_int 2] Scalar.Rat.u,
   ParamCoeff.Poly.mk_list [([x,1],Scalar.Rat.u) ; ([y,1],Scalar.Rat.of_int 2) ; ([],Scalar.Rat.u)]
 ;
-  "shift", (fun i -> (Cs.Vec.V.toInt i) - 2), (fun i -> Cs.Vec.V.fromInt (i + 2)), 3,
+  "shift", (fun i -> (Var.toInt i) - 2), (fun i -> Var.fromInt (i + 2)), 3,
   ParamCoeff.mkSparse 3 [1, Scalar.Rat.u; 2, Scalar.Rat.of_int 2] Scalar.Rat.u,
   ParamCoeff.Poly.mk_list [([z,1],Scalar.Rat.u) ; ([t,1],Scalar.Rat.of_int 2) ; ([],Scalar.Rat.u)]
 ]
 
 let ofPolyTs : Test.t
   = fun () ->
-  let chk : string * (Cs.Vec.V.t -> int) *
-		(int -> Cs.Vec.V.t) * int *
+  let chk : string * (Var.t -> int) *
+		(int -> Var.t) * int *
 		  ParamCoeff.t * ParamCoeff.Poly.t -> Test.stateT -> Test.stateT
 	   = fun (nm, tr, _, i, c, p) state ->
 	   let c' = ParamCoeff.ofPoly tr i p in
@@ -164,8 +164,8 @@ let ofPolyTs : Test.t
 
 let toPolyTs : Test.t
   = fun () ->
-  let chk : string * (Cs.Vec.V.t -> int) *
-		(int -> Cs.Vec.V.t) * int *
+  let chk : string * (Var.t -> int) *
+		(int -> Var.t) * int *
 		  ParamCoeff.t * ParamCoeff.Poly.t -> Test.stateT -> Test.stateT
 	   = fun (nm, _, tr, _, c, p) state ->
 	   let p' = ParamCoeff.toPoly tr c in
