@@ -6,7 +6,7 @@ module Debug = DebugTypes.Debug(struct let name = "PSplx" end)
 
 module Cs = Cstr.Rat.Positive
 
-module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive) = struct
+module Make(Vec : Vector.Type) = struct
     module Vec = Vec
 	module Pivot = Objective.Pivot(Vec)
 	module Naming = Pivot.Naming
@@ -61,13 +61,13 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 	let nParams : t -> int
 	  = fun sx -> Objective.nParams sx.obj
 
-	let getParams : t -> Vec.V.t list
+	let getParams : t -> Var.t list
 		= fun sx ->
 		List.map (fun i ->
             Naming.to_user sx.names Naming.Param i |> fst
         ) (Misc.range 0 (nParams sx))
 
-	let getVars : t -> Vec.V.t list
+	let getVars : t -> Var.t list
 		= fun sx ->
 		List.map (fun i ->
             Naming.to_user sx.names Naming.Var i |> fst
@@ -140,7 +140,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
                     if i' = i then Scalar.Rat.u else Scalar.Rat.z)
             	 ) idx;
             basis = sx.basis @ [idx];
-            names = Naming.allocAt Naming.Slack (Vec.V.fromInt (i+1)) idx sx.names; (* +1 car on compte les slack à partir de 1*)
+            names = Naming.allocAt Naming.Slack (Var.fromInt (i+1)) idx sx.names; (* +1 car on compte les slack à partir de 1*)
         }
 
 	let addSlacks : int -> t -> t
@@ -319,14 +319,14 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 				(lazy "Parametric simplex");
 		  	Debug.log DebugTypes.MInput
 		  		(lazy (Printf.sprintf "Point %s\n%s"
-		  			(Vec.to_string Vec.V.to_string point)
+		  			(Vec.to_string Var.to_string point)
 		  			(to_string sx)));
 		  	let res = push' init_phase st str_row point sx in
 		  	Debug.exec res DebugTypes.MOutput (lazy (to_string res))
 
 		module Init = struct
 
-			let a_value : Vec.V.t ref = ref Vec.V.u
+			let a_value : Var.t ref = ref Var.u
 
 			let getReplacementForA : t -> int -> int
 				= fun sx row ->
@@ -492,16 +492,16 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		module Poly = ParamCoeff.Poly
 
 		let obj_buildOfPoly : Poly.t list -> Poly.t -> Objective.t * Naming.t
-		  = let module VSet = Set.Make (struct type varT = Poly.V.t type t = varT let compare = Poly.V.cmp end) in
+		  = let module VSet = Set.Make (struct type varT = Var.t type t = varT let compare = Var.cmp end) in
 			 let gatherParams1 : Poly.t -> VSet.t
 				= fun p ->
 				Poly.to_list_expanded p
 				|> List.map Pervasives.fst
 				|> List.concat
 				|> List.fold_left (fun s x -> VSet.add x s) VSet.empty
-				(*|> VSet.remove Poly.V.u*)
+				(*|> VSet.remove Var.u*)
 			 in
-			 let gatherParams : Poly.t list -> (int * Poly.V.t) list
+			 let gatherParams : Poly.t list -> (int * Var.t) list
 				= fun l ->
 				List.map gatherParams1 l
 				|> List.fold_left VSet.union VSet.empty
@@ -542,7 +542,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 			 fun n l a ->
 			 obj_buildOfPoly (List.sort (fun (i, _) (i', _) -> Pervasives.compare i i') l |> fill n 0) a
 
-		let obj_of_poly : Poly.t -> Poly.V.t list -> Objective.t * Naming.t
+		let obj_of_poly : Poly.t -> Var.t list -> Objective.t * Naming.t
 		  = fun p l ->
 		  let lin = List.map (fun x -> Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x,1])) l in
 		  let cst = Poly.sub p
@@ -557,14 +557,14 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		  obj_buildOfPoly lin cst
 
 		(** row_from_constraint p mb converts the Poly.t p into a row*)
-		let rec (row_from_constraint : Poly.t -> Poly.V.t list -> Tableau.Vector.t)
+		let rec (row_from_constraint : Poly.t -> Var.t list -> Tableau.Vector.t)
 		  = fun p vars ->
 		  match vars with
 		  | [] -> [Scalar.Rat.neg (Poly.get_constant p)]
 		  | var :: tail -> let coeff = Poly.monomial_coefficient p (Poly.MonomialBasis.mk [var,1]) in
 					coeff::(row_from_constraint p tail);;
 
-        let from_poly : Poly.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> t
+        let from_poly : Var.t list -> Poly.t list -> Poly.t list -> Poly.t -> t
             = fun vars ineqs eqs obj ->
             if List.length vars + List.length ineqs < List.length ineqs + List.length eqs
             then Pervasives.invalid_arg "PSplx.Build.from_poly: variables"

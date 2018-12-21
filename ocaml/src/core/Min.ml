@@ -1,7 +1,7 @@
 module Debug = DebugTypes.Debug(struct let name = "Min" end)
 
 module type Type = sig
-	module VecInput : Vector.Type with module V = Var.Positive and module M = Rtree
+	module VecInput : Vector.Type
 
 	(** [minimize x cstrs] removes the redundancies in the list of constraints [cstrs].
         @param cstrs is the list of constraints to minimize. Syntactic redundancies should have been removed previously.
@@ -29,7 +29,7 @@ module Check = struct
 			then Pervasives.failwith ("Check error : " ^ (Lazy.force s))
 end
 
-module Classic (Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
+module Classic (Vec : Vector.Type) = struct
 	module Cs = Cstr.Rat.Positive
 	module VecInput = Vec
 
@@ -44,7 +44,7 @@ module Classic (Vec : Vector.Type with module V = Var.Positive and module M = Rt
 		= fun v ->
 		Rtree.map Vec.ofSymbolic v
 
-	let init : Vec.V.t -> (int * Cs.t) -> (int * Cs.t) list -> Vec.t option
+	let init : Var.t -> (int * Cs.t) -> (int * Cs.t) list -> Vec.t option
 		= fun horizon (i0,cstr0) cstrs ->
 		let cstrs' = Misc.pop (fun (i1,_) (i2,_) -> i1 = i2) cstrs (i0,cstr0) in
 		let sx = Splx.mk horizon ((i0, Cs.compl cstr0) :: cstrs')
@@ -67,7 +67,7 @@ module Classic (Vec : Vector.Type with module V = Var.Positive and module M = Rt
 				| Splx.IsOk sx' -> Some (ofSymbolic (Splx.getAsg sx'))
 
 	(* XXX: pas optimal, peut-on réutiliser les simplexes précédents? *)
-	let correct_point : Vec.V.t -> ((int * Cs.t) * Vec.t) -> (int * Cs.t) list -> (Cs.t * Vec.t)
+	let correct_point : Var.t -> ((int * Cs.t) * Vec.t) -> (int * Cs.t) list -> (Cs.t * Vec.t)
 		= fun horizon ((i0,cstr0),point) cstrs ->
 		match Splx.mk horizon ((i0, strict_comp cstr0) :: cstrs)
 			|> Splx.checkFromAdd
@@ -75,7 +75,7 @@ module Classic (Vec : Vector.Type with module V = Var.Positive and module M = Rt
 		| Splx.IsUnsat _ -> (cstr0, point)
 		| Splx.IsOk sx -> (cstr0, ofSymbolic (Splx.getAsg sx))
 
-	let correct_points : Vec.V.t -> ((int * Cs.t) * Vec.t) list -> (Cs.t * Vec.t) list
+	let correct_points : Var.t -> ((int * Cs.t) * Vec.t) list -> (Cs.t * Vec.t) list
 		= fun horizon cstrs ->
 		List.map
 			(fun cstr ->
@@ -86,7 +86,7 @@ module Classic (Vec : Vector.Type with module V = Var.Positive and module M = Rt
 	let minimize' : Cs.t list -> (Cs.t * Vec.t) list
 		= fun cstrs ->
 		let horizon = Cs.getVars cstrs
-			|> Vec.V.horizon in
+			|> Var.horizon in
 		let cstrs = List.mapi (fun i cstr -> (i,cstr)) cstrs in
 		List.fold_left
 			(fun (res,cstrs) (i0,cstr0) ->
@@ -106,12 +106,12 @@ module Classic (Vec : Vector.Type with module V = Var.Positive and module M = Rt
 		let res = minimize' cstrs in
 		Debug.log DebugTypes.MOutput (lazy (Misc.list_to_string
 			(fun (c,v) -> Printf.sprintf "(%s, %s)"
-				(Cs.to_string Cs.Vec.V.to_string c)
-				(Vec.to_string Vec.V.to_string v))
+				(Cs.to_string Var.to_string c)
+				(Vec.to_string Var.to_string v))
 			res " ; "));
 		res
 
-	let init_cone : Vec.V.t -> (int * Cs.t) -> (int * Cs.t) list -> Vec.t option
+	let init_cone : Var.t -> (int * Cs.t) -> (int * Cs.t) list -> Vec.t option
 		= fun horizon (i0,cstr0) cstrs ->
 		let cstrs' = Misc.pop (fun (i1,_) (i2,_) -> i1 = i2) cstrs (i0,cstr0) in
 		let cstrs'' = List.map
@@ -130,7 +130,7 @@ module Classic (Vec : Vector.Type with module V = Var.Positive and module M = Rt
 	let minimize_cone' : Cs.t list -> (Cs.t * Vec.t) list
 		= fun cstrs ->
 		let horizon = Cs.getVars cstrs
-			|> Vec.V.horizon in
+			|> Var.horizon in
 		let cstrs = List.mapi (fun i cstr -> (i,cstr)) cstrs in
 		List.fold_left
 			(fun (res,cstrs) (i0,cstr0) ->
@@ -149,15 +149,15 @@ module Classic (Vec : Vector.Type with module V = Var.Positive and module M = Rt
 		let res = minimize_cone' cstrs in
 		Debug.log DebugTypes.MOutput (lazy (Misc.list_to_string
 			(fun (c,v) -> Printf.sprintf "(%s, %s)"
-				(Cs.to_string Cs.Vec.V.to_string c)
-				(Vec.to_string Vec.V.to_string v))
+				(Cs.to_string Var.to_string c)
+				(Vec.to_string Var.to_string v))
 			res " ; "));
 		res
 end
 
 module Make
-    (VecInput : Vector.Type with module M = Cstr.Rat.Positive.Vec.M)
-    (Vec : Vector.Type with module M = Cstr.Rat.Positive.Vec.M)
+    (VecInput : Vector.Type)
+    (Vec : Vector.Type)
     (CsInput : Cstr.Type)
     (LP : MinLP.Type) = struct
     module VecInput = VecInput
@@ -461,8 +461,8 @@ module Make
 					(cstr,(dir_type,v)))
 				cstrs
 			|> fun l -> (Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Evals before post-processing : %s -> \n%s"
-				(Cs.to_string Cs.Vec.V.to_string cstr)
-				(Misc.list_to_string (fun (c,(_,v)) -> (Cs.to_string Cs.Vec.V.to_string c) ^ " -> " ^ (Cs.Vec.Coeff.to_string v)) l " ; "))));
+				(Cs.to_string Var.to_string cstr)
+				(Misc.list_to_string (fun (c,(_,v)) -> (Cs.to_string Var.to_string c) ^ " -> " ^ (Cs.Vec.Coeff.to_string v)) l " ; "))));
 				l
 			|> sort
 			|> stack
@@ -471,26 +471,26 @@ module Make
 			= fun (dir_type,c) ->
 			match dir_type with
 			| Normal (x0,normal) -> Printf.sprintf "Normal %s in direction %s, with coeff %s"
-				(Vec.to_string Vec.V.to_string x0)
-				(Cs.Vec.to_string Cs.Vec.V.to_string normal)
+				(Vec.to_string Var.to_string x0)
+				(Cs.Vec.to_string Var.to_string normal)
 				(Cs.Vec.Coeff.to_string c)
 			| TwoPoints (x,x') ->Printf.sprintf "TwoPoint %s -> %s, with coeff %s"
-				(Vec.to_string Vec.V.to_string x)
-				(Vec.to_string Vec.V.to_string x')
+				(Vec.to_string Var.to_string x)
+				(Vec.to_string Var.to_string x')
 				(Cs.Vec.Coeff.to_string c)
 
 		let eval_to_string : eval -> string
 			= fun l ->
 			Misc.list_to_string
 				(fun l -> Misc.list_to_string
-					(fun (c,dir) -> (Cs.to_string Cs.Vec.V.to_string c) ^ ", " ^ (direction_to_string dir)) l ";")
+					(fun (c,dir) -> (Cs.to_string Var.to_string c) ^ ", " ^ (direction_to_string dir)) l ";")
 				l " ; "
 
 		let eval_to_string2 : eval -> string
 			= fun l ->
 			Misc.list_to_string
 				(fun l -> Misc.list_to_string
-					(fun (c,_) -> Cs.to_string Cs.Vec.V.to_string c) l ";")
+					(fun (c,_) -> Cs.to_string Var.to_string c) l ";")
 				l " ; "
 
 		let getFrontiers : (Cs.t * eval) list -> frontier list
@@ -513,12 +513,12 @@ module Make
 			in
 			Debug.log DebugTypes.Detail (lazy(Printf.sprintf "evals = %s"
 				(Misc.list_to_string (fun (cs,eval) -> Printf.sprintf "%s -> %s"
-					(Cs.to_string Cs.Vec.V.to_string cs)
+					(Cs.to_string Var.to_string cs)
 					(eval_to_string2 eval))
 					evals "\n")));
 			let frontiers = getFrontiers evals in
 			Debug.log DebugTypes.Detail (lazy(Printf.sprintf "frontiers = %s"
-				(Misc.list_to_string (fun (c,_) -> Cs.to_string Cs.Vec.V.to_string c) frontiers " ; ")));
+				(Misc.list_to_string (fun (c,_) -> Cs.to_string Var.to_string c) frontiers " ; ")));
 			let map = updateMap LP.MapC.empty frontiers evals
 			(*List.fold_left
 				(fun map (cstr, eval) ->
@@ -534,7 +534,7 @@ module Make
 		= fun cstr ->
 		{(Cs.compl cstr) with Cs.typ = Cstr_type.Lt}
 
-	let init_lp : LP.t option -> Cs.t -> Cs.Vec.V.t list -> LP.t
+	let init_lp : LP.t option -> Cs.t -> Var.t list -> LP.t
 		= fun lp cstr vars ->
 		match lp with
 		| Some lp -> lp
@@ -544,7 +544,7 @@ module Make
 	(*
 	(** [runlp vars cstr cstrs lp] runs a LP to find a point that violates [cstr] and satisfies each constraint of [cstrs].
 		It starts from the LP [lp] if it exists. *)
-	let runlp : Cs.Vec.V.t list -> Cs.t -> Cs.t list -> LP.t option -> (Vec.t * LP.t) option
+	let runlp : Var.t list -> Cs.t -> Cs.t list -> LP.t option -> (Vec.t * LP.t) option
 		= fun vars cstr cstrs lp ->
 		let lp = init_lp lp cstr vars in
 		match LP.add_cstrs cstrs lp with
@@ -569,7 +569,7 @@ module Make
 
 	(** [runlp vars cstr cstrs lp] runs a LP to find a point that violates [cstr] and satisfies each constraint of [cstrs].
 	It starts from the LP [lp] if it exists. *)
-	let runlp_not_cone : Cs.Vec.V.t list -> Cs.t -> Cs.t list -> LP.t option -> (Vec.t * LP.t) option
+	let runlp_not_cone : Var.t list -> Cs.t -> Cs.t list -> LP.t option -> (Vec.t * LP.t) option
 		= fun vars cstr cstrs lp ->
 		let lp = init_lp lp cstr vars in
 		match LP.add_cstrs cstrs lp with
@@ -579,7 +579,7 @@ module Make
 			Some (sol, lp)
 		| LP.IsUnsat -> None
 
-	let init_lp_cone : LP.t option -> Cs.t -> Cs.Vec.V.t list -> LP.t
+	let init_lp_cone : LP.t option -> Cs.t -> Var.t list -> LP.t
 		= fun lp cstr vars ->
 		match lp with
 		| Some lp -> lp
@@ -594,7 +594,7 @@ module Make
 
 	(** [runlp vars cstr cstrs lp] runs a LP to find a point that violates [cstr] and satisfies each constraint of [cstrs].
 	It starts from the LP [lp] if it exists. *)
-	let runlp_cone : Cs.Vec.V.t list -> Cs.t -> Cs.t list -> LP.t option -> (Vec.t * LP.t) option
+	let runlp_cone : Var.t list -> Cs.t -> Cs.t list -> LP.t option -> (Vec.t * LP.t) option
 		= fun vars cstr cstrs lp ->
 		let lp = init_lp_cone lp cstr vars in
 		let cstrs' = List.map
@@ -614,7 +614,7 @@ module Make
 
 	(** [runlp vars cstr cstrs lp] runs a LP to find a point that violates [cstr] and satisfies each constraint of [cstrs].
 	It starts from the LP [lp] if it exists. *)
-	let runlp : typT -> Cs.Vec.V.t list -> Cs.t -> Cs.t list -> LP.t option -> (Vec.t * LP.t) option
+	let runlp : typT -> Var.t list -> Cs.t -> Cs.t list -> LP.t option -> (Vec.t * LP.t) option
 		= function
 		| Cone -> runlp_cone
 		| NCone -> runlp_not_cone
@@ -631,12 +631,12 @@ module Make
 			l
 
 	(* Returns a list of constraints with a point showing their nonredundancy (w.r.t. the given constraints). It updates mapLP. *)
-	let rec run_rec : typT -> (Cs.t * Cs.t list) list -> Cs.Vec.V.t list -> (Cs.t * Vec.t) list
+	let rec run_rec : typT -> (Cs.t * Cs.t list) list -> Var.t list -> (Cs.t * Vec.t) list
 		= fun typ l vars ->
 		Debug.log DebugTypes.Detail (lazy (Printf.sprintf "run_rec with l = %s"
 			(Misc.list_to_string (fun (c,l) -> Printf.sprintf "%s -> %s"
-				(Cs.to_string Cs.Vec.V.to_string c)
-				(Misc.list_to_string (Cs.to_string Cs.Vec.V.to_string) l " ; "))
+				(Cs.to_string Var.to_string c)
+				(Misc.list_to_string (Cs.to_string Var.to_string) l " ; "))
 				 l " ; ")));
 		match l with
 		| [] -> []
@@ -662,9 +662,9 @@ module Make
 		= fun map ->
 		Misc.list_to_string
 			(fun (c,(l1,l2)) -> Printf.sprintf "%s -> (%s,%s)"
-				(Cs.to_string Cs.Vec.V.to_string c)
-				(Misc.list_to_string (Cs.to_string Cs.Vec.V.to_string) l1 ";")
-				(Misc.list_to_string (Cs.to_string Cs.Vec.V.to_string) l2 ";")
+				(Cs.to_string Var.to_string c)
+				(Misc.list_to_string (Cs.to_string Var.to_string) l1 ";")
+				(Misc.list_to_string (Cs.to_string Var.to_string) l2 ";")
 			)
 		(LP.MapC.bindings map)
 		"\n"
@@ -677,7 +677,7 @@ module Make
 	}
 	@param map binds [(l1,l2)] to a {!type:Cs.t} [c], where [l1] is the list of constraints that must be added in [c]'s lp, and [l2] is the list of constraints that are already in [c]'s lp.
 	*)
-	let run : typT -> map_t -> Cs.Vec.V.t list -> (Cs.t * Cs.t list * Vec.t) list
+	let run : typT -> map_t -> Var.t list -> (Cs.t * Cs.t list * Vec.t) list
 		= fun typ map vars ->
 		Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Run : map = %s"
 			(map_to_string map)));
@@ -703,8 +703,8 @@ module Make
 	let init_one : (Cs.t * Cs.t list * Vec.t) -> Vec.t -> Cs.t list -> Cs.t * Sort.eval
 		= fun (cstr, alreadyIn, x') x0 cstrs ->
 		Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Init_one (%s,%s)"
-			(Vec.to_string Vec.V.to_string x0)
-			(Vec.to_string Vec.V.to_string x')));
+			(Vec.to_string Var.to_string x0)
+			(Vec.to_string Var.to_string x')));
 		let dir_type = TwoPoints (x0,x') in
 		let res =
 		List.fold_left
@@ -715,7 +715,7 @@ module Make
 					(cstr,(dir_type,v)):: evals)
 			[] cstrs
 		|> fun l -> (Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Evals before post-processing : %s"
-				(Misc.list_to_string (fun (c,(_,v)) -> (Cs.to_string Cs.Vec.V.to_string c) ^ " -> " ^ (Cs.Vec.Coeff.to_string v)) l " ; "))));
+				(Misc.list_to_string (fun (c,(_,v)) -> (Cs.to_string Var.to_string c) ^ " -> " ^ (Cs.Vec.Coeff.to_string v)) l " ; "))));
 				l
 		|> Sort.sort
 		|> Sort.stack
@@ -727,7 +727,7 @@ module Make
 		Debug.log DebugTypes.Detail (lazy(Printf.sprintf "init with l = %s"
 				(Misc.list_to_string
 					(fun (c, alreadyIn,_) -> Printf.sprintf "%s, alreadyIn : %s"
-						(Cs.to_string Cs.Vec.V.to_string c)
+						(Cs.to_string Var.to_string c)
 						(Cs.list_to_string alreadyIn))
 				l " ; " )));
 		let evals = List.map
@@ -755,14 +755,14 @@ module Make
 		= fun map ->
 		Misc.list_to_string
 			(fun (c,(l1,l2)) -> Printf.sprintf "%s -> (%s,%s)"
-				(Cs.to_string Cs.Vec.V.to_string c)
-				(Misc.list_to_string (Cs.to_string Cs.Vec.V.to_string) l1 ";")
-				(Misc.list_to_string (Cs.to_string Cs.Vec.V.to_string) l2 ";")
+				(Cs.to_string Var.to_string c)
+				(Misc.list_to_string (Cs.to_string Var.to_string) l1 ";")
+				(Misc.list_to_string (Cs.to_string Var.to_string) l2 ";")
 			)
 		(LP.MapC.bindings map)
 		"\n"
 
-	let rec minimize_rec : typT -> Cs.Vec.V.t list -> frontier list -> Vec.t -> Cs.t list -> map_t -> frontier list
+	let rec minimize_rec : typT -> Var.t list -> frontier list -> Vec.t -> Cs.t list -> map_t -> frontier list
 		= fun typ vars frontiers x0 cstrs map ->
 		Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Map : %s" (map_to_string map)));
 		let l = run typ map vars in
@@ -781,8 +781,7 @@ module Make
 			mapLP := LP.MapC.empty;
 			let cstrs = Misc.rem_dupl CsInput.equalSyn cstrs in (* XXX: faire une autre fonction sans ça? *)
 			let vars = CsInput.getVars cstrs
-				|> CsInput.Vec.V.Set.elements
-				|> List.map (fun v -> CsInput.Vec.V.toPos v |> Cs.Vec.V.fromPos)
+				|> Var.Set.elements
 			in
 			(* map_binding contient une conversion des cstrs (en CsInput) en Cs *)
 			let (map_bindings, cstrs') =
@@ -804,13 +803,13 @@ module Make
 		= fun conversion point cstrs ->
 		Debug.log DebugTypes.Title (lazy ("Minimization : Raytracing with vector type = " ^ (VecInput.name)));
 		Debug.log DebugTypes.MInput (lazy (Printf.sprintf "Interior Point : %s\nConstraints : %s"
-			(VecInput.to_string VecInput.V.to_string point)
+			(VecInput.to_string Var.to_string point)
 			(CsInput.list_to_string cstrs)));
 		let res = minimize' NCone conversion point cstrs in
 		Debug.log DebugTypes.MOutput (lazy (Misc.list_to_string
 			(fun (c,v) -> Printf.sprintf "(%s, %s)"
-				(CsInput.to_string CsInput.Vec.V.to_string c)
-				(VecInput.to_string VecInput.V.to_string v))
+				(CsInput.to_string Var.to_string c)
+				(VecInput.to_string Var.to_string v))
 			res " ; "));
 		res
 
@@ -818,13 +817,13 @@ module Make
 		= fun conversion point cstrs ->
 		Debug.log DebugTypes.Title (lazy ("Minimization : Raytracing with vector type = " ^ (VecInput.name)));
 		Debug.log DebugTypes.MInput (lazy (Printf.sprintf "Interior Point : %s\nConstraints : %s"
-			(VecInput.to_string VecInput.V.to_string point)
+			(VecInput.to_string Var.to_string point)
 			(CsInput.list_to_string cstrs)));
 		let res = minimize' Cone conversion point cstrs in
 		Debug.log DebugTypes.MOutput (lazy (Misc.list_to_string
 			(fun (c,v) -> Printf.sprintf "(%s, %s)"
-				(CsInput.to_string CsInput.Vec.V.to_string c)
-				(VecInput.to_string VecInput.V.to_string v))
+				(CsInput.to_string Var.to_string c)
+				(VecInput.to_string Var.to_string v))
 			res " ; "));
 		res
 
@@ -832,23 +831,23 @@ module Make
     let minimize_cone _ _ = failwith "unimplemented"
 end
 
-module Glpk(Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
+module Glpk(Vec : Vector.Type) = struct
 	let name = "Glpk"
 
 	module Cs = Cstr.Rat.Positive
 	module VecInput = Vec
 
-	let set_coeffs : Wrapper.polyhedron -> Cs.Vec.V.t list -> int -> Cs.t -> unit
+	let set_coeffs : Wrapper.polyhedron -> Var.t list -> int -> Cs.t -> unit
   		= fun poly vars i_cstr cstr ->
         Wrapper.set_constant poly i_cstr (Cs.Vec.Coeff.to_float cstr.Cs.c);
 		List.iter
 			(fun (var,coeff) ->
-				let i_var = Misc.findi (Cs.Vec.V.equal var) vars in
+				let i_var = Misc.findi (Var.equal var) vars in
                 Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Setting coefficient %i of constraint %i" i_var i_cstr));
 				Wrapper.set_coeff poly i_cstr i_var (Cs.Vec.Coeff.to_float coeff))
 			(Cs.Vec.toList cstr.Cs.v)
 
-	let get_witness : Wrapper.polyhedron -> Vec.V.t list -> int -> Vec.t
+	let get_witness : Wrapper.polyhedron -> Var.t list -> int -> Vec.t
 		= fun poly vars id_cstr ->
 		List.mapi
 			(fun id_var var ->
@@ -859,7 +858,7 @@ module Glpk(Vec : Vector.Type with module V = Var.Positive and module M = Rtree)
 			vars
 		|> Vec.mk
 
-  let set_central_point : Wrapper.polyhedron -> Vec.V.t list -> Vec.t -> unit
+  let set_central_point : Wrapper.polyhedron -> Var.t list -> Vec.t -> unit
       = fun poly vars point ->
         List.iteri
           (fun i v ->
@@ -873,7 +872,7 @@ module Glpk(Vec : Vector.Type with module V = Var.Positive and module M = Rtree)
 	let minimize_witness': Vec.t -> Cs.t list -> (Cs.t * Vec.t) list
 		= fun point cstrs ->
 		let vars = Cs.getVars cstrs
-			|> Cs.Vec.V.Set.elements
+			|> Var.Set.elements
 		in
         Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Creating a C++ polyhedron with %i constraints and %i variables"
             (List.length cstrs) (List.length vars)));
@@ -910,8 +909,8 @@ module Glpk(Vec : Vector.Type with module V = Var.Positive and module M = Rtree)
 		let res = minimize_witness' point cstrs in
 		Debug.log DebugTypes.MOutput (lazy (Misc.list_to_string
 			(fun (c,v) -> Printf.sprintf "(%s, %s)"
-				(Cs.to_string Cs.Vec.V.to_string c)
-				(Vec.to_string Vec.V.to_string v))
+				(Cs.to_string Var.to_string c)
+				(Vec.to_string Var.to_string v))
 			res " ; "));
 		res
 
@@ -922,7 +921,7 @@ end
 
 module Rat_Glpk = Glpk(Cstr.Rat.Positive.Vec)
 
-module Heuristic(Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
+module Heuristic(Vec : Vector.Type) = struct
 	let name = "Heuristic"
 	module VecInput = Vec
 

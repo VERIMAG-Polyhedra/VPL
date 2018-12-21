@@ -1,6 +1,5 @@
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module Var = Vec.V
 
 module Debug = IneqSet.Debug
 module Profile = Profile.Profile(struct let name = "Pol" end)
@@ -1263,10 +1262,10 @@ let get_regions : 'c Factory.t -> Vector.Rat.Positive.t option -> 'c t -> 'c t l
     Profile.start "get_regions";
     let point' = match point with
     | Some point -> point
-    | None -> get_point p |> Vec.M.map Vec.ofSymbolic
+    | None -> get_point p |> Rtree.map Vec.ofSymbolic
     in
     Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Normalization point generated: %s"
-			(Vec.to_string Vec.V.to_string point')))
+			(Vec.to_string Var.to_string point')))
 	;
     let regions = get_regions_from_point factory p point' in
     Profile.stop "get_regions";

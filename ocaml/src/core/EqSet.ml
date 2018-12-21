@@ -1,13 +1,13 @@
 module Cs = Cstr.Rat.Positive
 
-type 'c t = (Cs.Vec.V.t * 'c Cons.t) list
+type 'c t = (Var.t * 'c Cons.t) list
 
-let to_string: (Cs.Vec.V.t -> string) -> 'c t -> string
+let to_string: (Var.t -> string) -> 'c t -> string
 	= fun varPr e ->
 		List.fold_right
 		(fun (_, c) s -> s ^ (Cons.to_string varPr c) ^ "\n") e ""
 
-let to_string_ext: 'c Factory.t -> (Cs.Vec.V.t -> string) -> 'c t -> string
+let to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 	= fun factory varPr e->
 		List.fold_right
 		(fun (x, c) s -> Printf.sprintf "%s(%s, %s)\n"
@@ -78,9 +78,9 @@ let incl : 'c1 Factory.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 		_incl [] s2
 
 
-let choose : Cs.t -> Cs.Vec.V.t * Cs.Vec.Coeff.t
+let choose : Cs.t -> Var.t * Cs.Vec.Coeff.t
 	= fun c ->
-	match Cs.Vec.M.findPred (fun n -> Cs.Vec.Coeff.cmpz n <> 0) (Cs.get_v c) with
+	match Rtree.findPred (fun n -> Cs.Vec.Coeff.cmpz n <> 0) (Cs.get_v c) with
 	| None -> failwith "EqSet.choose"
 	| Some (x, a) -> (x, a)
 
@@ -90,20 +90,20 @@ let rename factory s fromX toY =
 	in
 	List.map rename1 s
 
-let pick (msk : Cs.Vec.V.t option Cs.Vec.M.t) ((e,_) : 'c Cons.t) =
-	match Cs.Vec.M.findPred2
+let pick (msk : Var.t option Rtree.t) ((e,_) : 'c Cons.t) =
+	match Rtree.findPred2
 		(fun n1 n2 -> n1 <> None && not (Cs.Vec.Coeff.cmpz n2 = 0))
 		msk (Cs.get_v e)
 	with
 	| Some (_,Some n1,_) -> Some n1
 	| _ -> None
 
-let rec subst : 'c Factory.t -> Cs.Vec.V.t -> 'c Cons.t -> 'c t -> 'c t
+let rec subst : 'c Factory.t -> Var.t -> 'c Cons.t -> 'c t -> 'c t
 	= fun factory x e ->
 	function
 	| [] -> []
 	| (x1, (e1,cert1))::l1 ->
-		if Cs.Vec.V.equal x1 x then
+		if Var.equal x1 x then
 			failwith "EqSet.subst"
 		else
 			let e2 =
@@ -114,12 +114,12 @@ let rec subst : 'c Factory.t -> Cs.Vec.V.t -> 'c Cons.t -> 'c t -> 'c t
 			in
 			(x1,e2) :: subst factory x e l1
 
-let rec tryDefs : 'c Factory.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c t -> ('c Cons.t * Cs.Vec.V.t) option * 'c t
+let rec tryDefs : 'c Factory.t -> Var.t option Rtree.t -> 'c t -> ('c Cons.t * Var.t) option * 'c t
 	= fun factory msk ->
 	function
 	| [] -> (None, [])
 	| (x, e)::l ->
-		if Cs.Vec.M.get None msk x = None
+		if Rtree.get None msk x = None
 		then
 			let (def, l1) = tryDefs factory msk l in
 			(def, (x, e)::l1)
@@ -127,7 +127,7 @@ let rec tryDefs : 'c Factory.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c t -> ('c Co
 			let l1 = subst factory x e l in
 			(Some (e, x), l1)
 
-let trySubstM : 'c Factory.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c t -> ('c Cons.t * Cs.Vec.V.t) option * 'c t
+let trySubstM : 'c Factory.t -> Var.t option Rtree.t -> 'c t -> ('c Cons.t * Var.t) option * 'c t
 	= fun factory msk l ->
 	let (def, l1) = tryDefs factory msk l in
 	if def = None then
@@ -147,9 +147,9 @@ let trySubstM : 'c Factory.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c t -> ('c Cons
 	else
 		(def, l1)
 
-let trySubst : 'c Factory.t -> Cs.Vec.V.t -> 'c t -> 'c Cons.t option * 'c t
+let trySubst : 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t option * 'c t
 	= fun factory x l ->
-	let msk = Cs.Vec.M.set None Cs.Vec.M.empty x (Some x) in
+	let msk = Rtree.set None Rtree.empty x (Some x) in
 	let (optx, s1) = trySubstM factory msk l in
 	match optx with
 	| None -> (None, s1)
@@ -168,7 +168,7 @@ let meetEq: 'c meetT -> 'c meetT -> bool
 	| Added _, Bot _
 	| Bot _, Added _ -> false
 
-let meet_to_string : 'c Factory.t -> (Cs.Vec.V.t -> string) -> 'c meetT -> string
+let meet_to_string : 'c Factory.t -> (Var.t -> string) -> 'c meetT -> string
 = fun factory varPr -> function
 	| Added e ->
 		Printf.sprintf "Added %s" (to_string_ext factory varPr e)
@@ -206,12 +206,12 @@ let add: 'c Factory.t -> 'c t -> 'c Cons.t -> 'c meetT
 	= fun factory s c ->
 	addM factory s [c]
 
-let joinSetup_1: 'c2 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> Cs.Vec.V.t -> 'c1 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+let joinSetup_1: 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c1 t
+	-> Var.t * Var.t option Rtree.t * (Var.t * (('c1,'c2) Cons.discr_t) Cons.t) list
 	= fun factory2 nxt relocTbl alpha s ->
 	let apply (x, c) (nxt1, relocTbl1, s1) =
 		let (nxt2, relocTbl2, c1) = Cons.joinSetup_1 factory2 nxt1 relocTbl1 alpha c in
-		let x1 =	match Cs.Vec.M.get None relocTbl2 x with
+		let x1 =	match Rtree.get None relocTbl2 x with
 				| None -> failwith "EqSet.joinSetup_1"
 				| Some x1 -> x1
 		in
@@ -220,8 +220,8 @@ let joinSetup_1: 'c2 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 
 (* List.fold_right is necessary because order needs to be preserved (echelon form) *)
 	List.fold_right apply s (nxt, relocTbl, nil)
 
-let joinSetup_2: 'c1 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> Cs.Vec.V.t -> 'c2 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+let joinSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c2 t
+	-> Var.t * Var.t option Rtree.t * (Var.t * (('c1,'c2) Cons.discr_t) Cons.t) list
 	= fun factory1 nxt relocTbl alpha s ->
 	let apply (x, c) (nxt1, relocTbl1, s1) =
 		let (nxt2, relocTbl2, c1) = Cons.joinSetup_2 factory1 nxt1 relocTbl1 alpha c in
@@ -231,12 +231,12 @@ let joinSetup_2: 'c1 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 
 (* List.fold_right is necessary because order needs to be preserved (echelon form) *)
 	List.fold_right apply s (nxt, relocTbl, nil)
 
-let minkowskiSetup_1: 'c2 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c1 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+let minkowskiSetup_1: 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c1 t
+	-> Var.t * Var.t option Rtree.t * (Var.t * (('c1,'c2) Cons.discr_t) Cons.t) list
 	= fun factory2 nxt relocTbl s ->
 	let apply (x, c) (nxt1, relocTbl1, s1) =
 		let (nxt2, relocTbl2, c1) = Cons.minkowskiSetup_1 factory2 nxt1 relocTbl1 c in
-		let x1 =	match Cs.Vec.M.get None relocTbl2 x with
+		let x1 =	match Rtree.get None relocTbl2 x with
 				| None -> failwith "EqSet.minkowskiSetup_1"
 				| Some x1 -> x1
 		in
@@ -245,8 +245,8 @@ let minkowskiSetup_1: 'c2 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.
 (* List.fold_right is necessary because order needs to be preserved (echelon form) *)
 	List.fold_right apply s (nxt, relocTbl, nil)
 
-let minkowskiSetup_2: 'c1 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c2 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+let minkowskiSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c2 t
+	-> Var.t * Var.t option Rtree.t * (Var.t * (('c1,'c2) Cons.discr_t) Cons.t) list
 	= fun factory1 nxt relocTbl s ->
 	let apply (x, c) (nxt1, relocTbl1, s1) =
 		let (nxt2, relocTbl2, c1) = Cons.minkowskiSetup_2 factory1 nxt1 relocTbl1 c in

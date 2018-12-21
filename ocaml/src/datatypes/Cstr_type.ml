@@ -18,9 +18,6 @@ module type Type = sig
     (** The coefficients of {!module:Vec}. *)
     module Coeff : Scalar.Type
 
-    (** The variables of {!module:Vec}. *)
-    module V : Var.Type
-
 	(** Type of affine constraints, of the form [c.v c.typ c.c]. *)
 	type t = {
 		typ : cmpT; (** the comparison operator *)
@@ -39,11 +36,10 @@ module type Type = sig
     (** Returns the constraint constant term. *)
 	val get_c : t -> Vec.Coeff.t
 
-
 	(** Pretty-printer for constraints.
         @param var_to_string a pretty-printer for variables
         @param cstr the constraint to print *)
-	val to_string : (Vec.V.t -> string) -> t -> string
+	val to_string : (Var.t -> string) -> t -> string
 
     (** Pretty-printers for lists of constraints. *)
 	val list_to_string : t list -> string
@@ -73,7 +69,7 @@ module type Type = sig
         @param l the list of pairs (coefficient * variable), representing the
         linear term. Zero coefficients can be left implicit.
         @param cst the constant term *)
-	val mk: cmpT -> (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+	val mk: cmpT -> (Vec.Coeff.t * Var.t) list -> Vec.Coeff.t -> t
 
     (** Builds a linear constraint
         @param cmp the comparison operator
@@ -85,26 +81,26 @@ module type Type = sig
         @param l the list of pairs (coefficient * variable), representing the
         linear term. Zero coefficients can be left implicit.
         @param cst the constant term *)
-	val eq: (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+	val eq: (Vec.Coeff.t * Var.t) list -> Vec.Coeff.t -> t
 
 	(** Builds a large inequality.
         @param l the list of pairs (coefficient * variable), representing the
         linear term. Zero coefficients can be left implicit.
         @param cst the constant term *)
-	val le: (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+	val le: (Vec.Coeff.t * Var.t) list -> Vec.Coeff.t -> t
 
 	(** Builds a strict inequality.
         @param l the list of pairs (coefficient * variable), representing the
         linear term. Zero coefficients can be left implicit.
         @param cst the constant term *)
-	val lt: (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+	val lt: (Vec.Coeff.t * Var.t) list -> Vec.Coeff.t -> t
 
 	(** Same as {!val:mk} but transforms [coefs] < [cst] into [coefs] <= ([cst] - 1).
         @param cmp the comparison operator
         @param l the list of pairs (coefficient * variable), representing the
         linear term. Zero coefficients can be left implicit.
         @param cst the constant term *)
-	val mkInt: cmpT -> (Vec.Coeff.t * Vec.V.t) list -> Vec.Coeff.t -> t
+	val mkInt: cmpT -> (Vec.Coeff.t * Var.t) list -> Vec.Coeff.t -> t
 
 	(** Checks the syntactical equality between two constraints.
 	   [x = 1] and [x = 1] are syntactically equal, but not 2 * x = 2 and x = 1. *)
@@ -142,13 +138,13 @@ module type Type = sig
 	val tellProp: t -> prop_t
 
 	(** Builds the set of variables which appear with non-zero coefficients in the constraints. *)
-	val getVars: t list -> Vec.V.Set.t
+	val getVars: t list -> Var.Set.t
 
 	(** [getCoefsFor mx l] gathers the "coefficient" of [mx] in the constraints in [l].
         If [mx] is [None] then the constants are gathered.
         If [mx] is [Some x], the coefficients of variable [x] are gathered.
         The order of the numbers in the returned list matches that of the constraints in [l]. *)
-	val getCoefsFor : Vec.V.t option -> t list -> Vec.Coeff.t list
+	val getCoefsFor : Var.t option -> t list -> Vec.Coeff.t list
 
 	(** [satisfy vec cstr] returns true if point [vec] satisfies constraint [cstr]. *)
 	val satisfy : Vec.t -> t -> bool
@@ -164,15 +160,15 @@ module type Type = sig
         @param fromX the variable to rename
         @param toY the new variable name
         @param cstr the constraint *)
-	val rename : Vec.V.t -> Vec.V.t -> t -> t
+	val rename : Var.t -> Var.t -> t -> t
 
     (** Renames all variables of a constraint according to a renaming function
         @param f the renaming function
         @param vec the vector to rename *)
-	val rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
+	val rename_f : (Var.t -> Var.t) -> t -> t
 
 	(** [change_variable x lin c cstr] applies the change of variable [x = lin + c] in [cstr]. *)
-	val change_variable : Vec.V.t -> Vec.t -> Vec.Coeff.t -> t -> t
+	val change_variable : Var.t -> Vec.t -> Vec.Coeff.t -> t -> t
 
 	(** @return a point that saturates the hyperplane defined by the given constraint. *)
 	val get_saturating_point : t -> Vec.t
@@ -181,7 +177,7 @@ module type Type = sig
     val distance_point_cstr : Vec.t -> t -> Vec.Coeff.t
 
     (**/*)
-	val plot : Vec.V.t list -> t -> string
+	val plot : Var.t list -> t -> string
 
 	val list_plot : t list -> string
     (**/*)

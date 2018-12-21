@@ -1,5 +1,4 @@
 open Splx
-module VT = Var_type
 
 module Debug = DebugTypes.Debug(struct let name = "Pol" end)
 
@@ -7,7 +6,7 @@ type progressT = Unbnd | UpTo of Scalar.Symbolic.t | NoChange
 
 type dirT = Incr | Decr
 
-type actionT = Done | Move of (V.t * dirT * progressT)
+type actionT = Done | Move of (Var.t * dirT * progressT)
 
 type nextT = OptFinite of Scalar.Symbolic.t | OptUnbnd | GoOn of t
 
@@ -25,12 +24,12 @@ let prDir = function
   | Incr -> "Incr"
   | Decr -> "Decr"
 
-let prAction: (V.t -> string) -> actionT -> string
+let prAction: (Var.t -> string) -> actionT -> string
   = fun varPr -> function
 	      | Done -> "Done"
 	      | Move (v, d, bnd) -> Printf.sprintf "Move (%s, %s, %s)" (varPr v) (prDir d) (prProgress bnd)
 
-let prNext: (V.t -> string) -> nextT -> string
+let prNext: (Var.t -> string) -> nextT -> string
   = fun varPr -> function
 	      | GoOn s1 -> Printf.sprintf "GoOn\n%s\n" (pr varPr s1)
 	      | OptUnbnd -> "OptUnbnd"
@@ -57,10 +56,10 @@ let pickNBasic z s =
   let rec find vec state =
     let walk l1 l2 r1 r2 =
       match find l1 l2 with
-      | Move (x, dir, bnd) -> Move (VT.XO x, dir, bnd)
+      | Move (x, dir, bnd) -> Move (Var.XO x, dir, bnd)
       | Done ->
 	 match find r1 r2 with
-	 | Move (x, dir, bnd) -> Move (VT.XI x, dir, bnd)
+	 | Move (x, dir, bnd) -> Move (Var.XI x, dir, bnd)
 	 | Done -> Done
     in
     match vec, state with
@@ -70,7 +69,7 @@ let pickNBasic z s =
        if nSign = 0 then
 	 walk l Rtree.Nil r Rtree.Nil
        else
-	 Move (VT.XH, (if nSign < 0 then Decr else Incr), Unbnd)
+	 Move (Var.XH, (if nSign < 0 then Decr else Incr), Unbnd)
     | Rtree.Sub (l1, n, r1), Rtree.Sub (l2, st, r2) ->
        let nSign = Scalar.Rat.cmpz n in
        if nSign = 0 then
@@ -78,7 +77,7 @@ let pickNBasic z s =
        else
 	 let (dir, tryFn) = if nSign < 0 then (Decr, tryDecr) else (Incr, tryIncr) in
 	 match tryFn st with
-	 | Unbnd | UpTo _ as b -> Move (VT.XH, dir, b)
+	 | Unbnd | UpTo _ as b -> Move (Var.XH, dir, b)
 	 | NoChange -> walk l1 l2 r1 r2
   in
   match Rtree.get None s.mat z with
@@ -105,7 +104,7 @@ let pickBasic s xN xNBnd dir =
   let rec find m st =
     match m, st with
     | Rtree.Nil, _ -> None
-    | _, Rtree.Nil -> Some (VT.XH, Unbnd)
+    | _, Rtree.Nil -> Some (Var.XH, Unbnd)
     | Rtree.Sub (l1, n1, r1), Rtree.Sub (l2, n2, r2) ->
        let nN =
 	 match n1 with
@@ -122,12 +121,12 @@ let pickBasic s xN xNBnd dir =
        let maybeL = find l1 l2 in
        let maybeR = find r1 r2 in
        match maybeL, maybeR with
-       | None, None -> Some (VT.XH, nN)
-       | Some (xL, nL), None -> Some (choose (VT.XO xL) nL VT.XH nN)
-       | None, Some (xR, nR) -> Some (choose (VT.XI xR) nR VT.XH nN)
+       | None, None -> Some (Var.XH, nN)
+       | Some (xL, nL), None -> Some (choose (Var.XO xL) nL Var.XH nN)
+       | None, Some (xR, nR) -> Some (choose (Var.XI xR) nR Var.XH nN)
        | Some (xL, nL), Some (xR, nR) ->
-	  let (xS, nS) = choose (VT.XO xL) nL (VT.XI xR) nR in
-	  Some (choose xS nS VT.XH nN)
+	  let (xS, nS) = choose (Var.XO xL) nL (Var.XI xR) nR in
+	  Some (choose xS nS Var.XH nN)
   in
   match find s.mat s.state with
   | None -> (xN, xNBnd)
@@ -167,7 +166,7 @@ let setObj s obj =
    {s with
      mat = nMat;
      state = nState;
-     nxt = V.next s.nxt
+     nxt = Var.next s.nxt
   })
 
 let mkCert z objCons state0 =
@@ -222,8 +221,8 @@ let max' : t mayUnsatT -> Vec.t -> optT mayUnsatT
   | IsUnsat _ as u -> fun _ -> u
   | IsOk sx -> fun obj -> max sx obj
 
-let getAsg_and_value : V.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t * Scalar.Rat.t option) option
-	= let build_epsilon : V.t -> (int * Cs.t) list -> (int * Cs.t) list * Vec.t
+let getAsg_and_value : Var.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t * Scalar.Rat.t option) option
+	= let build_epsilon : Var.t -> (int * Cs.t) list -> (int * Cs.t) list * Vec.t
 		= fun horizon cstrs ->
 			let epsilon = horizon in
 			let obj = Cs.Vec.mk [Cs.Vec.Coeff.u, epsilon] in
@@ -242,7 +241,7 @@ let getAsg_and_value : V.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t *
 	in
 	fun horizon cstrs ->
 	let (cstrs', obj) = build_epsilon horizon cstrs in
-	let horizon' = V.next horizon in (* car on a ajouté la variable epsilon *)
+	let horizon' = Var.next horizon in (* car on a ajouté la variable epsilon *)
 	let sx = mk horizon' cstrs' in
 	match max' sx obj with
 	| IsUnsat _ -> None
@@ -257,7 +256,7 @@ let getAsg_and_value : V.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t *
 		let point = Vector.Symbolic.Positive.set (getAsg sx) horizon Scalar.Symbolic.z in
 		Some (point, Some obj_value)
 
-let getAsg : V.t -> (int * Cs.t) list -> Vector.Symbolic.Positive.t option
+let getAsg : Var.t -> (int * Cs.t) list -> Vector.Symbolic.Positive.t option
 	= fun horizon cstrs ->
 	match getAsg_and_value horizon cstrs with
     | None -> None
@@ -266,7 +265,7 @@ let getAsg : V.t -> (int * Cs.t) list -> Vector.Symbolic.Positive.t option
 let getAsg_raw : Cs.t list -> Vector.Symbolic.Positive.t option
 	= fun cstrs ->
 	let horizon = Cs.getVars cstrs
-		|> Cs.Vec.V.horizon
+		|> Var.horizon
 	in
 	let cstrs_id = List.mapi (fun i cstr -> (i,cstr)) cstrs in
 	getAsg horizon cstrs_id
@@ -274,7 +273,7 @@ let getAsg_raw : Cs.t list -> Vector.Symbolic.Positive.t option
 let getAsg_and_value_raw : Cs.t list -> (Vector.Symbolic.Positive.t * Scalar.Rat.t option) option
 	= fun cstrs ->
 	let horizon = Cs.getVars cstrs
-		|> Cs.Vec.V.horizon
+		|> Var.horizon
 	in
 	let cstrs_id = List.mapi (fun i cstr -> (i,cstr)) cstrs in
 	getAsg_and_value horizon cstrs_id

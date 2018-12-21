@@ -65,7 +65,7 @@ let mkSparse : int -> (int * Scalar.Rat.t) list -> Scalar.Rat.t -> t
 let mkCst : Scalar.Rat.t -> t
     = fun a -> mkSparse 0 [] a
 
-let ofPoly : (Cs.Vec.V.t -> int) -> int -> Poly.t -> t
+let ofPoly : (Var.t -> int) -> int -> Poly.t -> t
     = fun tr n p ->
     let (cst, lin) = List.partition (function
         | (m, _) when Poly.MonomialBasis.equal m Poly.MonomialBasis.null -> true
@@ -83,7 +83,7 @@ let ofPoly : (Cs.Vec.V.t -> int) -> int -> Poly.t -> t
     | [] -> mkSparse n lin' Scalar.Rat.z
     | [_, cst'] -> mkSparse n lin' cst'
 
-let toPoly : (int -> Cs.Vec.V.t) -> t -> Poly.t
+let toPoly : (int -> Var.t) -> t -> Poly.t
     = fun tr c ->
     Poly.mk_cste (
         List.mapi (fun i a ->
@@ -91,7 +91,7 @@ let toPoly : (int -> Cs.Vec.V.t) -> t -> Poly.t
         ) c.lin |> Poly.mk_list
     ) c.cst
 
-let to_cstr : (int -> Cs.Vec.V.t) -> Cstr_type.cmpT_extended -> t -> Cs.t
+let to_cstr : (int -> Var.t) -> Cstr_type.cmpT_extended -> t -> Cs.t
 	= fun to_vpl sign c ->
 	let lin = List.mapi (fun i a -> (a,to_vpl i)) c.lin in
 	let cst = c.cst in

@@ -17,7 +17,7 @@ type 'c t = {
     merge : 'c -> 'c -> 'c;  (** Merges two complementary inequalities to build an equality. *)
     to_le : 'c -> 'c; (** Relaxes a constraint into a large inequality. *)
     to_string : 'c -> string; (** Pretty-printer of constraints. *)
-    rename : Cstr.Rat.Positive.Vec.V.t -> Cstr.Rat.Positive.Vec.V.t -> 'c -> 'c; (** Renaming a variable in a constraint. *)
+    rename : Var.t -> Var.t -> 'c -> 'c; (** Renaming a variable in a constraint. *)
 }
 
 (** Computes a linear combinations of a list of certificates. *)

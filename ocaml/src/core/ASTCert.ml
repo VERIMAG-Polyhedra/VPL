@@ -3,7 +3,6 @@
 module Rat = Scalar.Rat
 module Cs = EqSet.Cs
 module Vec = Cs.Vec
-module Var = Vec.V
 
 type 'c op =
   | Hyp of Cs.t                 (* an hypothesis (from the inputs) *)

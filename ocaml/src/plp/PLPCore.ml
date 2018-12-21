@@ -12,7 +12,6 @@ module PLP(Minimization : Min.Type) = struct
 	module Pivot = PSplx.Pivot
 	module Naming = PSplx.Naming
 
-	module V = Vec.V
 	module Coeff = Vec.Coeff
 
 	module MapV = Map.Make(struct type t = int let compare = Pervasives.compare end)
@@ -40,8 +39,8 @@ module PLP(Minimization : Min.Type) = struct
 
 		let to_string : t -> string
 			= fun (c,p) ->
-			"Boundary : " ^ (Cs.to_string V.to_string c)
-			^ " - point_other_side : " ^ (Vec.to_string V.to_string p)
+			"Boundary : " ^ (Cs.to_string Var.to_string c)
+			^ " - point_other_side : " ^ (Vec.to_string Var.to_string p)
 
         let canon : t -> t
             = fun (c,v) ->
@@ -74,10 +73,10 @@ module PLP(Minimization : Min.Type) = struct
 			| Direction (id,(c,x)) ->
 				Printf.sprintf "(%s, %s, %s)"
 				(string_of_int id)
-				(Cs.to_string Cs.Vec.V.to_string c)
-				(Vec.to_string Vec.V.to_string x)
+				(Cs.to_string Var.to_string c)
+				(Vec.to_string Var.to_string x)
 			| Point v ->
-				Vec.to_string Vec.V.to_string v
+				Vec.to_string Var.to_string v
 
 		let equal : t -> t -> bool
 			= fun p1 p2 ->
@@ -120,7 +119,7 @@ module PLP(Minimization : Min.Type) = struct
 		let to_string : t -> string
 			= fun r ->
 			let cstrs = get_cstrs r in
-			let vars = Cs.getVars cstrs |> V.Set.elements in
+			let vars = Cs.getVars cstrs |> Var.Set.elements in
 			(Printf.sprintf "Region %i : \n\tBoundaries : %s\n\t Point : %s\n\t\n\n\tPlot : %s"
 				r.id
 				(Misc.list_to_string
@@ -128,7 +127,7 @@ module PLP(Minimization : Min.Type) = struct
 						(Boundary.to_string b)
 						(match i with None -> "unknown" | Some i -> string_of_int i))
 					r.r "\n\t\t")
-				(Vec.to_string V.to_string r.point)
+				(Vec.to_string Var.to_string r.point)
 				("P = Polyhedron(ieqs = " ^ (Misc.list_to_string
 					(fun c -> Cs.plot vars c)
 					cstrs ",") ^ ")"))
@@ -281,13 +280,13 @@ module PLP(Minimization : Min.Type) = struct
 		*)
 
 		(** Returns a point in the regions' interior. The chosen point is a 1 from each boundary if possible. *)
-		let getPointInside : region_t -> Cs.Vec.V.t -> Cs.t list -> Vec.t option
-			= let getPointInside_cone : Cs.Vec.V.t -> Cs.t list -> Vec.t option
+		let getPointInside : region_t -> Var.t -> Cs.t list -> Vec.t option
+			= let getPointInside_cone : Var.t -> Cs.t list -> Vec.t option
 				= fun horizon cstrs ->
 				match Splx.getPointInside_cone horizon cstrs with
 				| None -> None
-				| Some pl -> Some (Vec.M.map Vec.ofSymbolic pl)
-			and getPointInside_not_cone : Cs.Vec.V.t -> Cs.t list -> Vec.t option
+				| Some pl -> Some (Rtree.map Vec.ofSymbolic pl)
+			and getPointInside_not_cone : Var.t -> Cs.t list -> Vec.t option
 				= fun horizon cstrs ->
 				let cstrs' = List.mapi
 					(fun i cstr -> i, cstr)
@@ -295,7 +294,7 @@ module PLP(Minimization : Min.Type) = struct
 				in
 				match Opt.getAsg horizon cstrs' with
 				| None -> None
-				| Some pl -> Some (Vec.M.map Vec.ofSymbolic pl)
+				| Some pl -> Some (Rtree.map Vec.ofSymbolic pl)
 			in
 			function
 			| Cone -> getPointInside_cone
@@ -397,8 +396,8 @@ module PLP(Minimization : Min.Type) = struct
 			Debug.Check.check
 				(lazy (not (satisfy point cstr)))
 				(lazy(Printf.sprintf "Point %s satisfies its boundary %s"
-					(Vec.to_string Vec.V.to_string point)
-					(Cs.to_string Cs.Vec.V.to_string cstr)))
+					(Vec.to_string Var.to_string point)
+					(Cs.to_string Var.to_string cstr)))
 
 		let check_region : Region.t -> unit
 			= fun r ->
@@ -429,7 +428,7 @@ module PLP(Minimization : Min.Type) = struct
 				in
 				let cstrs = cstrs_reg1 @ cstrs_reg2 in
 				let horizon = Cs.getVars cstrs
-					|> Vec.V.horizon
+					|> Var.horizon
 				in
 				let cstrs = List.mapi (fun i c -> (i,c)) cstrs in
 				match Splx.mk horizon cstrs |> Splx.checkFromAdd with
@@ -600,7 +599,7 @@ module PLP(Minimization : Min.Type) = struct
 							(Misc.list_to_string
 								(fun ((id,c),(_,v)) -> Printf.sprintf "id %i, %s -> %s"
 									id
-									(Cs.to_string Cs.Vec.V.to_string c)
+									(Cs.to_string Var.to_string c)
 									(Cs.Vec.Coeff.to_float v |> string_of_float))
 								l "\n")))
 
@@ -626,7 +625,7 @@ module PLP(Minimization : Min.Type) = struct
 				Misc.list_to_string
 					(fun l -> Misc.list_to_string
 						(fun ((_,c),(_,v)) ->
-							(Cs.to_string Cs.Vec.V.to_string c) ^ ", " ^ (Cs.Vec.Coeff.to_float v|>string_of_float)) l " ; ")
+							(Cs.to_string Var.to_string c) ^ ", " ^ (Cs.Vec.Coeff.to_float v|>string_of_float)) l " ; ")
 					l "\n"
 
 			exception Adjacent of int
@@ -673,7 +672,7 @@ module PLP(Minimization : Min.Type) = struct
 						let x = Min.Sort.getPoint cstr (dir_type,v') in
 							Debug.log DebugTypes.Detail
 							(lazy (Printf.sprintf "The next exploration point will be %s"
-								(Vec.to_string Vec.V.to_string x)));
+								(Vec.to_string Var.to_string x)));
 						ExplorationPoint.Direction(id, (cstr, x))
 				with Not_found -> Pervasives.failwith "PLP.adjust"
 
@@ -686,9 +685,9 @@ module PLP(Minimization : Min.Type) = struct
 				= fun reg_t (id, (cstr, pointOtherSide)) regMap ->
 				Debug.log DebugTypes.Detail
 					(lazy (Printf.sprintf "Adjusting exploration point (%s, %s, %s)"
-						(Vec.to_string Vec.V.to_string((MapV.find id regMap).Region.point))
-						(Cs.to_string Cs.Vec.V.to_string cstr)
-						(Vec.to_string Vec.V.to_string pointOtherSide)));
+						(Vec.to_string Var.to_string((MapV.find id regMap).Region.point))
+						(Cs.to_string Var.to_string cstr)
+						(Vec.to_string Var.to_string pointOtherSide)));
 				adjust' reg_t (id, (cstr, pointOtherSide)) regMap
 
 			let apply_adjacency : t -> int -> Boundary.t -> int -> t
@@ -743,7 +742,7 @@ module PLP(Minimization : Min.Type) = struct
 					if MapV.exists (fun _ reg -> Region.contains reg vec) plp.regs
 					then (Debug.log DebugTypes.Detail
 							(lazy (Printf.sprintf "Exploration point %s lies within an already discovered region"
-							(Vec.to_string Vec.V.to_string vec)));
+							(Vec.to_string Var.to_string vec)));
 						get_next_point_rec reg_t {plp with todo = tl})
 					else {plp with todo = (ExplorationPoint.Point vec) :: tl}
 
@@ -779,7 +778,7 @@ module PLP(Minimization : Min.Type) = struct
 							(Misc.list_to_string
 								(fun ((id,c),(_,v)) -> Printf.sprintf "id %i, %s -> %s"
 									id
-									(Cs.to_string Cs.Vec.V.to_string c)
+									(Cs.to_string Var.to_string c)
 									(Cs.Vec.Coeff.to_float v |> string_of_float))
 								l "\n")))
 
@@ -805,7 +804,7 @@ module PLP(Minimization : Min.Type) = struct
 				Misc.list_to_string
 					(fun l -> Misc.list_to_string
 						(fun ((_,c),(_,v)) ->
-							(Cs.to_string Cs.Vec.V.to_string c) ^ ", " ^ (Cs.Vec.Coeff.to_float v|>string_of_float)) l " ; ")
+							(Cs.to_string Var.to_string c) ^ ", " ^ (Cs.Vec.Coeff.to_float v|>string_of_float)) l " ; ")
 					l "\n"
 
 			exception Adjacent of int
@@ -853,7 +852,7 @@ module PLP(Minimization : Min.Type) = struct
 						let x = Min.Sort.getPoint cstr (dir_type,v') in
 							Debug.log DebugTypes.Detail
 							(lazy (Printf.sprintf "The next exploration point will be %s"
-								(Vec.to_string Vec.V.to_string x)));
+								(Vec.to_string Var.to_string x)));
 						ExplorationPoint.Direction(id, (cstr, x))
 				with Not_found -> Pervasives.failwith "PLP.adjust"
 
@@ -913,7 +912,7 @@ module PLP(Minimization : Min.Type) = struct
 					| Some _ -> begin
 						(Debug.log DebugTypes.Detail
 						(lazy (Printf.sprintf "Exploration point %s lies within an already discovered region"
-						(Vec.to_string Vec.V.to_string vec)));
+						(Vec.to_string Var.to_string vec)));
 						get_next_point_rec reg_t {plp with todo = tl})
 					end
 
@@ -953,7 +952,7 @@ module PLP(Minimization : Min.Type) = struct
 					if MapV.exists (fun _ reg -> Region.contains reg vec) plp.regs
 					then (Debug.log DebugTypes.Detail
 							(lazy (Printf.sprintf "Exploration point %s lies within an already discovered region"
-							(Vec.to_string Vec.V.to_string vec)));
+							(Vec.to_string Var.to_string vec)));
 						get_next_point_rec reg_t {plp with todo = tl})
 					else {plp with todo = (ExplorationPoint.Point vec) :: tl}
 
@@ -1006,8 +1005,8 @@ module PLP(Minimization : Min.Type) = struct
 				| None -> Debug.exec None DebugTypes.Detail (lazy "Region has empty interior")
 				| Some p -> begin
 					Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Changing point %s to %s"
-						(Vec.to_string V.to_string point)
-						(Vec.to_string V.to_string p)));
+						(Vec.to_string Var.to_string point)
+						(Vec.to_string Var.to_string p)));
 					Some p
 				end
 		*)
@@ -1027,13 +1026,13 @@ module PLP(Minimization : Min.Type) = struct
 					(Cs.list_to_string cstrs)))
 			| Some p when Region.contains' cstrs p -> begin
 				Debug.log DebugTypes.Normal (lazy(Printf.sprintf "Changing point %s to %s"
-					(Vec.to_string V.to_string point)
-					(Vec.to_string V.to_string p)));
+					(Vec.to_string Var.to_string point)
+					(Vec.to_string Var.to_string p)));
 				Some p
 				end
 			| Some p -> Pervasives.failwith
 				(Printf.sprintf "Point correction returned %s, which is not in region %s"
-					(Vec.to_string Vec.V.to_string p)
+					(Vec.to_string Var.to_string p)
 					(Cs.list_to_string cstrs))
 
 		(** [get_boundaries cstrs point] returns the list of boundaries by minimizing [cstrs].
@@ -1048,7 +1047,7 @@ module PLP(Minimization : Min.Type) = struct
 		let exec' : region_t -> Objective.pivotStrgyT -> PSplx_type.rowPivotStrgyT -> PSplx.t -> Vec.t -> Region.t option
 		  	= fun reg_t st st_row sx pointToExplore ->
 		  	Debug.log DebugTypes.Normal
-		  		(lazy("Exec on the point " ^ (Vec.to_string V.to_string pointToExplore)));
+		  		(lazy("Exec on the point " ^ (Vec.to_string Var.to_string pointToExplore)));
 		  	Profile.start "LP" ;
             let sx' = try Explore.push false st st_row pointToExplore sx with ex -> begin
                 Profile.stop "LP" ;
@@ -1131,7 +1130,7 @@ module PLP(Minimization : Min.Type) = struct
 		let has_interior : Region.t -> bool
 			= fun reg ->
 			let cstrs = Region.get_cstrs reg in
-			let nvar = Cs.getVars cstrs |> Cs.Vec.V.horizon in
+			let nvar = Cs.getVars cstrs |> Var.horizon in
 			let cstrs' = List.mapi (fun i c -> (i,c)) cstrs in
 			match Splx.checkFromAdd (Splx.mk nvar cstrs') with
 			| Splx.IsOk _ -> true
@@ -1163,7 +1162,7 @@ module PLP(Minimization : Min.Type) = struct
 			= fun st st_row sx point ->
 			Debug.log DebugTypes.Normal
 				(lazy(Printf.sprintf "PLP initialization with point = %s"
-					(Vec.to_string Vec.V.to_string point)));
+					(Vec.to_string Var.to_string point)));
 		  	match Explore.Init.findFeasibleBasis st st_row sx point with
 		  	| None -> Debug.exec None DebugTypes.Normal (lazy "Problem Unsat")
 		  	| Some _ as r -> Debug.exec r DebugTypes.Normal (lazy "Problem Sat")
@@ -1200,8 +1199,8 @@ module PLP(Minimization : Min.Type) = struct
 			| ExplorationPoint.Direction (id, (cstr, pointToExplore)) -> begin
 				Debug.log DebugTypes.Detail
 					(lazy (Printf.sprintf "Exec on constraint %s and point %s"
-						(Cs.to_string Cs.Vec.V.to_string cstr)
-						(Vec.to_string Vec.V.to_string pointToExplore)));
+						(Cs.to_string Var.to_string cstr)
+						(Vec.to_string Var.to_string pointToExplore)));
 				let reg = MapV.find id plp'.regs in
 				match Exec.exec config.reg_t config.stgy config.row_stgy (get_sx reg) pointToExplore with
 				| None ->
@@ -1234,7 +1233,7 @@ module PLP(Minimization : Min.Type) = struct
 					(fun (reg, (c,_)) ->
 						(Region.to_string reg)
 						^ "\nSolution = "
-						^ (Cs.to_string Cs.Vec.V.to_string c))
+						^ (Cs.to_string Var.to_string c))
 					res "\n")
 
 	(* Under construction, for testing purpose *)
@@ -1267,7 +1266,7 @@ module PLP(Minimization : Min.Type) = struct
 		List.iter
 			(fun (regs,cons) ->
 				Printf.sprintf "%s -> \n%s\n\n"
-					(Cons.to_string Cs.Vec.V.to_string cons)
+					(Cons.to_string Var.to_string cons)
 					(Misc.list_to_string Region.to_string regs "\n")
 				|> print_endline)
 			reg_list

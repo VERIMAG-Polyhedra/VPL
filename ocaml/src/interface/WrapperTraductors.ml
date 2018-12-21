@@ -1,6 +1,3 @@
-module Var = Var.Positive
-  (* type des variables: pour l'utilisateur du "int" serait plus simple ? *)
-
 module Annot = struct
     (* type des annotations possibles: à compléter ! *)
   	type t =

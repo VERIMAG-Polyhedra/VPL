@@ -152,14 +152,14 @@ let rm_col : t -> int -> t
 module type PivotType = sig
 
     (** The type of vectors used to instantiate the simplex tableau. *)
-    module Vec : Vector.Type with module V = Var.Positive and module M = Rtree
+    module Vec : Vector.Type
 
     module Naming : Naming.Type with module Vec = Vec
 
-    val getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
+    val getPivotCol : (int -> Var.t) -> Var.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
 end
 
-module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtree) = struct
+module Pivot (Vec : Vector.Type) = struct
 	module Vec = Vec
 	module Coeff = Vec.Coeff
 	module Naming = Naming.Naming(Vec)
@@ -169,7 +169,7 @@ module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtre
 		try
 			let i = Naming.to_vpl names i in
 			let (_,nb) = List.find
-				(fun (v,_) -> Vec.V.cmp v i = 0)
+				(fun (v,_) -> Var.cmp v i = 0)
 				(Vec.toList p) in (* XXX toList? *)
 			nb
 		with Not_found -> Coeff.z
@@ -182,14 +182,14 @@ module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtre
 
 	type signDecT = StrictPos | StrictNeg
 
-	let decide_sign : (int -> Vec.V.t) -> Vec.V.t -> Naming.t -> Vec.t -> ParamCoeff.t -> signDecT
+	let decide_sign : (int -> Var.t) -> Var.t -> Naming.t -> Vec.t -> ParamCoeff.t -> signDecT
 		= fun _ _ names point c ->
 		let q = sat c (point_to_fun names point) in
 		if Coeff.cmp q Coeff.z < 0
 		then StrictNeg
 		else StrictPos
 
-	let getCol_Bland : (int -> Vec.V.t) -> Vec.V.t -> Naming.t -> Vec.t -> t -> choiceT
+	let getCol_Bland : (int -> Var.t) -> Var.t -> Naming.t -> Vec.t -> t -> choiceT
 		= let f = fun tr h names _ point i c ->
             function
 			    | None ->
@@ -205,7 +205,7 @@ module Pivot (Vec : Vector.Type with module V = Var.Positive and module M = Rtre
 			| None -> OptReached
 			| Some ch -> ch
 
-	let getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
+	let getPivotCol : (int -> Var.t) -> Var.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
 		  	= fun f h ->
 		  	function
 		  	| Bland -> getCol_Bland f h

@@ -9,7 +9,7 @@ type rowPivotStrgyT =
 module type Type = sig
 
     (** Type of parametric points, used to instantiate the objective function. *)
-    module Vec : Vector.Type with module M = Rtree and module V = Var.Positive
+    module Vec : Vector.Type
 
     (** Type of Pivot, that instantiates objective functions with parametric points. *)
     module Pivot : Objective.PivotType with module Vec = Vec
@@ -64,10 +64,10 @@ module type Type = sig
     val nParams : t -> int
 
     (** Returns the decision variables of the simplex tableau. *)
-    val getVars : t -> Vec.V.t list
+    val getVars : t -> Var.t list
 
     (** Returns the parameters of the simplex tableau. *)
-    val getParams : t -> Vec.V.t list
+    val getParams : t -> Var.t list
 
     (** Returns the current (parametric) value of the objective function. *)
     val obj_value : t -> ParamCoeff.t
@@ -167,6 +167,6 @@ module type Type = sig
 
         (** [from_poly vars ineqs eqs obj] builds the parametric simplex tableau with constraints [ineqs @ eqs], objective [obj] and where simplex variables are in [vars].
         @param ineqs represent polynomials of the form [p <= 0].*)
-        val from_poly : Poly.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> t
+        val from_poly : Var.t list -> Poly.t list -> Poly.t list -> Poly.t -> t
     end
 end

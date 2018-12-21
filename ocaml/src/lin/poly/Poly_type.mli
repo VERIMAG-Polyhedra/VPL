@@ -3,14 +3,10 @@
 (** Interface of polynomials.*)
 module type Type = sig
 
-    (** This type of vectors defines the type of coefficients and the type of variables used by the polynomials. *)
-    module Vec : Vector.Type with module M = Rtree and module V = Var.Positive
+    module Vec : Vector.Type
 
     (** Type of coefficients. *)
 	module Coeff = Vec.Coeff
-
-    (** Type of variables. *)
-    module V = Vec.V
 
     (** Type of exponent: a nonnegative integer. *)
     type exp = int
@@ -19,16 +15,16 @@ module type Type = sig
 	module MonomialBasis : sig
 
         (** Type of monomial basis. *)
-		type t = (V.t * exp) list
+		type t = (Var.t * exp) list
 
         (** Monomial basis with no variable. *)
         val null : t
 
         (** Builds a monomial basis. *)
-        val mk : (V.t * exp) list -> t
+        val mk : (Var.t * exp) list -> t
 
         (** @return the monomial basis *)
-        val to_list : t -> (V.t * exp) list
+        val to_list : t -> (Var.t * exp) list
 
 		(** Pretty-printer for monomial basis.
             @return the monomial basis where variables (which are integers) are prefixed by [s] *)
@@ -51,7 +47,7 @@ module type Type = sig
             @param m the monomial basis
             @param fromX the variable to rename
             @param toY the new variable name *)
-		val rename : t -> V.t -> V.t -> t
+		val rename : t -> Var.t -> Var.t -> t
 
     	(** Applies the given change of variables on the monomialBasis*)
         val change_variable : (t -> t option) -> t -> t
@@ -59,7 +55,7 @@ module type Type = sig
 		(** Evaluates a monomial basis by replacing each variable with its value given by a function.
             @param m the monomial basis
             @param f the variable evalutation *)
-		val eval : t -> (V.t -> Coeff.t) -> Coeff.t
+		val eval : t -> (Var.t -> Coeff.t) -> Coeff.t
 
 		(** @return true if the degree of [m] is at most one.
 		    The monomial basis is assumed to be in canonical form. *)
@@ -67,10 +63,10 @@ module type Type = sig
 
         (**/**)
         (** Builds a monomial basis from an expanded list of variables. *)
-		val mk_expanded : V.t list -> t
+		val mk_expanded : Var.t list -> t
 
         (** @return the monomial basis as an expanded list of variables. *)
-		val to_list_expanded : t -> V.t list
+		val to_list_expanded : t -> Var.t list
         (**/**)
 	end
 
@@ -78,7 +74,7 @@ module type Type = sig
 	module Monomial : sig
 
         (** Type of monomial*)
-		type t = MonomialBasis.t * Vec.Coeff.t
+		type t = MonomialBasis.t * Coeff.t
 
         (** pretty-printer for monomials. *)
 		val to_string : t -> string
@@ -95,7 +91,7 @@ module type Type = sig
 		val mk : MonomialBasis.t -> Coeff.t -> t
 
         (** Builds a monomial. *)
-        val mk_list : (V.t * exp) list -> Coeff.t -> t
+        val mk_list : (Var.t * exp) list -> Coeff.t -> t
 
         (** @returns the monomial. *)
         val data : t -> MonomialBasis.t * Coeff.t
@@ -104,7 +100,7 @@ module type Type = sig
 		val mul : t -> t -> t
 
 		(** @return true if the degree of [m] is at most one.
-    TODO : clarifier 
+    TODO : clarifier
             The monomial is assumed to be in canonical form. *)
 		val is_linear : t -> bool
 
@@ -113,17 +109,17 @@ module type Type = sig
 		val is_constant : t -> bool
 
 		(** [eval m v] returns a coefficient which is the evaluation of monomial [m], where each variable is replaced by its value in function [v] *)
-		val eval : t -> (V.t -> Coeff.t) -> Coeff.t
+		val eval : t -> (Var.t -> Coeff.t) -> Coeff.t
 
 		(** [eval_partial m v] returns a monomial, which is the evaluation of monomial [m] where each variable is replaced by its value in function [v]. If a variable has no value in [v], it remains in the result. *)
-		val eval_partial : t -> (V.t -> Coeff.t option) -> t
+		val eval_partial : t -> (Var.t -> Coeff.t option) -> t
 
 		(** Applies the given change of variables on the monomial. *)
 		val change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
 
         (**/**)
         (** Builds a monomial from an expanded list of variables and a coefficient. *)
-		val mk_expanded : V.t list -> Coeff.t -> t
+		val mk_expanded : Var.t list -> Coeff.t -> t
 
         val canon : t -> t
 
@@ -141,20 +137,20 @@ module type Type = sig
 	(** [mk l] builds a polynomial from the {!type:Monomial.t} list [l] *)
 	val mk : Monomial.t list -> t
 
-    val mk_list : ((V.t * int) list * Coeff.t) list -> t
+    val mk_list : ((Var.t * int) list * Coeff.t) list -> t
 
-	(** [mk2 l] builds a polynomial from the list of V.t * Coeff.t [l] *)
-	val mk_expanded_list : (V.t list * Coeff.t) list -> t
+	(** [mk2 l] builds a polynomial from the list of Var.t * Coeff.t [l] *)
+	val mk_expanded_list : (Var.t list * Coeff.t) list -> t
 
 	val mk_cste : t -> Coeff.t -> t
 
-	val fromVar : V.t -> t
+	val fromVar : Var.t -> t
 
 	(** [data p] returns the polynomial [p] as a {!type:Monomial.t} list *)
 	val data : t -> Monomial.t list
 
-	(** [data p] returns the polynomial [p] as a list of V.t * Coeff.t *)
-	val to_list_expanded : t -> (V.t list * Coeff.t) list
+	(** [data p] returns the polynomial [p] as a list of Var.t * Coeff.t *)
+	val to_list_expanded : t -> (Var.t list * Coeff.t) list
 
     val canon : t -> t
 
@@ -216,7 +212,7 @@ module type Type = sig
 	val pow : t -> int -> t
 
 	(** [rename p x y] renames each occurency of [x] in [p] by [y] *)
-	val rename : t -> V.t -> V.t -> t
+	val rename : t -> Var.t -> Var.t -> t
 
 	(** Applies the given change of variables on the polynomial. *)
 	val change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
@@ -232,21 +228,21 @@ module type Type = sig
 	val get_constant : t -> Coeff.t
 
 	(** [get_affine_part p] returns the affine part of polynomial [p] *)
-	val get_affine_part : t -> V.t list -> t
+	val get_affine_part : t -> Var.t list -> t
 
 	(** [get_vars p] returns the list of variables that appear in polynomial [p] *)
-	val get_vars : t -> V.t list
+	val get_vars : t -> Var.t list
 
 	(* Returns the next unbounded variable in the list of polynomials. *)
-	val horizon : t list -> V.t
+	val horizon : t list -> Var.t
 
 	(** [eval p v] returns a coefficient which is the evaluation of polynomial [p], where each variable is replaced by its value in function [v] *)
-	val eval : t -> (V.t -> Coeff.t) -> Coeff.t
+	val eval : t -> (Var.t -> Coeff.t) -> Coeff.t
 
 	(** [eval_partial p v] returns a polynomial, which is the evaluation of polynomial [p] where each variable is replaced by its value in function [v]. If a variable has no value in [v], it remains in the result. *)
-	val eval_partial : t -> (V.t -> Coeff.t option) -> t
+	val eval_partial : t -> (Var.t -> Coeff.t option) -> t
 
-    val gradient : t -> t Vec.M.t
+    val gradient : t -> t Rtree.t
 
 	(** [ofCstr vec coeff] builds the polynomial [vec + coeff]. *)
 	val ofCstr : Vec.t -> Coeff.t -> t

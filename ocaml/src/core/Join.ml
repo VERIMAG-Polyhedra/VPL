@@ -1,5 +1,5 @@
 module Cs = Cstr.Rat.Positive
-module V = Cs.Vec.V
+module V = Var
 
 module Debug = DebugTypes.Debug(struct let name = "CHullBuild" end)
 
@@ -192,7 +192,7 @@ module Build (Min : Min.Type) = struct
 		let (vars, names) = build_vars p1 p2 in
 		let (params, names) = build_params names p1 p2 in
 		Debug.log DebugTypes.Detail
-			(lazy (Printf.sprintf "init point chosen : %s" (Cs.Vec.to_string Cs.Vec.V.to_string init_point)));
+			(lazy (Printf.sprintf "init point chosen : %s" (Cs.Vec.to_string Var.to_string init_point)));
 		let mat = build_constraints epsilon_opt init_point params p1 p2 in
 		let obj = build_obj params p1 p2 in
 		let map = build_map factory1 factory2 p1 p2 vars names in
@@ -309,7 +309,7 @@ module Build (Min : Min.Type) = struct
 		| Some sols ->
 			print_endline (Misc.list_to_string
 				(fun (reg, cons) -> Printf.sprintf "Solutions %s : \n%s\n"
-					(let c = Cons.get_c cons in Cs.to_string Cs.Vec.V.to_string {(Cs.compl c) with Cs.typ = c.Cs.typ})
+					(let c = Cons.get_c cons in Cs.to_string Var.to_string {(Cs.compl c) with Cs.typ = c.Cs.typ})
 					(match reg.PLP.Region.sx with | None -> "none" | Some sx -> PSplx.to_string sx))
 				sols "\n")
 
@@ -339,13 +339,13 @@ module Build (Min : Min.Type) = struct
 			(lazy "Convex hull");
 		Debug.log DebugTypes.MInput
 			(lazy (Printf.sprintf "First polyhedron : %s\nSecond Polyhedron : %s"
-				(Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p1 "\n")
-				(Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p2 "\n")));
+				(Misc.list_to_string (Cons.to_string Var.to_string) p1 "\n")
+				(Misc.list_to_string (Cons.to_string Var.to_string) p2 "\n")));
 		let (conss1, conss2) = join' factory1 factory2 epsilon_opt init_point p1 p2 in
 		Debug.log DebugTypes.MOutput
 			(lazy (Printf.sprintf "Polyhedron1 : %s\nPolyhedron2 : %s"
-				(Misc.list_to_string (Cons.to_string_ext factory1 Cs.Vec.V.to_string) conss1 "\n")
-				(Misc.list_to_string (Cons.to_string_ext factory2 Cs.Vec.V.to_string) conss2 "\n")));
+				(Misc.list_to_string (Cons.to_string_ext factory1 Var.to_string) conss1 "\n")
+				(Misc.list_to_string (Cons.to_string_ext factory2 Var.to_string) conss2 "\n")));
 		(conss1, conss2)
 
 end

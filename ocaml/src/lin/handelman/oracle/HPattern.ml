@@ -30,7 +30,7 @@ let linearMonomial : matcher
 	Not_found -> None
 
 let extractEvenPowers : matcher
-	= let rec (extractEvenPowersRec : Pneuma.t -> (Poly.MonomialBasis.t * Scalar.Rat.t) list -> V.t list -> t option)
+	= let rec (extractEvenPowersRec : Pneuma.t -> (Poly.MonomialBasis.t * Scalar.Rat.t) list -> Var.t list -> t option)
 		= fun pn p vl ->
 		match p with
 		| [] -> None

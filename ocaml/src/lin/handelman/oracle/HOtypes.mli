@@ -3,7 +3,6 @@
 
 module CP = CstrPoly
 module Poly = CP.Poly
-module V = Poly.V
 
 module Debug : DebugTypes.Type
 
@@ -73,10 +72,10 @@ module MapIndexP : sig
 	For instance, {ul
 		{- [poly_to_deg_max (x^2y - 2x^3 + y^2 + xz^2) [x;z] = (3,2)]}
 		{- [poly_to_dex_max (x^2z - z^3) [x;y;z] = (2,0,3)]}} *)
-	val poly_to_deg_max : Poly.t -> Poly.V.t list -> Index.Int.t
+	val poly_to_deg_max : Poly.t -> Var.t list -> Index.Int.t
 
 	(** *)
-	val gen_mono : (Poly.V.t * int) list -> Poly.MonomialBasis.t list
+	val gen_mono : (Var.t * int) list -> Poly.MonomialBasis.t list
 
 	(** [poly_to_deg p ml] returns an index where the ith value is equal to 1 if [ml(i)] is a monomial of polynomial [p]. *)
 	val poly_to_deg : Poly.t -> Poly.MonomialBasis.t list -> Index.Int.t
@@ -90,8 +89,8 @@ module MapIndexP : sig
 	val get : Index.Int.t -> t -> IndexBuild.Map.t -> (Poly.t * t * IndexBuild.Map.t)
 end
 
-(** This map binds things to elements of type {!type:Poly.V.t}. *)
-module MapV : Map.S with type key = Poly.V.t
+(** This map binds things to elements of type {!type:Var.t}. *)
+module MapV : Map.S with type key = Var.t
 
 (** This module defines the maps used in {!module:HLP}. They gather information about variable bounds. *)
 module LPMaps : sig
@@ -110,19 +109,19 @@ module LPMaps : sig
 	type bounds = {mapDB : mapDetBound ; mapB : mapBound}
 
 	(** [init pl vl] initializes maps with bounds that appear syntactically in [pl]. *)
-	val init : Poly.t list -> Poly.V.t list -> bounds
+	val init : Poly.t list -> Var.t list -> bounds
 
 	(** [hasSup v mapDB] returns 0 if [v] has no upper bound in [mapDB], 1 otherwise. *)
-	val hasSup : Poly.V.t -> mapDetBound -> Q.t
+	val hasSup : Var.t -> mapDetBound -> Q.t
 
 	(** [hasInf v mapDB] returns 0 if [v] has no lower bound in [mapDB], 1 otherwise. *)
-	val hasInf : Poly.V.t -> mapDetBound -> Q.t
+	val hasInf : Var.t -> mapDetBound -> Q.t
 
 	(** [detSup v mapDB] returns 1 if [v] has an upper bound in [mapDB], 0 otherwise. *)
-	val detSup : Poly.V.t -> mapDetBound -> Q.t
+	val detSup : Var.t -> mapDetBound -> Q.t
 
 	(** [detInf v mapDB] returns 1 if [v] has a lower bound in [mapDB], 0 otherwise. *)
-	val detInf : Poly.V.t -> mapDetBound -> Q.t
+	val detInf : Var.t -> mapDetBound -> Q.t
 
 	val mapDB_to_string : mapDetBound -> string
 
@@ -130,11 +129,11 @@ module LPMaps : sig
 
 	(** [updateMapDB mapDB v value bound] binds in [mapDB] the upper bound of variable [v] to [value] if [upper] = [true].
 	Otherwise, it binds the lower bound of variable [v] to [value]. *)
-	val updateMapDB : mapDetBound -> Poly.V.t -> bool -> t -> mapDetBound
+	val updateMapDB : mapDetBound -> Var.t -> bool -> t -> mapDetBound
 
 	(** [updateMapB mapB v value bound] binds in [mapB] the upper bound of variable [v] to [value] if [upper] = [true].
 	Otherwise, it binds the lower bound of variable [v] to [value]. *)
-	val updateMapB : mapBound -> Poly.V.t -> Hi.boundIndex -> t -> mapBound
+	val updateMapB : mapBound -> Var.t -> Hi.boundIndex -> t -> mapBound
 
 end
 
@@ -144,7 +143,7 @@ module Pneuma : sig
 
 	type t = {
 	p : Poly.t; (** polynomial to linearize*)
-	vl : Poly.V.t list; (** variables appearing in p and ph *)
+	vl : Var.t list; (** variables appearing in p and ph *)
 	mapP : MapPolyHi.t;
 	mapIP : MapIndexP.t;
 	mapI : IndexBuild.Map.t;
@@ -164,7 +163,7 @@ module Pneuma : sig
 	val n_cstrs : t -> int
 
 	(** [compute ind vl] returns [vl(0)^(ind(0)) * ... * vl(n)^(ind(n))]. *)
-	val computeVarIndex : Index.Int.t -> Poly.V.t list -> Poly.t
+	val computeVarIndex : Index.Int.t -> Var.t list -> Poly.t
 
 	(** [hi_to_poly hi pn]  returns the polynomial equal to [hi] and updates maps in [pn]. *)
 	val hi_to_poly : Hi.t -> t -> Poly.t * MapIndexP.t * IndexBuild.Map.t

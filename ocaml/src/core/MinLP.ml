@@ -15,7 +15,7 @@ module type Type = sig
 
 	val to_string : t -> string
 
-	val mk : CsUser.t list -> CsUser.Vec.V.t list -> mayUnsatT
+	val mk : CsUser.t list -> Var.t list -> mayUnsatT
 
 	val get_solution : t -> CsUser.Vec.t
 
@@ -66,8 +66,6 @@ module Splx (CsUser : Cstr.Type) = struct
 		let compare = cmp
 	end
 
-	module V = CsPriv.Vec.V
-
 	module MapC = Map.Make(CsUser)
 
 	module Integer = struct
@@ -82,7 +80,7 @@ module Splx (CsUser : Cstr.Type) = struct
 
 	type t = {
 		mapInt : mapInt_t;
-		vars : V.t list ;
+		vars : Var.t list ;
 		sx : Splx.t}
 
 	let userToPriv : CsUser.t -> CsPriv.t
@@ -95,9 +93,9 @@ module Splx (CsUser : Cstr.Type) = struct
 			CsPriv.v =
 				CsUser.Vec.toList c_user.CsUser.v
 				|> List.map
-					(fun (v,c) -> 
+					(fun (v,c) ->
 						(CsUser.Vec.Coeff.toQ c,
-						CsUser.Vec.V.toPos v |> Var.Positive.fromPos))
+						v))
 				|> CsPriv.Vec.mk
 		}
 
@@ -106,11 +104,11 @@ module Splx (CsUser : Cstr.Type) = struct
 
 	let to_string : t -> string
 		= fun x ->
-		Splx.pr Splx.V.to_string x.sx
+		Splx.pr Var.to_string x.sx
 
-	let mk' : CsUser.t list -> V.t list -> mayUnsatT
+	let mk' : CsUser.t list -> Var.t list -> mayUnsatT
 		= fun cstrs vars ->
-		let horizon = V.max vars |> V.next
+		let horizon = Var.max vars |> Var.next
 		in
 		let (mapI,cstrs,_) = List.fold_left
 			(fun (map,l,i) c ->
@@ -129,7 +127,7 @@ module Splx (CsUser : Cstr.Type) = struct
 			 sx = sx}
 		| Splx.IsUnsat _ -> IsUnsat
 
-	let mk : CsUser.t list -> V.t list -> mayUnsatT
+	let mk : CsUser.t list -> Var.t list -> mayUnsatT
 		= fun cstrs vars ->
 		Stat.incr ();
 		Stat.incr_size (List.length cstrs);
@@ -138,7 +136,7 @@ module Splx (CsUser : Cstr.Type) = struct
 		Debug.log DebugTypes.MInput
 			(lazy(Printf.sprintf "Constraints : %s\nVariables : %s"
 				(CsUser.list_to_string cstrs)
-				(Misc.list_to_string V.to_string vars " ; ")));
+				(Misc.list_to_string Var.to_string vars " ; ")));
 		mk' cstrs vars
 
 	let get_solution : t -> CsUser.Vec.t
@@ -146,8 +144,7 @@ module Splx (CsUser : Cstr.Type) = struct
 		Splx.getAsg lp.sx
 		|> Rtree.toList
 		|> List.map (fun (v,c) ->
-			(CsUser.Vec.ofSymbolic c,
-			Var.Positive.toPos v |> CsUser.Vec.V.fromPos))
+			(CsUser.Vec.ofSymbolic c, v))
 		|> CsUser.Vec.mk
 
 	let add_cstrs : CsUser.t list -> t -> mayUnsatT

@@ -112,16 +112,16 @@ module Handelman (Minimization : Min.Type) = struct
 	module Build = struct
 
 		let obj_buildOfPoly : Poly.t list -> Poly.t -> Obj.t * Naming.t
-		  = let module VSet = Set.Make (struct type varT = Poly.V.t type t = varT let compare = Poly.V.cmp end) in
+		  = let module VSet = Set.Make (struct type varT = Var.t type t = varT let compare = Var.cmp end) in
 			 let gatherParams1 : Poly.t -> VSet.t
 				= fun p ->
 				Poly.to_list_expanded p
 				|> List.map Pervasives.fst
 				|> List.concat
 				|> List.fold_left (fun s x -> VSet.add x s) VSet.empty
-				(*|> VSet.remove Poly.V.null*)
+				(*|> VSet.remove Var.null*)
 			 in
-			 let gatherParams : Poly.t list -> (int * Poly.V.t) list
+			 let gatherParams : Poly.t list -> (int * Var.t) list
 				= fun l ->
 				List.map gatherParams1 l
 				|> List.fold_left VSet.union VSet.empty
@@ -162,7 +162,7 @@ module Handelman (Minimization : Min.Type) = struct
 			 fun n l a ->
 			 obj_buildOfPoly (List.sort (fun (i, _) (i', _) -> Pervasives.compare i i') l |> fill n 0) a
 
-		let obj_of_poly : Poly.t -> Poly.V.t list -> Obj.t * Naming.t
+		let obj_of_poly : Poly.t -> Var.t list -> Obj.t * Naming.t
 		  = fun p l ->
 		  let lin = List.map (fun x -> Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x,1])) l in
 		  let cst = Poly.sub p
@@ -178,14 +178,14 @@ module Handelman (Minimization : Min.Type) = struct
 
 		(* data/mk à améliorer *)
 		(** row_from_constraint p mb converts the Poly.t p into a row*)
-		let rec (row_from_constraint : Poly.t -> Poly.V.t list -> Tableau.Vector.t)
+		let rec (row_from_constraint : Poly.t -> Var.t list -> Tableau.Vector.t)
 		  = fun p vars ->
 		  match vars with
 		  | [] -> [Scalar.Rat.mul (Scalar.Rat.negU) (Poly.monomial_coefficient p Poly.MonomialBasis.null)]
 		  | var :: tail -> let coeff = Poly.monomial_coefficient p (Poly.MonomialBasis.mk [var,1]) in
 					coeff::(row_from_constraint p tail);;
 
-		let from_poly : Poly.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> Poly.t option -> PLP.PSplx.t
+		let from_poly : Var.t list -> Poly.t list -> Poly.t list -> Poly.t -> Poly.t option -> PLP.PSplx.t
 		  = fun vars ineqs eqs obj normalization ->
 		  if List.length vars + List.length ineqs < List.length ineqs + List.length eqs
 		  then Pervasives.invalid_arg "PSplx.Build.from_poly: variables"
@@ -207,8 +207,8 @@ module Handelman (Minimization : Min.Type) = struct
 				  (PLP.PSplx.nParams sx) p
 	end
 
-	let (get_non_linear_monomials : Poly.t -> Poly.V.t list -> Poly.MonomialBasis.t list)
-		= let rec(get_non_linear_monomials_rec : (Poly.V.t list * Q.t) list -> Poly.V.t list -> Poly.MonomialBasis.t list)
+	let (get_non_linear_monomials : Poly.t -> Var.t list -> Poly.MonomialBasis.t list)
+		= let rec(get_non_linear_monomials_rec : (Var.t list * Q.t) list -> Var.t list -> Poly.MonomialBasis.t list)
 			= fun p variables ->
 			match p with
 			| [] -> []
@@ -220,7 +220,7 @@ module Handelman (Minimization : Min.Type) = struct
 		in fun p variables ->
 		get_non_linear_monomials_rec (Poly.to_list_expanded p) variables
 
-	let (get_non_linear_coeffs: Poly.t -> Poly.V.t list -> Poly.t list)
+	let (get_non_linear_coeffs: Poly.t -> Var.t list -> Poly.t list)
 		= fun p variables ->
 		let mlist = get_non_linear_monomials p variables in
 		List.map
@@ -230,7 +230,7 @@ module Handelman (Minimization : Min.Type) = struct
 	module Norm = struct
 
 		(** Projects the given point on the given subspace. *)
-		let project_point : Poly.V.t list -> Poly.Vec.t -> Poly.Vec.t
+		let project_point : Var.t list -> Poly.Vec.t -> Poly.Vec.t
 			= fun params point ->
 			let vec = List.map (fun param -> (Poly.Vec.Coeff.u, param)) params
 				|> Poly.Vec.mk
@@ -239,7 +239,7 @@ module Handelman (Minimization : Min.Type) = struct
 
 		(** Returns a point (as a function) within the polyhedron to project.
 		If the answer is [None], it means that the polyhedron is empty! *)
-		let getPointInside : Cs.t list -> Poly.V.t list -> (Poly.V.t -> Scalar.Rat.t option) option
+		let getPointInside : Cs.t list -> Var.t list -> (Var.t -> Scalar.Rat.t option) option
 			= fun cstrs params ->
 			match Opt.getAsg_raw cstrs with
 			| None -> None
@@ -247,7 +247,7 @@ module Handelman (Minimization : Min.Type) = struct
 				let vec = Rtree.map (Vector.Rat.Positive.ofSymbolic) point
 				|> project_point params in
 				Debug.log DebugTypes.Detail (lazy(Printf.sprintf "normalization point : %s"
-					(Poly.Vec.to_string Poly.V.to_string vec)));
+					(Poly.Vec.to_string Var.to_string vec)));
 				Some (fun v ->
 				if List.mem v params
 				then Some (Poly.Vec.get vec v)
@@ -257,11 +257,11 @@ module Handelman (Minimization : Min.Type) = struct
 		(** Returns the normalization constraint and a point (as a function) within the polyhedron to project.
 		If the answer is [None], it means that the polyhedron is empty!
 		TODO : adapt the normalization constant to the polynomial. *)
-		let get : 'c HPol.t -> Poly.t list -> Poly.t -> Poly.t -> (Poly.t * (Poly.V.t -> Scalar.Rat.t option)) option
+		let get : 'c HPol.t -> Poly.t list -> Poly.t -> Poly.t -> (Poly.t * (Var.t -> Scalar.Rat.t option)) option
 			= fun ph his_p objective f ->
 			let variables = List.map Poly.get_vars (f :: his_p)
 				|> List.concat
-				|> Misc.rem_dupl Poly.V.equal
+				|> Misc.rem_dupl Var.equal
 			in
 			let non_linear_monomials = List.map
 				(fun p ->
@@ -281,7 +281,7 @@ module Handelman (Minimization : Min.Type) = struct
 				(fun (f,horizon) m ->
 					let m_h = Poly.MonomialBasis.mk [horizon,1] in
 					((fun m' ->	if Poly.MonomialBasis.equal m m' then Some m_h else f m'),
-					 Poly.V.next horizon))
+					 Var.next horizon))
 				((fun _ -> None), horizon)
 				non_linear_monomials
 				|> Pervasives.fst
@@ -301,8 +301,8 @@ module Handelman (Minimization : Min.Type) = struct
 				(lazy (Printf.sprintf "Projecting polyhedron of monomials : \n%s"
 					(let vars_to_project = List.filter
 						(fun v -> not (List.exists
-							(fun v' -> Cs.Vec.V.equal v v') variables))
-							(Cs.getVars ineqs |> Cs.Vec.V.Set.elements)
+							(fun v' -> Var.equal v v') variables))
+							(Cs.getVars ineqs |> Var.Set.elements)
 					in
 					Proj.proj FactoryUnit.factory Flags.Float vars_to_project
 						(List.map FactoryUnit.mkCons ineqs)
@@ -329,9 +329,9 @@ module Handelman (Minimization : Min.Type) = struct
 		= fun st ph his_p f ->
 		let variables = ph#get_vars in
 		let nb_h = (List.length his_p) in
-		let n = Var.Positive.next (Misc.max Poly.V.cmp variables) |> Var.Positive.toInt in
+		let n = Var.next (Misc.max Var.cmp variables) |> Var.toInt in
 		let lpvars = List.map
-			(fun i -> Var.Positive.fromInt i)
+			(fun i -> Var.fromInt i)
 			(Misc.range n (nb_h + n))
 		in
 		(* le ième Hi est associé à la variable numéro i*)
@@ -399,7 +399,7 @@ module Handelman (Minimization : Min.Type) = struct
 			Cstr_type.Le
 			cert
 
-	let compute_certs : Hi.t list -> int -> Poly.V.t list -> (PLP.Region.t * 'c Cons.t) list
+	let compute_certs : Hi.t list -> int -> Var.t list -> (PLP.Region.t * 'c Cons.t) list
 		-> (CP.t * Hi.Cert.schweighofer list) list
 		= fun his n_cstrs vars regs ->
 			let compute_cert : (int * Scalar.Rat.t) list -> Hi.Cert.schweighofer list
@@ -556,7 +556,7 @@ module Handelman (Minimization : Min.Type) = struct
 
 		let rewrite_polynomials : 'c Pol.t -> CP.t list -> CP.t list
 			(* returns the polynomial equal to v in Cons *)
-			= let get_eq : Cs.Vec.V.t -> 'c Cons.t -> Cs.t
+			= let get_eq : Var.t -> 'c Cons.t -> Cs.t
 				= fun v cons ->
 				let cstr = Cons.get_c cons in
 				let vec = Cs.get_v cstr in
@@ -566,12 +566,12 @@ module Handelman (Minimization : Min.Type) = struct
 					(Cs.mk (Cs.get_typ cstr) [Scalar.Rat.neg coeff,v] Scalar.Rat.z)
 				|> Cs.mulc (Scalar.Rat.inv (Scalar.Rat.neg coeff))
 			in
-			let rewrite_var : Poly.V.t -> Poly.t -> Poly.t -> Poly.t
+			let rewrite_var : Var.t -> Poly.t -> Poly.t -> Poly.t
 				= fun v p p' ->
 				List.map
 					(fun mon -> let (mb,c) = Poly.Monomial.data mon in
 						let vs = Poly.MonomialBasis.to_list_expanded mb in
-						let (eq_v,vs') = List.partition (fun var -> Poly.V.equal var v) vs in
+						let (eq_v,vs') = List.partition (fun var -> Var.equal var v) vs in
 						let product = Poly.pow p' (List.length eq_v) in
 						Poly.mk [Poly.Monomial.mk (Poly.MonomialBasis.mk_expanded vs') c]
 						|> Poly.mul product
@@ -584,7 +584,7 @@ module Handelman (Minimization : Min.Type) = struct
 				let p' =
 				List.fold_left
 					(fun p (v,cons) ->
-						print_endline (Printf.sprintf "%s -> %s" (Cs.Vec.V.to_string v) (Cons.to_string Cs.Vec.V.to_string cons));
+						print_endline (Printf.sprintf "%s -> %s" (Var.to_string v) (Cons.to_string Var.to_string cons));
 						let cstr = get_eq v cons in
 						let p' = Poly.ofCstr (Cs.get_v cstr) (Cs.get_c cstr) in
 						rewrite_var v p p'
@@ -620,7 +620,7 @@ module Handelman (Minimization : Min.Type) = struct
 			Debug.log DebugTypes.Title (lazy "Handelman.Pb");
 			Debug.log DebugTypes.MInput
 				(lazy (Printf.sprintf "Polyhedron %s and polynomial constraint %s"
-				(Pol.to_string Cs.Vec.V.to_string phPol)
+				(Pol.to_string Var.to_string phPol)
 				(CP.to_string poly)));
 			let ph = mkHPol phPol in
 			let pl' = rewrite_polynomials phPol [poly] (* rewritting w.r.t equalities in phPol *)
@@ -641,7 +641,7 @@ module Handelman (Minimization : Min.Type) = struct
 			Debug.log DebugTypes.Title (lazy "Handelman.Pb");
 			Debug.log DebugTypes.MInput
 				(lazy (Printf.sprintf "Polyhedron %s and polynomial constraints %s"
-				(Pol.to_string Cs.Vec.V.to_string phPol)
+				(Pol.to_string Var.to_string phPol)
 				(Misc.list_to_string CP.to_string pl " ; ")));
 			let ph = mkHPol phPol in
 			let pl' = rewrite_polynomials phPol pl (* rewritting w.r.t equalities in phPol *)
@@ -694,10 +694,10 @@ module Float = Handelman(Min.Classic(Vector.Float.Positive))
 	*)
 	(*
 	module Norm = struct
-		let getPointInside : Cs.t list -> Poly.V.t list -> Poly.V.t -> Scalar.Rat.t option
+		let getPointInside : Cs.t list -> Var.t list -> Var.t -> Scalar.Rat.t option
 			= fun cstrs params v ->
 			let horizon = Cs.getVars cstrs
-				|> Cs.Vec.V.horizon
+				|> Var.horizon
 			in
 			match Splx.getAsgOpt horizon (List.mapi (fun i c -> (i,c)) cstrs) with
 			| None -> Pervasives.failwith "getPointInside : empty polyhedron"
@@ -707,7 +707,7 @@ module Float = Handelman(Min.Classic(Vector.Float.Positive))
 				then Some (Vector.Rat.Positive.get vec v)
 				else None
 
-		let get : 'c HPol.t -> Poly.t -> Poly.t * (Poly.V.t -> Scalar.Rat.t option)
+		let get : 'c HPol.t -> Poly.t -> Poly.t * (Var.t -> Scalar.Rat.t option)
 			= fun ph objective ->
 			let ineqs = List.map (fun c -> {c with Cs.typ = Cstr_type.Lt}) (ph#get_ineqs()) in
 			Debug.log DebugTypes.Detail

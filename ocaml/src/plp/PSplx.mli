@@ -12,4 +12,4 @@ open PSplx_type
 module type Type = Type
 module Debug : DebugTypes.Type
 
-module Make : functor (Vec2: Vector.Type with module M = Rtree and module V = Var.Positive) -> Type with module Vec = Vec2
+module Make : functor (Vec2: Vector.Type) -> Type with module Vec = Vec2

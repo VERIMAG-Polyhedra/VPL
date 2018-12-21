@@ -20,7 +20,7 @@ module Lift (T : Type) = struct
     (* choix d'une variable à garder par monome *)
     let choose_var: P.t -> env -> mode -> Heuristic.prophecy
     	= let rec choose_var_rec: P.t -> Heuristic.prophecy
-            -> P.V.t MapMonomial.t -> (AnnotedVar.t list) MapMonomial.t -> env -> mode
+            -> Var.t MapMonomial.t -> (AnnotedVar.t list) MapMonomial.t -> env -> mode
             -> Heuristic.prophecy
     		= fun p pro mapKeep mapNKeep env mode ->
     		if P.isZ p
@@ -32,7 +32,7 @@ module Lift (T : Type) = struct
     			Debug.log DebugTypes.Normal (lazy "Oracle - recursive call");
     			Debug.log DebugTypes.Detail
     				(lazy (Printf.sprintf "p = %s, \nvariables marked \"to_keep\" = %s, \nvariables marked \"to intervalize\" = %s\nparts already treated : %s\n"
-    				(P.to_string p') (map_to_string mapKeep' P.V.to_string)
+    				(P.to_string p') (map_to_string mapKeep' Var.to_string)
     				(map_to_string mapNKeep' (fun l -> Misc.list_to_string AnnotedVar.to_string l ","))
     				(Misc.list_to_string Term.to_string (pro @ pro') ",")));
     			choose_var_rec p' (pro @ pro') mapKeep' mapNKeep' env mode
@@ -152,7 +152,7 @@ module Lift (T : Type) = struct
     		(P.to_string p')
     		(Misc.list_to_string
     			(fun v -> Printf.sprintf "%s -> %s"
-                    (P.V.to_string v)
+                    (Var.to_string v)
                     (Itv.of_var env v |> Itv.to_string)
                 )
                 (P.get_vars p') ",")))

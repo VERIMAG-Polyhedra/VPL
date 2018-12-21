@@ -1,10 +1,9 @@
 module Debug = DebugTypes.Debug(struct let name = "Proj" end)
 module Cs = Cstr.Rat.Positive
-module V = Cs.Vec.V
 
 (* x+1 car les identifiants commencent à 0 *)
-let varEncode : int -> Cs.Vec.V.t
-  = fun x -> Cs.Vec.V.fromInt (x+1)
+let varEncode : int -> Var.t
+  = fun x -> Var.fromInt (x+1)
 
 module Proj (Min : Min.Type) = struct
 
@@ -12,8 +11,8 @@ module Proj (Min : Min.Type) = struct
 
 	module Build = struct
 
-		let getCoeffs : V.t option -> Cstr.Rat.Positive.t list -> Scalar.Rat.t list
-		  = let get : V.t option -> Cstr.Rat.Positive.t -> Scalar.Rat.t
+		let getCoeffs : Var.t option -> Cstr.Rat.Positive.t list -> Scalar.Rat.t list
+		  = let get : Var.t option -> Cstr.Rat.Positive.t -> Scalar.Rat.t
 				= function
 				| None -> Cstr.Rat.Positive.get_c
 				| Some x -> fun c -> Cs.Vec.get (Cstr.Rat.Positive.get_v c) x
@@ -22,20 +21,20 @@ module Proj (Min : Min.Type) = struct
 
 		module Norm = struct
 
-			let translateAlphas : V.Set.t -> Cstr.Rat.Positive.t list -> (Scalar.Rat.t * V.t option) list -> Q.t list
+			let translateAlphas : Var.Set.t -> Cstr.Rat.Positive.t list -> (Scalar.Rat.t * Var.t option) list -> Q.t list
 				= fun xs cs l ->
-				List.filter (function (_, None) -> true | (_, Some x) -> not (V.Set.mem x xs)) l
+				List.filter (function (_, None) -> true | (_, Some x) -> not (Var.Set.mem x xs)) l
 				|> List.map (fun (n, x) -> getCoeffs x cs |> List.map (fun n' -> Scalar.Rat.mul n n'))
 				|> function
 					| [] -> Pervasives.failwith "Build.Norm.translateAlphas"
 					| h :: t -> List.fold_left (List.map2 Q.add) h t
 
-			let build : V.Set.t -> Cstr.Rat.Positive.t list -> Tableau.Vector.t
-				= let findNormCoeffs : Cstr.Rat.Positive.t list -> (Scalar.Rat.t * V.t option) list
-					= let buildCons : V.t -> Cstr.Rat.Positive.t -> Cstr.Rat.Positive.t
+			let build : Var.Set.t -> Cstr.Rat.Positive.t list -> Tableau.Vector.t
+				= let findNormCoeffs : Cstr.Rat.Positive.t list -> (Scalar.Rat.t * Var.t option) list
+					= let buildCons : Var.t -> Cstr.Rat.Positive.t -> Cstr.Rat.Positive.t
 						= fun eps c -> {c with Cstr.Rat.Positive.v = Cs.Vec.set (Cstr.Rat.Positive.get_v c) eps Scalar.Rat.u}
 				 	in
-					let extract : V.t list -> Splx.t -> (Scalar.Rat.t * V.t option) list
+					let extract : Var.t list -> Splx.t -> (Scalar.Rat.t * Var.t option) list
 						= fun xs sx ->
 						let asg =
 					Splx.getAsg sx
@@ -51,14 +50,14 @@ module Proj (Min : Min.Type) = struct
 				in
 				fun l ->
 				let xs = Cstr.Rat.Positive.getVars l in
-				let xl = V.Set.elements xs in
-				let eps = V.horizon xs in
+				let xl = Var.Set.elements xs in
+				let eps = Var.horizon xs in
 				Cstr.Rat.Positive.le [Scalar.Rat.negU, eps] Scalar.Rat.z ::
 					Cstr.Rat.Positive.le [Scalar.Rat.u, eps] Scalar.Rat.u ::
 					List.map (buildCons eps) l
 					 |> List.fold_left (fun (i, l') c -> (i + 1, (i, c) :: l')) (0, [])
 					 |> Pervasives.snd
-					 |> Splx.mk (V.next eps)
+					 |> Splx.mk (Var.next eps)
 					 |> Splx.checkFromAdd
 					 |> (fun sx -> Opt.max' sx (Cs.Vec.mk [Scalar.Rat.u, eps]))
 					 |> function
@@ -78,7 +77,7 @@ module Proj (Min : Min.Type) = struct
 
 		(** [buildProjCons xs l] builds a list a constraints to be inserted in the
 		simplex tableau.  The variables in [xs] must be bounded by the constraints in [l]. *)
-		let buildProjCons : V.t list -> Cstr.Rat.Positive.t list -> Tableau.Vector.t list
+		let buildProjCons : Var.t list -> Cstr.Rat.Positive.t list -> Tableau.Vector.t list
 		  = fun xs cs ->
 		  List.map (fun x ->
 				 getCoeffs (Some x) cs
@@ -86,8 +85,8 @@ module Proj (Min : Min.Type) = struct
 				 |> fun v -> v @ [Q.zero])
 				xs
 
-		let buildObj : bool -> V.t list -> Cstr.Rat.Positive.t list -> Objective.t
-		  = let buildCoeff : bool -> V.t list -> Cstr.Rat.Positive.t -> ParamCoeff.t
+		let buildObj : bool -> Var.t list -> Cstr.Rat.Positive.t list -> Objective.t
+		  = let buildCoeff : bool -> Var.t list -> Cstr.Rat.Positive.t -> ParamCoeff.t
 				= fun withConst params c ->
 				let v = Cstr.Rat.Positive.get_v c in
 				ParamCoeff.mk (List.map (fun x -> Cs.Vec.get v x |> Scalar.Rat.neg) params)
@@ -144,14 +143,14 @@ module Proj (Min : Min.Type) = struct
 	  }
 
 	(* XXX: Is it necessary to add the trivial constraint at the end? *)
-	let projToTab : 'c Factory.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> PSplx.t
+	let projToTab : 'c Factory.t -> projFlagsT -> Var.t list -> 'c Cons.t list -> PSplx.t
 		= fun factory flags xs l ->
 		if !Flags.sum_lambda_1
 		then print_endline "Caution : sum_lambda = true in the projection by PLP";
 		let cstrs = List.map Pervasives.fst l in
 		let bndSet = Cs.getVars cstrs in
-		let projSet = Cs.Vec.V.Set.inter (Cs.Vec.V.Set.of_list xs) bndSet in
-		let params = Cs.Vec.V.Set.diff bndSet projSet |> Cs.Vec.V.Set.elements in
+		let projSet = Var.Set.inter (Var.Set.of_list xs) bndSet in
+		let params = Var.Set.diff bndSet projSet |> Var.Set.elements in
 		if flags.withTrivial
 		then
 			let l' = l @ [(Cs.le [] Scalar.Rat.u, factory.Factory.triv Cstr_type.Le Scalar.Rat.u)] in
@@ -162,7 +161,7 @@ module Proj (Min : Min.Type) = struct
 					then Build.buildLambdaSum cstrs'
 					else Build.Norm.build projSet cstrs')
 					::
-					Build.buildProjCons (Cs.Vec.V.Set.elements projSet) cstrs')
+					Build.buildProjCons (Var.Set.elements projSet) cstrs')
 				[]
 				(Naming.mkParam params Naming.empty
                     |> Naming.mkVar (List.mapi (fun i _ -> varEncode i) l'))
@@ -172,16 +171,16 @@ module Proj (Min : Min.Type) = struct
 					then Build.buildLambdaSum cstrs
 					else Build.Norm.build projSet cstrs)
 					::
-					Build.buildProjCons (Cs.Vec.V.Set.elements projSet) cstrs)
+					Build.buildProjCons (Var.Set.elements projSet) cstrs)
 				[]
 				(Naming.mkParam params Naming.empty
                     |> Naming.mkVar (List.mapi (fun i _ -> varEncode i) l))
 
 	module type Type = sig
-		val proj : 'c Factory.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+		val proj : 'c Factory.t -> projFlagsT -> Var.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
 	end
 
-	let exec : 'c Factory.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+	let exec : 'c Factory.t -> projFlagsT -> Var.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
 	  = let rec rmTrivAndDups : 'c Cons.t list -> 'c Cons.t list
 			= function
 			| [] -> []
@@ -200,7 +199,7 @@ module Proj (Min : Min.Type) = struct
 				(lazy (Printf.sprintf "Regions: \n%s\n"
 					(Misc.list_to_string
 						(fun (reg,sol) -> Printf.sprintf "%s --> %s"
-							(Cons.to_string Cs.V.to_string sol)
+							(Cons.to_string Var.to_string sol)
 							(PLP.Region.to_string reg)) regs "\n")));
 			Debug.log DebugTypes.Title (lazy "Building result from regions");
 			let sols = rmTrivAndDups (List.split regs |> Pervasives.snd) in
@@ -240,12 +239,12 @@ module Proj (Min : Min.Type) = struct
             (*check cs l (tab.PSplx.names);*)
             (l,regs)
 
-	let proj : 'c Factory.t -> projFlagsT -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+	let proj : 'c Factory.t -> projFlagsT -> Var.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
   		= fun factory flags xs ineqs ->
   		Debug.log DebugTypes.Title (lazy "Building Projection");
   		exec factory flags xs ineqs
 
-  	let projDefault : 'c Factory.t -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+  	let projDefault : 'c Factory.t -> Var.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
   		= fun factory xs ineqs ->
   		Debug.log DebugTypes.Title (lazy "Building Default Projection");
   		exec factory projFlagsDflt xs ineqs
@@ -284,7 +283,7 @@ module Heuristic = struct
 	module Float = Proj(Min.Heuristic(Vector.Float.Positive))
 end
 
-let proj : 'c Factory.t -> Flags.scalar -> Cs.Vec.V.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
+let proj : 'c Factory.t -> Flags.scalar -> Var.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
   		= fun factory scalar xs ineqs ->
   		Debug.log DebugTypes.Title (lazy "Building Projection");
   		match !Flags.min with

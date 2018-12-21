@@ -7,7 +7,6 @@ It represents only sets of inequalities with {b nonempty interior}, meaning that
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module V = Vec.V
 
 module Debug = Opt.Debug
 
@@ -56,10 +55,10 @@ end
 
 let nil : 'c t = []
 
-let to_string: (V.t -> string) -> 'c t -> string
+let to_string: (Var.t -> string) -> 'c t -> string
 = fun varPr s -> List.fold_left (fun str c -> str ^ (Cons.to_string varPr c) ^ "\n") "" s
 
-let to_string_ext: 'c Factory.t -> (V.t -> string) -> 'c t -> string
+let to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 = fun factory varPr s ->
 	List.fold_left (fun str c -> str ^ (Cons.to_string_ext factory varPr c) ^ "\n") "" s
 
@@ -139,7 +138,7 @@ let mkCert : 'c Factory.t -> 'c Cons.t list -> Cs.t -> (int * Scalar.Rat.t) list
 	with
 		Not_found -> Pervasives.failwith "IneqSet.mkCert"
 
-let incl: 'c1 Factory.t -> V.t -> 'c1 EqSet.t -> 'c1 t ->  'c2 t -> 'c1 rel_t
+let incl: 'c1 Factory.t -> Var.t -> 'c1 EqSet.t -> 'c1 t ->  'c2 t -> 'c1 rel_t
 	= fun factory nxt es s1 s2 ->
 	let rec _isIncl : 'c1 list -> Splx.t Splx.mayUnsatT option -> 'c2 t -> 'c1 rel_t
 		= fun certs optSx ->
@@ -173,7 +172,7 @@ type 'c satChkT = Sat of Splx.t | Unsat of 'c
 simplex object with a satisfied state if it is. If it is not satisfiable, then
 a linear combination of the input constraints is returned. [nvar] is used for
 fresh variable generation. *)
-let chkFeasibility: 'c Factory.t -> V.t -> 'c t -> 'c satChkT
+let chkFeasibility: 'c Factory.t -> Var.t -> 'c t -> 'c satChkT
 = fun factory nvar s ->
 	let cs = List.mapi (fun i c -> (i, Cons.get_c c)) s in
 	match Splx.checkFromAdd (Splx.mk nvar cs) with
@@ -182,7 +181,7 @@ let chkFeasibility: 'c Factory.t -> V.t -> 'c t -> 'c satChkT
 
 let rename factory s fromX toY = List.map (Cons.rename factory fromX toY) s
 
-let pick : V.t option Rtree.t -> 'c t -> V.t option
+let pick : Var.t option Rtree.t -> 'c t -> Var.t option
 	= fun msk s ->
 	let update v n p m =
 		match Scalar.Rat.cmpz n with
@@ -250,14 +249,14 @@ let trim : 'c t -> Splx.t -> 'c t * Splx.t
 	(* XXX: Why is this fold_right? *)
 	List.fold_right2 check (Misc.range 0 (List.length s0)) s0 ([], sx0)
 
-let trimSet : V.t -> 'c t -> 'c t
+let trimSet : Var.t -> 'c t -> 'c t
 	= fun nxt s ->
 	let cl = List.mapi (fun i c -> i, Cons.get_c c) s in
 	match Splx.checkFromAdd (Splx.mk nxt cl) with
 	| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.trimSet"
 	| Splx.IsOk sx -> Pervasives.fst (trim s sx)
 
-let simpl: 'c Factory.t -> V.t -> 'c EqSet.t -> 'c t -> 'c simpl_t
+let simpl: 'c Factory.t -> Var.t -> 'c EqSet.t -> 'c t -> 'c simpl_t
 	= fun factory nxt es s ->
 	let rec filter s1
 		= function
@@ -286,7 +285,7 @@ let synAdd : 'c Factory.t -> 'c EqSet.t -> 'c t -> 'c Cons.t -> 'c t
 	| Check _ ->
 		cons::(List.filter (fun c2 -> not (Cons.implies cons c2)) s)
 
-let subst: 'c Factory.t -> V.t -> 'c EqSet.t -> V.t -> 'c Cons.t -> 'c t -> 'c t
+let subst: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t -> 'c Cons.t -> 'c t -> 'c t
 	= fun factory nxt es x e s ->
 	let gen s c =
 		let c1 =
@@ -301,12 +300,12 @@ let subst: 'c Factory.t -> V.t -> 'c EqSet.t -> V.t -> 'c Cons.t -> 'c t -> 'c t
 
 
 (* XXX: le new_horizon renvoyé devrait être la nouvelle next variable *)
-let pProj : 'c Factory.t -> V.t -> 'c t -> Flags.scalar -> 'c t
+let pProj : 'c Factory.t -> Var.t -> 'c t -> Flags.scalar -> 'c t
 	= fun factory x s scalar_type ->
 	Proj.proj factory scalar_type [x] s
 		|> Pervasives.fst
 
-let fmElim: 'c Factory.t -> V.t -> 'c EqSet.t -> V.t ->  'c t -> 'c t
+let fmElim: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t ->  'c t -> 'c t
 	= fun factory nxt es x s ->
 	let (pos, z, neg) = List.fold_left (fun (p, z, n) c ->
 		match Scalar.Rat.cmpz (Vec.get (Cs.get_v (Cons.get_c c)) x) with
@@ -325,12 +324,12 @@ let fmElim: 'c Factory.t -> V.t -> 'c EqSet.t -> V.t ->  'c t -> 'c t
     List.fold_left (apply factory) zs pos
 	|> trimSet nxt
 
-let pProjM : 'c Factory.t -> V.t list -> 'c t -> Flags.scalar -> 'c t
+let pProjM : 'c Factory.t -> Var.t list -> 'c t -> Flags.scalar -> 'c t
 	= fun factory xs s scalar_type ->
 	Proj.proj factory scalar_type xs s
 		|> Pervasives.fst
 
-let fmElimM: 'c Factory.t -> V.t -> 'c EqSet.t -> V.t option Rtree.t -> 'c t -> 'c t
+let fmElimM: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t option Rtree.t -> 'c t -> 'c t
 = fun factory nxt es msk s ->
 	let rec elim s1 =
 		match pick msk s1 with
@@ -341,8 +340,8 @@ let fmElimM: 'c Factory.t -> V.t -> 'c EqSet.t -> V.t option Rtree.t -> 'c t -> 
 	in
 	elim s
 
-let joinSetup_1: 'c2 Factory.t -> V.t -> V.t option Rtree.t -> V.t -> 'c1 t
-	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
+let joinSetup_1: 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c1 t
+	-> Var.t * Var.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory2 nxt relocTbl alpha s ->
 	let apply (nxt1, relocTbl1, s1) c =
 		let (nxt2, relocTbl2, c1) = Cons.joinSetup_1 factory2 nxt1 relocTbl1 alpha c in
@@ -350,8 +349,8 @@ let joinSetup_1: 'c2 Factory.t -> V.t -> V.t option Rtree.t -> V.t -> 'c1 t
 	in
 	List.fold_left apply (nxt, relocTbl, nil) s
 
-let joinSetup_2: 'c1 Factory.t -> V.t -> V.t option Rtree.t -> V.t -> 'c2 t
-	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
+let joinSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c2 t
+	-> Var.t * Var.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory1 nxt relocTbl alpha s ->
 	let apply (nxt1, relocTbl1, s1) c =
 		let (nxt2, relocTbl2, c1) = Cons.joinSetup_2 factory1 nxt1 relocTbl1 alpha c in
@@ -359,8 +358,8 @@ let joinSetup_2: 'c1 Factory.t -> V.t -> V.t option Rtree.t -> V.t -> 'c2 t
 	in
 	List.fold_left apply (nxt, relocTbl, nil) s
 
-let minkowskiSetup_1: 'c2 Factory.t -> V.t -> V.t option Rtree.t -> 'c1 t
-	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
+let minkowskiSetup_1: 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c1 t
+	-> Var.t * Var.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory2 nxt relocTbl s ->
 	let apply (nxt1, relocTbl1, s1) c =
 		let (nxt2, relocTbl2, c1) = Cons.minkowskiSetup_1 factory2 nxt1 relocTbl1 c in
@@ -368,8 +367,8 @@ let minkowskiSetup_1: 'c2 Factory.t -> V.t -> V.t option Rtree.t -> 'c1 t
 	in
 	List.fold_left apply (nxt, relocTbl, nil) s
 
-let minkowskiSetup_2: 'c1 Factory.t -> V.t -> V.t option Rtree.t -> 'c2 t
-	-> V.t * V.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
+let minkowskiSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c2 t
+	-> Var.t * Var.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 	= fun factory1 nxt relocTbl s ->
 	let apply (nxt1, relocTbl1, s1) c =
 		let (nxt2, relocTbl2, c1) = Cons.minkowskiSetup_2 factory1 nxt1 relocTbl1 c in
@@ -393,7 +392,7 @@ module RmRedAux = struct
 
     let glpk: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
         = fun s point ->
-        let point = Cstr.Rat.Positive.Vec.M.map Cstr.Rat.Positive.Vec.ofSymbolic point in
+        let point = Rtree.map Cstr.Rat.Positive.Vec.ofSymbolic point in
 		let cstrs = List.map Cons.get_c s in
 		let l = Min.Rat_Glpk.minimize point cstrs in
 		let s' = List.filter
@@ -470,7 +469,7 @@ let rmRedSyn: 'c t -> 'c Cons.t list -> 'c t
 	- l contains no trivial constraints
 *)
 
-let addM: V.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
+let addM: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 	= fun nvar s conss point ->
 	let s2 = rmRedSyn s conss in
 	if List.length s2 <= 1
@@ -483,7 +482,7 @@ let addM: V.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 
 (*
 (*TEST FOR EFFICIENCY : *)
-let addM: V.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
+let addM: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 	= fun nvar s conss point ->
 	let apply : Flags.min_method -> 'c t
 		= fun min ->

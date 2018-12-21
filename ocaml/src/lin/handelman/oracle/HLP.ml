@@ -17,7 +17,7 @@ module Build = struct
 	It is done by counting the number of negative bounds that we have chosen, which is the number of nonnull lpvars_i
 	The equality produced is sum_i y_i = k + (1 or 0 depending on the sign of the monomial to cancel)
 	*)
-	let build_equalities :  V.t list -> bool -> V.t -> CP.t list
+	let build_equalities :  Var.t list -> bool -> Var.t -> CP.t list
 		= fun vars pos k ->
 		let coeff = (Poly.add
 				(Poly.mk_list [([k,1],Q.of_int 2)])
@@ -31,7 +31,7 @@ module Build = struct
 		in [eq]
 
 	(** These inequalities encode that lpvars_i = 1 if the upper bound if x_i is chosen, 0 otherwise. *)
-	let build_inequalities : V.t list -> LPMaps.mapDetBound -> CP.t list
+	let build_inequalities : Var.t list -> LPMaps.mapDetBound -> CP.t list
 		= fun vars mapDB ->
 		List.fold_left
 			(fun ineqs v ->
@@ -55,7 +55,7 @@ module Build = struct
 			[] vars
 
 	(** The objective function minimizes the use of unknown bounds. *)
-	let build_obj : V.t list -> LPMaps.mapDetBound -> Poly.Vec.t
+	let build_obj : Var.t list -> LPMaps.mapDetBound -> Poly.Vec.t
 		= fun vars mapDB ->
 		List.map
 			(fun v -> let coeff = Scalar.Rat.sub
@@ -66,7 +66,7 @@ module Build = struct
 		|> Poly.Vec.mk
 
 	(** Builds the positivity constraints for each decision variable. *)
-	let positivity_cstrs : V.t list -> CP.t list
+	let positivity_cstrs : Var.t list -> CP.t list
 		= fun vars ->
 	 	List.map
 	 		(fun v -> CP.mk
@@ -75,7 +75,7 @@ module Build = struct
 	 		vars
 
 	(** Builds the satisfiability problem. *)
-	let build : V.t list -> bool -> LPMaps.mapDetBound -> Splx.t Splx.mayUnsatT
+	let build : Var.t list -> bool -> LPMaps.mapDetBound -> Splx.t Splx.mayUnsatT
 		= fun vars pos mapDB ->
 		HOtypes.Debug.log DebugTypes.Detail
 			(lazy(Printf.sprintf "LP.build vars = %s\nInit mapDB = %s\n"
@@ -83,7 +83,7 @@ module Build = struct
 			(LPMaps.mapDB_to_string mapDB)));
 
 		(* la variable max+1 correspond à k et sert à fixer la parité *)
-		let k = V.next (Misc.max V.cmp vars) in
+		let k = Var.next (Misc.max Var.cmp vars) in
 		let lpvars = vars @ [k] in
 		let lp_eq = build_equalities vars pos k in
 		let lp_ineqs = build_inequalities vars mapDB in
@@ -92,7 +92,7 @@ module Build = struct
 			(fun i cstr -> (i, CP.toCstr cstr))
 			(var_pos @ lp_ineqs @ lp_eq)
 		in
-		(Splx.mk (V.next k) ineqs)
+		(Splx.mk (Var.next k) ineqs)
 
 end
 
@@ -100,7 +100,7 @@ module Bound = struct
 
 	(** [get vars typ v sx] returns a witness allowing to compute the tightest (upper or lower depending on [typ] bound of [v] in  the polyhedron represented by [sx].
 	It returns [None] if such bound does not exists ({i i.e.} is the polyhedron is unbounded in that direction). *)
-	let (getWitness : V.t list -> LPMaps.t -> V.t -> Splx.t -> Splx.witness_t option)
+	let (getWitness : Var.t list -> LPMaps.t -> Var.t -> Splx.t -> Splx.witness_t option)
 		= fun _ typ v sxPh ->
 		let coeff = match typ with
 			| LPMaps.Upper -> Scalar.Rat.u
@@ -124,13 +124,13 @@ module Bound = struct
 			ph
 		|> Index.Rat.mk
 
-	let get : V.t list -> LPMaps.t -> V.t -> Splx.t -> Poly.t list -> Hi.boundIndex option
+	let get : Var.t list -> LPMaps.t -> Var.t -> Splx.t -> Poly.t list -> Hi.boundIndex option
 		= fun vars typ v sxPh ph ->
 		match getWitness vars typ v sxPh with
 		| None -> None
 		| Some wit -> Some (getBoundIndex wit ph)
 
-	let updateMaps : V.t list -> (V.t * LPMaps.t) list -> Splx.t -> LPMaps.mapDetBound -> LPMaps.mapBound
+	let updateMaps : Var.t list -> (Var.t * LPMaps.t) list -> Splx.t -> LPMaps.mapDetBound -> LPMaps.mapBound
 		-> Poly.t list -> (LPMaps.mapDetBound * LPMaps.mapBound * (Hi.boundIndex list option))
 		= let addOption : 'a -> 'a list option -> 'a list option
 			= fun e es ->
@@ -165,10 +165,10 @@ end
 
 module Solve = struct
 
-	let getModel : V.t list -> Vector.Symbolic.Positive.t -> (V.t * LPMaps.t) list
+	let getModel : Var.t list -> Vector.Symbolic.Positive.t -> (Var.t * LPMaps.t) list
 		= fun vars vec ->
 		Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Model: %s"
-			(Vector.Symbolic.Positive.to_string Vector.Symbolic.Positive.V.to_string vec)));
+			(Vector.Symbolic.Positive.to_string Var.to_string vec)));
 		List.map
 			(fun v ->
 			if Scalar.Symbolic.isZ (Vector.Symbolic.Positive.get vec v)
@@ -177,8 +177,8 @@ module Solve = struct
 			vars
 
 	(** Returns a model that satisfies the LP. *)
-	let solve : Splx.t Splx.mayUnsatT -> V.t list -> LPMaps.mapDetBound
-		-> (V.t * LPMaps.t) list option Splx.mayUnsatT
+	let solve : Splx.t Splx.mayUnsatT -> Var.t list -> LPMaps.mapDetBound
+		-> (Var.t * LPMaps.t) list option Splx.mayUnsatT
 		= fun sx vars mapDB ->
 		match sx with
 		| Splx.IsOk sx ->
@@ -197,7 +197,7 @@ module Solve = struct
 			end
 		| Splx.IsUnsat wit -> Splx.IsUnsat wit
 
-	let rec exec : LPMaps.bounds -> Poly.t list -> Splx.t -> V.t list -> V.t list -> Scalar.Rat.t
+	let rec exec : LPMaps.bounds -> Poly.t list -> Splx.t -> Var.t list -> Var.t list -> Scalar.Rat.t
 		-> Hi.boundIndex list option * LPMaps.bounds
 		= fun bounds ph sxPh vars varsMon coeffMon ->
 		let pos = (Scalar.Rat.le Scalar.Rat.z coeffMon) in
@@ -213,7 +213,7 @@ module Solve = struct
 			| Some bIs -> (Some bIs, bounds')
 end
 
-let run : LPMaps.bounds -> Poly.t list -> Splx.t -> V.t list -> Poly.Monomial.t
+let run : LPMaps.bounds -> Poly.t list -> Splx.t -> Var.t list -> Poly.Monomial.t
 	-> Hi.boundIndex list option * LPMaps.bounds
 	= fun bounds ph sxPh vars mon ->
 	let (mB,coeffMon) = Poly.Monomial.data mon in

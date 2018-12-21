@@ -4,16 +4,16 @@ exception Div_by_non_constant
 
 module type Type = Type
 
-module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive) = struct
-	module Vec = Vec
-	module Coeff = Vec.Coeff
-	module V = Vec.V
+module Make (Vec: Vector.Type) = struct
+
+    module Vec = Vec
+    module Coeff = Vec.Coeff
 
 	type exp = int (* >= 0*)
 
 	module MonomialBasis = struct
 
-		type t = (V.t * exp) list
+		type t = (Var.t * exp) list
 
         let null : t = []
 
@@ -27,8 +27,8 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 				(List.map
 					(fun (v,e) ->
 					match e with
-					| 0 | 1 -> V.to_string' s v
-					| _ -> Printf.sprintf "%s^%i" (V.to_string' s v) e)
+					| 0 | 1 -> Var.to_string' s v
+					| _ -> Printf.sprintf "%s^%i" (Var.to_string' s v) e)
 					m)
 
 		let to_string : t -> string
@@ -42,7 +42,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 			| [], _ :: _ -> -1
  		 	| _ :: _, [] -> 1
  		 	| (x1,e1) :: m1', (x2,e2) :: m2' ->
-     		   	let i = V.cmp x1 x2 in
+     		   	let i = Var.cmp x1 x2 in
      		    	if i = 0
      		    	then
      		    		let j = Pervasives.compare e1 e2 in
@@ -55,15 +55,15 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 			= fun m1 m2 ->
 			compare m1 m2 = 0
 
-		let rename : t -> V.t -> V.t -> t
+		let rename : t -> Var.t -> Var.t -> t
 			= fun m v v' ->
 			List.map (fun (var,e) ->
-                if V.equal var v
+                if Var.equal var v
                 then (v',e)
                 else (var,e)
             ) m
 
-		let eval : t -> (V.t -> Coeff.t) -> Coeff.t
+		let eval : t -> (Var.t -> Coeff.t) -> Coeff.t
 			= fun m f_eval ->
 			List.fold_left (fun c (v,e) ->
                 Coeff.mul c (Coeff.pow (f_eval v) e)
@@ -77,23 +77,23 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 		let well_formed : t -> bool
 			= fun m ->
 			List.for_all (fun (v,e) ->
-                V.cmp v V.u >= 0 && e >= 0
+                Var.cmp v Var.u >= 0 && e >= 0
             ) m
 
-		let mk : (V.t * exp) list -> t
+		let mk : (Var.t * exp) list -> t
 			= fun l ->
 			if well_formed l
-            then List.fast_sort (fun (v1,_) (v2,_) -> V.cmp v1 v2) l
+            then List.fast_sort (fun (v1,_) (v2,_) -> Var.cmp v1 v2) l
 			else Pervasives.invalid_arg ("SxPoly.Poly.MonomialBasis.mk")
 
-		let mk_expanded : V.t list -> t
+		let mk_expanded : Var.t list -> t
 			= function
             | [] -> []
             | l ->
-    			let l_sorted = List.fast_sort V.cmp l in
+    			let l_sorted = List.fast_sort Var.cmp l in
                 let res = List.fold_left (fun res v ->
     					let (v',e') = List.hd res in
-    					if V.equal v v'
+    					if Var.equal v v'
     					then (v',e'+1) :: List.tl res
     					else (v,1)::res
                 ) [List.hd l_sorted, 1] (List.tl l_sorted)
@@ -103,10 +103,10 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
     			then res
     			else Pervasives.invalid_arg ("SxPoly.Poly.MonomialBasis.mk_list")
 
-		let to_list : t -> (V.t * exp) list
+		let to_list : t -> (Var.t * exp) list
 			= fun m -> m
 
-		let to_list_expanded : t -> V.t list
+		let to_list_expanded : t -> Var.t list
 			= fun m ->
 			List.fold_left
 				(fun res (v,e) ->
@@ -123,11 +123,11 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 			| Some m' -> m'
 			| None -> m
 
-        let partial_derivative : V.t -> t -> t
+        let partial_derivative : Var.t -> t -> t
             = fun var m ->
             (* Fold right to maintain order *)
             List.fold_right (fun (v,e) acc ->
-                if V.equal v var
+                if Var.equal v var
                 then if e > 1
                     then (v,e-1) :: acc
                     else acc
@@ -182,10 +182,10 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 		let mk : MonomialBasis.t -> Coeff.t -> t
 	  		= fun m a -> canon (m, a)
 
-		let mk_list : (V.t * exp) list -> Coeff.t -> t
+		let mk_list : (Var.t * exp) list -> Coeff.t -> t
 	  		= fun m a -> canon (MonomialBasis.mk m, a)
 
-	  	let mk_expanded : V.t list -> Coeff.t -> t
+	  	let mk_expanded : Var.t list -> Coeff.t -> t
 	  		= fun m a -> canon (MonomialBasis.mk_expanded m, a)
 
 		let data : t -> MonomialBasis.t * Coeff.t
@@ -198,7 +198,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
             | [],x | x,[] -> x
             | ((v1,e1) as m1)::t1, ((v2,e2) as m2)::t2 ->
             (* we keep the variables in a sorted order *)
-            let c = V.cmp v1 v2 in
+            let c = Var.cmp v1 v2 in
             if c = 0
             then (v1,(e1 + e2))::(mul_list t1 t2)
             else if c < 0
@@ -223,13 +223,13 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
             = fun m ->
             is_linear m || is_constant m
 
-		let eval : t -> (V.t -> Coeff.t) -> Coeff.t
+		let eval : t -> (Var.t -> Coeff.t) -> Coeff.t
 			= fun (m,c) e ->
 			if is_constant (m,c)
 			then c
 			else Coeff.mul (MonomialBasis.eval m e) c
 
-		let eval_partial : t -> (V.t -> Coeff.t option) -> t
+		let eval_partial : t -> (Var.t -> Coeff.t option) -> t
 			= fun (m,c) f_eval ->
 			List.fold_left (fun (m',c') (v,e) ->
                 match (f_eval v) with
@@ -237,7 +237,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 				| None -> mul (m',c') ([v,e], Coeff.u)
 			) ([], c) m
 
-        let get_vars : t -> V.t list
+        let get_vars : t -> Var.t list
             = fun (m,_) ->
             List.map Pervasives.fst m
 
@@ -245,9 +245,9 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 			= fun ch (m,c) ->
 			(MonomialBasis.change_variable ch m, c)
 
-        let partial_derivative : V.t -> t -> t
+        let partial_derivative : Var.t -> t -> t
             = fun var (m,c) ->
-            if List.exists (fun (v,_) -> V.equal var v) (MonomialBasis.to_list m)
+            if List.exists (fun (v,_) -> Var.equal var v) (MonomialBasis.to_list m)
             then (MonomialBasis.partial_derivative var m, c)
             else null
 	end
@@ -298,7 +298,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 					|> Printf.sprintf "SxPoly.canon: Monomial.canon on %s"
 					|> Pervasives.failwith)
     		|> List.sort Monomial.compare
-    		|> collapseDups*
+    		|> collapseDups
     		|> List.filter (fun (_, a) ->
 				if Coeff.equal a Coeff.z
 				then false
@@ -314,10 +314,10 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 	let mk : Monomial.t list -> t
 		= fun l -> canon l
 
-	let mk_list : ((V.t * exp) list * Coeff.t) list -> t
+	let mk_list : ((Var.t * exp) list * Coeff.t) list -> t
 		= fun l -> canon l
 
-	let mk_expanded_list : (V.t list * Coeff.t) list -> t
+	let mk_expanded_list : (Var.t list * Coeff.t) list -> t
 		= fun l ->
 		List.map
 			(fun (vars,c) -> Monomial.mk_expanded vars c)
@@ -327,14 +327,14 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 	let mk_cste : t -> Coeff.t -> t
 		= fun p cst -> (MonomialBasis.null, cst) :: p |> canon
 
-    let fromVar : V.t -> t
+    let fromVar : Var.t -> t
 		= fun v ->
 		mk_list [([v,1], Vec.Coeff.u)]
 
 	let data : t -> Monomial.t list
 		= fun p -> p
 
-	let to_list_expanded : t -> (V.t list * Coeff.t) list
+	let to_list_expanded : t -> (Var.t list * Coeff.t) list
 		= fun p ->
 		List.map (fun (m,c) ->
             MonomialBasis.to_list_expanded m, c
@@ -446,7 +446,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 		&&
 		List.for_all2 Monomial.equal p1 p2
 
-	let rename : t -> V.t -> V.t -> t
+	let rename : t -> Var.t -> Var.t -> t
 		= fun p v v'->
 		List.map (fun (m,c) -> (MonomialBasis.rename m v v',c)) p
 		|> canon
@@ -480,7 +480,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 			| (_,[]) -> (m1,true)
 			| ([],_) -> ([],false)
 			| ((v1,e1)::tail1, (v2,e2)::tail2) ->
-                if V.equal v1 v2
+                if Var.equal v1 v2
 				then
                     if e1 >= e2
                     then
@@ -510,37 +510,37 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 		monomial_coefficient_poly_rec p m |> canon
 
 
-	let get_affine_part : t -> V.t list -> t
+	let get_affine_part : t -> Var.t list -> t
 		= fun p vars ->
 		List.filter Monomial.is_affine p
         |> canon
 
-	let get_vars : t -> V.t list
+	let get_vars : t -> Var.t list
 		= fun p ->
 		List.map Monomial.get_vars p
 		|> List.concat
-		|> Misc.rem_dupl V.equal
+		|> Misc.rem_dupl Var.equal
 
-    let horizon : t list -> V.t
+    let horizon : t list -> Var.t
 		= fun l ->
 		List.map get_vars l
 		|> List.concat
-		|> V.Set.of_list
-		|> V.horizon
+		|> Var.Set.of_list
+		|> Var.horizon
 
-	let eval : t -> (V.t -> Coeff.t) -> Coeff.t
+	let eval : t -> (Var.t -> Coeff.t) -> Coeff.t
 		= fun p e ->
 		List.fold_left (fun c m ->
             Coeff.add c (Monomial.eval m e)
         ) Coeff.z p
 
-	let eval_partial : t -> (V.t -> Coeff.t option) -> t
+	let eval_partial : t -> (Var.t -> Coeff.t option) -> t
 		= fun p e ->
 		List.fold_left (fun p m ->
             add p [(Monomial.eval_partial m e)]
         ) [] p
 
-    let partial_derivative : V.t -> t -> t
+    let partial_derivative : Var.t -> t -> t
         = fun var p ->
         List.fold_left
             (fun acc m ->
@@ -551,12 +551,12 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
             z p
         |> canon
 
-    let gradient : t -> t Vec.M.t
+    let gradient : t -> t Rtree.t
         = fun p ->
         List.fold_left
             (fun tree var ->
-                Vec.M.set z tree var (partial_derivative var p))
-            Vec.M.empty
+                Rtree.set z tree var (partial_derivative var p))
+            Rtree.empty
             (get_vars p)
 
 	let toCstr : t -> (Vec.t * Coeff.t)
@@ -586,7 +586,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 	let of_string : string -> t
    	    = fun s ->
     	PolyParser.one_prefixed_poly PolyLexer.token2 (Lexing.from_string s)
-    	|> List.map (fun (vl,q) -> (List.map V.fromPos vl, Vec.Coeff.ofQ q))
+    	|> List.map (fun (vl,q) -> (vl, Vec.Coeff.ofQ q))
         |> mk_expanded_list
 
 	module Invariant = struct
@@ -601,7 +601,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 
     		let check_sorted : Monomial.t -> bool
       		    = fun (l, _) ->
-                helper_sorted (fun (x,_) (x',_) -> V.cmp x x' <= 0) l
+                helper_sorted (fun (x,_) (x',_) -> Var.cmp x x' <= 0) l
 
     		let check : Monomial.t -> bool
       		    = fun (vlist,c) ->

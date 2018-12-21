@@ -5,7 +5,6 @@
 module Rat = Scalar.Rat
 module Cs = EqSet.Cs
 module Vec = Cs.Vec
-module Var = Vec.V
 
 (* [op] = type of operations in the factory see file Factory.ml.
  (i.e. a Farkas operation).

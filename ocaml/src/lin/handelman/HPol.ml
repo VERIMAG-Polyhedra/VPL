@@ -1,70 +1,25 @@
-(*
-module type Type = sig
-	module CP = CstrPoly.Positive
-	module Poly = CP.Poly
-
-	class ['c] t :
-		object
-
-		method to_string : string
-
-		method get_poly_rep : CP.t list
-
-		method get_noneq_poly : CP.t list
-
-		method get_vars : Poly.V.t list
-
-		method get_vpl_rep : 'c Pol.t option
-
-		method get_cstr : unit -> CP.Cs.t list
-
-		method get_ineqs : unit -> CP.Cs.t list
-
-		method horizon : unit -> Poly.V.t
-
-		(** [is_empty] returns true iff the polyhedron is empty *)
-		method is_empty : bool
-
-		method mk : 'c Pol.t -> CP.t list -> Poly.V.t list -> unit
-
-		method mkPol : 'c Pol.t -> unit
-
-		method init : unit -> unit
-	(*
-		method addM : CP.t list -> t
-	*)
-		method equal : 'c2 t -> bool
-
-		method isInside : Poly.Vec.t -> bool
-
-		(** Syntactic check*)
-		method cstrInPol : CP.Cs.t -> bool
-	end
-end
-*)
-
 module CP = CstrPoly
 module Poly = CP.Poly
 
-let get_vars : CP.t list -> Poly.V.t list
+let get_vars : CP.t list -> Var.t list
 	= fun l ->
 	List.map (fun cp -> Poly.get_vars cp.CP.p) l
 	|> List.concat
-	|> Misc.rem_dupl Poly.V.equal
+	|> Misc.rem_dupl Var.equal
 
 (** [add_vars vl l] returns the list of variable appearing in [vl] and in polynomial cosntraints [l]. *)
-let add_vars : Poly.V.t list -> CP.t list -> Poly.V.t list
+let add_vars : Var.t list -> CP.t list -> Var.t list
 	= fun vl l ->
 	(List.map (fun cp -> Poly.get_vars cp.CP.p) l)
 	|> List.concat
 	|> fun l -> l @ vl
-	|> Misc.rem_dupl Poly.V.equal
+	|> Misc.rem_dupl Var.equal
 
 class ['c] t =
 	object (self)
 	val mutable poly_rep : CP.t list = []
 	val mutable vpl_rep : 'c Pol.t option = None
-	val mutable vars : Poly.V.t list = []
+	val mutable vars : Var.t list = []
 
 	method to_string : string
 		= Misc.list_to_string CP.to_string poly_rep " ; "
@@ -75,7 +30,7 @@ class ['c] t =
 	method get_noneq_poly : CP.t list
 		= List.filter (fun cp -> cp.CP.typ <> Cstr_type.Eq) poly_rep
 
-	method get_vars : Poly.V.t list
+	method get_vars : Var.t list
 		= vars
 
 	method get_vpl_rep : 'c Pol.t option
@@ -93,10 +48,10 @@ class ['c] t =
 		| None -> []
 		| Some p -> Pol.get_cstr_ineqs p
 
-	method horizon : unit -> Poly.V.t
+	method horizon : unit -> Var.t
 		= fun () ->
-		Misc.max Poly.V.cmp vars
-			|> Poly.V.next
+		Misc.max Var.cmp vars
+			|> Var.next
 
 	method is_empty : bool
 		= match vpl_rep with
@@ -122,7 +77,7 @@ class ['c] t =
 			poly_rep <- List.map CP.ofCstr cstrs;
 			vars <- get_vars poly_rep
 
-	method mk : 'c Pol.t -> CP.t list -> Poly.V.t list -> unit
+	method mk : 'c Pol.t -> CP.t list -> Var.t list -> unit
 		= fun vpl cl variables ->
 		vpl_rep <- Some vpl;
 		poly_rep <- cl;

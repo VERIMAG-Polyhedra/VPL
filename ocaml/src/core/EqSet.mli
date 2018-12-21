@@ -1,9 +1,9 @@
 module Cs = Cstr.Rat.Positive
 
-type 'c t = (Cs.Vec.V.t * 'c Cons.t) list
+type 'c t = (Var.t * 'c Cons.t) list
 
-val to_string: (Cs.Vec.V.t -> string) -> 'c t -> string
-val to_string_ext: 'c Factory.t -> (Cs.Vec.V.t -> string) -> 'c t -> string
+val to_string: (Var.t -> string) -> 'c t -> string
+val to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 
 type 'c rel_t =
 	| NoIncl
@@ -34,40 +34,40 @@ val satisfy : 'c t -> Cs.Vec.t -> bool
 (** Does not check certificates. *)
 val equal: 'c1 t -> 'c2 t -> bool
 
-val choose : Cs.t -> Cs.Vec.V.t * Cs.Vec.Coeff.t
+val choose : Cs.t -> Var.t * Cs.Vec.Coeff.t
 
-val rename: 'c Factory.t -> 'c t -> Cs.Vec.V.t -> Cs.Vec.V.t -> 'c t
+val rename: 'c Factory.t -> 'c t -> Var.t -> Var.t -> 'c t
 
-val pick: Cs.Vec.V.t option Rtree.t -> 'c Cons.t -> Cs.Vec.V.t option
+val pick: Var.t option Rtree.t -> 'c Cons.t -> Var.t option
 
 (** [subst factory x c s] substitutes [x] in [s] by its definition in [c]. *)
-val subst: 'c Factory.t -> Cs.Vec.V.t -> 'c Cons.t -> 'c t -> 'c t
+val subst: 'c Factory.t -> Var.t -> 'c Cons.t -> 'c t -> 'c t
 
-val tryDefs: 'c Factory.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c t -> ('c Cons.t * Cs.Vec.V.t) option * 'c t
+val tryDefs: 'c Factory.t -> Var.t option Rtree.t -> 'c t -> ('c Cons.t * Var.t) option * 'c t
 
-val trySubstM: 'c Factory.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c t -> ('c Cons.t * Cs.Vec.V.t) option * 'c t
+val trySubstM: 'c Factory.t -> Var.t option Rtree.t -> 'c t -> ('c Cons.t * Var.t) option * 'c t
 
-val trySubst: 'c Factory.t -> Cs.Vec.V.t -> 'c t -> 'c Cons.t option * 'c t
+val trySubst: 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t option * 'c t
 
 type 'c meetT =
 | Added of 'c t
 | Bot of 'c
 
 val meetEq: 'c meetT -> 'c meetT -> bool
-val meet_to_string : 'c Factory.t -> (Cs.Vec.V.t -> string) -> 'c meetT -> string
+val meet_to_string : 'c Factory.t -> (Var.t -> string) -> 'c meetT -> string
 
 val addM: 'c Factory.t -> 'c t -> 'c Cons.t list -> 'c meetT
 val add: 'c Factory.t -> 'c t -> 'c Cons.t -> 'c meetT
 
 
-val joinSetup_1: 'c2 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> Cs.Vec.V.t -> 'c1 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+val joinSetup_1: 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c1 t
+	-> Var.t * Var.t option Rtree.t * (Var.t * (('c1,'c2) Cons.discr_t) Cons.t) list
 
-val joinSetup_2: 'c1 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> Cs.Vec.V.t -> 'c2 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+val joinSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c2 t
+	-> Var.t * Var.t option Rtree.t * (Var.t * (('c1,'c2) Cons.discr_t) Cons.t) list
 
-val minkowskiSetup_1: 'c2 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c1 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+val minkowskiSetup_1: 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c1 t
+	-> Var.t * Var.t option Rtree.t * (Var.t * (('c1,'c2) Cons.discr_t) Cons.t) list
 
-val minkowskiSetup_2: 'c1 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Cs.Vec.M.t -> 'c2 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Cs.Vec.M.t * (Cs.Vec.V.t * (('c1,'c2) Cons.discr_t) Cons.t) list
+val minkowskiSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c2 t
+	-> Var.t * Var.t option Rtree.t * (Var.t * (('c1,'c2) Cons.discr_t) Cons.t) list

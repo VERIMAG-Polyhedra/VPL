@@ -9,7 +9,7 @@ type 'c t = {
     merge : 'c -> 'c -> 'c;
     to_le : 'c -> 'c;
     to_string : 'c -> string;
-    rename : Cs.Vec.V.t -> Cs.Vec.V.t -> 'c -> 'c;
+    rename : Var.t -> Var.t -> 'c -> 'c;
 }
 
 let linear_combination : 'c t -> ('c * Scalar.Rat.t) list -> 'c

@@ -6,7 +6,6 @@
 
 (* auxiliary functions *)
 module Nb = Scalar.Rat
-module Var = Var.Positive
 module Vec = Vector.Rat.Positive
 module Cs = Cstr.Rat.Positive
 

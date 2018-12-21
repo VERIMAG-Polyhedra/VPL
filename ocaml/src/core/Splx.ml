@@ -1,7 +1,5 @@
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module V = Vec.V
-module VT = Var_type
 
 module Defs
   = struct
@@ -9,12 +7,12 @@ module Defs
 (** Order matters: the variable defined by the last element of the list
 does not appears in the definitions before it, but the variable
 defined by the head of the list can appear in the definitions after it. *)
-    type t = (V.t * Vec.t) list
+    type t = (Var.t * Vec.t) list
 
     let empty : t
       = []
 
-    let add : V.t -> Vec.t -> t -> t
+    let add : Var.t -> Vec.t -> t -> t
       = fun x v d ->
       let v' =
 	List.fold_right (fun (x', xdef') v' -> Vec.elim x' xdef' v') d v
@@ -23,29 +21,29 @@ defined by the head of the list can appear in the definitions after it. *)
       then Pervasives.failwith "Splx.Defs.add"
       else (x, v') :: d
 
-    let rm : V.t -> t -> t
-      = fun x l -> List.filter (fun (x', _) -> V.cmp x x' <> 0) l
+    let rm : Var.t -> t -> t
+      = fun x l -> List.filter (fun (x', _) -> Var.cmp x x' <> 0) l
 
-    let getVars : t -> V.Set.t
-      = fun d -> List.map Pervasives.fst d |> V.Set.of_list
+    let getVars : t -> Var.Set.t
+      = fun d -> List.map Pervasives.fst d |> Var.Set.of_list
 
-    let getDef : t -> V.t -> Vec.t option
+    let getDef : t -> Var.t -> Vec.t option
       = fun d x ->
       List.fold_right
 	(fun (x', xdef') ->
 	 function
-	 | None -> if V.cmp x x' = 0 then Some xdef' else None
+	 | None -> if Var.cmp x x' = 0 then Some xdef' else None
 	 | Some def -> Some (Vec.elim x' xdef' def)
 	)
 	d None
 
-    let fold : ('a -> V.t * Vec.t -> 'a) -> 'a -> t -> 'a
+    let fold : ('a -> Var.t * Vec.t -> 'a) -> 'a -> t -> 'a
       = List.fold_left
 
     let rewrite : t -> Vec.t -> Vec.t
       = List.fold_right (fun (x, xdef) v' -> Vec.elim x xdef v')
 
-    let to_string : (V.t -> string) -> t -> string
+    let to_string : (Var.t -> string) -> t -> string
       = fun varPr d ->
       List.rev_map (fun (x, d) -> Printf.sprintf "%s: %s = 0" (varPr x) (Vec.to_string varPr d)) d
       |> String.concat "\n"
@@ -113,7 +111,7 @@ end
 
 type witness_t = Witness.t
 
-type whatnext_t = NonBasic of V.t | UnsatSplx of witness_t
+type whatnext_t = NonBasic of Var.t | UnsatSplx of witness_t
 
 type 'a mayUnsatT
 = IsOk of 'a | IsUnsat of witness_t
@@ -121,9 +119,9 @@ type 'a mayUnsatT
 type t = {
 	mat: (Vec.t option) Rtree.t;
 	state: state_t Rtree.t;
-	vars : V.Set.t;
+	vars : Var.Set.t;
 	defs : Defs.t;
-	nxt: V.t
+	nxt: Var.t
 }
 
 let get_mat x = x.mat
@@ -137,12 +135,12 @@ let prBnd = function
 
 let prSt st = Printf.sprintf "{v = %s; low = %s; up = %s}" (Scalar.Symbolic.to_string st.v) (prBnd st.low) (prBnd st.up)
 
-let prState: (V.t -> string) -> state_t Rtree.t -> string
+let prState: (Var.t -> string) -> state_t Rtree.t -> string
 = fun varPr state ->
 	let pr st x = Printf.sprintf "%s: %s" x (prSt st) in
 	Rtree.to_string "\n" pr varPr state
 
-let prMat: (V.t -> string) -> Vec.t option Rtree.t -> string
+let prMat: (Var.t -> string) -> Vec.t option Rtree.t -> string
 = fun varPr mat ->
 	let pr c x =
 		match c with
@@ -151,7 +149,7 @@ let prMat: (V.t -> string) -> Vec.t option Rtree.t -> string
 	in
 	Rtree.to_string "\n" pr varPr mat
 
-let pr: (V.t -> string) -> t -> string
+let pr: (Var.t -> string) -> t -> string
 = fun varPr s ->
   Printf.sprintf "matrix:\n%s\ndefinitions:\n%s\nstate:\n%s\n"
 		 (prMat varPr s.mat)
@@ -161,7 +159,7 @@ let pr: (V.t -> string) -> t -> string
 (** [computeSymbolic st x v] computes the value of the variable [x],
 considering it is defined by the constraint [v] and that the variables
 have the values given in [st]. *)
-let computeSymbolic : state_t Rtree.t -> V.t -> Vec.t -> Scalar.Symbolic.t
+let computeSymbolic : state_t Rtree.t -> Var.t -> Vec.t -> Scalar.Symbolic.t
   = let dot : state_t Rtree.t -> Vec.t -> Scalar.Symbolic.t
       = let rec tmul : state_t Rtree.t -> Vec.t -> Scalar.Symbolic.t Rtree.t
 	  = fun t v ->
@@ -176,13 +174,13 @@ let computeSymbolic : state_t Rtree.t -> V.t -> Vec.t -> Scalar.Symbolic.t
     fun st x v -> Vec.set v x Cs.Vec.Coeff.z |> Vec.neg |> dot st
 
 let elimBasicVars : t -> Vec.t -> Vec.t
-  = let getBasicVars : t -> V.Set.t
+  = let getBasicVars : t -> Var.Set.t
       = fun sx ->
       Rtree.mskBuild (function None -> false | Some _ -> true) [sx.mat]
       |> Rtree.pathsGet
     in
     fun sx v ->
-    V.Set.fold
+    Var.Set.fold
       (fun x v' ->
        match Rtree.get None sx.mat x with
        | None -> Pervasives.failwith "Splx.elimBasicVars"
@@ -190,7 +188,7 @@ let elimBasicVars : t -> Vec.t -> Vec.t
       )
       (getBasicVars sx) v
 
-let insertBack : V.t -> t -> t
+let insertBack : Var.t -> t -> t
   = fun x sx ->
   match Defs.getDef sx.defs x with
   | None -> sx
@@ -260,7 +258,7 @@ let fitBnd : state_t -> fitBndT
 				then FitBnd (Scalar.Symbolic.sub u.bv st.v, {st with v = u.bv})
 				else FitBnd (Scalar.Symbolic.z, st)
 
-let rec incrupdate: Scalar.Symbolic.t -> V.t -> Vec.t option Rtree.t -> state_t Rtree.t -> state_t Rtree.t
+let rec incrupdate: Scalar.Symbolic.t -> Var.t -> Vec.t option Rtree.t -> state_t Rtree.t -> state_t Rtree.t
   = fun d xN m st ->
   match m, st with
   | Rtree.Nil, rt -> rt
@@ -302,7 +300,7 @@ let mkBnd id (c: Cs.t) (a: Cs.Vec.Coeff.t): state_t =
 				{v = Scalar.Symbolic.z; low = Some l; up = None}
 
 let add : t -> int * Cs.t -> t mayUnsatT
-=	let boundVar : t -> int -> Cs.t -> V.t -> t mayUnsatT
+=	let boundVar : t -> int -> Cs.t -> Var.t -> t mayUnsatT
 	= fun sx id c x ->
 		let a = Vec.get (Cs.get_v c) x in
 		let oBnd = Rtree.get {v = Scalar.Symbolic.z; low = None; up = None} sx.state x in
@@ -341,7 +339,7 @@ let add : t -> int * Cs.t -> t mayUnsatT
 		{s with
 		  mat = nMat;
 		  state = nState;
-		  nxt = V.next s.nxt
+		  nxt = Var.next s.nxt
 		}
 	in
 	let handleTriv : int -> Cs.t -> t -> t mayUnsatT
@@ -353,10 +351,10 @@ let add : t -> int * Cs.t -> t mayUnsatT
 	in
 	fun s (id, c) ->
 	let xs = Cs.getVars [c] in
-	let s' = {s with vars = V.Set.union s.vars xs} in
-	match V.Set.cardinal xs with
+	let s' = {s with vars = Var.Set.union s.vars xs} in
+	match Var.Set.cardinal xs with
 	| 0 -> handleTriv id c s'
-	| 1 -> V.Set.choose xs |> boundVar s' id c
+	| 1 -> Var.Set.choose xs |> boundVar s' id c
 	| _ -> IsOk (constrain s' id c)
 
 let addAcc : t mayUnsatT -> int * Cs.t -> t mayUnsatT
@@ -364,12 +362,12 @@ let addAcc : t mayUnsatT -> int * Cs.t -> t mayUnsatT
 	| IsOk sx -> add sx
 	| IsUnsat _ as r -> fun _ -> r
 
-let mk: V.t -> (int * Cs.t) list -> t mayUnsatT
+let mk: Var.t -> (int * Cs.t) list -> t mayUnsatT
 = fun lim l ->
 	let empty = {
 	    mat = Rtree.Nil;
 	    state = Rtree.Nil;
-	    vars = V.Set.empty;
+	    vars = Var.Set.empty;
 	    defs = Defs.empty;
 	    nxt = lim
 	  }
@@ -403,13 +401,13 @@ let _in_bound (b: state_t): bck_t =
 type chgDirT = HasToIncr | HasToDecr
 
 type choiceT
-= {var : V.t; vec : Vec.t; st : state_t}
+= {var : Var.t; vec : Vec.t; st : state_t}
 
 let fromLeft : choiceT option -> choiceT option
-= function None -> None | Some c -> Some {c with var = VT.XO c.var}
+= function None -> None | Some c -> Some {c with var = Var.XO c.var}
 
 let fromRight : choiceT option -> choiceT option
-= function None -> None | Some c -> Some {c with var = VT.XI c.var}
+= function None -> None | Some c -> Some {c with var = Var.XI c.var}
 
 module type Strategy
 = sig
@@ -433,7 +431,7 @@ module Bland : Strategy
 				match _in_bound st with
 				| Ok -> None
 				| KoL _
-				| KoU _ -> Some {var = VT.XH; vec = c; st = st}
+				| KoU _ -> Some {var = Var.XH; vec = c; st = st}
 		in
 		let rec find : Vec.t option Rtree.t -> state_t Rtree.t -> choiceT option
 		= fun m stree ->
@@ -453,14 +451,14 @@ module Bland : Strategy
 	let pickNBasic s d xiv =
 		let tryincr w a st =
 			match st.up with
-			| None -> NonBasic VT.XH
-			| Some u when Scalar.Symbolic.cmp u.bv st.v > 0 -> NonBasic VT.XH
+			| None -> NonBasic Var.XH
+			| Some u when Scalar.Symbolic.cmp u.bv st.v > 0 -> NonBasic Var.XH
 			| Some u -> UnsatSplx ((u.id, Cs.Vec.Coeff.mul u.scale a)::w)
 		in
 		let trydecr w a st =
 			match st.low with
-			| None -> NonBasic VT.XH
-			| Some l when Scalar.Symbolic.cmp l.bv st.v < 0 -> NonBasic VT.XH
+			| None -> NonBasic Var.XH
+			| Some l when Scalar.Symbolic.cmp l.bv st.v < 0 -> NonBasic Var.XH
 			| Some l -> UnsatSplx ((l.id, Cs.Vec.Coeff.mul l.scale a)::w)
 		in
 		let (fpos, fneg) =
@@ -477,16 +475,16 @@ module Bland : Strategy
 		let rec find a0 ve st =
 			match ve, st with
 			| Rtree.Nil, _ -> UnsatSplx a0
-			| Rtree.Sub _, Rtree.Nil -> NonBasic VT.XH
+			| Rtree.Sub _, Rtree.Nil -> NonBasic Var.XH
 			| Rtree.Sub (l1, n1, r1), Rtree.Sub (l2, n2, r2) ->
 				match f a0 n1 n2 with
 				| NonBasic _ as r -> r
 				| UnsatSplx a1 ->
 					match find a1 l1 l2 with
-					| NonBasic v -> NonBasic (VT.XO v)
+					| NonBasic v -> NonBasic (Var.XO v)
 					| UnsatSplx a2 ->
 						match find a2 r1 r2 with
-						| NonBasic v -> NonBasic (VT.XI v)
+						| NonBasic v -> NonBasic (Var.XI v)
 						| UnsatSplx _ as r -> r
 		in
 		find [] xiv s.state
@@ -497,7 +495,7 @@ module Steep : Strategy
 = struct
 
 	type indepChoiceT
-	= Bounded of V.t * Scalar.Symbolic.t | Unbounded of V.t
+	= Bounded of Var.t * Scalar.Symbolic.t | Unbounded of Var.t
 
 	let pickBasic : t -> choiceT option
 	= fun s ->
@@ -507,7 +505,7 @@ module Steep : Strategy
 			| Some ve -> fun st ->
 				match _in_bound st with
 				| Ok -> None
-				| KoL _ | KoU _ -> Some {var = VT.XH; vec = ve; st = st}
+				| KoL _ | KoU _ -> Some {var = Var.XH; vec = ve; st = st}
 		in
 		let score: choiceT -> Scalar.Symbolic.t
 		= fun c ->
@@ -548,19 +546,19 @@ module Steep : Strategy
 		let tryDecr : state_t -> indepChoiceT option
 		= fun st ->
 			match st.low with
-			| None -> Some (Unbounded VT.XH)
+			| None -> Some (Unbounded Var.XH)
 			| Some l ->
 				if Scalar.Symbolic.cmp l.bv st.v < 0
-				then Some (Bounded (VT.XH, Scalar.Symbolic.sub st.v l.bv)) (* XXX: coefficient *)
+				then Some (Bounded (Var.XH, Scalar.Symbolic.sub st.v l.bv)) (* XXX: coefficient *)
 				else None
 		in
 		let tryIncr : state_t -> indepChoiceT option
 		= fun st ->
 			match st.up with
-			| None -> Some (Unbounded VT.XH)
+			| None -> Some (Unbounded Var.XH)
 			| Some u ->
 				if Scalar.Symbolic.cmp st.v u.bv < 0
-				then Some (Bounded (VT.XH, Scalar.Symbolic.sub u.bv st.v)) (* XXX: coefficient *)
+				then Some (Bounded (Var.XH, Scalar.Symbolic.sub u.bv st.v)) (* XXX: coefficient *)
 				else None
 		in
 		let candidate : chgDirT -> Cs.Vec.Coeff.t -> state_t -> indepChoiceT option
@@ -581,14 +579,14 @@ module Steep : Strategy
 		let fromLeft : indepChoiceT option -> indepChoiceT option
 		= function
 			| None -> None
-			| Some (Unbounded x) -> Some (Unbounded (VT.XO x))
-			| Some (Bounded (x, sc)) -> Some (Bounded (VT.XO x, sc))
+			| Some (Unbounded x) -> Some (Unbounded (Var.XO x))
+			| Some (Bounded (x, sc)) -> Some (Bounded (Var.XO x, sc))
 		in
 		let fromRight : indepChoiceT option -> indepChoiceT option
 		= function
 			| None -> None
-			| Some (Unbounded x) -> Some (Unbounded (VT.XI x))
-			| Some (Bounded (x, sc)) -> Some (Bounded (VT.XI x, sc))
+			| Some (Unbounded x) -> Some (Unbounded (Var.XI x))
+			| Some (Bounded (x, sc)) -> Some (Bounded (Var.XI x, sc))
 		in
 		let rec witness : chgDirT -> Vec.t -> state_t Rtree.t -> witness_t
 		=	let bound : Cs.Vec.Coeff.t -> chgDirT -> state_t -> bnd_t option
@@ -617,7 +615,7 @@ module Steep : Strategy
 		= fun d v st ->
 			match v, st with
 			| Rtree.Nil, _ -> None
-			| Rtree.Sub _, Rtree.Nil -> Some (Unbounded VT.XH)
+			| Rtree.Sub _, Rtree.Nil -> Some (Unbounded Var.XH)
 			| Rtree.Sub (l1, n1, r1), Rtree.Sub (l2, n2, r2) ->
 				let l = fromLeft (find d l1 l2) in
 				let r = fromRight (find d r1 r2) in
@@ -670,14 +668,14 @@ let step : strategyT -> t -> stepT
 module Preprocessing
   = struct
 
-    let getUnboundedVars : t -> V.Set.t
+    let getUnboundedVars : t -> Var.Set.t
       = fun sx ->
       Rtree.mskBuild (fun st -> not (st.low = None && st.up = None)) [sx.state]
       |> Rtree.pathsGet
-      |> V.Set.diff sx.vars
+      |> Var.Set.diff sx.vars
 
-    let findOccurence : V.t -> t -> V.t option
-      = let rec find : V.t -> (V.t -> V.t) -> Vec.t option Rtree.t -> V.t option
+    let findOccurence : Var.t -> t -> Var.t option
+      = let rec find : Var.t -> (Var.t -> Var.t) -> Vec.t option Rtree.t -> Var.t option
 	  = fun x fcont ->
 	  function
 	  | Rtree.Nil -> None
@@ -686,18 +684,18 @@ module Preprocessing
 	      | None -> None
 	      | Some v ->
 		 if Cs.Vec.Coeff.cmpz (Vec.get v x) <> 0
-		 then Some (fcont VT.XH)
+		 then Some (fcont Var.XH)
 		 else None)
 	     |> function
 	       | Some _ as r -> r
 	       | None ->
-		  match find x (fun x' -> fcont (VT.XO x')) l with
+		  match find x (fun x' -> fcont (Var.XO x')) l with
 		  | Some _ as r -> r
-		  | None -> find x (fun x' -> fcont (VT.XI x')) r
+		  | None -> find x (fun x' -> fcont (Var.XI x')) r
 	in
 	fun x sx -> find x (fun x' -> x') sx.mat
 
-    let elim : V.t -> V.t -> t -> t
+    let elim : Var.t -> Var.t -> t -> t
       = fun x xb sx ->
       let m = if x = xb then sx.mat else pivot sx.mat xb x in
       let state =
@@ -721,7 +719,7 @@ module Preprocessing
 
     let presimpl : t -> t
       = fun sx ->
-      V.Set.fold
+      Var.Set.fold
 	(fun x sx' ->
 	 match findOccurence x sx' with
 	 | None -> sx'
@@ -769,7 +767,7 @@ let getAsg : t -> Scalar.Symbolic.t Rtree.t
       )
       sx.state sx.defs
   in
-  V.Set.fold
+  Var.Set.fold
     (fun x t ->
      (Rtree.get {v = Scalar.Symbolic.z; low = None; up = None} state x).v
      |> Rtree.set Scalar.Symbolic.z t x
@@ -866,13 +864,13 @@ let forget s id =
 		  | None -> s1
 		  | Some xb -> Preprocessing.elim v xb s1
 
-let getAsgOpt : V.t -> (int * Cs.t) list -> Scalar.Symbolic.t Rtree.t option
+let getAsgOpt : Var.t -> (int * Cs.t) list -> Scalar.Symbolic.t Rtree.t option
 	= fun horizon cstrs ->
 	match mk horizon cstrs |> checkFromAdd with
 	| IsUnsat _ -> None
 	| IsOk sx -> Some (getAsg sx)
 
-let getPointInside_cone : Cs.Vec.V.t -> Cs.t list -> Scalar.Symbolic.t Rtree.t option
+let getPointInside_cone : Var.t -> Cs.t list -> Scalar.Symbolic.t Rtree.t option
 	= fun horizon cstrs ->
 	let cstrs' = List.mapi
 		(fun i cstr -> i, {cstr with

@@ -4,11 +4,11 @@ module Debug = Join.Debug
 
 module type Type = sig
 
-	val join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
+	val join : 'c1 Factory.t -> 'c2 Factory.t -> Var.t option -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
 end
 
 (** [keep factory next cons conss] returns either a {!val:Cons.t} that proves that [conss] is included in [cons], or None. *)
-let keep : 'a Factory.t -> Cs.Vec.V.t -> 'b Cons.t -> 'a Cons.t list -> 'a Cons.t option
+let keep : 'a Factory.t -> Var.t -> 'b Cons.t -> 'a Cons.t list -> 'a Cons.t option
     = fun factory next cons conss ->
     match IneqSet.incl factory next [] conss [cons] with
     | IneqSet.NoIncl -> None
@@ -23,8 +23,8 @@ let discard_constraints : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 regionsT -> 'c2 
     and conss2 = List.split regs2.mapping |> Pervasives.snd
     in
     let next = List.map Cons.get_c conss1 |> Cs.getVars
-        |> Cs.Vec.V.Set.union (List.map Cons.get_c conss2 |> Cs.getVars)
-        |> Cs.Vec.V.horizon
+        |> Var.Set.union (List.map Cons.get_c conss2 |> Cs.getVars)
+        |> Var.horizon
     in
 
     let (to_keep1, (to_keep_conss1_1,to_keep_conss1_2), to_throw1) = List.fold_left
@@ -210,7 +210,7 @@ let update_frontiers : int list -> 'c1 regionsT -> 'c2 regionsT -> ('c1 regionsT
     (update id_list regs1, update id_list regs2)
 
 (** Both polyhedra are assumed to be normalized on the same point *)
-let join' : 'c1 Factory.t -> 'c2 Factory.t -> Vec.V.t option -> 'c1 regionsT -> 'c2 regionsT -> 'c1 Cons.t list * 'c2 Cons.t list
+let join' : 'c1 Factory.t -> 'c2 Factory.t -> Var.t option -> 'c1 regionsT -> 'c2 regionsT -> 'c1 Cons.t list * 'c2 Cons.t list
     = fun factory1 factory2 epsilon_opt p1 p2 ->
     let conss1 = List.split p1.mapping |> Pervasives.snd
     and conss2 = List.split p2.mapping |> Pervasives.snd
@@ -253,7 +253,7 @@ let join' : 'c1 Factory.t -> 'c2 Factory.t -> Vec.V.t option -> 'c1 regionsT -> 
 
 (** Returns the convex hull of the given inequalities (no equality should be given).
     Computes the region partitioning of both polyhedra. *)
-let join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.Positive.t -> Vector.Symbolic.Positive.t
+let join : 'c1 Factory.t -> 'c2 Factory.t -> Var.t option -> Vector.Symbolic.Positive.t -> Vector.Symbolic.Positive.t
     -> 'c1 Cons.t list -> 'c2 Cons.t list
     -> 'c1 Cons.t list * 'c2 Cons.t list
     = fun factory1 factory2 epsilon_opt init_point1 init_point2 p1 p2 ->
@@ -261,8 +261,8 @@ let join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.Posit
         (lazy "Convex hull by Region Partitioning");
     Debug.log DebugTypes.MInput
         (lazy (Printf.sprintf "First polyhedron : %s\nSecond Polyhedron : %s"
-            (Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p1 "\n")
-            (Misc.list_to_string (Cons.to_string Cs.Vec.V.to_string) p2 "\n")));
+            (Misc.list_to_string (Cons.to_string Var.to_string) p1 "\n")
+            (Misc.list_to_string (Cons.to_string Var.to_string) p2 "\n")));
     let init_point1 = Vector.Symbolic.Positive.toRat init_point1
     and init_point2 = Vector.Symbolic.Positive.toRat init_point2
     in
@@ -273,6 +273,6 @@ let join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.Posit
     let (conss1, conss2) = join' factory1 factory2 epsilon_opt regs1 regs2 in
     Debug.log DebugTypes.MOutput
         (lazy (Printf.sprintf "Polyhedron1 : %s\nPolyhedron2 : %s"
-            (Misc.list_to_string (Cons.to_string_ext factory1 Cs.Vec.V.to_string) conss1 "\n")
-            (Misc.list_to_string (Cons.to_string_ext factory2 Cs.Vec.V.to_string) conss2 "\n")));
+            (Misc.list_to_string (Cons.to_string_ext factory1 Var.to_string) conss1 "\n")
+            (Misc.list_to_string (Cons.to_string_ext factory2 Var.to_string) conss2 "\n")));
     (conss1, conss2)

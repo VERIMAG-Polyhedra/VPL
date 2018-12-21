@@ -7,7 +7,6 @@ an empty polyhedron have an [option] type as return value. *)
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module Var = Vec.V
 
 module Debug : DebugTypes.Type
 

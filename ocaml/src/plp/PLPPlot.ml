@@ -245,7 +245,7 @@ module Plot (Minimization : Min.Type) = struct
 			)
 			solutions ","
 
-		let (plot': string -> Poly.V.t list -> int -> (Region.t * 'c Cons.t) list -> unit)
+		let (plot': string -> Var.t list -> int -> (Region.t * 'c Cons.t) list -> unit)
 			= fun file_name parameters nb_dim result ->
 			let output_file = open_out file_name in
 			let result_str = result_to_string result in
@@ -256,7 +256,7 @@ module Plot (Minimization : Min.Type) = struct
 					str_def_regions
 					str_plot_regions
 					str_compute_solution)
-				(Misc.list_to_string (fun x -> String.concat "" ["\"";Poly.V.to_string' "p" x;"\""]) parameters ",")
+				(Misc.list_to_string (fun x -> String.concat "" ["\"";Var.to_string' "p" x;"\""]) parameters ",")
 				("PolynomialRing(QQ,parameters,len(parameters))")
 				(string_of_int(nb_dim))
 				result_str
@@ -274,7 +274,7 @@ module Plot (Minimization : Min.Type) = struct
 				|> List.split
 				|> Pervasives.fst
 				|> Cs.getVars
-				|> Cs.Vec.V.Set.elements
+				|> Var.Set.elements
 			in
 			let n_params = List.length parameters in
 			let dim = if n_params = 2 then 3 else n_params in

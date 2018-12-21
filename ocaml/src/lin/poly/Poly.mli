@@ -5,4 +5,4 @@ exception Div_by_non_constant
 
 module type Type = Type
 
-module Make : functor (Vec : Vector.Type with module M = Rtree and module V = Var.Positive) -> Type with module Vec = Vec
+module Make : functor (Vec : Vector.Type) -> Type with module Vec = Vec

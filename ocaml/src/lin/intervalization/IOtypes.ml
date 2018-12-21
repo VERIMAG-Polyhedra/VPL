@@ -322,8 +322,8 @@ module type Domain_T = sig
     module Poly : sig
         include Poly.Type
 
-        val coqvar_to_var : PVar.t -> Vec.V.t
-        val var_to_coqvar : Vec.V.t -> PVar.t
+        val coqvar_to_var : PVar.t -> Var.t
+        val var_to_coqvar : Var.t -> PVar.t
         val n_to_coeff : N.t -> Vec.Coeff.t
         val coeff_to_n : Vec.Coeff.t -> N.t
     end
@@ -354,12 +354,12 @@ module type Type = sig
     	val to_polynomial: t -> D.Poly.t
     	val to_string : t -> string
     	val of_cte : D.Poly.Coeff.t -> t
-    	val of_var : D.Poly.V.t -> t
+    	val of_var : Var.t -> t
     	val of_monomialBasis : D.Poly.MonomialBasis.t -> t
     	val of_monomial : D.Poly.Monomial.t -> t
     	val of_polynomial : D.Poly.t -> t
-    	val center_zero_var : D.Poly.Monomial.t -> D.Poly.V.t -> D.Poly.V.t list -> D.N.t list -> D.BasicTerm.term list
-    	val translate : D.Poly.Monomial.t -> D.Poly.V.t -> D.N.t -> D.BasicTerm.term * D.Poly.Monomial.t
+    	val center_zero_var : D.Poly.Monomial.t -> Var.t -> Var.t list -> D.N.t list -> D.BasicTerm.term list
+    	val translate : D.Poly.Monomial.t -> Var.t -> D.N.t -> D.BasicTerm.term * D.Poly.Monomial.t
     	val get_affine_part : t -> t
     	val get_interv_part : t -> t
     end
@@ -367,23 +367,23 @@ module type Type = sig
     module AnnotedVar : sig
 
     	type t =
-    	| Var of D.Poly.V.t
+    	| Var of Var.t
     	| AVar of ASTerm.TopLevelAnnot.topLevelAnnot * t
 
-    	val of_var : D.Poly.V.t -> ASTerm.TopLevelAnnot.topLevelAnnot -> t
-    	val to_var : t -> D.Poly.V.t
+    	val of_var : Var.t -> ASTerm.TopLevelAnnot.topLevelAnnot -> t
+    	val to_var : t -> Var.t
     	val to_term : t -> D.BasicTerm.term
     	val to_string : t -> string
     	val update_monomial : D.Poly.MonomialBasis.t -> (t list) MapMonomial.t -> D.Poly.MonomialBasis.t
-      	val mem : D.Poly.V.t -> t list -> bool
-      	val find : D.Poly.V.t -> t list -> t
+      	val mem : Var.t -> t list -> bool
+      	val find : Var.t -> t list -> t
     	val apply : D.BasicTerm.t -> t list -> D.BasicTerm.t
     end
 
     module Itv : sig
     	type t = D.NoneItv.t
 
-    	val of_var : env -> D.Poly.V.t -> t
+    	val of_var : env -> Var.t -> t
     	val of_term : Term.t -> env -> t
     	val low : t -> D.N.t option
     	val up : t -> D.N.t option
@@ -391,7 +391,7 @@ module type Type = sig
     	val range : t -> D.Poly.Coeff.t
     	val is_bounded : t -> bool
     	val is_fully_unbounded : t -> bool
-    	val greatest : D.Poly.MonomialBasis.t -> env -> D.Poly.V.t
+    	val greatest : D.Poly.MonomialBasis.t -> env -> Var.t
     	val contains_zero : t -> bool
     	val get_translation_bound : t -> D.N.t
     end
@@ -434,7 +434,7 @@ module Lift (D : Domain_T) = struct
 
     	let rec to_string : t -> string
     		= D.BasicTerm.(function
-    		| Var x -> "v" ^ (D.Poly.coqvar_to_var x |> D.Poly.V.to_string)
+    		| Var x -> "v" ^ (D.Poly.coqvar_to_var x |> Var.to_string)
     		| Cte x -> (D.Poly.n_to_coeff x |> D.Poly.Coeff.to_string)
     		| Add (x1,x2) ->  Printf.sprintf "%s + %s" (to_string x1) (to_string x2)
       		| Opp x -> Printf.sprintf "-1*(%s)" (to_string x)
@@ -452,7 +452,7 @@ module Lift (D : Domain_T) = struct
     	let of_cte : D.Poly.Coeff.t -> t
     		= fun i -> D.BasicTerm.Cte (D.Poly.coeff_to_n i)
 
-    	let of_var : D.Poly.V.t -> t
+    	let of_var : Var.t -> t
     		= fun v -> D.BasicTerm.Var (D.Poly.var_to_coqvar v)
 
     	let of_monomialBasis : D.Poly.MonomialBasis.t -> t
@@ -461,7 +461,7 @@ module Lift (D : Domain_T) = struct
     		D.BasicTerm.smartMul
     		one
     		(List.map
-    			(fun x -> if x |> D.Poly.V.toInt = 0
+    			(fun x -> if x |> Var.toInt = 0
     				then one
     				else of_var x)
     			(D.Poly.MonomialBasis.to_list_expanded m))
@@ -480,12 +480,12 @@ module Lift (D : Domain_T) = struct
         		zero
         		(D.Poly.data p)
 
-    	let rec center_zero_var : D.Poly.Monomial.t -> D.Poly.V.t -> D.Poly.V.t list -> D.N.t list -> D.BasicTerm.term list
+    	let rec center_zero_var : D.Poly.Monomial.t -> Var.t -> Var.t list -> D.N.t list -> D.BasicTerm.term list
     		= fun m vToKeep vlist clist ->
             let (m,c) = D.Poly.Monomial.data m in
     		match (vlist,clist) with
     		| ([],[]) ->
-                let basis = Misc.pop D.Poly.V.equal (D.Poly.MonomialBasis.to_list_expanded m) vToKeep
+                let basis = Misc.pop Var.equal (D.Poly.MonomialBasis.to_list_expanded m) vToKeep
                     |> D.Poly.MonomialBasis.mk_expanded
                     |> of_monomialBasis
                 in
@@ -498,7 +498,7 @@ module Lift (D : Domain_T) = struct
     		| (v :: vtl, x :: ctl) ->
         		let tlist1 =
                     let mono = D.Poly.Monomial.mk_expanded
-                        (Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.to_list_expanded m) v)
+                        (Misc.pop (Var.equal) (D.Poly.MonomialBasis.to_list_expanded m) v)
                         c
                     in
                     center_zero_var mono vToKeep vtl ctl
@@ -506,7 +506,7 @@ module Lift (D : Domain_T) = struct
         		let x' = D.Poly.n_to_coeff x in
         		let tlist2 =
                     let mono = D.Poly.Monomial.mk_expanded
-                        (Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.to_list_expanded m) v)
+                        (Misc.pop (Var.equal) (D.Poly.MonomialBasis.to_list_expanded m) v)
                         (D.Poly.Coeff.mul c x')
                     in
                     center_zero_var mono vToKeep vtl ctl
@@ -525,10 +525,10 @@ module Lift (D : Domain_T) = struct
         		tlist1 tlist2)
 
     	(* on ne translate que la variable qu'on garde*)
-    	let translate : D.Poly.Monomial.t -> D.Poly.V.t -> D.N.t -> D.BasicTerm.term * D.Poly.Monomial.t
+    	let translate : D.Poly.Monomial.t -> Var.t -> D.N.t -> D.BasicTerm.term * D.Poly.Monomial.t
     		= fun m vToKeep coeff ->
             let (m,c) = D.Poly.Monomial.data m in
-    		let l = Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.to_list_expanded m) vToKeep
+    		let l = Misc.pop (Var.equal) (D.Poly.MonomialBasis.to_list_expanded m) vToKeep
             in
             let term = (D.BasicTerm.smartMul
     			(D.BasicTerm.annotAFFINE
@@ -605,14 +605,14 @@ module Lift (D : Domain_T) = struct
     module AnnotedVar = struct
 
     	type t =
-    	| Var of D.Poly.V.t
+    	| Var of Var.t
     	| AVar of ASTerm.TopLevelAnnot.topLevelAnnot * t
 
-    	let of_var : D.Poly.V.t -> ASTerm.TopLevelAnnot.topLevelAnnot -> t
+    	let of_var : Var.t -> ASTerm.TopLevelAnnot.topLevelAnnot -> t
     		= fun v a ->
     		AVar(a, Var v)
 
-    	let rec to_var : t -> D.Poly.V.t
+    	let rec to_var : t -> Var.t
     		= fun x ->
     		match x with
     		| Var v -> v
@@ -627,7 +627,7 @@ module Lift (D : Domain_T) = struct
 
     	let rec to_string : t -> string
     	= function
-    	| Var v -> D.Poly.V.to_string v
+    	| Var v -> Var.to_string v
     	| AVar (ASTerm.TopLevelAnnot.STATIC, aV') -> String.concat "" ["STATIC(" ; to_string aV' ; ")"]
     	| AVar (ASTerm.TopLevelAnnot.INTERV, aV') -> String.concat "" ["INTERV(" ; to_string aV' ; ")"]
     	| _ -> Pervasives.invalid_arg "IOtypes.AnnotedVar.to_string"
@@ -638,22 +638,22 @@ module Lift (D : Domain_T) = struct
     	let update_monomial : D.Poly.MonomialBasis.t -> (t list) MapMonomial.t -> D.Poly.MonomialBasis.t
     		= fun m mapNKeep ->
     		try List.fold_left
-    			(fun m' v -> Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.to_list_expanded m') v
+    			(fun m' v -> Misc.pop (Var.equal) (D.Poly.MonomialBasis.to_list_expanded m') v
                     |> D.Poly.MonomialBasis.mk_expanded)
     			m
     			(List.map to_var (MapMonomial.find m mapNKeep))
     		with Not_found -> m
 
-      	let mem : D.Poly.V.t -> t list -> bool
+      	let mem : Var.t -> t list -> bool
       		= fun v aVarl ->
       		List.mem
       			v
       			(List.map to_var aVarl)
 
-      	let find : D.Poly.V.t -> t list -> t
+      	let find : Var.t -> t list -> t
       		= fun v aVarl ->
       		List.find
-      			(fun x -> D.Poly.V.equal v (to_var x))
+      			(fun x -> Var.equal v (to_var x))
       			aVarl
 
     	let rec apply : D.BasicTerm.t -> t list -> D.BasicTerm.t
@@ -670,7 +670,7 @@ module Lift (D : Domain_T) = struct
     module Itv = struct
     	type t = D.NoneItv.t
 
-    	let of_var : env -> D.Poly.V.t -> t
+    	let of_var : env -> Var.t -> t
     		= fun env v ->
             D.Poly.var_to_coqvar v |> env
 
@@ -719,10 +719,10 @@ module Lift (D : Domain_T) = struct
     			| (None,None) -> true
     			| _ -> false
 
-    	let greatest : D.Poly.MonomialBasis.t -> env -> D.Poly.V.t
+    	let greatest : D.Poly.MonomialBasis.t -> env -> Var.t
     		= fun m env->
     		let l = List.filter
-                (fun x -> D.Poly.V.toInt x > 0)
+                (fun x -> Var.toInt x > 0)
                 (D.Poly.MonomialBasis.to_list_expanded m)
             in
     		List.map (fun x -> of_var env x |> range) l
@@ -789,15 +789,15 @@ module DomainZ = struct
     module Poly = struct
         include Poly.Make(Vector.Int.Positive)
 
-        let coqvar_to_var : PVar.t -> Vec.V.t
+        let coqvar_to_var : PVar.t -> Var.t
             = fun var ->
             PedraQOracles.coqPosToZ var
             |> Z.to_int
-            |> Vec.V.fromInt
+            |> Var.fromInt
 
-        let var_to_coqvar : Vec.V.t -> PVar.t
+        let var_to_coqvar : Var.t -> PVar.t
             = fun var ->
-            Vec.V.toInt var
+            Var.toInt var
             |> Z.of_int
             |> PedraQOracles.zToCoqPos
 
@@ -962,15 +962,15 @@ module DomainQ = struct
         (** Polynomials over integers ?*)
         include Poly.Make(Vector.Rat.Positive)
 
-        let coqvar_to_var : PVar.t -> Vec.V.t
+        let coqvar_to_var : PVar.t -> Var.t
             = fun var ->
             PedraQOracles.coqPosToZ var
             |> Z.to_int
-            |> Vec.V.fromInt
+            |> Var.fromInt
 
-        let var_to_coqvar : Vec.V.t -> PVar.t
+        let var_to_coqvar : Var.t -> PVar.t
             = fun var ->
-            Vec.V.toInt var
+            Var.toInt var
             |> Z.of_int
             |> PedraQOracles.zToCoqPos
 

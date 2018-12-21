@@ -20,7 +20,6 @@ type bnd_t
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module V = Vec.V
 
 (** accessor for the [id] field of a value of type [bnd_t] *)
 val get_id : bnd_t -> int
@@ -50,13 +49,13 @@ module Defs : sig
 
     type t
     val empty : t
-    val add : V.t -> Vec.t -> t -> t
-    val rm : V.t -> t -> t
-    val getVars : t -> V.Set.t
-    val getDef : t -> V.t -> Vec.t option
-    val fold : ('a -> V.t * Vec.t -> 'a) -> 'a -> t -> 'a
+    val add : Var.t -> Vec.t -> t -> t
+    val rm : Var.t -> t -> t
+    val getVars : t -> Var.Set.t
+    val getDef : t -> Var.t -> Vec.t option
+    val fold : ('a -> Var.t * Vec.t -> 'a) -> 'a -> t -> 'a
     val rewrite : t -> Vec.t -> Vec.t
-    val to_string : (V.t -> string) -> t -> string
+    val to_string : (Var.t -> string) -> t -> string
 
 end
 
@@ -64,15 +63,15 @@ end
 type t = {
 	mat: (Vec.t option) Rtree.t;
 	state: state_t Rtree.t;
-	vars : V.Set.t;
+	vars : Var.Set.t;
 	defs : Defs.t;
-	nxt: V.t
+	nxt: Var.t
 }
 
 val get_mat : t ->  (Vec.t option) Rtree.t
 val get_state: t -> state_t Rtree.t
-val getVars : t -> V.Set.t
-val get_nxt: t -> V.t
+val getVars : t -> Var.Set.t
+val get_nxt: t -> Var.t
 
 module Witness : sig
 	(*	The type of a contradiction witness.  This is the list of the non-zero
@@ -120,7 +119,7 @@ val addAcc : t mayUnsatT -> int * Cs.t -> t mayUnsatT
 [mk lim l] builds a new simplex problem, composed of the constraints in [l].
 
 Variable [lim] specifies a frame beyond which fresh variables can be
-allocated, using [V.next]. Note that [lim] itself may be used as a
+allocated, using [Var.next]. Note that [lim] itself may be used as a
 fresh variable. There is no possibility to change the frame after a
 simplex data structure has been created using [mk]: all the constraints
 ever added to the result of [mk] should have their variables "smaller"
@@ -129,7 +128,7 @@ than [lim].
 [mk] is implemented in terms of [add] and has the same behaviour
 regarding [IsUnsat] return values.
 *)
-val mk: V.t -> (int * Cs.t) list -> t mayUnsatT
+val mk: Var.t -> (int * Cs.t) list -> t mayUnsatT
 
 (** Look for an assignment of the variables of the problem which satisfies
 all the constraints.  If such an assignment is found, the last simplex
@@ -149,7 +148,7 @@ Calling [getAsg] is only meaningful on a value of type [t] returned by
 [check] or [checkFromAdd]. *)
 val getAsg : t -> Vector.Symbolic.Positive.t
 
-val insertBack : V.t -> t -> t
+val insertBack : Var.t -> t -> t
 
 (*	Complement the bound with given integer identifier.
 	If multiple bounds have this identifier, one is arbitrarily chosen.
@@ -168,13 +167,13 @@ val forget: t -> int -> t
 
 (** Pretty-print an element of type [t].
 The function [pr] wraps functions [prMat] and [prState]. *)
-val pr: (V.t -> string) -> t -> string
+val pr: (Var.t -> string) -> t -> string
 
 (** [prMat s] pretty-prints the constraint matrix (field [mat]) of [s]. *)
-val prMat: (V.t -> string) -> Vec.t option Rtree.t -> string
+val prMat: (Var.t -> string) -> Vec.t option Rtree.t -> string
 
 (** [prState s] pretty-prints the bounds and values on variables (field [state]) of [s]. *)
-val prState: (V.t -> string) -> state_t Rtree.t -> string
+val prState: (Var.t -> string) -> state_t Rtree.t -> string
 
 (** Pretty-print an element of type [bnd_t option]. *)
 val prBnd: bnd_t option -> string
@@ -193,7 +192,7 @@ type bck_t =
 | KoL of Scalar.Symbolic.t
 | KoU of Scalar.Symbolic.t
 
-type whatnext_t = NonBasic of V.t | UnsatSplx of witness_t
+type whatnext_t = NonBasic of Var.t | UnsatSplx of witness_t
 
 (** [mergeB st1 st2] computes the intersection of the bounds described by [st1] and [st2].
 The [v] field of the result is equal to [st1.v].
@@ -217,20 +216,20 @@ val fitBnd: state_t -> fitBndT
 
 (** [incrupdate v x m st] adjusts the value of the basic variables in [st] so that
 the constraints [m] are still satisfied after a change [d] on the value of the non-basic variable [x] (new value is [x] + [d]). *)
-val incrupdate: Scalar.Symbolic.t -> V.t -> (Vec.t option) Rtree.t -> state_t Rtree.t -> state_t Rtree.t
+val incrupdate: Scalar.Symbolic.t -> Var.t -> (Vec.t option) Rtree.t -> state_t Rtree.t -> state_t Rtree.t
 
 (** [pivot m xB xN] transforms that contraint matrix [m] so that
 the basic variable [xB] becomes non-basic and
 the non-basic variable [xN] becomes basic.
 The handling of variable values to preserve the invariant is left to the caller. *)
-val pivot: Vec.t option Rtree.t -> V.t -> V.t -> Vec.t option Rtree.t
+val pivot: Vec.t option Rtree.t -> Var.t -> Var.t -> Vec.t option Rtree.t
 
 val _in_bound: state_t -> bck_t
 
 val check_loop : t -> t mayUnsatT
 
 type choiceT
-= {var : V.t; vec : Vec.t; st : state_t}
+= {var : Var.t; vec : Vec.t; st : state_t}
 
 type strategyT
 = Bland | Steep
@@ -259,16 +258,16 @@ module Preprocessing : sig
 
     (** Compute the set of variables of the constraints input by the user
 which have neither syntactic upper bound nor lower bound. *)
-    val getUnboundedVars : t -> V.Set.t
+    val getUnboundedVars : t -> Var.Set.t
 
     (** [findOccurence x sx] returns the basic variable of one row on which [x]
 occurs with a non-null coefficient, if one exists. *)
-    val findOccurence : V.t -> t -> V.t option
+    val findOccurence : Var.t -> t -> Var.t option
 
     (** [elim x xb sx] eliminates [x] from the tableau using the constraint which
 has [xb] as a basic variable.  Note that the problem which [elim] returns is not
 equivalent to [sx]. *)
-    val elim : V.t -> V.t -> t -> t
+    val elim : Var.t -> Var.t -> t -> t
 
     (** [presimpl sx] eliminates from [sx] the variables which are not
 syntactically bounded. *)
@@ -276,6 +275,6 @@ syntactically bounded. *)
 
 end
 
-val getAsgOpt : V.t -> (int * Cs.t) list -> Scalar.Symbolic.t Rtree.t option
+val getAsgOpt : Var.t -> (int * Cs.t) list -> Scalar.Symbolic.t Rtree.t option
 
-val getPointInside_cone : Cs.Vec.V.t -> Cs.t list -> Scalar.Symbolic.t Rtree.t option
+val getPointInside_cone : Var.t -> Cs.t list -> Scalar.Symbolic.t Rtree.t option

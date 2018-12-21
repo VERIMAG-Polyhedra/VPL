@@ -1,6 +1,5 @@
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module V = Cs.Vec.V
 
 module MinFloat = Min.Classic(Vec)
 module B = Join.Build(MinFloat)
@@ -39,7 +38,7 @@ include B
 
 module BuildSx = struct
 
-	let build_paramCoeff : Cs.Vec.V.t list -> Cs.t -> ParamCoeff.t
+	let build_paramCoeff : Var.t list -> Cs.t -> ParamCoeff.t
 		= fun params cstr ->
 		let vec = List.map
 			(fun param ->
@@ -48,7 +47,7 @@ module BuildSx = struct
 		in
 		ParamCoeff.mk vec (Cs.get_c cstr |> Cs.Coeff.neg)
 
-	let objective : Cs.Vec.V.t list -> Cs.t list -> Objective.t
+	let objective : Var.t list -> Cs.t list -> Objective.t
 		= fun params cstrs ->
 		let null_paramCoeff = ParamCoeff.mk (List.map (fun _ -> Scalar.Rat.z) params) Scalar.Rat.z in
 		let coeffs = List.map (fun cstr -> build_paramCoeff params (Cs.compl cstr)) cstrs in
@@ -61,16 +60,16 @@ module BuildSx = struct
 			cstrs
 		@ [Scalar.Rat.negU] (* Normalization constant *)
 
-	let build_params : PLP.Naming.t -> Cs.t list -> Vec.V.t list * PLP.Naming.t
+	let build_params : PLP.Naming.t -> Cs.t list -> Var.t list * PLP.Naming.t
 		= fun names cstrs ->
 		let params = Cs.getVars cstrs
-			|> Vec.V.Set.elements
+			|> Var.Set.elements
 		in
 		(params, PLP.Naming.mkParam params names)
 
-	let build_vars : Cs.t list -> Vec.V.t list * PLP.Naming.t
+	let build_vars : Cs.t list -> Var.t list * PLP.Naming.t
 		= fun cstrs ->
-		let vars = List.mapi (fun i _ -> Vec.V.fromInt (i+1)) cstrs in
+		let vars = List.mapi (fun i _ -> Var.fromInt (i+1)) cstrs in
 		(vars, PLP.Naming.mkVar vars PLP.Naming.empty)
 
 	let build : Vec.t -> Cs.t list -> PLP.PSplx.t
@@ -93,7 +92,7 @@ let regions_to_string' : (PLP.Region.t * 'c Cons.t) list -> string
 		(Misc.list_to_string
 			(fun (reg,cons) -> Printf.sprintf "%s\n%s\n"
 				(PLP.Region.to_string reg)
-				(Cons.to_string Vec.V.to_string cons))
+				(Cons.to_string Var.to_string cons))
 			regs "\n")
 
 let regions_to_string : 'c regionsT -> string
@@ -138,17 +137,17 @@ module ReNormalize = struct
 		= fun vec_to_normalize new_point ->
 		Vec.dot_product vec_to_normalize new_point
 
-	let homogenize_point : Vec.t -> Vec.V.t -> Vec.t
+	let homogenize_point : Vec.t -> Var.t -> Vec.t
 		= fun point additional_var ->
 		Vec.set point additional_var Vec.Coeff.u
 
-	let homogenize_cstr : Vec.V.t -> Cs.t -> Vec.t
+	let homogenize_cstr : Var.t -> Cs.t -> Vec.t
 		= fun additional_var cstr ->
 		[cstr.Cs.c , additional_var]
 			|> Vec.mk
 			|> Vec.sub cstr.Cs.v
 
-	let remove_additional_var : Vec.V.t -> Vec.t -> Vec.t
+	let remove_additional_var : Var.t -> Vec.t -> Vec.t
 		= fun additional_var point ->
 		Vec.set point additional_var Vec.Coeff.z
 		(*
@@ -158,12 +157,12 @@ module ReNormalize = struct
 		*)
 		(* TODO faut il diviser tous les coefficients par le coefficient de la variable additionnelle? *)
 
-	let renormalize_vec : Vec.Coeff.t -> Vec.V.t -> Vec.t -> Vec.t -> Vec.t -> Vec.t
+	let renormalize_vec : Vec.Coeff.t -> Var.t -> Vec.t -> Vec.t -> Vec.t -> Vec.t
 		= fun denominator _ new_point polyhedron_face vec ->
 		let lambda = Vec.Coeff.div (compute_numerator vec new_point) denominator in
 		Vec.add vec (Vec.mulc lambda polyhedron_face)
 
-	let renormalize_boundary : Vec.Coeff.t -> Vec.V.t -> Vec.t -> Vec.t -> PLP.Boundary.t -> PLP.Boundary.t
+	let renormalize_boundary : Vec.Coeff.t -> Var.t -> Vec.t -> Vec.t -> PLP.Boundary.t -> PLP.Boundary.t
 		= fun denominator additional_var new_point polyhedron_face (cstr,point_other_side) ->
 		let renormalize_vec = renormalize_vec denominator additional_var new_point polyhedron_face in
 		let vec' = homogenize_cstr additional_var cstr
@@ -177,7 +176,7 @@ module ReNormalize = struct
 			(Vec.get vec' additional_var |> Vec.Coeff.neg) in
 		(cstr',point_other_side')
 
-	let renormalize_region : Vec.V.t -> Vec.t -> (PLP.Region.t * 'c Cons.t) -> (PLP.Region.t * 'c Cons.t)
+	let renormalize_region : Var.t -> Vec.t -> (PLP.Region.t * 'c Cons.t) -> (PLP.Region.t * 'c Cons.t)
 		= fun additional_var new_point (reg,cons) ->
 		let polyhedron_face = Cons.get_c cons
 			|> homogenize_cstr additional_var in
@@ -199,7 +198,7 @@ module ReNormalize = struct
 		= fun regs new_point ->
 		let additional_var = List.map (fun (_,cons) -> Cons.get_c cons) regs.mapping
 			|> Cs.getVars
-			|> Cs.Vec.V.horizon
+			|> Var.horizon
 		in
 		let mapping' = List.map (renormalize_region additional_var new_point) regs.mapping
 		in

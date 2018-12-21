@@ -7,17 +7,11 @@ They are represented as sparse structures: only non-zero coefficients are stored
 in the map. *)
 module type Type = sig
 
-    (** A type of maps associating variables to values. *)
-	module M : VarMap.Type
-
-    (** The type of variables used by {!module:M}. *)
-	module V : Var.Type
-
     (** A type of scalars. *)
 	module Coeff : Scalar.Type
 
     (** Type of vectors associating variables to coefficients. *)
-	type t = Coeff.t M.t
+	type t = Coeff.t Rtree.t
 
     (** Name of the module. *)
 	val name : string
@@ -27,22 +21,22 @@ module type Type = sig
 
     (** Conversion into string.
         @param var_to_string a pretty-printer for variables. *)
-	val to_string : (V.t -> string) -> t -> string
+	val to_string : (Var.t -> string) -> t -> string
 
     (** Builds a vector from a list of pairs coefficient * variable.*)
-	val mk : (Coeff.t * V.t) list -> t
+	val mk : (Coeff.t * Var.t) list -> t
 
     (** Retrieve coefficients and variables of a vector. *)
-	val toList : t -> (V.t * Coeff.t) list
+	val toList : t -> (Var.t * Coeff.t) list
 
 	(** [get vec v] returns the coefficient of variable [v] in vec. Returns zero if [v] is not present in [vec]. *)
-	val get: t -> V.t -> Coeff.t
+	val get: t -> Var.t -> Coeff.t
 
 	(** [set vec v n] sets the coefficient of variable [v] to [n] in vector [vec]. *)
-	val set: t -> V.t -> Coeff.t -> t
+	val set: t -> Var.t -> Coeff.t -> t
 
 	(** [getvars l] returns the set of variables that appear in the list of vectors [l]. *)
-	val getVars: t list -> V.Set.t
+	val getVars: t list -> Var.Set.t
 
 	(** [neg vec] multiplies each coefficient in [vec] by -1. *)
 	val neg : t -> t
@@ -81,7 +75,7 @@ module type Type = sig
 	val dot_product : t -> t -> Coeff.t
 
 	(** Same as {!val:dot_product}, where the first vector has rational coefficients. *)
-	val dot_productr : Scalar.Rat.t M.t -> t -> Coeff.t
+	val dot_productr : Scalar.Rat.t Rtree.t -> t -> Coeff.t
 
 	(** [isomorph v1 v2] returns [Some r] if [v1] is equal to [mult r v2].
 	If there is no such [r], [None] is returned. *)
@@ -90,10 +84,10 @@ module type Type = sig
 	(** [elim x v1 v2] eliminates the [x] from [v2] using [v1].
 	If [v2] has coefficient zero for variable [x], it is returned untouched.
 	Otherwise, if variable [x] has coefficient zero in [v1], [Invalid_argument "Vec.elim"] is raised. *)
-	val elim: V.t -> t -> t -> t
+	val elim: Var.t -> t -> t -> t
 
 	(**/**)
-	val shift: V.t -> t -> V.t option M.t -> V.t * t * V.t option M.t
+	val shift: Var.t -> t -> Var.t option Rtree.t -> Var.t * t * Var.t option Rtree.t
 	(**/**)
 
     (** Conversion from a vector with symbolic error.
@@ -101,26 +95,26 @@ module type Type = sig
 	val ofSymbolic : Scalar.Symbolic.t -> Coeff.t
 
     (** Conversion into a rational vector. *)
-	val toRat : t -> Scalar.Rat.t M.t
+	val toRat : t -> Scalar.Rat.t Rtree.t
 
     (** Conversion from a rational vector.*)
-	val ofRat : Scalar.Rat.t M.t -> t
+	val ofRat : Scalar.Rat.t Rtree.t -> t
 
     (** Eliminates a list of variables from a vector, by setting their value to 0.
         @param vars the variables to eliminate
         @param vec the vector *)
-    val project : V.t list -> t -> t
+    val project : Var.t list -> t -> t
 
     (** Renames a variable.
         @param fromX the variable to rename
         @param toY the new variable name
         @param vec the vector *)
-    val rename : V.t -> V.t -> t -> t
+    val rename : Var.t -> Var.t -> t -> t
 
     (** Renames all variables of a vector according to a renaming function
         @param f the renaming function
         @param vec the vector to rename *)
-	val rename_f : (V.t -> V.t) -> t -> t
+	val rename_f : (Var.t -> Var.t) -> t -> t
 
     (** @return the gcd of the coefficients in the vector. *)
     val gcd : t -> Q.t

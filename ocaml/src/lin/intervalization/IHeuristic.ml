@@ -12,9 +12,9 @@ module Lift (T : Type) = struct
 
 	type prophecy = D.BasicTerm.term list
 
-	type t = P.t -> env -> mode -> P.V.t MapMonomial.t
+	type t = P.t -> env -> mode -> Var.t MapMonomial.t
         -> (AnnotedVar.t list) MapMonomial.t -> Pattern.t
-        -> (prophecy * P.V.t MapMonomial.t * (AnnotedVar.t list) MapMonomial.t * P.t)
+        -> (prophecy * Var.t MapMonomial.t * (AnnotedVar.t list) MapMonomial.t * P.t)
 
 	let rec default : t
 		= fun _ env mode mapKeep mapNKeep pat ->
@@ -34,7 +34,7 @@ module Lift (T : Type) = struct
     				with Not_found -> []
                 in
     			let aff = D.BasicTerm.annotAFFINE (Term.of_monomial (M.mk_list [var_to_keep,1] c)) in
-    			let mon = Misc.pop P.V.equal (MB.to_list_expanded m) var_to_keep
+    			let mon = Misc.pop Var.equal (MB.to_list_expanded m) var_to_keep
                     |> MB.mk_expanded
                     |> Term.of_monomialBasis
                     |> D.BasicTerm.smartAnnot ASTerm.TopLevelAnnot.INTERV
@@ -110,7 +110,7 @@ module Lift (T : Type) = struct
             let (m,_) = M.data mono in
             let vToKeep = MapMonomial.find m mapKeep in
     		let aVarl = try MapMonomial.find m mapNKeep with Not_found -> [] in
-    		let l = Misc.pop P.V.equal (MB.to_list_expanded m) vToKeep
+    		let l = Misc.pop Var.equal (MB.to_list_expanded m) vToKeep
                 |> List.filter
                     (fun v ->
                         let itv = Itv.of_var env v in

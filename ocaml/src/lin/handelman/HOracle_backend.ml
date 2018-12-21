@@ -1,6 +1,5 @@
 module Poly = ParamCoeff.Poly
 module Coeff = Poly.Coeff
-module Var = Poly.V
 module CP = CstrPoly
 
 module MapMonomial = Map.Make(Poly.MonomialBasis)

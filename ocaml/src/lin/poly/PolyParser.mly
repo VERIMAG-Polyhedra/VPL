@@ -2,7 +2,7 @@
 %token <string> VAR
 %token <string> QxVar
 %token EOF PLUS TIMES SLASH LESS EXP
-%token LE LT GT GE EQ NEQ 
+%token LE LT GT GE EQ NEQ
 %token VRG PVRG
 %token PARBEG PAREND
 %token ASSIGN
@@ -13,7 +13,7 @@
 %type <PolyParserBuild.poly> one_poly
 %type <PolyParserBuild.stmt list> one_stmt_list
 %type <string list> one_var_list
-%type <(Var.Positive.t list * Q.t) list> one_prefixed_poly
+%type <(Var.t list * Q.t) list> one_prefixed_poly
 %%
 one_prefixed_poly:
 	| prefixed_polynomial EOF {$1}
@@ -22,16 +22,16 @@ one_prefixed_poly:
 prefixed_polynomial:
 	| prefixed_element {[Pervasives.fst $1, Pervasives.snd $1]}
 	| prefixed_element PLUS prefixed_polynomial {((Pervasives.fst $1, Pervasives.snd $1) :: $3)}
-;   
+;
 prefixed_element:
 	| prefixed_monomial {$1}
 	| prefixed_monomial TIMES prefixed_element {(fst $1 @ fst $3, Q.mul (snd $1) (snd $3))}
 ;
 prefixed_monomial:
 	| nb {([], $1)}
-	| VAR {([Var.Positive.of_prefixed_string $1], Q.one)}
+	| VAR {([Var.of_prefixed_string $1], Q.one)}
 ;
-one_var_list : 
+one_var_list :
 	| var_list EOF {$1}
 	| EOF {[]}
 ;
@@ -40,7 +40,7 @@ var_list :
 	| var PVRG var_list {$1 :: $3}
 	| var VRG var_list {$1 :: $3}
 ;
-one_stmt_list : 
+one_stmt_list :
 	| stmt_list EOF {$1}
 	| EOF {[]}
 ;
@@ -61,7 +61,7 @@ contrainte_list :
 	| contrainte {[ $1 ]}
 	| contrainte VRG contrainte_list {$1 :: $3}
 ;
-contrainte : 
+contrainte :
 	| polynomial LE polynomial {($1, Cstr_type.LE, $3)}
 	| polynomial LT polynomial {($1, Cstr_type.LT, $3)}
 	| polynomial GE polynomial {($1, Cstr_type.GE, $3)}
@@ -84,14 +84,14 @@ one_poly:
 	| polynomial EOF {$1}
 	| EOF {PolyParserBuild.Leaf([("",0)],Q.zero)}
 ;
-element: 
+element:
 	| monome {$1}
 	| monome TIMES element {(fst $1 @ fst $3, Q.mul (snd $1) (snd $3))}
 ;
 monome:
 	| nb {([], $1)}
    | nbVar {([(fst $1, 1)], snd $1)}
-   | nbVar EXP exposant {([(fst $1, $3)], snd $1)}	
+   | nbVar EXP exposant {([(fst $1, $3)], snd $1)}
 ;
 exposant:
 	INT {int_of_string $1}
@@ -100,7 +100,7 @@ nb:
 	| INT {Q.of_string $1}
 	| INT SLASH INT {Q.of_string (Printf.sprintf "%s/%s" $1 $3)}
 ;
-nbVar: 							
+nbVar:
 	QxVar {((PolyParserBuild.getName $1) , Q.of_string (PolyParserBuild.getCoeff $1))}
 ;
 var:

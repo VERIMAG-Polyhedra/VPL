@@ -10,10 +10,10 @@ module Lift (T : Type) = struct
 
     module Misc = struct
 
-    	let sign_changing : M.t -> P.V.t -> env -> bool
+    	let sign_changing : M.t -> Var.t -> env -> bool
     		= fun m v env ->
             let (m,c) = M.data m in
-    		let l = (Misc.pop P.V.equal (MB.to_list_expanded m) v) in
+    		let l = (Misc.pop Var.equal (MB.to_list_expanded m) v) in
     		let l' = List.filter (fun v ->
                 let itv = Itv.of_var env v in
                 match (Itv.low itv, Itv.up itv) with
@@ -48,25 +48,25 @@ module Lift (T : Type) = struct
                 		| (None, Some y) when P.Coeff.lt P.Coeff.z (P.n_to_coeff y) -> true
                 		| (Some x, None) when P.Coeff.lt (P.n_to_coeff x) P.Coeff.z -> true
                 		| _ -> false)
-                        (Misc.pop P.V.equal var_list v)
+                        (Misc.pop Var.equal var_list v)
         		with Not_found -> false
     end
 
 	type t =
-	  UnboundedVar of M.t * P.V.t (* une seule variable est non-bornée dans le monôme *)
-	| UnboundedVarmode of M.t * P.V.t (* variable non bornée mais du bon côté par rapport au mode *)
-	| GreatestItv of M.t * P.V.t (* toutes les variables sont bornées et on garde la variable qui possède le plus grand intervalle *)
-	| VarCte of M.t * P.V.t (* cette variable est cste *)
+	  UnboundedVar of M.t * Var.t (* une seule variable est non-bornée dans le monôme *)
+	| UnboundedVarmode of M.t * Var.t (* variable non bornée mais du bon côté par rapport au mode *)
+	| GreatestItv of M.t * Var.t (* toutes les variables sont bornées et on garde la variable qui possède le plus grand intervalle *)
+	| VarCte of M.t * Var.t (* cette variable est cste *)
 	| MonomialCte of M.t (* the monomial is a constant *)
-	| LinearMonomial of M.t * P.V.t (* monôme linéaire *)
+	| LinearMonomial of M.t * Var.t (* monôme linéaire *)
 	| CenterZero of M.t (* on réécrit le monôme pour centrer les variables non gardées en 0 *)
 	| Translation of M.t (* on réécrit le monôme en translatant des variables *)
 	| Screwed (* toute intervalization STATIQUE du monôme donne [None, None], on appelle directement Default pour en finir plus rapidement *)
-	| FirstUnbounded of M.t * P.V.t (* Garde la première variable non-bornée. S'il n'y en a pas, garde la variable avec le plus grand intervalle*)
-	| Multiplicity of (M.t * int)list * P.V.t (* la variable a une grande multiplicité *)
+	| FirstUnbounded of M.t * Var.t (* Garde la première variable non-bornée. S'il n'y en a pas, garde la variable avec le plus grand intervalle*)
+	| Multiplicity of (M.t * int)list * Var.t (* la variable a une grande multiplicité *)
 	| Default of P.t (* On garde la première variable du monôme *)
 
-	type matcher = (P.t -> env -> mode -> P.V.t MapMonomial.t -> (AnnotedVar.t list) MapMonomial.t -> t option)
+	type matcher = (P.t -> env -> mode -> Var.t MapMonomial.t -> (AnnotedVar.t list) MapMonomial.t -> t option)
 
 	(* Marque une variable 'to_keep' *)
 	let unboundedVar : matcher
@@ -227,14 +227,14 @@ module Lift (T : Type) = struct
 
 	(* Marque une variable 'to_interv' *)
 	let multiplicity : matcher
-		= let get_monomial_multiplicity : MB.t -> P.V.t -> int
+		= let get_monomial_multiplicity : MB.t -> Var.t -> int
 				= fun m v ->
-				let (l1,l2) = List.partition (fun v' -> P.V.equal v v') (MB.to_list_expanded m) in
+				let (l1,l2) = List.partition (fun v' -> Var.equal v v') (MB.to_list_expanded m) in
 				if List.length l2 = 0
 				then (List.length l1) - 1
 				else List.length l1
 		in
-        let get_multiplicity : P.t -> P.V.t -> int
+        let get_multiplicity : P.t -> Var.t -> int
 			= fun p v ->
 			List.fold_left
                 (fun i mono -> i + (get_monomial_multiplicity (M.data mono |> fst) v))
@@ -364,8 +364,8 @@ module Lift (T : Type) = struct
 	let matching_order = [monomialCte ; linearMonomial ; varCte ; unboundedVar ; unboundedVarmode ; multiplicity ; greatestItv ; firstUnbounded ;
 	centerZero]
 
-	let (matching :  P.t -> env -> mode -> P.V.t MapMonomial.t -> (AnnotedVar.t list) MapMonomial.t -> t)
-		= let rec(find_first : P.t -> env -> mode -> matcher list -> P.V.t MapMonomial.t -> (AnnotedVar.t list) MapMonomial.t -> t)
+	let (matching :  P.t -> env -> mode -> Var.t MapMonomial.t -> (AnnotedVar.t list) MapMonomial.t -> t)
+		= let rec(find_first : P.t -> env -> mode -> matcher list -> Var.t MapMonomial.t -> (AnnotedVar.t list) MapMonomial.t -> t)
 			= fun p env mode l mapKeep mapNKeep->
 			match l with
 			| [] -> Default p

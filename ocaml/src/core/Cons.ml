@@ -13,11 +13,11 @@ let get_c (c,_) = c
 
 let get_cert (_,cert) = cert
 
-let to_string : (Cs.Vec.V.t -> string) -> 'c t -> string
+let to_string : (Var.t -> string) -> 'c t -> string
 	= fun varPr (c,_) ->
 	Cs.to_string varPr c
 
-let to_string_ext : 'c Factory.t -> (Cs.Vec.V.t -> string) -> 'c t -> string
+let to_string_ext : 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 	= fun factory varPr (c,cert) ->
 	Printf.sprintf "%s: %s" (Cs.to_string varPr c) (factory.Factory.to_string cert)
 
@@ -25,7 +25,7 @@ let equal (c1,_) (c2,_) = Cs.equal c1 c2
 
 let implies (c1,_) (c2,_) = Cs.incl c1 c2
 
-let elim : 'c Factory.t -> Cs.Vec.V.t -> 'c t -> Cs.t -> Cs.t * 'c t
+let elim : 'c Factory.t -> Var.t -> 'c t -> Cs.t -> Cs.t * 'c t
 	= fun factory x (eq,eq_cert) cstr ->
 	if Cs.Vec.Coeff.cmpz (Cs.Vec.get (Cs.get_v cstr) x) = 0
 	then (cstr, (Cs.eq [] Scalar.Rat.z, factory.Factory.top))
@@ -37,7 +37,7 @@ let elim : 'c Factory.t -> Cs.Vec.V.t -> 'c t -> Cs.t -> Cs.t * 'c t
 		let cert = factory.Factory.mul coeff eq_cert in
 		(c, (cstr,cert))
 
-let rename : 'c Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t -> 'c t -> 'c t
+let rename : 'c Factory.t -> Var.t -> Var.t -> 'c t -> 'c t
 	= fun factory fromX toY (c,cert) ->
 	let c' = Cs.rename fromX toY c in
 	let cert' = factory.Factory.rename fromX toY cert in
@@ -96,7 +96,7 @@ let normalize : 'c Factory.t -> 'c t -> 'c t
 	let gcd = Cs.Vec.gcd (Cs.get_v cstr) in
 	mul factory gcd (cstr, cert)
 
-let elimc : 'c Factory.t -> Cs.Vec.V.t -> 'c t -> 'c t -> 'c t
+let elimc : 'c Factory.t -> Var.t -> 'c t -> 'c t -> 'c t
 	= fun factory x (c1,cert1) (c2,cert2) ->
 		let (c, n1, n2) = Cs.elim c1 c2 x in
 		(c, Factory.linear_combination factory [cert1, n1; cert2, n2])
@@ -120,8 +120,8 @@ let discr_factory : 'c1 Factory.t -> 'c2 Factory.t -> ('c1,'c2) discr_cert
 		rename = (fun fromX toY (c,c') -> fac1.rename fromX toY c, fac2.rename fromX toY c');
 	})
 
-let joinSetup_1 : 'c2 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Rtree.t -> Cs.Vec.V.t -> 'c1 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Rtree.t * (('c1,'c2) discr_t) t
+let joinSetup_1 : 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c1 t
+	-> Var.t * Var.t option Rtree.t * (('c1,'c2) discr_t) t
 	= fun factory2 nxt relocTbl alpha (c,cert) ->
 	let (nxt1, vec1, relocTbl1) = Cs.Vec.shift nxt (Cs.get_v c) relocTbl in
 	let (vec2, alphaCoef, cst) = (vec1, Cs.Vec.Coeff.neg (Cs.get_c c), Cs.Vec.Coeff.z)
@@ -130,8 +130,8 @@ let joinSetup_1 : 'c2 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Rtree.t -> Cs
 	let cert' = (cert, factory2.Factory.top) in
 	(nxt1, relocTbl1, (c',cert'))
 
-let joinSetup_2 : 'c1 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Rtree.t -> Cs.Vec.V.t -> 'c2 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Rtree.t * (('c1,'c2) discr_t) t
+let joinSetup_2 : 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c2 t
+	-> Var.t * Var.t option Rtree.t * (('c1,'c2) discr_t) t
 	= fun factory1 nxt relocTbl alpha (c,cert) ->
 	let (nxt1, vec1, relocTbl1) = Cs.Vec.shift nxt (Cs.get_v c) relocTbl in
 	let (vec2, alphaCoef, cst) = (Cs.Vec.add (Cs.get_v c) (Cs.Vec.neg vec1), Cs.get_c c, Cs.get_c c)
@@ -140,16 +140,16 @@ let joinSetup_2 : 'c1 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Rtree.t -> Cs
 	let cert' = (factory1.Factory.top, cert) in
 	(nxt1, relocTbl1, (c',cert'))
 
-let minkowskiSetup_1 : 'c2 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Rtree.t -> 'c1 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Rtree.t * (('c1,'c2) discr_t) t
+let minkowskiSetup_1 : 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c1 t
+	-> Var.t * Var.t option Rtree.t * (('c1,'c2) discr_t) t
 	= fun factory2 nxt relocTbl (c,cert) ->
 	let (nxt1, vec1, relocTbl1) = Cs.Vec.shift nxt (Cs.get_v c) relocTbl in
 	let c' = {c with Cs.v = vec1} in
 	let cert' = (cert, factory2.Factory.top) in
 	(nxt1, relocTbl1, (c',cert'))
 
-let minkowskiSetup_2 : 'c1 Factory.t -> Cs.Vec.V.t -> Cs.Vec.V.t option Rtree.t -> 'c2 t
-	-> Cs.Vec.V.t * Cs.Vec.V.t option Rtree.t * (('c1,'c2) discr_t) t
+let minkowskiSetup_2 : 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c2 t
+	-> Var.t * Var.t option Rtree.t * (('c1,'c2) discr_t) t
 	= fun factory1 nxt relocTbl (c,cert) ->
 	let (nxt1, vec1, relocTbl1) = Cs.Vec.shift nxt (Cs.get_v c) relocTbl in
 	let vec2 = Cs.Vec.add (Cs.get_v c) (Cs.Vec.neg vec1) in

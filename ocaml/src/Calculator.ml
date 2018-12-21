@@ -138,7 +138,7 @@ module Print = struct
 		=  fun p ->
 		get_cstrs p
 		|> Pol.Cs.getVars
-		|> Pol.Cs.Vec.V.Set.elements
+		|> Var.Set.elements
 		|> List.map (Ident.get_string)
 
 	let occurIn : string -> string list -> bool

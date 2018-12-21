@@ -18,8 +18,6 @@ let cmpT_to_string = function
 module Make (Vec : Vector.Type) = struct
 
 	module Coeff = Vec.Coeff
-	module M = Vec.M
-	module V = Vec.V
 
 	let name = "Constraint with vector type : " ^ (Vec.name)
 
@@ -53,7 +51,7 @@ module Make (Vec : Vector.Type) = struct
 
 	let eval : t -> Vec.t -> Coeff.t
 		= fun c pt ->
-		Coeff.sub (M.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t c.v pt)) c.c
+		Coeff.sub (Rtree.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t c.v pt)) c.c
 
 	let add : t -> t -> t
 		= fun c1 c2 ->
@@ -160,15 +158,15 @@ module Make (Vec : Vector.Type) = struct
 		else
 			Nothing
 
-	let getVars: t list -> V.Set.t
+	let getVars: t list -> Var.Set.t
 	= fun l -> List.map get_v l |> Vec.getVars
 
-	let getCoefsFor : V.t option -> t list -> Coeff.t list
+	let getCoefsFor : Var.t option -> t list -> Coeff.t list
 	= function
 		| None -> fun l -> List.map get_c l
 		| Some x -> fun l -> List.map (fun c -> Vec.get (get_v c) x) l
 
-	let to_string : (V.t -> string) -> t -> string
+	let to_string : (Var.t -> string) -> t -> string
 		= fun varPr c ->
 			let sign =
 				match c.typ with
@@ -178,7 +176,7 @@ module Make (Vec : Vector.Type) = struct
 			in
 			(Vec.to_string varPr c.v) ^ sign ^ (Coeff.to_string c.c)
 
-	let plot : V.t list -> t -> string
+	let plot : Var.t list -> t -> string
 		= fun vars c ->
 		let vec = get_v c in
 		let l = (get_c c) ::
@@ -190,12 +188,12 @@ module Make (Vec : Vector.Type) = struct
 
 	let list_plot : t list -> string
 		= fun cstrs ->
-		let vars = getVars cstrs |> V.Set.elements in
+		let vars = getVars cstrs |> Var.Set.elements in
 		Misc.list_to_string (plot vars) cstrs ", "
 
 	let list_to_string : t list -> string
 		= fun l ->
-		Misc.list_to_string (to_string V.to_string) l " ; "
+		Misc.list_to_string (to_string Var.to_string) l " ; "
 
 
 	let cmp : t -> t -> int
@@ -211,7 +209,7 @@ module Make (Vec : Vector.Type) = struct
 
 	let satisfy : Vec.t -> t -> bool
 		= fun point c ->
-		let res = M.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t point c.v) in
+		let res = Rtree.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t point c.v) in
 		let r = Coeff.cmp res c.c in
 		match c.typ with
 		| Eq -> r = 0
@@ -222,16 +220,16 @@ module Make (Vec : Vector.Type) = struct
 		= fun point c ->
 		satisfy point {c with typ = Eq}
 
-	let rename : Vec.V.t -> Vec.V.t -> t -> t
+	let rename : Var.t -> Var.t -> t -> t
 		= fun fromX toY c ->
 		{c with v = Vec.rename fromX toY (get_v c)}
 
-	let rename_f : (Vec.V.t -> Vec.V.t) -> t -> t
+	let rename_f : (Var.t -> Var.t) -> t -> t
 		= fun f cstr ->
         {cstr with v = Vec.rename_f f (get_v cstr)}
 
 	(* TODO: vérifier la présence de x? *)
-	let change_variable : Vec.V.t -> Vec.t -> Coeff.t -> t -> t
+	let change_variable : Var.t -> Vec.t -> Coeff.t -> t -> t
 		= fun x lin c cstr ->
 		let v = get_v cstr in
 		let coeff = Vec.get v x in
@@ -277,10 +275,8 @@ module Rat = struct
 					| (Eq, Eq) -> (Vec.Coeff.neg a2, a1)
 					| (Le, Eq) | (Lt, Eq) ->
 						if r2 > 0 then (Vec.Coeff.neg a2, a1) else (a2, Vec.Coeff.neg a1)
-
 					| (Eq, Le) | (Eq, Lt) ->
 						if r1 > 0 then (a2, Vec.Coeff.neg a1) else (Vec.Coeff.neg a2, a1)
-
 					| Le, Le | Lt, Lt
 					| Lt, Le | Le, Lt ->
 						match (r1 > 0, r2 > 0) with
@@ -299,67 +295,4 @@ module Rat = struct
 			else {cstr with v = Vec.mulr g cstr.v ; c = Vec.Coeff.mulr g cstr.c}
 	end
 
-	module Int = struct
-		module Vec = Vector.Rat.Int
-		include Make(Vec)
-
-		let elim c1 c2 va =
-			let a1 = Vec.get c1.v va in
-				  let a2 = Vec.get c2.v va in
-			let r1 = Vec.Coeff.cmpz a1 in
-				  let r2 = Vec.Coeff.cmpz a2 in
-			match (r1 = 0, r2 = 0) with
-			| (true, true) -> raise NoElim
-			| (true, false) | (false, true) -> raise CannotElim
-			| (false, false) ->
-				let (n1, n2) =
-					match (c1.typ, c2.typ) with
-					| (Eq, Eq) -> (Vec.Coeff.neg a2, a1)
-					| (Le, Eq) | (Lt, Eq) ->
-						if r2 > 0 then (Vec.Coeff.neg a2, a1) else (a2, Vec.Coeff.neg a1)
-
-					| (Eq, Le) | (Eq, Lt) ->
-						if r1 > 0 then (a2, Vec.Coeff.neg a1) else (Vec.Coeff.neg a2, a1)
-
-					| Le, Le | Lt, Lt
-					| Lt, Le | Le, Lt ->
-						match (r1 > 0, r2 > 0) with
-						| (true, true) | (false, false) -> raise CannotElim
-						| (true, false) -> (a2, Vec.Coeff.neg a1)
-						| (false, true) -> (Vec.Coeff.neg a2, a1)
-				in
-				let c = add (mulc n1 c1) (mulc n2 c2) in
-				(c, n1, n2)
-
-		let canon : t -> t
-			= fun cstr ->
-			let g = Vec.gcd cstr.v in
-			if Vec.Coeff.isZ g
-			then cstr
-			else {cstr with v = Vec.mulr g cstr.v ; c = Vec.Coeff.mulr g cstr.c}
-	end
-end
-
-module Float = struct
-	module Positive = struct
-		module Vec = Vector.Float.Positive
-		include Make(Vec)
-	end
-
-	module Int = struct
-		module Vec = Vector.Float.Int
-		include Make(Vec)
-	end
-end
-
-module Symbolic = struct
-	module Positive = struct
-		module Vec = Vector.Symbolic.Positive
-		include Make(Vec)
-	end
-
-	module Int = struct
-		module Vec = Vector.Symbolic.Int
-		include Make(Vec)
-	end
 end

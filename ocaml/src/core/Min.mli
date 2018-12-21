@@ -1,8 +1,7 @@
 module Debug : DebugTypes.Type
 
 module type Type = sig
-	module VecInput : Vector.Type with module V = Var.Positive and module M = Rtree
-
+	module VecInput : Vector.Type
 	(** [minimize x cstrs] removes the redundancies in the list of constraints [cstrs].
         @param cstrs is the list of constraints to minimize. Syntactic redundancies should have been removed previously.
 		@param x is a point that should lie in the interior of the polyhedron defined by [cstrs].
@@ -16,8 +15,8 @@ module type Type = sig
 end
 
 module Make : functor
-    (VecInput : Vector.Type with module V = Var.Positive and module M = Rtree)
-    (Vec : Vector.Type with module V = Var.Positive and module M = Rtree)
+    (VecInput : Vector.Type)
+    (Vec : Vector.Type)
     (CsInput : Cstr.Type)
     (LP : MinLP.Type) -> sig
 
@@ -49,10 +48,10 @@ module Make : functor
     end
 end
 
-module Classic : functor (Vec : Vector.Type with module V = Var.Positive and module M = Rtree) -> Type with module VecInput = Vec
+module Classic : functor (Vec : Vector.Type) -> Type with module VecInput = Vec
 
-module Glpk : functor (Vec : Vector.Type with module V = Var.Positive and module M = Rtree) -> Type with module VecInput = Vec
+module Glpk : functor (Vec : Vector.Type) -> Type with module VecInput = Vec
 
 module Rat_Glpk : Type with module VecInput = Vector.Rat.Positive
 
-module Heuristic : functor (Vec : Vector.Type with module V = Var.Positive and module M = Rtree) -> Type with module VecInput = Vec
+module Heuristic : functor (Vec : Vector.Type) -> Type with module VecInput = Vec

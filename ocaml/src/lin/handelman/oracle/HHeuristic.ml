@@ -14,7 +14,7 @@ let exposantDegree : Pneuma.t -> Poly.t -> Pneuma.t
 
 module AllUnderMaxDegree = struct
 	(** [check_degree f_deg vl] returns a function that test if the polynomial corresponding to an index has a degree smaller than f_deg *)
-	let check_degree : Index.Int.t -> V.t list -> (Poly.t -> bool)
+	let check_degree : Index.Int.t -> Var.t list -> (Poly.t -> bool)
 		= fun f_deg vl ->
 		fun poly -> Index.Int.le_nl (MapIndexP.poly_to_deg_max poly vl) f_deg
 

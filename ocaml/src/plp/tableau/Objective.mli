@@ -92,15 +92,15 @@ val rm_col : t -> int -> t
 module type PivotType = sig
 
     (** The type of vectors used to instantiate the simplex tableau. *)
-    module Vec : Vector.Type with module V = Var.Positive and module M = Rtree
+    module Vec : Vector.Type
 
     module Naming : Naming.Type with module Vec = Vec
 
     (** [getPivotCol f h s cx o from_col] returns what the next step is according to
     context [cx] and pivoting strategy [s]. Function [f] defines the correspondence
     between parameter indices and VPL variables. [h] must be greater than any
-    [Vec.V.t] returned by [f] and is used to generated internal variables.*)
-    val getPivotCol : (int -> Vec.V.t) -> Vec.V.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
+    [Var.t] returned by [f] and is used to generated internal variables.*)
+    val getPivotCol : (int -> Var.t) -> Var.t -> pivotStrgyT -> Naming.t -> Vec.t -> t -> choiceT
 end
 
-module Pivot : functor (Vec: Vector.Type with module V = Var.Positive and module M = Rtree) -> PivotType with module Vec = Vec
+module Pivot : functor (Vec: Vector.Type) -> PivotType with module Vec = Vec

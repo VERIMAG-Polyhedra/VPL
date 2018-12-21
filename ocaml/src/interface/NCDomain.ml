@@ -2,7 +2,6 @@ type cmpT = Cstr_type.cmpT_extended
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module Var = Vec.V
 module CP = CstrPoly
 module Polynomial = CP.Poly
 module Coeff = Scalar.Rat
@@ -161,7 +160,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
                 (Printf.sprintf "%s -> cstr: %s; expected %s, got: %s"
                     error_string
                     (Pol.bnd_to_string bnd)
-                    (Cs.to_string Cs.Vec.V.to_string expected_cert)
+                    (Cs.to_string Var.to_string expected_cert)
                     (F.to_string cert)))
 		| (Pol.Closed v, Some cert) ->
 			let expected_cert = if upper
@@ -174,7 +173,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
                 (Printf.sprintf "%s -> cstr: %s; expected %s, got: %s"
                     error_string
                     (Pol.bnd_to_string bnd)
-                    (Cs.to_string Cs.Vec.V.to_string expected_cert)
+                    (Cs.to_string Var.to_string expected_cert)
                     (F.to_string cert)))
 
 	let getUpperBound : t -> Vec.t -> Pol.bndT option

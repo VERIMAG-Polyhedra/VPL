@@ -6,7 +6,6 @@
 (* not clear how to plug this in NCDomain ! *)
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module Var = Vec.V
 module CP = CstrPoly
 module Polynomial = CP.Poly
 module Coeff = Scalar.Rat

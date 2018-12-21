@@ -1,6 +1,5 @@
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module Var = Vec.V
 module CP = CstrPoly
 module Polynomial = CP.Poly
 module Coeff = Scalar.Rat
@@ -76,7 +75,7 @@ module Cstr = struct
 			if Cs.equal c1' c2'
 			then c1'
 			else failwith "merge");
-		Factory.to_string = Cs.to_string Cs.Vec.V.to_string;
+		Factory.to_string = Cs.to_string Var.to_string;
 		Factory.rename = Cs.rename;
 	}
 

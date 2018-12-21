@@ -6,10 +6,8 @@
 
 
 module Nb = Scalar.Rat
-module Var = Var.Positive
 module Vec = Vector.Rat.Positive
 module Cs = Cstr.Rat.Positive
-module VT = Var_type
 
 (* Preliminary functions:
     frontend data-structures <-> backend data-structures
@@ -76,9 +74,9 @@ let progVarToVar: ProgVar.PVar.t -> Var.t
 = fun x ->
 	let rec posToVar: BinNums.positive -> Var.t
 	= function
-		| BinNums.Coq_xH -> VT.XH
-		| BinNums.Coq_xO p -> VT.XO (posToVar p)
-		| BinNums.Coq_xI p -> VT.XI (posToVar p)
+		| BinNums.Coq_xH -> Var.XH
+		| BinNums.Coq_xO p -> Var.XO (posToVar p)
+		| BinNums.Coq_xI p -> Var.XI (posToVar p)
 	in
 	posToVar (ProgVar.PVar.export x)
 
@@ -86,9 +84,9 @@ let varToProgVar: Var.t -> ProgVar.PVar.t
 = fun x ->
 	let rec varToPos: Var.t -> BinNums.positive
 	= function
-		| VT.XH -> BinNums.Coq_xH
-		| VT.XI p -> BinNums.Coq_xI (varToPos p)
-		| VT.XO p -> BinNums.Coq_xO (varToPos p)
+		| Var.XH -> BinNums.Coq_xH
+		| Var.XI p -> BinNums.Coq_xI (varToPos p)
+		| Var.XO p -> BinNums.Coq_xO (varToPos p)
 	in
 	ProgVar.PVar.import (varToPos x)
 

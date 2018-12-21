@@ -30,19 +30,19 @@ val is_linear : t -> bool
 
 module Eval : sig
 
-	val eval_Hi : t -> CstrPoly.Poly.t list -> CstrPoly.Poly.V.t list -> Q.t list -> Q.t
-	val eval_poly : CstrPoly.Poly.t -> CstrPoly.Poly.V.t list -> Q.t list -> Q.t
+	val eval_Hi : t -> CstrPoly.Poly.t list -> Var.t list -> Q.t list -> Q.t
+	val eval_poly : CstrPoly.Poly.t -> Var.t list -> Q.t list -> Q.t
 
 end
 
 module Cert : sig
 
-	type squares = (CstrPoly.Poly.V.t * int) list
+	type squares = (Var.t * int) list
 
 	type schweighofer = Scalar.Rat.t * (cIndex * squares * boundIndex list)
 
 	(** [hi_to_cert n_cstrs vars coeff hi] *)
-	val hi_to_cert : int -> CstrPoly.Poly.V.t list -> Scalar.Rat.t -> t -> schweighofer
+	val hi_to_cert : int -> Var.t list -> Scalar.Rat.t -> t -> schweighofer
 
     val to_string : schweighofer list -> string
 end

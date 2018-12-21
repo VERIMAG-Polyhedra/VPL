@@ -3,14 +3,13 @@ module type Type = sig
     module CP = CstrPoly
 	module Cs = CP.Cs
 	module Poly = CP.Poly
-	module V = Cs.Vec.V
 
 	module MapS : Map.S with type key = string
 
 	module Pb : sig
 		type t = {
-			vars : V.t list;
-			map : V.t MapS.t;
+			vars : Var.t list;
+			map : Var.t MapS.t;
 			cstrs : Cs.t list;
 			polys : CP.t list;
 		}
@@ -25,17 +24,16 @@ module Positive = struct
 	module CP = CstrPoly
 	module Cs = CP.Cs
 	module Poly = CP.Poly
-	module V = Cs.Vec.V
 
 	module MapS = Map.Make(struct type t = string let compare = Pervasives.compare end)
 
 	module DeclareFun = struct
 
-		let next_var : V.t ref = ref V.u
+		let next_var : Var.t ref = ref Var.u
 
-		let map : (V.t MapS.t) ref = ref MapS.empty
+		let map : (Var.t MapS.t) ref = ref MapS.empty
 
-		let vars : V.t list ref = ref []
+		let vars : Var.t list ref = ref []
 
 		let symbol_to_var : Smtlib_syntax.symbol -> unit
 			= function
@@ -46,7 +44,7 @@ module Positive = struct
 					let v = !next_var in
 					map := MapS.add symbol v !map;
 					vars := v :: !vars;
-					next_var := V.next !next_var
+					next_var := Var.next !next_var
 					end
 			| _ -> Pervasives.invalid_arg "Expected Symbol"
 
@@ -81,7 +79,7 @@ module Positive = struct
 			| _ -> Pervasives.invalid_arg "expected ConstsDec of ConstNum"
 
 		type identifier =
-			| Var of V.t
+			| Var of Var.t
 			| P of Poly.t
 
 		let identifier_to_var : stateT -> Smtlib_syntax.identifier -> identifier
@@ -292,8 +290,8 @@ module Positive = struct
 			| Some x -> x
 
 		type t = {
-			vars : V.t list;
-			map : V.t MapS.t;
+			vars : Var.t list;
+			map : Var.t MapS.t;
 			cstrs : Cs.t list;
 			polys : CP.t list;
 		}

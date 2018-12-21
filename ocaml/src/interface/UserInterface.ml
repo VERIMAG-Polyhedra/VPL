@@ -6,7 +6,6 @@ open WrapperTraductors
 
 module Cs = Cstr.Rat.Positive
 module Vec = Cs.Vec
-module Var = Vec.V
 module CP = CstrPoly
 module Polynomial = CP.Poly
 (**/**)
@@ -492,7 +491,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 					Symbols.s_assign
 					p.name
 					Symbols.s_meet
-					(Cond.to_string Pol.Var.to_string cond))
+					(Cond.to_string Var.to_string cond))
 				|> Record.write;
 				next
 
@@ -500,7 +499,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 				= fun cond p ->
 				lazy (Printf.sprintf "%s %s in %s"
 					Symbols.s_assert
-					(Cond.to_string Pol.Var.to_string cond)
+					(Cond.to_string Var.to_string cond)
 					p.name)
 				|> Record.write
 

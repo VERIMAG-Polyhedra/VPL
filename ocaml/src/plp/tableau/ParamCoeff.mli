@@ -3,7 +3,7 @@
  *)
 
 module Cs = Cstr.Rat.Positive
-module Poly : Poly.Type with module Vec.M = Rtree and module Vec.V = Var.Positive and module Vec.Coeff = Scalar.Rat
+module Poly : Poly.Type with module Vec = Vector.Rat.Positive
 
 (** Type of parametric coefficients.*)
 type t = {
@@ -58,19 +58,19 @@ val mkCst : Scalar.Rat.t -> t
     @param n the number of parameters, numbered from [0] to [n - 1]
     @param p the polynomial to convert
     @raise Invalid_argument if [p] is not an affine expression *)
-val ofPoly : (Cs.Vec.V.t -> int) -> int -> Poly.t -> t
+val ofPoly : (Var.t -> int) -> int -> Poly.t -> t
 
 (** [toPoly tr c] builds a value of type [PolyQ.t] from a parametric coefficient.
     @param tr is the mapping functions from the indices of the parameters to variables
     @param c the parametric coefficient to convert *)
-val toPoly : (int -> Cs.Vec.V.t) -> t -> Poly.t
+val toPoly : (int -> Var.t) -> t -> Poly.t
 
 (** [to_cstr tr cmp c] builds a constraint from a parametric coefficient.
     @param tr is the mapping function from parameter indices to variables
     @param cmp the constraint comparison sign (cannot be NEQ)
     @param c the parametric coefficient to translate
     @raise Invalid_argument if cmp = NEQ *)
-val to_cstr : (int -> Cs.Vec.V.t) -> Cstr_type.cmpT_extended -> t -> Cs.t
+val to_cstr : (int -> Var.t) -> Cstr_type.cmpT_extended -> t -> Cs.t
 
 (** Add two parametric coefficients.
     @raise Invalid_argument if the two parametric coefficients don't have the same size. *)

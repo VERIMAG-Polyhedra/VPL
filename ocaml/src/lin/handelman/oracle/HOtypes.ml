@@ -1,6 +1,5 @@
 module CP = CstrPoly
 module Poly = CP.Poly
-module V = Poly.V
 
 module Debug = DebugTypes.Debug(struct let name = "Horacle" end)
 
@@ -75,13 +74,13 @@ module MapIndexP
 		fun map ->
 		String.concat "\n" (List.map (fun x -> to_string2 x) (MapI.bindings map))
 
-	let (poly_to_deg_max : Poly.t -> V.t list -> Index.Int.t)
-		= let variable_to_deg : Poly.t -> V.t -> int
+	let (poly_to_deg_max : Poly.t -> Var.t list -> Index.Int.t)
+		= let variable_to_deg : Poly.t -> Var.t -> int
 			= fun p v ->
 			Misc.max Pervasives.compare
 			(List.map
 				(fun (m,_) -> List.filter
-					(fun v' -> V.equal v' v)
+					(fun v' -> Var.equal v' v)
 					(Poly.MonomialBasis.to_list_expanded m)
 					|> List.length)
 				(List.map Poly.Monomial.data (Poly.data p)))
@@ -91,7 +90,7 @@ module MapIndexP
 			vl
 		|> Index.Int.mk
 
-	let (gen_mono : (V.t * int) list -> Poly.MonomialBasis.t list)
+	let (gen_mono : (Var.t * int) list -> Poly.MonomialBasis.t list)
 			= fun l ->
 			let i = List.split l |> Pervasives.snd |> Index.Int.mk in
 			let preds = IndexBuild.Liste.get_preds i
@@ -151,7 +150,7 @@ module MapIndexP
 				(p', MapI.add id p' mapIP', mapI')
 end
 
-module MapV = Map.Make(struct type t = V.t let compare = V.cmp end)
+module MapV = Map.Make(struct type t = Var.t let compare = Var.cmp end)
 
 module LPMaps = struct
 
@@ -160,15 +159,15 @@ module LPMaps = struct
 	type mapBound = (Hi.boundIndex option * Hi.boundIndex option)  MapV.t
 	type bounds = {mapDB : mapDetBound ; mapB : mapBound}
 
-	let (init : Poly.t list -> V.t list -> bounds)
-		= let (updateMapDB_left : mapDetBound -> V.t -> mapDetBound)
+	let (init : Poly.t list -> Var.t list -> bounds)
+		= let (updateMapDB_left : mapDetBound -> Var.t -> mapDetBound)
 			= fun mapDB v ->
 				let res = try let (_,value) = MapV.find v mapDB in value
 				with Not_found -> None in
 				MapV.add v (Some true, res) mapDB
 			in
 
-			let (updateMapB_left : mapBound -> V.t -> int -> int -> mapBound)
+			let (updateMapB_left : mapBound -> Var.t -> int -> int -> mapBound)
 			= fun mapB v i len ->
 				let res = try let (_,value) = MapV.find v mapB in value
 				with Not_found -> None in
@@ -176,14 +175,14 @@ module LPMaps = struct
 				MapV.add v (Some id, res) mapB
 			in
 
-			let (updateMapDB_right : mapDetBound -> V.t -> mapDetBound)
+			let (updateMapDB_right : mapDetBound -> Var.t -> mapDetBound)
 			= fun mapDB v ->
 				let res = try let (value,_) = MapV.find v mapDB in value
 				with Not_found -> None in
 				MapV.add v (res, Some true) mapDB
 			in
 
-			let (updateMapB_right : mapBound -> V.t -> int -> int -> mapBound)
+			let (updateMapB_right : mapBound -> Var.t -> int -> int -> mapBound)
 			= fun mapB v i len ->
 				let res = try let (value,_) = MapV.find v mapB in value
 				with Not_found -> None in
@@ -227,25 +226,25 @@ module LPMaps = struct
 		in
 		{mapDB = mapDB ; mapB = mapB}
 
-	let (hasSup : V.t -> mapDetBound -> Q.t)
+	let (hasSup : Var.t -> mapDetBound -> Q.t)
 		= fun v mapDB ->
 		match MapV.find v mapDB with
 		| (_,Some false) -> Q.zero
 		| (_,_) -> Q.one
 
-	let (hasInf : V.t -> mapDetBound -> Q.t)
+	let (hasInf : Var.t -> mapDetBound -> Q.t)
 		= fun v mapDB ->
 		match MapV.find v mapDB with
 		| (Some false,_) -> Q.zero
 		| (_,_) -> Q.one
 
-	let (detSup : V.t -> mapDetBound -> Q.t)
+	let (detSup : Var.t -> mapDetBound -> Q.t)
 		= fun v mapDB ->
 		match MapV.find v mapDB with
 		| (_,Some true) -> Q.one
 		| (_,_) -> Q.zero
 
-	let (detInf : V.t -> mapDetBound -> Q.t)
+	let (detInf : Var.t -> mapDetBound -> Q.t)
 		= fun v mapDB ->
 		match MapV.find v mapDB with
 		| (Some true,_) -> Q.one
@@ -254,7 +253,7 @@ module LPMaps = struct
 	let (mapDB_to_string : mapDetBound -> string)
 		= fun mapDB ->
 		Misc.list_to_string (fun (v,(i,s)) -> Printf.sprintf "%s -> (%s,%s)"
-			(V.to_string v)
+			(Var.to_string v)
 			(match i with Some b -> string_of_bool b | None -> "None")
 			(match s with Some b -> string_of_bool b | None -> "None"))
 			(MapV.bindings mapDB) " ; "
@@ -262,18 +261,18 @@ module LPMaps = struct
 	let (mapB_to_string : mapBound -> string)
 		= fun mapB ->
 		Misc.list_to_string (fun (v,(i,s)) -> Printf.sprintf "%s -> (%s,%s)"
-			(V.to_string v)
+			(Var.to_string v)
 			(match i with Some b -> Index.Rat.to_string b | None -> "None")
 			(match s with Some b -> Index.Rat.to_string b | None -> "None"))
 			(MapV.bindings mapB) " ; "
 
-	let (updateMapDB : mapDetBound -> V.t -> bool -> t -> mapDetBound)
+	let (updateMapDB : mapDetBound -> Var.t -> bool -> t -> mapDetBound)
 		= fun mapDB v value bound ->
 		try let (b1,b2) = MapV.find v mapDB in
 			MapV.add v (if bound = Upper then (b1, Some value) else (Some value, b2)) mapDB
 		with Not_found -> MapV.add v (if bound = Upper then (None, Some value) else (Some value, None)) mapDB
 
-	let (updateMapB : mapBound -> V.t -> Hi.boundIndex -> t -> mapBound)
+	let (updateMapB : mapBound -> Var.t -> Hi.boundIndex -> t -> mapBound)
 		= fun mapB v bI bound ->
 		try let (b1,b2) = MapV.find v mapB in
 			MapV.add v (if bound = Upper then (b1, Some bI) else (Some bI, b2)) mapB
@@ -285,7 +284,7 @@ module Pneuma
 
 	type t = {
 	p : Poly.t;
-	vl : V.t list;
+	vl : Var.t list;
 	mapP : MapPolyHi.t;
 	mapIP : MapIndexP.t;
 	mapI : IndexBuild.Map.t;
@@ -320,7 +319,7 @@ module Pneuma
 			[] ph#get_noneq_poly in
 		let inequalities = ph#get_ineqs() in
 		let sx = Splx.mk
-			(V.next (V.max ph#get_vars))
+			(Var.next (Var.max ph#get_vars))
 			(List.mapi (fun i cstr -> (i,cstr)) inequalities)
 		in
 		let p' = Poly.neg p in
@@ -340,7 +339,7 @@ module Pneuma
 		= fun pn ->
 		List.length pn.ph
 
-	let (computeVarIndex : Index.Int.t -> V.t list -> Poly.t)
+	let (computeVarIndex : Index.Int.t -> Var.t list -> Poly.t)
 		= fun id vl ->
 		let varlist = List.fold_left2
 			(fun r i v -> r @ (List.map (fun _ -> v) (Misc.range 0 i)))
