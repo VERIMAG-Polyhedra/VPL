@@ -38,7 +38,7 @@ module Expr = struct
 	let rec poly_to_pol_rec : PolyParserBuild.poly -> Poly.t
 		= fun p ->
 			match p with
-			|PolyParserBuild.Leaf(l,coeff) -> [(List.map (fun el -> (Ident.toVar (Pervasives.fst el), Pervasives.snd el)) l,coeff)] |> Poly.mk3
+			|PolyParserBuild.Leaf(l,coeff) -> [(List.map (fun el -> (Ident.toVar (Pervasives.fst el), Pervasives.snd el)) l,coeff)] |> Poly.mk_list
 			|PolyParserBuild.Add(p1,p2) -> Poly.add (poly_to_pol_rec p1) (poly_to_pol_rec p2)
 			|PolyParserBuild.Sub(p1,p2) -> Poly.sub (poly_to_pol_rec p1) (poly_to_pol_rec p2)
 			|PolyParserBuild.Mul(p1,p2) -> Poly.mul (poly_to_pol_rec p1) (poly_to_pol_rec p2)
@@ -53,7 +53,7 @@ module Expr = struct
 			let l = Term.Prod (List.map (fun v -> Term.Var v) vl)
 			in
 			Term.Mul (Term.Cte c, l))
-			(Poly.data2 p)
+			(Poly.to_list_expanded p)
 		in
 		Term.Sum term_list
 

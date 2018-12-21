@@ -115,7 +115,7 @@ module Handelman (Minimization : Min.Type) = struct
 		  = let module VSet = Set.Make (struct type varT = Poly.V.t type t = varT let compare = Poly.V.cmp end) in
 			 let gatherParams1 : Poly.t -> VSet.t
 				= fun p ->
-				Poly.data2 p
+				Poly.to_list_expanded p
 				|> List.map Pervasives.fst
 				|> List.concat
 				|> List.fold_left (fun s x -> VSet.add x s) VSet.empty
@@ -164,14 +164,14 @@ module Handelman (Minimization : Min.Type) = struct
 
 		let obj_of_poly : Poly.t -> Poly.V.t list -> Obj.t * Naming.t
 		  = fun p l ->
-		  let lin = List.map (fun x -> Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x])) l in
+		  let lin = List.map (fun x -> Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x,1])) l in
 		  let cst = Poly.sub p
 			(List.fold_left
 				(fun p1 x -> Poly.add
 					p1
 					(Poly.mul
-						(Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x]))
-						(Poly.mk2 [([x], Scalar.Rat.u)])))
+						(Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x,1]))
+						(Poly.fromVar x )))
 			Poly.z l)
 		  |> Poly.mul Poly.negU in
 		  obj_buildOfPoly lin cst
@@ -182,7 +182,7 @@ module Handelman (Minimization : Min.Type) = struct
 		  = fun p vars ->
 		  match vars with
 		  | [] -> [Scalar.Rat.mul (Scalar.Rat.negU) (Poly.monomial_coefficient p Poly.MonomialBasis.null)]
-		  | var :: tail -> let coeff = Poly.monomial_coefficient p (Poly.MonomialBasis.mk [var]) in
+		  | var :: tail -> let coeff = Poly.monomial_coefficient p (Poly.MonomialBasis.mk [var,1]) in
 					coeff::(row_from_constraint p tail);;
 
 		let from_poly : Poly.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> Poly.t option -> PLP.PSplx.t
@@ -214,11 +214,11 @@ module Handelman (Minimization : Min.Type) = struct
 			| [] -> []
 			| (vlist,_) :: tail -> let mlist = get_non_linear_monomials_rec tail variables in
 				let vlist2 = List.filter (fun x -> List.mem x variables) vlist in
-					if not (List.mem (Poly.MonomialBasis.mk vlist2) mlist) && List.length vlist2 > 1
-						then (Poly.MonomialBasis.mk vlist2) :: mlist
+					if not (List.mem (Poly.MonomialBasis.mk_expanded vlist2) mlist) && List.length vlist2 > 1
+						then (Poly.MonomialBasis.mk_expanded vlist2) :: mlist
 						else mlist
 		in fun p variables ->
-		get_non_linear_monomials_rec (Poly.data2 p) variables
+		get_non_linear_monomials_rec (Poly.to_list_expanded p) variables
 
 	let (get_non_linear_coeffs: Poly.t -> Poly.V.t list -> Poly.t list)
 		= fun p variables ->
@@ -279,7 +279,7 @@ module Handelman (Minimization : Min.Type) = struct
 			let horizon = Poly.horizon (f :: his_p) in
 			let change_of_vars = List.fold_left
 				(fun (f,horizon) m ->
-					let m_h = Poly.MonomialBasis.mk [horizon] in
+					let m_h = Poly.MonomialBasis.mk [horizon,1] in
 					((fun m' ->	if Poly.MonomialBasis.equal m m' then Some m_h else f m'),
 					 Poly.V.next horizon))
 				((fun _ -> None), horizon)
@@ -338,7 +338,7 @@ module Handelman (Minimization : Min.Type) = struct
 		let flin = 	(List.fold_right
 				(fun i p -> Poly.add
 					(Poly.mul
-						(Poly.mk2 [([List.nth lpvars i], Scalar.Rat.u)])
+						(Poly.fromVar (List.nth lpvars i))
 						(List.nth his_p i))
 					p)
 				(Misc.range 0 nb_h) (* le premier indice est associé à la contrainte triviale*)
@@ -570,10 +570,10 @@ module Handelman (Minimization : Min.Type) = struct
 				= fun v p p' ->
 				List.map
 					(fun mon -> let (mb,c) = Poly.Monomial.data mon in
-						let vs = Poly.MonomialBasis.data mb in
+						let vs = Poly.MonomialBasis.to_list_expanded mb in
 						let (eq_v,vs') = List.partition (fun var -> Poly.V.equal var v) vs in
 						let product = Poly.pow p' (List.length eq_v) in
-						Poly.mk [Poly.Monomial.mk (Poly.MonomialBasis.mk vs') c]
+						Poly.mk [Poly.Monomial.mk (Poly.MonomialBasis.mk_expanded vs') c]
 						|> Poly.mul product
 					)
 					(Poly.data p)

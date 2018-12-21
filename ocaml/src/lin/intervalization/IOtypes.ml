@@ -464,7 +464,7 @@ module Lift (D : Domain_T) = struct
     			(fun x -> if x |> D.Poly.V.toInt = 0
     				then one
     				else of_var x)
-    			(D.Poly.MonomialBasis.data m))
+    			(D.Poly.MonomialBasis.to_list_expanded m))
 
     	let of_monomial : D.Poly.Monomial.t -> t
     		= fun m ->
@@ -485,28 +485,28 @@ module Lift (D : Domain_T) = struct
             let (m,c) = D.Poly.Monomial.data m in
     		match (vlist,clist) with
     		| ([],[]) ->
-                let basis = Misc.pop D.Poly.V.equal (D.Poly.MonomialBasis.data m) vToKeep
-                    |> D.Poly.MonomialBasis.mk
+                let basis = Misc.pop D.Poly.V.equal (D.Poly.MonomialBasis.to_list_expanded m) vToKeep
+                    |> D.Poly.MonomialBasis.mk_expanded
                     |> of_monomialBasis
                 in
                 [D.BasicTerm.smartMul
         			(D.BasicTerm.smartAnnot
         				ASTerm.TopLevelAnnot.INTERV
                         basis)
-        			(D.BasicTerm.annotAFFINE (of_monomial (D.Poly.Monomial.mk2 [vToKeep] c)))]
+        			(D.BasicTerm.annotAFFINE (of_monomial (D.Poly.Monomial.mk_list [vToKeep,1] c)))]
     		| ([],_) | (_,[]) -> Pervasives.failwith "Oracle.Term.center_zero_var"
     		| (v :: vtl, x :: ctl) ->
         		let tlist1 =
-                    let mono = D.Poly.Monomial.mk2
-                        (Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.data m) v)
+                    let mono = D.Poly.Monomial.mk_expanded
+                        (Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.to_list_expanded m) v)
                         c
                     in
                     center_zero_var mono vToKeep vtl ctl
                 in
         		let x' = D.Poly.n_to_coeff x in
         		let tlist2 =
-                    let mono = D.Poly.Monomial.mk2
-                        (Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.data m) v)
+                    let mono = D.Poly.Monomial.mk_expanded
+                        (Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.to_list_expanded m) v)
                         (D.Poly.Coeff.mul c x')
                     in
                     center_zero_var mono vToKeep vtl ctl
@@ -528,7 +528,7 @@ module Lift (D : Domain_T) = struct
     	let translate : D.Poly.Monomial.t -> D.Poly.V.t -> D.N.t -> D.BasicTerm.term * D.Poly.Monomial.t
     		= fun m vToKeep coeff ->
             let (m,c) = D.Poly.Monomial.data m in
-    		let l = Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.data m) vToKeep
+    		let l = Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.to_list_expanded m) vToKeep
             in
             let term = (D.BasicTerm.smartMul
     			(D.BasicTerm.annotAFFINE
@@ -539,8 +539,8 @@ module Lift (D : Domain_T) = struct
     						(D.BasicTerm.Opp (D.BasicTerm.Cte coeff)))))
     			(D.BasicTerm.smartAnnot
     				ASTerm.TopLevelAnnot.INTERV
-    				(D.Poly.MonomialBasis.mk l |> of_monomialBasis)))
-            and mono = D.Poly.Monomial.mk2 l (D.Poly.Coeff.mul c (D.Poly.n_to_coeff coeff))
+    				(D.Poly.MonomialBasis.mk_expanded l |> of_monomialBasis)))
+            and mono = D.Poly.Monomial.mk_expanded l (D.Poly.Coeff.mul c (D.Poly.n_to_coeff coeff))
             in (term, mono)
 
     	(* Renvoie une partie affine en enlevant les annotations affines *)
@@ -638,8 +638,8 @@ module Lift (D : Domain_T) = struct
     	let update_monomial : D.Poly.MonomialBasis.t -> (t list) MapMonomial.t -> D.Poly.MonomialBasis.t
     		= fun m mapNKeep ->
     		try List.fold_left
-    			(fun m' v -> Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.data m') v
-                    |> D.Poly.MonomialBasis.mk)
+    			(fun m' v -> Misc.pop (D.Poly.V.equal) (D.Poly.MonomialBasis.to_list_expanded m') v
+                    |> D.Poly.MonomialBasis.mk_expanded)
     			m
     			(List.map to_var (MapMonomial.find m mapNKeep))
     		with Not_found -> m
@@ -723,7 +723,7 @@ module Lift (D : Domain_T) = struct
     		= fun m env->
     		let l = List.filter
                 (fun x -> D.Poly.V.toInt x > 0)
-                (D.Poly.MonomialBasis.data m)
+                (D.Poly.MonomialBasis.to_list_expanded m)
             in
     		List.map (fun x -> of_var env x |> range) l
     		|> List.combine l (*liste de paire (variable, range de l'intervalle)*)

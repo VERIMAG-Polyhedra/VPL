@@ -27,15 +27,15 @@ module Lift (T : Type) = struct
                 let (pro', mapKeep', mapNKeep', poly') = default p env mode mapKeep mapNKeep (Pattern.Default (tl |> P.mk)) in
     			let var_to_keep = try MapMonomial.find m mapKeep'
     				with Not_found -> AnnotedVar.update_monomial m mapNKeep'
-                        |> MB.data
+                        |> MB.to_list_expanded
                         |> List.hd
                 in
     			let aVarl = try MapMonomial.find m mapNKeep'
     				with Not_found -> []
                 in
-    			let aff = D.BasicTerm.annotAFFINE (Term.of_monomial (M.mk2 [var_to_keep] c)) in
-    			let mon = Misc.pop P.V.equal (MB.data m) var_to_keep
-                    |> MB.mk
+    			let aff = D.BasicTerm.annotAFFINE (Term.of_monomial (M.mk_list [var_to_keep,1] c)) in
+    			let mon = Misc.pop P.V.equal (MB.to_list_expanded m) var_to_keep
+                    |> MB.mk_expanded
                     |> Term.of_monomialBasis
                     |> D.BasicTerm.smartAnnot ASTerm.TopLevelAnnot.INTERV
     				|> fun t -> AnnotedVar.apply t aVarl in
@@ -110,7 +110,7 @@ module Lift (T : Type) = struct
             let (m,_) = M.data mono in
             let vToKeep = MapMonomial.find m mapKeep in
     		let aVarl = try MapMonomial.find m mapNKeep with Not_found -> [] in
-    		let l = Misc.pop P.V.equal (MB.data m) vToKeep
+    		let l = Misc.pop P.V.equal (MB.to_list_expanded m) vToKeep
                 |> List.filter
                     (fun v ->
                         let itv = Itv.of_var env v in

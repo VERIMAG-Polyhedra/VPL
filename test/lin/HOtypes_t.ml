@@ -40,9 +40,9 @@ module MapIndexP = struct
 		   in
 		   let tcs : (string * (Poly.t * MB.t list) * Index.Int.t ) list
 		= [
-			 "null polynomial", (Poly.z, [MB.mk [x;z] ; MB.mk [y;z;z]]), mk [0;0] ;
+			 "null polynomial", (Poly.z, [MB.mk_expanded [x;z] ; MB.mk_expanded [y;z;z]]), mk [0;0] ;
 			 "null monomial list", (Poly.of_string "x1 + 2*x1*x1 + -1*x4*x3*x3", []), mk [] ;
-			 "normal", (Poly.of_string "x1 + 2*x1*x1 + -1*x4*x3*x3", [MB.mk [x] ; MB.mk[z;t] ; MB.mk [z;z;t]]), mk [1;0;1] ;
+			 "normal", (Poly.of_string "x1 + 2*x1*x1 + -1*x4*x3*x3", [MB.mk_expanded [x] ; MB.mk_expanded[z;t] ; MB.mk_expanded [z;z;t]]), mk [1;0;1] ;
 		  ] in
 		   Test.suite "poly_to_deg" (List.map chk tcs)
 
@@ -79,19 +79,19 @@ module LPMaps = struct
 			(fun p ->
 				match List.map Poly.Monomial.data (Poly.data p)
 				with
-				| [(m,c)] when Q.leq Q.zero c && (MB.data m |> List.length = 1) ->
-					let v = List.hd (MB.data m) in
+				| [(m,c)] when Q.leq Q.zero c && (MB.to_list_expanded m |> List.length = 1) ->
+					let v = List.hd (MB.to_list_expanded m) in
 					check_v_left v mapDB mapB
-				| (m0,_) :: [(m,c)] when Q.leq Q.zero c && (MB.data m |> List.length = 1)
+				| (m0,_) :: [(m,c)] when Q.leq Q.zero c && (MB.to_list_expanded m |> List.length = 1)
 					&& MB.equal m0 MB.null ->
-					let v = List.hd (MB.data m) in
+					let v = List.hd (MB.to_list_expanded m) in
 					check_v_left v mapDB mapB
-				| [(m,c)] when Q.lt c Q.zero && (MB.data m |> List.length = 1) ->
-					let v = List.hd (MB.data m) in
+				| [(m,c)] when Q.lt c Q.zero && (MB.to_list_expanded m |> List.length = 1) ->
+					let v = List.hd (MB.to_list_expanded m) in
 					check_v_right v mapDB mapB
-				| (m0,_) :: [(m,c)] when Q.lt c Q.zero && (MB.data m |> List.length = 1)
+				| (m0,_) :: [(m,c)] when Q.lt c Q.zero && (MB.to_list_expanded m |> List.length = 1)
 					&& MB.equal m0 MB.null ->
-					let v = List.hd (MB.data m) in
+					let v = List.hd (MB.to_list_expanded m) in
 					check_v_right v mapDB mapB
 				| _ -> true)
 			pl

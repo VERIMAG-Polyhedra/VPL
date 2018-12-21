@@ -70,7 +70,7 @@ module Eval = struct
 	let (eval_varIndex : varIndex -> CstrPoly.Poly.V.t list -> (CstrPoly.Poly.V.t -> Q.t) -> Q.t)
 		= fun id vl eval ->
 			List.fold_left2
-			(fun c i v -> let p = CstrPoly.Poly.mk2 [([v],Q.one)] in
+			(fun c i v -> let p = CstrPoly.Poly.fromVar v in
 				Q.mul c (pow (CstrPoly.Poly.eval p eval) i))
 			Q.one
 			(Index.Int.data id) vl

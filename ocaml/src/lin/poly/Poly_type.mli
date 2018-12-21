@@ -5,9 +5,11 @@ module type Type = sig
 	module Coeff = Vec.Coeff
     module V = Vec.V
 
+    type exp = int (* >= 0*)
+
 	(** MonomialBasis represents the list of variables of a monomial *)
 	module MonomialBasis : sig
-		type t = V.t list
+		type t = (V.t * int) list
 
 		(** [to_string_param m s] returns monomialBasis [m] as a string where variables (which are integers) are prefixed by [s] *)
 		val to_string_param : t -> string -> string
@@ -27,13 +29,17 @@ module type Type = sig
 		(** [eval m v] evaluates monomialBasis [m], replacing each variable with its value in function [v] *)
 		val eval : t -> (V.t -> Coeff.t) -> Coeff.t
 
-		(** [isLinear m] returns true if the degree of [m] is at most one.
-		[isLinear] assumes [m] is in canonical form. *)
-		val isLinear : t -> bool
+		(** [is_linear m] returns true if the degree of [m] is at most one.
+		[is_linear] assumes [m] is in canonical form. *)
+		val is_linear : t -> bool
 
-		val mk : V.t list -> t
+        val mk : (V.t * exp) list -> t
 
-		val data : t -> V.t list
+		val mk_expanded : V.t list -> t
+
+		val to_list_expanded : t -> V.t list
+
+        val to_list : t -> (V.t * exp) list
 
 		val null : t
 
@@ -59,20 +65,22 @@ module type Type = sig
 		val mk : MonomialBasis.t -> Coeff.t -> t
 
 		(** [mk2 m c] builds a monomial from V.t list [m] and coefficient [c] *)
-		val mk2 : V.t list -> Coeff.t -> t
+		val mk_expanded : V.t list -> Coeff.t -> t
 
-		val data : t -> MonomialBasis.t * Coeff.t
+        val mk_list : (V.t * exp) list -> Coeff.t -> t
+
+        val data : t -> MonomialBasis.t * Coeff.t
 
 		(** [mul m1 m2] returns the monomial equal to [m1 * m2] *)
 		val mul : t -> t -> t
 
-		(** [isLinear m] returns true if the degree of [m] is one.
-		[isLinear] assumes [m] is in canonical form. *)
-		val isLinear : t -> bool
+		(** [is_linear m] returns true if the degree of [m] is one.
+		[is_linear] assumes [m] is in canonical form. *)
+		val is_linear : t -> bool
 
-		(** [isLinear m] returns true if the degree of [m] is zero.
-		[isLinear] assumes [m] is in canonical form. *)
-		val isConstant : t -> bool
+		(** [is_linear m] returns true if the degree of [m] is zero.
+		[is_linear] assumes [m] is in canonical form. *)
+		val is_constant : t -> bool
 
 		(** [eval m v] returns a coefficient which is the evaluation of monomial [m], where each variable is replaced by its value in function [v] *)
 		val eval : t -> (V.t -> Coeff.t) -> Coeff.t
@@ -84,7 +92,7 @@ module type Type = sig
 		val change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
 
         val canon : t -> t
-        
+
         val canonO : t -> t option
 	end
 
@@ -98,15 +106,12 @@ module type Type = sig
 	(** [mk l] builds a polynomial from the {!type:Monomial.t} list [l] *)
 	val mk : Monomial.t list -> t
 
-	(** [mk2 l] builds a polynomial from the list of V.t * Coeff.t [l] *)
-	val mk2 : (V.t list * Coeff.t) list -> t
+    val mk_list : ((V.t * int) list * Coeff.t) list -> t
 
-	val mk3 : ((V.t * int) list * Coeff.t) list -> t
+	(** [mk2 l] builds a polynomial from the list of V.t * Coeff.t [l] *)
+	val mk_expanded_list : (V.t list * Coeff.t) list -> t
 
 	val mk_cste : t -> Coeff.t -> t
-
-	(** [mk_cste l c] adds coefficient [c] to the list of V.t * Coeff.t [l] *)
-	val mk2_cste : (V.t list * Coeff.t) list -> Coeff.t -> t
 
 	val fromVar : V.t -> t
 
@@ -114,7 +119,7 @@ module type Type = sig
 	val data : t -> Monomial.t list
 
 	(** [data p] returns the polynomial [p] as a list of V.t * Coeff.t *)
-	val data2 : t -> (V.t list * Coeff.t) list
+	val to_list_expanded : t -> (V.t list * Coeff.t) list
 
     val canon : t -> t
 

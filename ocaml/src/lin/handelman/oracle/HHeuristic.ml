@@ -177,7 +177,7 @@ let rec (default : t)
 				(fun r i v -> r @ (List.map (fun _ -> v) (Misc.range 0 i)))
 				[]
 				(Index.Int.data idm') pn.Pneuma.vl
-				|> Poly.MonomialBasis.mk
+				|> Poly.MonomialBasis.mk_expanded
 			in
             (* we compute the opposite coefficient because we want to build c*m', not to cancel c*m'. Since of_pattern tries to cancel monomials, wa ask to cancel -c*m'. *)
             let opposite_coeff = Scalar.Rat.neg c in

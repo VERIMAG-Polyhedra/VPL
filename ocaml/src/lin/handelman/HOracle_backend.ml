@@ -29,7 +29,7 @@ module Translation = struct
   					(Cte NumC.QNum.u) vars
   				in
   				Add (res, Mul (vars_term, Cte (PedraQOracles.nToNumC coeff))))
-  			(Cte NumC.QNum.z) (Poly.data2 pol))
+  			(Cte NumC.QNum.z) (Poly.to_list_expanded pol))
 
 
   	let var_to_PExpr : Var.t -> BinNums.positive

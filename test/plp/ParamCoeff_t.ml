@@ -138,15 +138,15 @@ let paramCoeffPolyTcs : (string * (Cs.Vec.V.t -> int) *
 ;
   "unit", (fun i -> (Cs.Vec.V.toInt i) - 1), (fun i -> Cs.Vec.V.fromInt (i + 1)), 1,
   ParamCoeff.mkSparse 1 [0, Scalar.Rat.u] Scalar.Rat.u,
-  ParamCoeff.Poly.mk2_cste [([x],Scalar.Rat.u)] Scalar.Rat.u
+  ParamCoeff.Poly.mk_list [([x,1],Scalar.Rat.u) ; ([],Scalar.Rat.u)]
 ;
   "multi", (fun i -> (Cs.Vec.V.toInt i) - 1), (fun i -> Cs.Vec.V.fromInt (i + 1)), 2,
   ParamCoeff.mkSparse 2 [0, Scalar.Rat.u; 1, Scalar.Rat.of_int 2] Scalar.Rat.u,
-  ParamCoeff.Poly.mk2_cste [([x],Scalar.Rat.u) ; ([y],Scalar.Rat.of_int 2)] Scalar.Rat.u
+  ParamCoeff.Poly.mk_list [([x,1],Scalar.Rat.u) ; ([y,1],Scalar.Rat.of_int 2) ; ([],Scalar.Rat.u)]
 ;
   "shift", (fun i -> (Cs.Vec.V.toInt i) - 2), (fun i -> Cs.Vec.V.fromInt (i + 2)), 3,
   ParamCoeff.mkSparse 3 [1, Scalar.Rat.u; 2, Scalar.Rat.of_int 2] Scalar.Rat.u,
-  ParamCoeff.Poly.mk2_cste [([z],Scalar.Rat.u) ; ([t],Scalar.Rat.of_int 2)] Scalar.Rat.u
+  ParamCoeff.Poly.mk_list [([z,1],Scalar.Rat.u) ; ([t,1],Scalar.Rat.of_int 2) ; ([],Scalar.Rat.u)]
 ]
 
 let ofPolyTs : Test.t

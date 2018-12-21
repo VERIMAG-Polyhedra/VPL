@@ -495,7 +495,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		  = let module VSet = Set.Make (struct type varT = Poly.V.t type t = varT let compare = Poly.V.cmp end) in
 			 let gatherParams1 : Poly.t -> VSet.t
 				= fun p ->
-				Poly.data2 p
+				Poly.to_list_expanded p
 				|> List.map Pervasives.fst
 				|> List.concat
 				|> List.fold_left (fun s x -> VSet.add x s) VSet.empty
@@ -544,14 +544,14 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 
 		let obj_of_poly : Poly.t -> Poly.V.t list -> Objective.t * Naming.t
 		  = fun p l ->
-		  let lin = List.map (fun x -> Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x])) l in
+		  let lin = List.map (fun x -> Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x,1])) l in
 		  let cst = Poly.sub p
 			(List.fold_left
 				(fun p1 x -> Poly.add
 					p1
 					(Poly.mul
-						(Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x]))
-						(Poly.mk2 [([x], Scalar.Rat.u)])))
+						(Poly.monomial_coefficient_poly p (Poly.MonomialBasis.mk [x,1]))
+						(Poly.fromVar x)))
 			Poly.z l)
 		  |> Poly.mul Poly.negU in
 		  obj_buildOfPoly lin cst
@@ -561,7 +561,7 @@ module Make(Vec : Vector.Type with module M = Rtree and module V = Var.Positive)
 		  = fun p vars ->
 		  match vars with
 		  | [] -> [Scalar.Rat.neg (Poly.get_constant p)]
-		  | var :: tail -> let coeff = Poly.monomial_coefficient p (Poly.MonomialBasis.mk [var]) in
+		  | var :: tail -> let coeff = Poly.monomial_coefficient p (Poly.MonomialBasis.mk [var,1]) in
 					coeff::(row_from_constraint p tail);;
 
         let from_poly : Poly.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> t

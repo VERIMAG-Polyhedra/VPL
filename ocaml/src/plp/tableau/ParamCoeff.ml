@@ -73,8 +73,8 @@ let ofPoly : (Cs.Vec.V.t -> int) -> int -> Poly.t -> t
         ) (List.map Poly.Monomial.data (Poly.data p))
     in
     let lin' = List.map (function
-        | (m, a) when Poly.MonomialBasis.data m |> List.length = 1 ->
-            let x = Poly.MonomialBasis.data m |> List.hd in (tr x, a)
+        | (m, a) when Poly.MonomialBasis.to_list_expanded m |> List.length = 1 ->
+            let x = Poly.MonomialBasis.to_list_expanded m |> List.hd in (tr x, a)
         | (_ , _) -> Pervasives.invalid_arg "Tableau.ParamCoeff.ofPolyQ"
         ) lin
     in
@@ -87,8 +87,8 @@ let toPoly : (int -> Cs.Vec.V.t) -> t -> Poly.t
     = fun tr c ->
     Poly.mk_cste (
         List.mapi (fun i a ->
-            ([tr i],a)
-        ) c.lin |> Poly.mk2
+            ([tr i, 1],a)
+        ) c.lin |> Poly.mk_list
     ) c.cst
 
 let to_cstr : (int -> Cs.Vec.V.t) -> Cstr_type.cmpT_extended -> t -> Cs.t

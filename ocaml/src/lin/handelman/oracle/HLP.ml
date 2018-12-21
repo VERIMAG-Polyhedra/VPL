@@ -20,11 +20,11 @@ module Build = struct
 	let build_equalities :  V.t list -> bool -> V.t -> CP.t list
 		= fun vars pos k ->
 		let coeff = (Poly.add
-				(Poly.mk2 [([k],Q.of_int 2)])
+				(Poly.mk_list [([k,1],Q.of_int 2)])
 				(Poly.cste (if pos then Q.one else Q.zero)))
 		in
-		let p = List.map (fun v -> ([v],Q.one)) vars
-			|> Poly.mk2
+		let p = List.map (fun v -> ([v,1],Q.one)) vars
+			|> Poly.mk_list
 		in
 		let eq = Poly.sub p coeff
 			|> CP.mk Cstr_type.Eq
@@ -37,12 +37,18 @@ module Build = struct
 			(fun ineqs v ->
 					(CP.mk
 						Cstr_type.Le
-						(Poly.mk2_cste [([v],Scalar.Rat.u)] (Scalar.Rat.neg (LPMaps.hasSup v mapDB)))
-					)
+						(Poly.mk_list [
+                            [v,1], Scalar.Rat.u ;
+                            [], Scalar.Rat.neg (LPMaps.hasSup v mapDB)
+                        ]))
+
 				::
 					(CP.mk
 						Cstr_type.Le
-						(Poly.mk2_cste [([v],Scalar.Rat.negU)] (Scalar.Rat.sub Scalar.Rat.u (LPMaps.hasInf v mapDB)))
+						(Poly.mk_list [
+                            [v,1], Scalar.Rat.negU ;
+                            [], Scalar.Rat.sub Scalar.Rat.u (LPMaps.hasInf v mapDB)
+                        ])
 					)
 				::
 					ineqs)
@@ -65,7 +71,7 @@ module Build = struct
 	 	List.map
 	 		(fun v -> CP.mk
 	 			Cstr_type.Le
-	 			(Poly.mk2 [([v],Scalar.Rat.negU)]))
+	 			(Poly.mk_list [[v, 1],Scalar.Rat.negU]))
 	 		vars
 
 	(** Builds the satisfiability problem. *)
@@ -73,7 +79,7 @@ module Build = struct
 		= fun vars pos mapDB ->
 		HOtypes.Debug.log DebugTypes.Detail
 			(lazy(Printf.sprintf "LP.build vars = %s\nInit mapDB = %s\n"
-			(Poly.MonomialBasis.to_string (Poly.MonomialBasis.mk vars))
+			(Poly.MonomialBasis.to_string (Poly.MonomialBasis.mk_expanded vars))
 			(LPMaps.mapDB_to_string mapDB)));
 
 		(* la variable max+1 correspond à k et sert à fixer la parité *)
@@ -211,5 +217,5 @@ let run : LPMaps.bounds -> Poly.t list -> Splx.t -> V.t list -> Poly.Monomial.t
 	-> Hi.boundIndex list option * LPMaps.bounds
 	= fun bounds ph sxPh vars mon ->
 	let (mB,coeffMon) = Poly.Monomial.data mon in
-	let varsMon = Poly.MonomialBasis.data mB in
+	let varsMon = Poly.MonomialBasis.to_list_expanded mB in
 	Solve.exec bounds ph sxPh vars varsMon coeffMon

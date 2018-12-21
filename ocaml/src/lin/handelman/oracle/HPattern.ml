@@ -25,7 +25,7 @@ let alreadyIn : matcher
 let linearMonomial : matcher
 	= fun pn ->
 	try
-		Some (LinearMonomial (List.find (fun m -> Poly.Monomial.isLinear m || Poly.Monomial.isConstant m) (Poly.data pn.Pneuma.p)))
+		Some (LinearMonomial (List.find (fun m -> Poly.Monomial.is_linear m || Poly.Monomial.is_constant m) (Poly.data pn.Pneuma.p)))
 	with
 	Not_found -> None
 

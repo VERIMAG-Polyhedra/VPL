@@ -214,7 +214,7 @@ module Plot (Minimization : Min.Type) = struct
 
 		let (monomial_to_string : Poly.Monomial.t -> string)
 			= fun m -> let (vlist, c) = Poly.Monomial.data m in
-			match Poly.MonomialBasis.data vlist with
+			match Poly.MonomialBasis.to_list_expanded vlist with
 			| [] -> Q.to_string c
 			| _ -> if Q.equal c (Q.of_int 1)
 			then Poly.MonomialBasis.to_string_param vlist "p"

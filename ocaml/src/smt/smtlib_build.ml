@@ -1,6 +1,6 @@
 (** /!\ Cas non géré : let x = <contrainte> in ...*)
 module type Type = sig
-    module CP = CstrPoly 
+    module CP = CstrPoly
 	module Cs = CP.Cs
 	module Poly = CP.Poly
 	module V = Cs.Vec.V
@@ -158,7 +158,7 @@ module Positive = struct
 			function
 			| Smtlib_syntax.TermQualIdentifier (_, id) -> begin
 				match qualidentifier_to_var state id with
-				| Var v -> Poly.mk2 [([v],Q.one)]
+				| Var v -> Poly.fromVar v
 				| P p -> p
 				end
 			| Smtlib_syntax.TermSpecConst (_,cste) -> Poly.cste (specconstant_to_Q cste)

@@ -82,7 +82,7 @@ module MapIndexP
 			(List.map
 				(fun (m,_) -> List.filter
 					(fun v' -> V.equal v' v)
-					(Poly.MonomialBasis.data m)
+					(Poly.MonomialBasis.to_list_expanded m)
 					|> List.length)
 				(List.map Poly.Monomial.data (Poly.data p)))
 		in fun p vl ->
@@ -103,7 +103,7 @@ module MapIndexP
 							let (v,_) = List.nth l i in res @ (List.map (fun _ -> v) (Misc.range 0 deg)))
 						[]
 						(Misc.range 0 (Index.Int.len ind))
-				|> Poly.MonomialBasis.mk)
+				|> Poly.MonomialBasis.mk_expanded)
 				preds
 
 	let (poly_to_deg : Poly.t -> Poly.MonomialBasis.t list -> Index.Int.t)
@@ -201,19 +201,19 @@ module LPMaps = struct
 				match List.nth polyhedron i
 					|> fun p -> (List.map Poly.Monomial.data (Poly.data p))
 				with
-				| [(m,c)] when Q.leq Q.zero c && (MB.data m |> List.length = 1) ->
-					let v = List.hd (MB.data m) in
+				| [(m,c)] when Q.leq Q.zero c && (MB.to_list_expanded m |> List.length = 1) ->
+					let v = List.hd (MB.to_list_expanded m) in
 					(updateMapDB_left mapDB v, updateMapB_left mapB v i n)
-				| (m0,_) :: [(m,c)] when Q.leq Q.zero c && (MB.data m |> List.length = 1)
+				| (m0,_) :: [(m,c)] when Q.leq Q.zero c && (MB.to_list_expanded m |> List.length = 1)
 					&& MB.equal m0 MB.null ->
-					let v = List.hd (MB.data m) in
+					let v = List.hd (MB.to_list_expanded m) in
 					(updateMapDB_left mapDB v, updateMapB_left mapB v i n)
-				| [(m,c)] when Q.lt c Q.zero && (MB.data m |> List.length = 1) ->
-					let v = List.hd (MB.data m) in
+				| [(m,c)] when Q.lt c Q.zero && (MB.to_list_expanded m |> List.length = 1) ->
+					let v = List.hd (MB.to_list_expanded m) in
 					(updateMapDB_right mapDB v, updateMapB_right mapB v i n)
-				| (m0,_) :: [(m,c)] when Q.lt c Q.zero && (MB.data m |> List.length = 1)
+				| (m0,_) :: [(m,c)] when Q.lt c Q.zero && (MB.to_list_expanded m |> List.length = 1)
 					&& MB.equal m0 MB.null ->
-					let v = List.hd (MB.data m) in
+					let v = List.hd (MB.to_list_expanded m) in
 					(updateMapDB_right mapDB v, updateMapB_right mapB v i n)
 				| _ -> (mapDB, mapB))
 			(MapV.empty, MapV.empty)
@@ -297,7 +297,7 @@ module Pneuma
 		= fun pn ->
 		Printf.sprintf "\n\tPolynomial : %s\n\tVariables : %s\n\tMap Poly -> Index list :\n%s \n\tMap Index -> Poly :\n%s\n\tMap Index -> Index list : \n%s"
 		(Poly.to_string pn.p)
-		(Poly.MonomialBasis.to_string (Poly.MonomialBasis.mk pn.vl))
+		(Poly.MonomialBasis.to_string (Poly.MonomialBasis.mk_expanded pn.vl))
 		(MapPolyHi.to_string pn.mapP |> Misc.add_tab 2)
 		(MapIndexP.to_string pn.mapIP |> Misc.add_tab 2)
 		(IndexBuild.Map.to_string pn.mapI |> Misc.add_tab 2)
@@ -347,7 +347,7 @@ module Pneuma
 			[]
 			(Index.Int.data id) vl
 		in
-		(Poly.mk2 [varlist, Q.of_int 1])
+		(Poly.mk_expanded_list [varlist, Q.of_int 1])
 
 	let (computeBoundIndex : Index.Rat.t -> Poly.t list -> Poly.t)
 		= fun id polyhedron ->

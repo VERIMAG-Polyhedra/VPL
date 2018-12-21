@@ -13,7 +13,7 @@ module Lift (T : Type) = struct
     	let sign_changing : M.t -> P.V.t -> env -> bool
     		= fun m v env ->
             let (m,c) = M.data m in
-    		let l = (Misc.pop P.V.equal (MB.data m) v) in
+    		let l = (Misc.pop P.V.equal (MB.to_list_expanded m) v) in
     		let l' = List.filter (fun v ->
                 let itv = Itv.of_var env v in
                 match (Itv.low itv, Itv.up itv) with
@@ -25,7 +25,7 @@ module Lift (T : Type) = struct
 
     	let is_unbounded : MB.t -> env -> bool
     		= fun m env ->
-                let var_list = MB.data m in
+                let var_list = MB.to_list_expanded m in
         		List.exists
                     (fun v -> let itv = Itv.of_var env v in
                     match (Itv.low itv, Itv.up itv) with
@@ -78,14 +78,14 @@ module Lift (T : Type) = struct
 				&&
 				(let l = List.find_all
 					(fun v -> (* MAJ:not (Var.equal v Var.null) &&*) Itv.of_var env v |> Itv.is_bounded |> not)
-					(AnnotedVar.update_monomial m' mapNKeep |> MB.data)
+					(AnnotedVar.update_monomial m' mapNKeep |> MB.to_list_expanded)
 				 in
 				 List.length l >= 1)) (* si le nombre de variable non bornée est 1*)
 			(P.data p)
 			in
             let var =
                 let l = AnnotedVar.update_monomial (M.data m |> fst) mapNKeep
-                    |> MB.data
+                    |> MB.to_list_expanded
                 in
     			try
                     List.find
@@ -110,7 +110,7 @@ module Lift (T : Type) = struct
     				(fun mono ->
                         let (m',c') = M.data mono in
     					let m'' = (AnnotedVar.update_monomial m' mapNKeep) in
-    					List.length (MB.data m'') > 0 (* il reste plus d'une variable *)
+    					List.length (MB.to_list_expanded m'') > 0 (* il reste plus d'une variable *)
     				  &&
     					not (Misc.is_unbounded m'' env)
     				  &&
@@ -119,7 +119,7 @@ module Lift (T : Type) = struct
                             match (Itv.low itv, Itv.up itv) with
         					| (None, _) -> true
         					| _ -> false)
-                            (MB.data m'')
+                            (MB.to_list_expanded m'')
                         in
                         let mono' = M.mk m'' c' in
     					match mode with
@@ -135,7 +135,7 @@ module Lift (T : Type) = struct
                         match (Itv.low itv, Itv.up itv) with
     					| (None, _) -> true
     					| _ -> false)
-                    (AnnotedVar.update_monomial m mapNKeep |> MB.data)
+                    (AnnotedVar.update_monomial m mapNKeep |> MB.to_list_expanded)
                 in
                 Some (UnboundedVarmode (mono, var))
 			with Not_found ->
@@ -144,7 +144,7 @@ module Lift (T : Type) = struct
 				(fun mono ->
                     let (m',c') = M.data mono in
 					let m'' = (AnnotedVar.update_monomial m' mapNKeep) in
-                    List.length (MB.data m'') > 0
+                    List.length (MB.to_list_expanded m'') > 0
 				  &&
 					not (Misc.is_unbounded m'' env)
 				  &&
@@ -153,7 +153,7 @@ module Lift (T : Type) = struct
                             match (Itv.low itv, Itv.up itv) with
                             | (_,None) -> true
                             | _ -> false)
-                            (MB.data m'')
+                            (MB.to_list_expanded m'')
                     in
                     let mono' = M.mk m'' c' in
 					match mode with
@@ -169,7 +169,7 @@ module Lift (T : Type) = struct
                         match (Itv.low itv, Itv.up itv) with
                         | (_, None) -> true
                         | _ -> false)
-                    (AnnotedVar.update_monomial m mapNKeep |> MB.data)
+                    (AnnotedVar.update_monomial m mapNKeep |> MB.to_list_expanded)
                 in
                 Some (UnboundedVarmode (mono, var))
 			with Not_found -> None
@@ -187,7 +187,7 @@ module Lift (T : Type) = struct
 			  && (* si le monôme n'a pas déjà de variable gardée *)
 				List.for_all
                     (fun v -> (* Var.equal v Var.null ||*) Itv.of_var env v |> Itv.is_bounded)
-				(AnnotedVar.update_monomial m' mapNKeep |> MB.data)
+				(AnnotedVar.update_monomial m' mapNKeep |> MB.to_list_expanded)
 			  && (* il faut qu'il y ait au moins une constante *)
 				not (MB.equal
                     (AnnotedVar.update_monomial m' mapNKeep)
@@ -205,11 +205,11 @@ module Lift (T : Type) = struct
 		try
             let mono = List.find
                 (fun mono ->
-                    not (M.isConstant mono)
+                    not (M.is_constant mono)
                   &&
                     let (m',_) = M.data mono in
                     let l = AnnotedVar.update_monomial m' mapNKeep
-                        |> MB.data
+                        |> MB.to_list_expanded
                     in
                     List.exists
                         (fun v -> P.Coeff.equal P.Coeff.z (Itv.of_var env v |> Itv.range))
@@ -220,7 +220,7 @@ module Lift (T : Type) = struct
             let (m,_) = M.data mono in
             let var = List.find
 				(fun v ->  P.Coeff.equal P.Coeff.z (Itv.of_var env v |> Itv.range))
-				(AnnotedVar.update_monomial m mapNKeep |> MB.data)
+				(AnnotedVar.update_monomial m mapNKeep |> MB.to_list_expanded)
             in
             Some (VarCte (mono, var))
 		with Not_found -> None
@@ -229,7 +229,7 @@ module Lift (T : Type) = struct
 	let multiplicity : matcher
 		= let get_monomial_multiplicity : MB.t -> P.V.t -> int
 				= fun m v ->
-				let (l1,l2) = List.partition (fun v' -> P.V.equal v v') (MB.data m) in
+				let (l1,l2) = List.partition (fun v' -> P.V.equal v v') (MB.to_list_expanded m) in
 				if List.length l2 = 0
 				then (List.length l1) - 1
 				else List.length l1
@@ -279,11 +279,11 @@ module Lift (T : Type) = struct
                     let (m',_) = M.data mono in
     				not (MapMonomial.mem m' mapKeep)
     			  && (* si le monôme n'a pas déjà de variable gardée *)
-    				MB.isLinear (AnnotedVar.update_monomial m' mapNKeep)
+    				MB.is_linear (AnnotedVar.update_monomial m' mapNKeep)
                 )
 			(P.data p)
 			in
-            let var = List.hd (AnnotedVar.update_monomial (M.data mono |> fst) mapNKeep |> MB.data)
+            let var = List.hd (AnnotedVar.update_monomial (M.data mono |> fst) mapNKeep |> MB.to_list_expanded)
             in
             Some (LinearMonomial(mono,var))
 		with Not_found -> None
@@ -293,7 +293,7 @@ module Lift (T : Type) = struct
 	let monomialCte : matcher
 		= fun p _ _ _ _ ->
 		try
-            let mono = (List.find M.isConstant (P.data p))
+            let mono = (List.find M.is_constant (P.data p))
 			in Some (MonomialCte mono)
 		with Not_found -> None
 
@@ -315,7 +315,7 @@ module Lift (T : Type) = struct
             let mono = List.find
 			(fun mono ->
                 let (m',_) = M.data mono in
-				not (MB.isLinear m')
+				not (MB.is_linear m')
 			  &&
 				try
                     MapMonomial.find m' mapKeep
@@ -354,7 +354,7 @@ module Lift (T : Type) = struct
 			in
             let var =
                 let m' = (AnnotedVar.update_monomial (M.data mono |> fst) mapNKeep) in
-                try List.find (fun v -> Itv.of_var env v |> Itv.is_bounded |> not) (MB.data m')
+                try List.find (fun v -> Itv.of_var env v |> Itv.is_bounded |> not) (MB.to_list_expanded m')
 				with Not_found -> Itv.greatest m' env
             in
             Some (FirstUnbounded(mono, var))
