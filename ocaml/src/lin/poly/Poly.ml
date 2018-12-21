@@ -1,9 +1,8 @@
 open Poly_type
 
-module type Type = Type
-
-(** Exception raised when trying to divide a polynomial by a non-constant value *)
 exception Div_by_non_constant
+
+module type Type = Type
 
 module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive) = struct
 	module Vec = Vec
@@ -158,8 +157,11 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 					else String.concat "" [Coeff.to_string c ; "*" ; MonomialBasis.to_string vlist]
 
 		let compare : t -> t -> int
-			= fun (m1,_) (m2,_) ->
-			MonomialBasis.compare m1 m2
+			= fun (m1,c1) (m2,c2) ->
+			let i = MonomialBasis.compare m1 m2 in
+            if i = 0
+            then Coeff.cmp c1 c2
+            else i
 
 		let equal : t -> t -> bool
 			= fun (m1,c1) (m2,c2) ->
@@ -274,7 +276,9 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
       		= function
       			| [] | _ :: [] as p -> p
       			| m :: (m' :: p' as p) ->
-	 			if Monomial.compare m m' = 0
+                let (mb,_) = m
+                and (mb',_) = m' in
+	 			if MonomialBasis.compare mb mb' = 0
 	 			then collapseDups ((Pervasives.fst m, Coeff.add (Pervasives.snd m) (Pervasives.snd m')) :: p')
 	 			else m :: collapseDups p
     		in
@@ -294,7 +298,7 @@ module Make (Vec: Vector.Type with module M = Rtree and module V = Var.Positive)
 					|> Printf.sprintf "SxPoly.canon: Monomial.canon on %s"
 					|> Pervasives.failwith)
     		|> List.sort Monomial.compare
-    		|> collapseDups
+    		|> collapseDups*
     		|> List.filter (fun (_, a) ->
 				if Coeff.equal a Coeff.z
 				then false

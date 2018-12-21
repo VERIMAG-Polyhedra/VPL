@@ -1,85 +1,115 @@
-(** This module type defines the type of polynomials depending on the type of coefficients and variables*)
+(** Interface of polynomials. *)
+
+(** Interface of polynomials.*)
 module type Type = sig
+
+    (** This type of vectors defines the type of coefficients and the type of variables used by the polynomials. *)
     module Vec : Vector.Type with module M = Rtree and module V = Var.Positive
 
+    (** Type of coefficients. *)
 	module Coeff = Vec.Coeff
+
+    (** Type of variables. *)
     module V = Vec.V
 
-    type exp = int (* >= 0*)
+    (** Type of exponent: a nonnegative integer. *)
+    type exp = int
 
-	(** MonomialBasis represents the list of variables of a monomial *)
+	(** MonomialBasis represents the variables of a monomial, i.e. without the coefficient. *)
 	module MonomialBasis : sig
-		type t = (V.t * int) list
 
-		(** [to_string_param m s] returns monomialBasis [m] as a string where variables (which are integers) are prefixed by [s] *)
-		val to_string_param : t -> string -> string
+        (** Type of monomial basis. *)
+		type t = (V.t * exp) list
 
-		(** [to_string m] returns monomialBasis [m] as a string where variables (which are integers) are prefixed by "x" *)
-		val to_string : t -> string
+        (** Monomial basis with no variable. *)
+        val null : t
 
-		(** [compare m1 m2] uses lexicographic order to return 0 if [m1] = [m2], a negative integer if [m1] < [m2] and a positive one otherwise *)
-		val compare : t -> t -> int
-
-		(** [equal m1 m2] returns [true] if [m1] = [m2], [false] otherwise *)
-		val equal : t -> t -> bool
-
-		(** [rename m x y] renames each occurency of [x] in [m] by [y]*)
-		val rename : t -> V.t -> V.t -> t
-
-		(** [eval m v] evaluates monomialBasis [m], replacing each variable with its value in function [v] *)
-		val eval : t -> (V.t -> Coeff.t) -> Coeff.t
-
-		(** [is_linear m] returns true if the degree of [m] is at most one.
-		[is_linear] assumes [m] is in canonical form. *)
-		val is_linear : t -> bool
-
+        (** Builds a monomial basis. *)
         val mk : (V.t * exp) list -> t
 
-		val mk_expanded : V.t list -> t
-
-		val to_list_expanded : t -> V.t list
-
+        (** @return the monomial basis *)
         val to_list : t -> (V.t * exp) list
 
-		val null : t
+		(** Pretty-printer for monomial basis.
+            @return the monomial basis where variables (which are integers) are prefixed by [s] *)
+		val to_string_param : t -> string -> string
 
-		(** Applies the given change of variables on the monomialBasis*)
-		val change_variable : (t -> t option) -> t -> t
-	end
-
-	(** Monomial represents a monomial as a couple of a monomialBasis and a coefficient *)
-	module Monomial : sig
-		type t = MonomialBasis.t * Vec.Coeff.t
-
+		(** Pretty-printer for monomial basis.
+            @return the monomial basis where variables (which are integers) are prefixed by "x" *)
 		val to_string : t -> string
 
-		(** [compare x y] returns 0 if [x] is equal to [y], a negative integer if [x] is smaller than [y]
-		Use this function to sort the monomials in a polynomial
-		This function do NOT compare the monomial coefficients *)
+		(** Lexicographic comparison between two monomial bases.
+            @return 0 if [m1] = [m2]
+            @return -1 if [m1] < [m2]
+            @return 1 otherwise *)
 		val compare : t -> t -> int
 
-		(** [monomial_equal (m1,c1) (m2,c2)] returns true if monomials [(m1,c1)] and [(m2,c2)] are equal *)
+		(** Equality test between two monomial bases. *)
 		val equal : t -> t -> bool
 
-		(** [mk m c] builds a monomial from monomialBasis [m] and coefficient [c] *)
-		val mk : MonomialBasis.t -> Coeff.t -> t
+		(** Renames a variable.
+            @param m the monomial basis
+            @param fromX the variable to rename
+            @param toY the new variable name *)
+		val rename : t -> V.t -> V.t -> t
 
-		(** [mk2 m c] builds a monomial from V.t list [m] and coefficient [c] *)
-		val mk_expanded : V.t list -> Coeff.t -> t
+    	(** Applies the given change of variables on the monomialBasis*)
+        val change_variable : (t -> t option) -> t -> t
 
-        val mk_list : (V.t * exp) list -> Coeff.t -> t
+		(** Evaluates a monomial basis by replacing each variable with its value given by a function.
+            @param m the monomial basis
+            @param f the variable evalutation *)
+		val eval : t -> (V.t -> Coeff.t) -> Coeff.t
 
-        val data : t -> MonomialBasis.t * Coeff.t
-
-		(** [mul m1 m2] returns the monomial equal to [m1 * m2] *)
-		val mul : t -> t -> t
-
-		(** [is_linear m] returns true if the degree of [m] is one.
-		[is_linear] assumes [m] is in canonical form. *)
+		(** @return true if the degree of [m] is at most one.
+		    The monomial basis is assumed to be in canonical form. *)
 		val is_linear : t -> bool
 
-		(** [is_linear m] returns true if the degree of [m] is zero.
-		[is_linear] assumes [m] is in canonical form. *)
+        (**/**)
+        (** Builds a monomial basis from an expanded list of variables. *)
+		val mk_expanded : V.t list -> t
+
+        (** @return the monomial basis as an expanded list of variables. *)
+		val to_list_expanded : t -> V.t list
+        (**/**)
+	end
+
+	(** Module of monomials. *)
+	module Monomial : sig
+
+        (** Type of monomial*)
+		type t = MonomialBasis.t * Vec.Coeff.t
+
+        (** pretty-printer for monomials. *)
+		val to_string : t -> string
+
+		(** Comparison between two monomials.
+            If monomials are equal, compares over coefficients.
+            See {!val:MonomialBasis.compare}. *)
+		val compare : t -> t -> int
+
+		(** Equality test between two monomials. *)
+		val equal : t -> t -> bool
+
+		(** Builds a monomial from a monomialBasis and a coefficient. *)
+		val mk : MonomialBasis.t -> Coeff.t -> t
+
+        (** Builds a monomial. *)
+        val mk_list : (V.t * exp) list -> Coeff.t -> t
+
+        (** @returns the monomial. *)
+        val data : t -> MonomialBasis.t * Coeff.t
+
+		(** Multiplication of two monomials. *)
+		val mul : t -> t -> t
+
+		(** @return true if the degree of [m] is at most one.
+    TODO : clarifier 
+            The monomial is assumed to be in canonical form. *)
+		val is_linear : t -> bool
+
+		(** @return true if the degree of [m] is zero.
+            The monomial is assumed to be in canonical form.*)
 		val is_constant : t -> bool
 
 		(** [eval m v] returns a coefficient which is the evaluation of monomial [m], where each variable is replaced by its value in function [v] *)
@@ -91,9 +121,14 @@ module type Type = sig
 		(** Applies the given change of variables on the monomial. *)
 		val change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
 
+        (**/**)
+        (** Builds a monomial from an expanded list of variables and a coefficient. *)
+		val mk_expanded : V.t list -> Coeff.t -> t
+
         val canon : t -> t
 
         val canonO : t -> t option
+        (**/**)
 	end
 
     type t = Monomial.t list

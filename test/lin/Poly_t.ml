@@ -128,7 +128,6 @@ module Make_Tests (Vec : Vector.Type with module M = Rtree and module V = Var.Po
             let tcs : (string * Poly.Monomial.t * Poly.Monomial.t * int) list =
                 Poly.Monomial.([
                 "equal_syn", canon (mk_m [x,1; y,1] (Coeff.mk ~-2 3)), canon (mk_m [x,1; y,1] (Coeff.mk ~-2 3)), 0;
-                "equal", canon (mk_m [x,1; y,1] (Coeff.mk ~-2 3)), canon (mk_m [x,1; y,1] (Coeff.of_int 12)), 0;
                 "neq", canon (mk_m [x,1; y,1] (Coeff.mk ~-2 3)), canon (mk_m [y,1] (Coeff.mk ~-2 3)), -1;
                 ])
             in
