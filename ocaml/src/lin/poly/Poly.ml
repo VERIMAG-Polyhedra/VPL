@@ -219,10 +219,6 @@ module Make (Vec: Vector.Type) = struct
             = fun (m,c) ->
             MonomialBasis.is_linear m
 
-        let is_affine : t -> bool
-            = fun m ->
-            is_linear m || is_constant m
-
 		let eval : t -> (Var.t -> Coeff.t) -> Coeff.t
 			= fun (m,c) e ->
 			if is_constant (m,c)
@@ -237,9 +233,10 @@ module Make (Vec: Vector.Type) = struct
 				| None -> mul (m',c') ([v,e], Coeff.u)
 			) ([], c) m
 
-        let get_vars : t -> Var.t list
+        let get_vars : t -> Var.Set.t
             = fun (m,_) ->
             List.map Pervasives.fst m
+            |> Var.Set.of_list
 
         let change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
 			= fun ch (m,c) ->
@@ -324,12 +321,9 @@ module Make (Vec: Vector.Type) = struct
 			l
 		|> canon
 
-	let mk_cste : t -> Coeff.t -> t
-		= fun p cst -> (MonomialBasis.null, cst) :: p |> canon
-
     let fromVar : Var.t -> t
 		= fun v ->
-		mk_list [([v,1], Vec.Coeff.u)]
+		mk_list [([v,1], Coeff.u)]
 
 	let data : t -> Monomial.t list
 		= fun p -> p
@@ -368,9 +362,8 @@ module Make (Vec: Vector.Type) = struct
 				MonomialBasis.compare mono MonomialBasis.null = 0 && Coeff.equal coeff Coeff.z
 			else false
 
-	(* [is_affine] assumes that [p] is in canonical form. *)
-	let is_affine : t -> bool
-        = List.for_all Monomial.is_affine
+	let is_linear : t -> bool
+        = List.for_all Monomial.is_linear
 
     let change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
         = fun ch l ->
@@ -395,6 +388,10 @@ module Make (Vec: Vector.Type) = struct
 		in fun p1 p2 ->
 		add_rec p1 p2 |> canon
 
+    let add_cste : t -> Coeff.t -> t
+		= fun p cst ->
+        add [MonomialBasis.null, cst] p
+
 	let mul : t -> t -> t
 		= let rec mul_rec
 			= fun p1 p2 ->
@@ -415,7 +412,7 @@ module Make (Vec: Vector.Type) = struct
         if is_constant p2
         then
             let (_,c) = List.hd p2 in
-            mulc p1 (Vec.Coeff.div Vec.Coeff.u c)
+            mulc p1 (Coeff.div Coeff.u c)
         else
             Pervasives.raise Div_by_non_constant
 
@@ -471,7 +468,7 @@ module Make (Vec: Vector.Type) = struct
 		= fun p m ->
 		Misc.pop
 			(fun (m1,_) (m2,_) -> MonomialBasis.equal m1 m2)
-			p (m,Vec.Coeff.z)
+			p (m,Coeff.z)
 
     let monomial_coefficient_poly : t -> MonomialBasis.t -> t
 		= let rec sub_monomial : MonomialBasis.t -> MonomialBasis.t -> (MonomialBasis.t * bool)
@@ -509,23 +506,24 @@ module Make (Vec: Vector.Type) = struct
 		in fun p m ->
 		monomial_coefficient_poly_rec p m |> canon
 
-
-	let get_affine_part : t -> Var.t list -> t
+	let get_linear_part : t -> Var.t list -> t
 		= fun p vars ->
-		List.filter Monomial.is_affine p
+		List.filter Monomial.is_linear p
         |> canon
 
-	let get_vars : t -> Var.t list
+	let get_vars : t -> Var.Set.t
 		= fun p ->
-		List.map Monomial.get_vars p
-		|> List.concat
-		|> Misc.rem_dupl Var.equal
+		List.fold_left (fun acc m ->
+            Monomial.get_vars m
+            |> Var.Set.union acc
+        ) Var.Set.empty p
 
     let horizon : t list -> Var.t
-		= fun l ->
-		List.map get_vars l
-		|> List.concat
-		|> Var.Set.of_list
+        = fun l ->
+		List.fold_left (fun acc p ->
+            get_vars p
+            |> Var.Set.union acc
+        ) Var.Set.empty l
 		|> Var.horizon
 
 	let eval : t -> (Var.t -> Coeff.t) -> Coeff.t
@@ -545,7 +543,7 @@ module Make (Vec: Vector.Type) = struct
         List.fold_left
             (fun acc m ->
                 let (m,c) = Monomial.partial_derivative var m in
-                if Vec.Coeff.isZ c
+                if Coeff.isZ c
                 then acc
                 else (m,c) :: acc)
             z p
@@ -557,11 +555,11 @@ module Make (Vec: Vector.Type) = struct
             (fun tree var ->
                 Rtree.set z tree var (partial_derivative var p))
             Rtree.empty
-            (get_vars p)
+            (get_vars p |> Var.Set.elements)
 
 	let toCstr : t -> (Vec.t * Coeff.t)
 		= fun p ->
-		if is_affine p
+		if is_linear p
 		then
 			let vec = List.fold_left (fun l (m,c) ->
         			if not (MonomialBasis.is_null m)
@@ -581,12 +579,12 @@ module Make (Vec: Vector.Type) = struct
 			|> List.map (fun (x,n) -> Monomial.mk_list [x,1] n)
 			|> mk
 		in
-		mk_cste l cste
+		add_cste l cste
 
 	let of_string : string -> t
    	    = fun s ->
     	PolyParser.one_prefixed_poly PolyLexer.token2 (Lexing.from_string s)
-    	|> List.map (fun (vl,q) -> (vl, Vec.Coeff.ofQ q))
+    	|> List.map (fun (vl,q) -> (vl, Coeff.ofQ q))
         |> mk_expanded_list
 
 	module Invariant = struct

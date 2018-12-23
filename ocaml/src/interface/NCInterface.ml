@@ -110,7 +110,7 @@ module Lift (P : PolyhedronDomain)  = struct
 		let extract_vec : Term.t -> Vec.t option
 			= fun term ->
 			let p = Term.to_poly term in
-			if Polynomial.is_affine p
+			if Polynomial.is_linear p
 			then Some (Polynomial.toCstr p
 				|> Pervasives.fst)
 			else None

@@ -129,7 +129,7 @@ module Handelman (Minimization : Min.Type) = struct
 				|> List.mapi (fun i x -> (i, x))
 			 in
 			 fun lin cst ->
-			 if not (List.for_all Poly.is_affine lin && Poly.is_affine cst)
+			 if not (List.for_all Poly.is_linear lin && Poly.is_linear cst)
 			 then Pervasives.invalid_arg "Obj._buildOfPoly"
 			 else
 				let l = gatherParams (cst :: lin) in
@@ -259,13 +259,15 @@ module Handelman (Minimization : Min.Type) = struct
 		TODO : adapt the normalization constant to the polynomial. *)
 		let get : 'c HPol.t -> Poly.t list -> Poly.t -> Poly.t -> (Poly.t * (Var.t -> Scalar.Rat.t option)) option
 			= fun ph his_p objective f ->
-			let variables = List.map Poly.get_vars (f :: his_p)
-				|> List.concat
-				|> Misc.rem_dupl Var.equal
+			let variables = List.fold_left (fun acc p ->
+                    Poly.get_vars p
+                    |> Var.Set.union acc
+                ) Var.Set.empty (f :: his_p)
+                |> Var.Set.elements
 			in
 			let non_linear_monomials = List.map
 				(fun p ->
-					Poly.sub p (Poly.get_affine_part p variables)
+					Poly.sub p (Poly.get_linear_part p variables)
 					|> Poly.data
 					|> List.map Poly.Monomial.data
 					|> List.map Pervasives.fst)
@@ -346,7 +348,7 @@ module Handelman (Minimization : Min.Type) = struct
 		in
 		let simplex_equalities = get_non_linear_coeffs flin variables in
 		let simplex_inequalities = [] in
-		let objective = Poly.get_affine_part flin variables in
+		let objective = Poly.get_linear_part flin variables in
 		Debug.log DebugTypes.Normal
 			(lazy("Objective = " ^ (Poly.to_string objective)));
 		(*let normalization = match Norm.get ph his_p objective f with

@@ -509,7 +509,7 @@ module Make(Vec : Vector.Type) = struct
 				|> List.mapi (fun i x -> (i, x))
 			 in
 			 fun lin cst ->
-			 if not (List.for_all Poly.is_affine lin && Poly.is_affine cst)
+			 if not (List.for_all Poly.is_linear lin && Poly.is_linear cst)
 			 then Pervasives.invalid_arg "Obj._buildOfPoly"
 			 else
 				let l = gatherParams (cst :: lin) in

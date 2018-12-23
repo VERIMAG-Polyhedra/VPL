@@ -155,7 +155,7 @@ module Lift (T : Type) = struct
                     (Var.to_string v)
                     (Itv.of_var env v |> Itv.to_string)
                 )
-                (P.get_vars p') ",")))
+                (P.get_vars p' |> Var.Set.elements) ",")))
         ;
     	let pro = choose_var p' env mo in
     	Debug.log DebugTypes.Normal

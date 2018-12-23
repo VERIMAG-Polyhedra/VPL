@@ -85,7 +85,7 @@ let ofPoly : (Var.t -> int) -> int -> Poly.t -> t
 
 let toPoly : (int -> Var.t) -> t -> Poly.t
     = fun tr c ->
-    Poly.mk_cste (
+    Poly.add_cste (
         List.mapi (fun i a ->
             ([tr i, 1],a)
         ) c.lin |> Poly.mk_list

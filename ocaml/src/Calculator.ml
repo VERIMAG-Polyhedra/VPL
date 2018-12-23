@@ -65,7 +65,7 @@ end
 (*module VPL = Interface(CDomain.PedraQWrapper)(Expr)*)
 module VPL = Lift(NCDomain.NCVPL_Unit.Q)(Expr)
 
-let polyCP_to_polCP : PolyParserBuild.contrainte list -> VPL.UserCond.t
+let polyCP_to_polCP : PolyParserBuild.cstr list -> VPL.UserCond.t
 	= fun l ->
 	List.fold_left
 		(fun res (e1,cmp,e2) ->

@@ -68,5 +68,5 @@ let ofCstr : Cs.t -> t
 
 let partition_affine : t list -> (Cs.t list * t list)
 	= fun polys ->
-	let (affs, ps) = List.partition (fun p -> Poly.is_affine p.p) polys in
+	let (affs, ps) = List.partition (fun p -> Poly.is_linear p.p) polys in
 	(List.map toCstr affs, ps)

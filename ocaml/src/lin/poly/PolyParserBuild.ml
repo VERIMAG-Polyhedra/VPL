@@ -1,38 +1,44 @@
-type poly = 
-	| Leaf of (string * int) list  * Q.t
+(** Functions for parsing polynomials. *)
+
+(** AST of polynomials. *)
+type poly =
+	| Leaf of (string * int) list * Q.t
 	| Add of poly * poly
 	| Sub of poly * poly
 	| Mul of poly * poly
 
-type contrainte = poly * Cstr_type.cmpT_extended * poly
+(** Type of constraint. *)
+type cstr = poly * Cstr_type.cmpT_extended * poly
 
-type assign = string*poly
+(** Type of assignment. *)
+type assign = string * poly
 
-type stmt = |Constraints of contrainte list |Assigns of assign list
+(** Type of statements. *)
+type stmt =
+    | Constraints of cstr list
+    | Assigns of assign list
 
-(** renvoie le polynome multiplié par -1 *)
+(** Negates the polynomial. *)
 let rec neg : poly -> poly
-	= fun p -> match p with
-				|Leaf(l,nb) -> Leaf(l,Q.mul Q.minus_one nb)
-				|Add(p1,p2) -> Add(neg p1,neg p2)
-				|Sub(p1,p2) -> Sub(neg p1,neg p2)
-				|Mul(p1,p2) -> Mul(neg p1,p2)
-
-
+	= function
+	| Leaf (l, nb) -> Leaf(l, Q.mul Q.minus_one nb)
+	| Add (p1, p2) -> Add(neg p1, neg p2)
+	| Sub (p1, p2) -> Sub(neg p1, neg p2)
+	| Mul (p1, p2) -> Mul(neg p1, p2)
 
 (** récurrence pour getCoeff **)
 let rec getC (s:string) (n:int):string =
 if n = String.length s
 then
-	try String.sub s 0 (n-1) with Invalid_argument _ -> "1" 
+	try String.sub s 0 (n-1) with Invalid_argument _ -> "1"
 else begin
 	if s.[n] >= '0' && s.[n] <= '9'
 		then
 			getC s (n+1)
 	else
-		if n = 0 
+		if n = 0
 		then "1"
-		else try String.sub s 0 n with Invalid_argument _ -> "1"  
+		else try String.sub s 0 n with Invalid_argument _ -> "1"
 end
 
 (**
@@ -69,11 +75,10 @@ else
 	if s.[n] >= '0' && s.[n] <= '9'
 		then
 			getNm s (n+1)
-	else 
+	else
 		String.sub s n ((String.length s) - n)
 
 let getName (s:string):string =
 if String.length s > 1 && s.[0] = '-'
 then getNm s 1
 else getNm s 0
-

@@ -367,24 +367,24 @@ module Make_Tests (Vec : Vector.Type) = struct
             ] in
             Test.suite "monomial_coefficient_other" (List.map chk tcs)
 
-        let is_affine_ts : Test.t
+        let is_linear_ts : Test.t
             = fun () ->
             let chk : string * bool * Poly.t -> (Test.stateT -> Test.stateT)
                 = fun (nm, r, p) state ->
-                let r' = Poly.is_affine p in
+                let r' = Poly.is_linear p in
                 Test.equals nm Pervasives.string_of_bool (=) r r' state
             in [
-                "zero", true, Poly.mk_cste [] Coeff.z;
-                "constant", true, Poly.mk_cste [] (Coeff.of_int 2);
-                "linear1", true, Poly.mk_cste (mk_p [[x,1], Coeff.u]) Coeff.z;
-                "linear2", true, Poly.mk_cste (mk_p [[x,1], Coeff.u; [y,1], Coeff.of_int 3]) Coeff.z;
-                "affine", true, Poly.mk_cste (mk_p [[x,1], Coeff.negU]) Coeff.u;
-                "affine2", true, Poly.mk_cste (mk_p [[x,1], Coeff.negU; [z,1],Coeff.u]) Coeff.u;
-                "multi", false, Poly.mk_cste (mk_p [[x,1; y,1], Coeff.u]) Coeff.z;
-                "mixed", false, Poly.mk_cste (mk_p [[y,1; z,1], Coeff.of_int 2; [x,1], Coeff.u]) Coeff.z
+                "zero", true, Poly.add_cste [] Coeff.z;
+                "constant", true, Poly.add_cste [] (Coeff.of_int 2);
+                "linear1", true, Poly.add_cste (mk_p [[x,1], Coeff.u]) Coeff.z;
+                "linear2", true, Poly.add_cste (mk_p [[x,1], Coeff.u; [y,1], Coeff.of_int 3]) Coeff.z;
+                "affine", true, Poly.add_cste (mk_p [[x,1], Coeff.negU]) Coeff.u;
+                "affine2", true, Poly.add_cste (mk_p [[x,1], Coeff.negU; [z,1],Coeff.u]) Coeff.u;
+                "multi", false, Poly.add_cste (mk_p [[x,1; y,1], Coeff.u]) Coeff.z;
+                "mixed", false, Poly.add_cste (mk_p [[y,1; z,1], Coeff.of_int 2; [x,1], Coeff.u]) Coeff.z
             ]
             |> List.map chk
-            |> Test.suite "is_affine"
+            |> Test.suite "is_linear"
 
         let of_string_ts : Test.t
             = fun () ->
@@ -394,12 +394,12 @@ module Make_Tests (Vec : Vector.Type) = struct
                 Test.equals nm Poly.to_string  Poly.equal ep ap state
             in
             let tcs : (string * string * Poly.t) list = Poly.([
-                "empty", "", mk_cste [] Coeff.z;
-                "constant", "3", mk_cste [] (Coeff.of_int 3);
-                "linear", "x1", mk_cste (mk_p [[x,1], Coeff.u]) Coeff.z;
-                "product", "x1*x2", mk_cste (mk_p [[x,1; y,1], Coeff.u]) Coeff.z;
-                "affine", "-1 * x1 + 1", mk_cste (mk_p [[x,1], Coeff.negU]) Coeff.u;
-                "simple", "-2/3*x2*x1", mk_cste (mk_p [[x,1; y,1], Coeff.mk 3 ~-2]) Coeff.z;
+                "empty", "", add_cste [] Coeff.z;
+                "constant", "3", add_cste [] (Coeff.of_int 3);
+                "linear", "x1", add_cste (mk_p [[x,1], Coeff.u]) Coeff.z;
+                "product", "x1*x2", add_cste (mk_p [[x,1; y,1], Coeff.u]) Coeff.z;
+                "affine", "-1 * x1 + 1", add_cste (mk_p [[x,1], Coeff.negU]) Coeff.u;
+                "simple", "-2/3*x2*x1", add_cste (mk_p [[x,1; y,1], Coeff.mk 3 ~-2]) Coeff.z;
             ]) in
             Test.suite "of_string" (List.map chk tcs)
 
@@ -478,7 +478,7 @@ module Make_Tests (Vec : Vector.Type) = struct
                 add_ts;
                 mul_ts;
                 monomial_coefficient_other_ts;
-                is_affine_ts;
+                is_linear_ts;
                 of_string_ts;
                 toCstr_ts;
                 ofCstr_ts;

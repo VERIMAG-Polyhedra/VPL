@@ -3,17 +3,22 @@ module Poly = CP.Poly
 
 let get_vars : CP.t list -> Var.t list
 	= fun l ->
-	List.map (fun cp -> Poly.get_vars cp.CP.p) l
-	|> List.concat
-	|> Misc.rem_dupl Var.equal
+    List.fold_left (fun acc cp ->
+        Poly.get_vars cp.CP.p
+        |> Var.Set.union acc
+    ) Var.Set.empty l
+    |> Var.Set.elements
 
 (** [add_vars vl l] returns the list of variable appearing in [vl] and in polynomial cosntraints [l]. *)
 let add_vars : Var.t list -> CP.t list -> Var.t list
 	= fun vl l ->
-	(List.map (fun cp -> Poly.get_vars cp.CP.p) l)
-	|> List.concat
-	|> fun l -> l @ vl
-	|> Misc.rem_dupl Var.equal
+    let set1 = List.fold_left (fun acc cp ->
+        Poly.get_vars cp.CP.p
+        |> Var.Set.union acc
+    ) Var.Set.empty l
+    and set2 = Var.Set.of_list vl in
+    Var.Set.union set1 set2
+    |> Var.Set.elements
 
 class ['c] t =
 	object (self)

@@ -252,7 +252,7 @@ module Lift (T : Type) = struct
                 in
     			List.map
                     (fun v -> (v,get_multiplicity p' v))
-                    (p' |> P.get_vars)
+                    (P.get_vars p' |> Var.Set.elements)
     			|> List.fast_sort (fun (_,i1) (_,i2) -> Pervasives.compare i1 i2)
     			|> List.rev
     			|> fun l -> match l with
