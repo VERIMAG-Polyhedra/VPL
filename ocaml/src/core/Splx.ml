@@ -1,4 +1,4 @@
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 
 module Defs

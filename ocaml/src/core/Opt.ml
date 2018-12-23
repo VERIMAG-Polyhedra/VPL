@@ -221,7 +221,7 @@ let max' : t mayUnsatT -> Vec.t -> optT mayUnsatT
   | IsUnsat _ as u -> fun _ -> u
   | IsOk sx -> fun obj -> max sx obj
 
-let getAsg_and_value : Var.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t * Scalar.Rat.t option) option
+let getAsg_and_value : Var.t -> (int * Cs.t) list -> (Vector.Symbolic.t * Scalar.Rat.t option) option
 	= let build_epsilon : Var.t -> (int * Cs.t) list -> (int * Cs.t) list * Vec.t
 		= fun horizon cstrs ->
 			let epsilon = horizon in
@@ -253,16 +253,16 @@ let getAsg_and_value : Var.t -> (int * Cs.t) list -> (Vector.Symbolic.Positive.t
         end
 	| IsOk (Sup (sx,obj_value,_)) | IsOk (Finite (sx,obj_value,_)) ->
         Debug.log DebugTypes.Detail (lazy "getAsg_and_value: epsilon problem bounded");
-		let point = Vector.Symbolic.Positive.set (getAsg sx) horizon Scalar.Symbolic.z in
+		let point = Vector.Symbolic.set (getAsg sx) horizon Scalar.Symbolic.z in
 		Some (point, Some obj_value)
 
-let getAsg : Var.t -> (int * Cs.t) list -> Vector.Symbolic.Positive.t option
+let getAsg : Var.t -> (int * Cs.t) list -> Vector.Symbolic.t option
 	= fun horizon cstrs ->
 	match getAsg_and_value horizon cstrs with
     | None -> None
     | Some (point,_) -> Some point
 
-let getAsg_raw : Cs.t list -> Vector.Symbolic.Positive.t option
+let getAsg_raw : Cs.t list -> Vector.Symbolic.t option
 	= fun cstrs ->
 	let horizon = Cs.getVars cstrs
 		|> Var.horizon
@@ -270,7 +270,7 @@ let getAsg_raw : Cs.t list -> Vector.Symbolic.Positive.t option
 	let cstrs_id = List.mapi (fun i cstr -> (i,cstr)) cstrs in
 	getAsg horizon cstrs_id
 
-let getAsg_and_value_raw : Cs.t list -> (Vector.Symbolic.Positive.t * Scalar.Rat.t option) option
+let getAsg_and_value_raw : Cs.t list -> (Vector.Symbolic.t * Scalar.Rat.t option) option
 	= fun cstrs ->
 	let horizon = Cs.getVars cstrs
 		|> Var.horizon

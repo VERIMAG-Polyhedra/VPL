@@ -5,7 +5,7 @@ It represents only sets of inequalities with {b nonempty interior}, meaning that
 {e Remarks.} It can be used only with variables of {!module:Var.Positive} (because of {!module:Splx}).
 *)
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 
 module Debug = Opt.Debug
@@ -392,11 +392,11 @@ module RmRedAux = struct
 
     let glpk: 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
         = fun s point ->
-        let point = Rtree.map Cstr.Rat.Positive.Vec.ofSymbolic point in
+        let point = Rtree.map Cstr.Rat.Vec.ofSymbolic point in
 		let cstrs = List.map Cons.get_c s in
 		let l = Min.Rat_Glpk.minimize point cstrs in
 		let s' = List.filter
-			(fun (cstr,_) -> List.exists (fun (cstr',_) -> Cstr.Rat.Positive.equalSyn cstr cstr') l)
+			(fun (cstr,_) -> List.exists (fun (cstr',_) -> Cstr.Rat.equalSyn cstr cstr') l)
 			s
 		in
 		s'
@@ -517,7 +517,7 @@ let addM: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 (** Returns the partition into regions of the given polyhedron, according to the given normalization point.
     Certificates are lost during the process: frontiers of regions have no certificate.
 *)
-let get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> ('c t * Vector.Symbolic.Positive.t) list
+let get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> ('c t * Vector.Symbolic.t) list
     = fun factory p point ->
     let regions = PoltoPLP.minimize_and_plp factory point p in
     List.map
@@ -525,7 +525,7 @@ let get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> ('c t * Vector.Sym
             let ineqs = List.map
                 (fun cstr -> cstr, factory.top)
                 ((Cons.get_c cons) :: PoltoPLP.PLP.Region.get_cstrs reg)
-            and point = Vector.Symbolic.Positive.ofRat reg.PoltoPLP.PLP.Region.point
+            and point = Vector.Symbolic.ofRat reg.PoltoPLP.PLP.Region.point
             in
             (ineqs, point)
         ) regions.PoltoPLP.mapping

@@ -11,10 +11,10 @@ module type Type = sig
 	val factory : cert Factory.t
 
     (** Builds a certificate from a contraint.*)
-	val mk : Cstr.Rat.Positive.t -> cert
+	val mk : Cstr.Rat.t -> cert
 
     (** Checks if a constraint and a certificate represent the same space. *)
-	val equal : Cstr.Rat.Positive.t -> cert -> bool
+	val equal : Cstr.Rat.t -> cert -> bool
 end
 
 (** Functor that builds a factory from a factory maker. *)
@@ -22,7 +22,7 @@ module Make : functor (F : Type) -> sig
     include Type
 
     (** Builds a cons from a constraint. *)
-    val mkCons : Cstr.Rat.Positive.t -> cert Cons.t
+    val mkCons : Cstr.Rat.t -> cert Cons.t
 
     (** Converts polymorphic certificates of a polyhedron into type !{type:F.cert}. *)
     val convert : 'c Pol.t -> cert Pol.t
@@ -35,6 +35,6 @@ module Make : functor (F : Type) -> sig
     val to_string : cert -> string
 end
 
-module Cstr : Type with type cert = Cstr.Rat.Positive.t
+module Cstr : Type with type cert = Cstr.Rat.t
 
 module Unit : Type with type cert = unit

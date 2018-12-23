@@ -8,9 +8,9 @@ module type Type = sig
 		@param x is a point that should lie in the interior of the polyhedron defined by [cstrs].
 		This function attach to each returned constraint [cstr] a point that violates only [cstr].
 		When possible, this point does not saturate the completentary of [cstr]. *)
-	val minimize : VecInput.t -> Cstr.Rat.Positive.t list -> (Cstr.Rat.Positive.t * VecInput.t) list
+	val minimize : VecInput.t -> Cstr.Rat.t list -> (Cstr.Rat.t * VecInput.t) list
 
-	val minimize_cone : VecInput.t -> Cstr.Rat.Positive.t list -> (Cstr.Rat.Positive.t * VecInput.t) list
+	val minimize_cone : VecInput.t -> Cstr.Rat.t list -> (Cstr.Rat.t * VecInput.t) list
 
 	val name : string
 end
@@ -30,7 +30,7 @@ module Check = struct
 end
 
 module Classic (Vec : Vector.Type) = struct
-	module Cs = Cstr.Rat.Positive
+	module Cs = Cstr.Rat
 	module VecInput = Vec
 
 	let name = "Classic"
@@ -40,7 +40,7 @@ module Classic (Vec : Vector.Type) = struct
 		{(Cs.compl cstr) with Cs.typ = Cstr_type.Lt}
 
 
-	let ofSymbolic : Vector.Symbolic.Positive.t -> Vec.t
+	let ofSymbolic : Vector.Symbolic.t -> Vec.t
 		= fun v ->
 		Rtree.map Vec.ofSymbolic v
 
@@ -834,7 +834,7 @@ end
 module Glpk(Vec : Vector.Type) = struct
 	let name = "Glpk"
 
-	module Cs = Cstr.Rat.Positive
+	module Cs = Cstr.Rat
 	module VecInput = Vec
 
 	let set_coeffs : Wrapper.polyhedron -> Var.t list -> int -> Cs.t -> unit
@@ -919,7 +919,7 @@ module Glpk(Vec : Vector.Type) = struct
 	let minimize_cone point constraints = minimize_witness point constraints
 end
 
-module Rat_Glpk = Glpk(Cstr.Rat.Positive.Vec)
+module Rat_Glpk = Glpk(Cstr.Rat.Vec)
 
 module Heuristic(Vec : Vector.Type) = struct
 	let name = "Heuristic"

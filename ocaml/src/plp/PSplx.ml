@@ -4,7 +4,7 @@ module type Type = Type
 
 module Debug = DebugTypes.Debug(struct let name = "PSplx" end)
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 
 module Make(Vec : Vector.Type) = struct
     module Vec = Vec

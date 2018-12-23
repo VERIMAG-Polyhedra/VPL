@@ -201,35 +201,35 @@ end
 
 module Rat = struct
 	include Make_Tests(Scalar.Rat)
-	module Coeff = Vector.Rat.Positive.Coeff
+	module Coeff = Vector.Rat.Coeff
 		(* Vec.gcd *)
 
-	let x = Vector.Rat.Positive.V.fromInt 1
-	let y = Vector.Rat.Positive.V.fromInt 2
-	let z = Vector.Rat.Positive.V.fromInt 3
+	let x = Vector.Rat.V.fromInt 1
+	let y = Vector.Rat.V.fromInt 2
+	let z = Vector.Rat.V.fromInt 3
 
 	let gcdTs: Test.t
 		= fun () ->
 		let chk (name, r, v1) = fun state ->
-			let r1 = Vector.Rat.Positive.gcd v1 in
+			let r1 = Vector.Rat.gcd v1 in
 			if Coeff.cmp r r1 = 0 then
 				Test.succeed state
 			else
 				Test.fail name (Coeff.to_string r1) state
 		in
 		let tcs = [
-			"nil0", Coeff.u, Vector.Rat.Positive.mk [];
-			"u0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x];
-			"u1", (Coeff.mk 2 1), Vector.Rat.Positive.mk [Coeff.of_int 2, x];
-			"m0", Coeff.u, Vector.Rat.Positive.mk [Coeff.u, x; Coeff.of_int 2, y];
-			"m1", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 2, x; Coeff.of_int 2, y];
-			"m2", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 2, x; Coeff.of_int 4, y];
-			"f0", Coeff.of_int 2, Vector.Rat.Positive.mk [Coeff.mk 2 1, x; Coeff.mk 2 1, y];
+			"nil0", Coeff.u, Vector.Rat.mk [];
+			"u0", Coeff.u, Vector.Rat.mk [Coeff.u, x];
+			"u1", (Coeff.mk 2 1), Vector.Rat.mk [Coeff.of_int 2, x];
+			"m0", Coeff.u, Vector.Rat.mk [Coeff.u, x; Coeff.of_int 2, y];
+			"m1", Coeff.mk 2 1, Vector.Rat.mk [Coeff.of_int 2, x; Coeff.of_int 2, y];
+			"m2", Coeff.mk 2 1, Vector.Rat.mk [Coeff.of_int 2, x; Coeff.of_int 4, y];
+			"f0", Coeff.of_int 2, Vector.Rat.mk [Coeff.mk 2 1, x; Coeff.mk 2 1, y];
 			"f1", Coeff.mk 3 2,
-				Vector.Rat.Positive.mk [Coeff.mk 2 9, x; Coeff.mk 2 3, y];
+				Vector.Rat.mk [Coeff.mk 2 9, x; Coeff.mk 2 3, y];
 
-			"hole0", Coeff.mk 2 1, Vector.Rat.Positive.mk [Coeff.of_int 4, y; Coeff.of_int 6, z];
-			"neg0", Coeff.u, Vector.Rat.Positive.mk [Coeff.negU, x]
+			"hole0", Coeff.mk 2 1, Vector.Rat.mk [Coeff.of_int 4, y; Coeff.of_int 6, z];
+			"neg0", Coeff.u, Vector.Rat.mk [Coeff.negU, x]
 		] in
 		Test.suite "gcd" (List.map chk tcs)
 

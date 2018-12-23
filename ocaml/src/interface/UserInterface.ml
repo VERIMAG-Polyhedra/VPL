@@ -4,7 +4,7 @@ It provides the Interface module (explained by module type Type).*)
 (**/**)
 open WrapperTraductors
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 module CP = CstrPoly
 module Polynomial = CP.Poly
@@ -223,7 +223,7 @@ module type Type = sig
             val split_in_half : t -> t list
 
             (** Sets up the normalization point used for PLP-based operators. *)
-            val set_point : Vector.Rat.Positive.t -> t -> t
+            val set_point : Vector.Rat.t -> t -> t
 
             (** Returns the size of the given polyhedron. *)
             val size : t -> Scalar.Rat.t option
@@ -320,7 +320,7 @@ module type Type = sig
             val split_in_half : t -> t list
 
             (** Sets up the normalization point used for PLP-based operators. *)
-            val set_point : Vector.Rat.Positive.t -> t -> t
+            val set_point : Vector.Rat.t -> t -> t
 
             (** Returns the size of the given polyhedron. *)
             val size : t -> Scalar.Rat.t option
@@ -854,7 +854,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 			lazy (diff' p1 p2)
 			|> handle
 
-            let get_regions : Vector.Rat.Positive.t option -> t -> t list
+            let get_regions : Vector.Rat.t option -> t -> t list
 				= let get_regions' point p =
                     List.map
                         (fun p' -> mk (Names.mk ()) p')
@@ -892,7 +892,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 				lazy (get_regions_cert' p)
 				|> handle
 
-            let set_point : Vector.Rat.Positive.t -> t -> t
+            let set_point : Vector.Rat.t -> t -> t
 				= let set_point' point p =
                     let ofVar = match backend_rep p with
     					| Some (p',(ofVar, toVar)) ->
@@ -900,7 +900,7 @@ module MakeInterface (Coeff : Scalar.Type) = struct
                             ofVar'
     					| _ -> Pervasives.failwith "split_in_half"
     				in
-                    I.set_point (Vector.Rat.Positive.rename_f ofVar point) p.value
+                    I.set_point (Vector.Rat.rename_f ofVar point) p.value
                     |> mk (Names.mk ())
                 in
                 fun point p ->

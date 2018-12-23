@@ -257,42 +257,39 @@ module Make (Vec : Vector.Type) = struct
 end
 
 module Rat = struct
-	module Positive = struct
-		module Vec = Vector.Rat.Positive
-		include Make(Vec)
+	module Vec = Vector.Rat
+	include Make(Vec)
 
-		let elim c1 c2 va =
-			let a1 = Vec.get c1.v va in
-				  let a2 = Vec.get c2.v va in
-			let r1 = Vec.Coeff.cmpz a1 in
-				  let r2 = Vec.Coeff.cmpz a2 in
-			match (r1 = 0, r2 = 0) with
-			| (true, true) -> raise NoElim
-			| (true, false) | (false, true) -> raise CannotElim
-			| (false, false) ->
-				let (n1, n2) =
-					match (c1.typ, c2.typ) with
-					| (Eq, Eq) -> (Vec.Coeff.neg a2, a1)
-					| (Le, Eq) | (Lt, Eq) ->
-						if r2 > 0 then (Vec.Coeff.neg a2, a1) else (a2, Vec.Coeff.neg a1)
-					| (Eq, Le) | (Eq, Lt) ->
-						if r1 > 0 then (a2, Vec.Coeff.neg a1) else (Vec.Coeff.neg a2, a1)
-					| Le, Le | Lt, Lt
-					| Lt, Le | Le, Lt ->
-						match (r1 > 0, r2 > 0) with
-						| (true, true) | (false, false) -> raise CannotElim
-						| (true, false) -> (a2, Vec.Coeff.neg a1)
-						| (false, true) -> (Vec.Coeff.neg a2, a1)
-				in
-				let c = add (mulc n1 c1) (mulc n2 c2) in
-				(c, n1, n2)
+	let elim c1 c2 va =
+		let a1 = Vec.get c1.v va in
+			  let a2 = Vec.get c2.v va in
+		let r1 = Vec.Coeff.cmpz a1 in
+			  let r2 = Vec.Coeff.cmpz a2 in
+		match (r1 = 0, r2 = 0) with
+		| (true, true) -> raise NoElim
+		| (true, false) | (false, true) -> raise CannotElim
+		| (false, false) ->
+			let (n1, n2) =
+				match (c1.typ, c2.typ) with
+				| (Eq, Eq) -> (Vec.Coeff.neg a2, a1)
+				| (Le, Eq) | (Lt, Eq) ->
+					if r2 > 0 then (Vec.Coeff.neg a2, a1) else (a2, Vec.Coeff.neg a1)
+				| (Eq, Le) | (Eq, Lt) ->
+					if r1 > 0 then (a2, Vec.Coeff.neg a1) else (Vec.Coeff.neg a2, a1)
+				| Le, Le | Lt, Lt
+				| Lt, Le | Le, Lt ->
+					match (r1 > 0, r2 > 0) with
+					| (true, true) | (false, false) -> raise CannotElim
+					| (true, false) -> (a2, Vec.Coeff.neg a1)
+					| (false, true) -> (Vec.Coeff.neg a2, a1)
+			in
+			let c = add (mulc n1 c1) (mulc n2 c2) in
+			(c, n1, n2)
 
-		let canon : t -> t
-			= fun cstr ->
-			let g = Vec.gcd cstr.v in
-			if Vec.Coeff.isZ g
-			then cstr
-			else {cstr with v = Vec.mulr g cstr.v ; c = Vec.Coeff.mulr g cstr.c}
-	end
-
+	let canon : t -> t
+		= fun cstr ->
+		let g = Vec.gcd cstr.v in
+		if Vec.Coeff.isZ g
+		then cstr
+		else {cstr with v = Vec.mulr g cstr.v ; c = Vec.Coeff.mulr g cstr.c}
 end

@@ -10,30 +10,13 @@ open Vector_type
 module type Type = Type
 
 (** Module of vectors with rational coefficients. *)
-module Rat : sig
-
-    (** Module of vectors with rational coefficients and mapped with {!module:Rtree}. *)
-    module Positive : Type with module Coeff = Scalar.Rat
-end
+module Rat : Type with module Coeff = Scalar.Rat
 
 (** Module of vectors with float coefficients. *)
-module Float : sig
-
-    (** Module of vectors with float coefficients and mapped with {!module:Rtree}. *)
-    module Positive : Type with module Coeff = Scalar.Float
-
-end
+module Float : Type with module Coeff = Scalar.Float
 
 (** Module of vectors with symbolic error rational coefficients. *)
-module Symbolic : sig
-
-    (** Module of vectors with symbolic error rational coefficients and mapped with {!module:Rtree}. *)
-    module Positive : Type with module Coeff = Scalar.Symbolic
-end
+module Symbolic : Type with module Coeff = Scalar.Symbolic
 
 (** Module of vectors with integer coefficients. *)
-module Int : sig
-
-    (** Module of vectors with integer coefficients and mapped with {!module:Rtree}. *)
-    module Positive : Type with module Coeff = Scalar.Int
-end
+module Int : Type with module Coeff = Scalar.Int

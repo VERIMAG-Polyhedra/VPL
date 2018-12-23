@@ -92,11 +92,11 @@ along with the basic variable associated with [obj]. *)
 val setObj: Splx.t -> Splx.Vec.t -> Var.t * Splx.t
 
 (** We maximize epsilon such that epsilon <= 1 and for all constraint Ci, Ci >= epsilon. *)
-val getAsg : Var.t -> (int * Cstr.Rat.Positive.t) list -> Scalar.Symbolic.t Rtree.t option
+val getAsg : Var.t -> (int * Cstr.Rat.t) list -> Scalar.Symbolic.t Rtree.t option
 
-val getAsg_and_value : Var.t -> (int * Cstr.Rat.Positive.t) list
-    -> (Vector.Symbolic.Positive.t * Scalar.Rat.t option) option
+val getAsg_and_value : Var.t -> (int * Cstr.Rat.t) list
+    -> (Vector.Symbolic.t * Scalar.Rat.t option) option
 
-val getAsg_raw : Cstr.Rat.Positive.t list -> Vector.Symbolic.Positive.t option
+val getAsg_raw : Cstr.Rat.t list -> Vector.Symbolic.t option
 
-val getAsg_and_value_raw : Cstr.Rat.Positive.t list -> (Vector.Symbolic.Positive.t * Scalar.Rat.t option) option
+val getAsg_and_value_raw : Cstr.Rat.t list -> (Vector.Symbolic.t * Scalar.Rat.t option) option

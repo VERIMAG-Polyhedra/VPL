@@ -1,6 +1,6 @@
 open Vpl
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 
 module Make_Tests (Min : Min.Type) = struct
 
@@ -112,17 +112,17 @@ end
 module Raytracing = struct
 	module Glpk = struct
 		module Rat = struct
-			module Min = Min.Glpk(Vector.Rat.Positive)
+			module Min = Min.Glpk(Vector.Rat)
 			include Make_Tests(Min)
 		end
 
 		module Float = struct
-			module Min = Min.Glpk(Vector.Float.Positive)
+			module Min = Min.Glpk(Vector.Float)
 			include Make_Tests(Min)
 		end
 
 		module Symbolic = struct
-			module Min = Min.Glpk(Vector.Symbolic.Positive)
+			module Min = Min.Glpk(Vector.Symbolic)
 			include Make_Tests(Min)
 		end
 	end

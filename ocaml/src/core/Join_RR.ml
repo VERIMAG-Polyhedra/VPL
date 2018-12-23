@@ -253,7 +253,7 @@ let join' : 'c1 Factory.t -> 'c2 Factory.t -> Var.t option -> 'c1 regionsT -> 'c
 
 (** Returns the convex hull of the given inequalities (no equality should be given).
     Computes the region partitioning of both polyhedra. *)
-let join : 'c1 Factory.t -> 'c2 Factory.t -> Var.t option -> Vector.Symbolic.Positive.t -> Vector.Symbolic.Positive.t
+let join : 'c1 Factory.t -> 'c2 Factory.t -> Var.t option -> Vector.Symbolic.t -> Vector.Symbolic.t
     -> 'c1 Cons.t list -> 'c2 Cons.t list
     -> 'c1 Cons.t list * 'c2 Cons.t list
     = fun factory1 factory2 epsilon_opt init_point1 init_point2 p1 p2 ->
@@ -263,8 +263,8 @@ let join : 'c1 Factory.t -> 'c2 Factory.t -> Var.t option -> Vector.Symbolic.Pos
         (lazy (Printf.sprintf "First polyhedron : %s\nSecond Polyhedron : %s"
             (Misc.list_to_string (Cons.to_string Var.to_string) p1 "\n")
             (Misc.list_to_string (Cons.to_string Var.to_string) p2 "\n")));
-    let init_point1 = Vector.Symbolic.Positive.toRat init_point1
-    and init_point2 = Vector.Symbolic.Positive.toRat init_point2
+    let init_point1 = Vector.Symbolic.toRat init_point1
+    and init_point2 = Vector.Symbolic.toRat init_point2
     in
     let regs1 = minimize_and_plp factory1 init_point1 p1
     and regs2 = minimize_and_plp factory2 init_point2 p2

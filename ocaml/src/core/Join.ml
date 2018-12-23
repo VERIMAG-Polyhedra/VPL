@@ -1,4 +1,4 @@
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module V = Var
 
 module Debug = DebugTypes.Debug(struct let name = "CHullBuild" end)
@@ -317,14 +317,14 @@ module Build (Min : Min.Type) = struct
 		= fun factory1 _ _ ->
 		C1 factory1.Factory.top
 
-	let join' : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.Positive.t -> 'c1 Cons.t list -> 'c2 Cons.t list
+	let join' : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 		-> 'c1 Cons.t list * 'c2 Cons.t list
 		= fun factory1 factory2 epsilon_opt _ p1 p2 ->
 		let cs = List.map Cons.get_c p1 @ List.map Cons.get_c p2 in
 		let params_set = Cs.getVars cs in
 		let params = V.Set.elements params_set in
         let init_point = get_init_point params p1 p2 in
-        (*let init_point = Vector.Symbolic.Positive.toRat init_point in*)
+        (*let init_point = Vector.Symbolic.toRat init_point in*)
 		let (sx,map) = build factory1 factory2 epsilon_opt init_point p1 p2 in
 		let regs = PLP.run_classic sx (get_no_cert factory1 factory2) in
 		let regs_filtered = filter_trivial regs
@@ -332,7 +332,7 @@ module Build (Min : Min.Type) = struct
 		get_join_cert factory1 factory2 p1 p2 map regs_filtered
 
 	(** Returns the convex hull of the given inequalities (no equality should be given), and the next identifer. *)
-	let join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.Positive.t
+	let join : 'c1 Factory.t -> 'c2 Factory.t -> V.t option -> Vector.Symbolic.t
         -> 'c1 Cons.t list -> 'c2 Cons.t list -> 'c1 Cons.t list * 'c2 Cons.t list
 		= fun factory1 factory2 epsilon_opt init_point p1 p2 ->
 		Debug.log DebugTypes.Title
@@ -351,30 +351,30 @@ module Build (Min : Min.Type) = struct
 end
 
 module Classic = struct
-	module Rat = Build(Min.Classic(Vector.Rat.Positive))
+	module Rat = Build(Min.Classic(Vector.Rat))
 
-	module Symbolic = Build(Min.Classic(Vector.Symbolic.Positive))
+	module Symbolic = Build(Min.Classic(Vector.Symbolic))
 
-	module Float = Build(Min.Classic(Vector.Float.Positive))
+	module Float = Build(Min.Classic(Vector.Float))
 end
 
 module Raytracing = struct
-	module Rat = Build(Min.Glpk(Vector.Rat.Positive))
+	module Rat = Build(Min.Glpk(Vector.Rat))
 
-	module Float = Build(Min.Glpk(Vector.Float.Positive))
+	module Float = Build(Min.Glpk(Vector.Float))
 
-	module Symbolic = Build(Min.Glpk(Vector.Symbolic.Positive))
+	module Symbolic = Build(Min.Glpk(Vector.Symbolic))
 end
 
 module Heuristic = struct
-	module Rat = Build(Min.Heuristic(Vector.Rat.Positive))
+	module Rat = Build(Min.Heuristic(Vector.Rat))
 
-	module Symbolic = Build(Min.Heuristic(Vector.Symbolic.Positive))
+	module Symbolic = Build(Min.Heuristic(Vector.Symbolic))
 
-	module Float = Build(Min.Heuristic(Vector.Float.Positive))
+	module Float = Build(Min.Heuristic(Vector.Float))
 end
 
-let join : Flags.scalar -> 'c1 Factory.t -> 'c2 Factory.t -> V.t option ->  Vector.Symbolic.Positive.t -> 'c1 Cons.t list -> 'c2 Cons.t list
+let join : Flags.scalar -> 'c1 Factory.t -> 'c2 Factory.t -> V.t option ->  Vector.Symbolic.t -> 'c1 Cons.t list -> 'c2 Cons.t list
 	-> 'c1 Cons.t list * 'c2 Cons.t list
 	= fun scalar factory1 factory2 epsilon_opt init_point p1 p2 ->
 	Debug.log DebugTypes.Title (lazy "Building Convex Hull");

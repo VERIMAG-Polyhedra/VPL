@@ -60,7 +60,7 @@ end
 
 module Splx (CsUser : Cstr.Type) = struct
 
-	module CsPriv = Cstr.Rat.Positive
+	module CsPriv = Cstr.Rat
 	module CsUser = struct
 		include CsUser
 		let compare = cmp

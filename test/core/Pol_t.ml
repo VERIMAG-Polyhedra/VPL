@@ -1,6 +1,6 @@
 open Vpl
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 
 let x = Var.fromInt 1
@@ -58,7 +58,7 @@ module Factory = struct
 		= fun cs cert ->
 		Cs.equalSyn cs cert
 
-    let mkCons : Cstr.Rat.Positive.t -> cert Cons.t
+    let mkCons : Cstr.Rat.t -> cert Cons.t
 		= fun cs -> (cs, mk cs)
 
     let convert : 'c Pol.t -> cert Pol.t

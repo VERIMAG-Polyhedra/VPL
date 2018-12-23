@@ -89,9 +89,9 @@ module type LowLevelDomain = sig
   (**
    * Returns the partition into regions of the given polyhedron.
    *)
-  val get_regions : Vector.Rat.Positive.t option -> t -> t list
+  val get_regions : Vector.Rat.t option -> t -> t list
 
-  val set_point : Vector.Rat.Positive.t -> t -> t
+  val set_point : Vector.Rat.t -> t -> t
 end
 
 module Interface (Coeff: Scalar.Type) = struct
@@ -387,7 +387,7 @@ let rec import_ZCond: ZCond.t -> CZCond.t
   | ZCond.BinL (c1, OR, c2) -> CZCond.BinL (ASCond.OR, import_ZCond c1, import_ZCond c2)
   | ZCond.Not c -> CZCond.Not (import_ZCond c)
 
-module Vec = Vector.Rat.Positive
+module Vec = Vector.Rat
 
 module QAffTerm = struct
    type t = Vec.t * Scalar.Rat.t

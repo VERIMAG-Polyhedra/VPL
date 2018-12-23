@@ -6,8 +6,8 @@
 
 
 module Nb = Scalar.Rat
-module Vec = Vector.Rat.Positive
-module Cs = Cstr.Rat.Positive
+module Vec = Vector.Rat
+module Cs = Cstr.Rat
 
 (* Preliminary functions:
     frontend data-structures <-> backend data-structures

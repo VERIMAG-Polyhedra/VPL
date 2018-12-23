@@ -18,7 +18,7 @@ The [bv] field is the actual value of the bound of the variable.
 type bnd_t
 = {id: int; scale: Scalar.Rat.t; bv: Scalar.Symbolic.t}
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 
 (** accessor for the [id] field of a value of type [bnd_t] *)
@@ -146,7 +146,7 @@ val checkFromAdd : t mayUnsatT -> t mayUnsatT
 (** Get an assignment of the variables which satisfies the input constraints.
 Calling [getAsg] is only meaningful on a value of type [t] returned by
 [check] or [checkFromAdd]. *)
-val getAsg : t -> Vector.Symbolic.Positive.t
+val getAsg : t -> Vector.Symbolic.t
 
 val insertBack : Var.t -> t -> t
 

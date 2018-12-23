@@ -495,7 +495,7 @@ module Make_Tests (Vec : Vector.Type) = struct
 			]
 end
 
-module Rat_Pos = Make_Tests(Vector.Rat.Positive)
+module Rat_Pos = Make_Tests(Vector.Rat)
 
 let ts : Test.t
     = fun () ->

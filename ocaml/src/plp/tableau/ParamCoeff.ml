@@ -1,5 +1,5 @@
-module Cs = Cstr.Rat.Positive
-module Poly = Poly.Make(Vector.Rat.Positive)
+module Cs = Cstr.Rat
+module Poly = Poly.Make(Vector.Rat)
 
 type t = {
     lin : Tableau.Vector.t;

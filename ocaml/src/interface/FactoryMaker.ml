@@ -1,4 +1,4 @@
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 module CP = CstrPoly
 module Polynomial = CP.Poly
@@ -23,7 +23,7 @@ module Make(F : Type) = struct
 
     include F
 
-    let mkCons : Cstr.Rat.Positive.t -> cert Cons.t
+    let mkCons : Cstr.Rat.t -> cert Cons.t
 		= fun cs -> (cs, mk cs)
 
     let convert : 'c Pol.t -> cert Pol.t

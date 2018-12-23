@@ -1,5 +1,5 @@
 module Debug = DebugTypes.Debug(struct let name = "Proj" end)
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 
 (* x+1 car les identifiants commencent à 0 *)
 let varEncode : int -> Var.t
@@ -11,17 +11,17 @@ module Proj (Min : Min.Type) = struct
 
 	module Build = struct
 
-		let getCoeffs : Var.t option -> Cstr.Rat.Positive.t list -> Scalar.Rat.t list
-		  = let get : Var.t option -> Cstr.Rat.Positive.t -> Scalar.Rat.t
+		let getCoeffs : Var.t option -> Cstr.Rat.t list -> Scalar.Rat.t list
+		  = let get : Var.t option -> Cstr.Rat.t -> Scalar.Rat.t
 				= function
-				| None -> Cstr.Rat.Positive.get_c
-				| Some x -> fun c -> Cs.Vec.get (Cstr.Rat.Positive.get_v c) x
+				| None -> Cstr.Rat.get_c
+				| Some x -> fun c -> Cs.Vec.get (Cstr.Rat.get_v c) x
 			 in
 			 fun x l -> List.map (get x) l
 
 		module Norm = struct
 
-			let translateAlphas : Var.Set.t -> Cstr.Rat.Positive.t list -> (Scalar.Rat.t * Var.t option) list -> Q.t list
+			let translateAlphas : Var.Set.t -> Cstr.Rat.t list -> (Scalar.Rat.t * Var.t option) list -> Q.t list
 				= fun xs cs l ->
 				List.filter (function (_, None) -> true | (_, Some x) -> not (Var.Set.mem x xs)) l
 				|> List.map (fun (n, x) -> getCoeffs x cs |> List.map (fun n' -> Scalar.Rat.mul n n'))
@@ -29,10 +29,10 @@ module Proj (Min : Min.Type) = struct
 					| [] -> Pervasives.failwith "Build.Norm.translateAlphas"
 					| h :: t -> List.fold_left (List.map2 Q.add) h t
 
-			let build : Var.Set.t -> Cstr.Rat.Positive.t list -> Tableau.Vector.t
-				= let findNormCoeffs : Cstr.Rat.Positive.t list -> (Scalar.Rat.t * Var.t option) list
-					= let buildCons : Var.t -> Cstr.Rat.Positive.t -> Cstr.Rat.Positive.t
-						= fun eps c -> {c with Cstr.Rat.Positive.v = Cs.Vec.set (Cstr.Rat.Positive.get_v c) eps Scalar.Rat.u}
+			let build : Var.Set.t -> Cstr.Rat.t list -> Tableau.Vector.t
+				= let findNormCoeffs : Cstr.Rat.t list -> (Scalar.Rat.t * Var.t option) list
+					= let buildCons : Var.t -> Cstr.Rat.t -> Cstr.Rat.t
+						= fun eps c -> {c with Cstr.Rat.v = Cs.Vec.set (Cstr.Rat.get_v c) eps Scalar.Rat.u}
 				 	in
 					let extract : Var.t list -> Splx.t -> (Scalar.Rat.t * Var.t option) list
 						= fun xs sx ->
@@ -49,11 +49,11 @@ module Proj (Min : Min.Type) = struct
 					(Scalar.Rat.negU, None) :: List.map (fun x -> (Cs.Vec.get asg x, Some x)) xs
 				in
 				fun l ->
-				let xs = Cstr.Rat.Positive.getVars l in
+				let xs = Cstr.Rat.getVars l in
 				let xl = Var.Set.elements xs in
 				let eps = Var.horizon xs in
-				Cstr.Rat.Positive.le [Scalar.Rat.negU, eps] Scalar.Rat.z ::
-					Cstr.Rat.Positive.le [Scalar.Rat.u, eps] Scalar.Rat.u ::
+				Cstr.Rat.le [Scalar.Rat.negU, eps] Scalar.Rat.z ::
+					Cstr.Rat.le [Scalar.Rat.u, eps] Scalar.Rat.u ::
 					List.map (buildCons eps) l
 					 |> List.fold_left (fun (i, l') c -> (i + 1, (i, c) :: l')) (0, [])
 					 |> Pervasives.snd
@@ -77,7 +77,7 @@ module Proj (Min : Min.Type) = struct
 
 		(** [buildProjCons xs l] builds a list a constraints to be inserted in the
 		simplex tableau.  The variables in [xs] must be bounded by the constraints in [l]. *)
-		let buildProjCons : Var.t list -> Cstr.Rat.Positive.t list -> Tableau.Vector.t list
+		let buildProjCons : Var.t list -> Cstr.Rat.t list -> Tableau.Vector.t list
 		  = fun xs cs ->
 		  List.map (fun x ->
 				 getCoeffs (Some x) cs
@@ -85,12 +85,12 @@ module Proj (Min : Min.Type) = struct
 				 |> fun v -> v @ [Q.zero])
 				xs
 
-		let buildObj : bool -> Var.t list -> Cstr.Rat.Positive.t list -> Objective.t
-		  = let buildCoeff : bool -> Var.t list -> Cstr.Rat.Positive.t -> ParamCoeff.t
+		let buildObj : bool -> Var.t list -> Cstr.Rat.t list -> Objective.t
+		  = let buildCoeff : bool -> Var.t list -> Cstr.Rat.t -> ParamCoeff.t
 				= fun withConst params c ->
-				let v = Cstr.Rat.Positive.get_v c in
+				let v = Cstr.Rat.get_v c in
 				ParamCoeff.mk (List.map (fun x -> Cs.Vec.get v x |> Scalar.Rat.neg) params)
-					 (if withConst then Cstr.Rat.Positive.get_c c else Q.zero)
+					 (if withConst then Cstr.Rat.get_c c else Q.zero)
 			 in
 			 fun withConst params cs ->
 			 Objective.mk
@@ -251,36 +251,36 @@ module Proj (Min : Min.Type) = struct
 end
 
 module Classic = struct
-	module Rat = Proj(Min.Classic(Vector.Rat.Positive))
+	module Rat = Proj(Min.Classic(Vector.Rat))
 
-	module Symbolic = Proj(Min.Classic(Vector.Symbolic.Positive))
+	module Symbolic = Proj(Min.Classic(Vector.Symbolic))
 
-	module Float = Proj(Min.Classic(Vector.Float.Positive))
+	module Float = Proj(Min.Classic(Vector.Float))
 end
 
 module Raytracing = struct
 	module Rat = struct
-		module Min = Min.Glpk(Vector.Rat.Positive)
+		module Min = Min.Glpk(Vector.Rat)
 		include Proj(Min)
 	end
 
 	module Float = struct
-		module Min = Min.Glpk(Vector.Float.Positive)
+		module Min = Min.Glpk(Vector.Float)
 		include Proj(Min)
 	end
 
 	module Symbolic = struct
-		module Min = Min.Glpk(Vector.Symbolic.Positive)
+		module Min = Min.Glpk(Vector.Symbolic)
 		include Proj(Min)
 	end
 end
 
 module Heuristic = struct
-	module Rat = Proj(Min.Heuristic(Vector.Rat.Positive))
+	module Rat = Proj(Min.Heuristic(Vector.Rat))
 
-	module Symbolic = Proj(Min.Heuristic(Vector.Symbolic.Positive))
+	module Symbolic = Proj(Min.Heuristic(Vector.Symbolic))
 
-	module Float = Proj(Min.Heuristic(Vector.Float.Positive))
+	module Float = Proj(Min.Heuristic(Vector.Float))
 end
 
 let proj : 'c Factory.t -> Flags.scalar -> Var.t list -> 'c Cons.t list -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list

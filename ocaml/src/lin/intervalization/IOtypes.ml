@@ -787,7 +787,7 @@ module DomainZ = struct
     module NAItv = ZNoneItv.NAItv
 
     module Poly = struct
-        include Poly.Make(Vector.Int.Positive)
+        include Poly.Make(Vector.Int)
 
         let coqvar_to_var : PVar.t -> Var.t
             = fun var ->
@@ -960,7 +960,7 @@ module DomainQ = struct
 
     module Poly = struct
         (** Polynomials over integers ?*)
-        include Poly.Make(Vector.Rat.Positive)
+        include Poly.Make(Vector.Rat)
 
         let coqvar_to_var : PVar.t -> Var.t
             = fun var ->

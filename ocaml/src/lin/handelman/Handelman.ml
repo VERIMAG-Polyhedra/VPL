@@ -244,7 +244,7 @@ module Handelman (Minimization : Min.Type) = struct
 			match Opt.getAsg_raw cstrs with
 			| None -> None
 			| Some point -> begin
-				let vec = Rtree.map (Vector.Rat.Positive.ofSymbolic) point
+				let vec = Rtree.map (Vector.Rat.ofSymbolic) point
 				|> project_point params in
 				Debug.log DebugTypes.Detail (lazy(Printf.sprintf "normalization point : %s"
 					(Poly.Vec.to_string Var.to_string vec)));
@@ -676,11 +676,11 @@ module Handelman (Minimization : Min.Type) = struct
 end
 
 
-module Rat = Handelman(Min.Classic(Vector.Rat.Positive))
+module Rat = Handelman(Min.Classic(Vector.Rat))
 
-module Symbolic = Handelman(Min.Classic(Vector.Symbolic.Positive))
+module Symbolic = Handelman(Min.Classic(Vector.Symbolic))
 
-module Float = Handelman(Min.Classic(Vector.Float.Positive))
+module Float = Handelman(Min.Classic(Vector.Float))
 
 
 (*
@@ -702,9 +702,9 @@ module Float = Handelman(Min.Classic(Vector.Float.Positive))
 			match Splx.getAsgOpt horizon (List.mapi (fun i c -> (i,c)) cstrs) with
 			| None -> Pervasives.failwith "getPointInside : empty polyhedron"
 			| Some point ->
-				let vec = Rtree.map (Vector.Rat.Positive.ofSymbolic) point in
+				let vec = Rtree.map (Vector.Rat.ofSymbolic) point in
 				if List.mem v params
-				then Some (Vector.Rat.Positive.get vec v)
+				then Some (Vector.Rat.get vec v)
 				else None
 
 		let get : 'c HPol.t -> Poly.t -> Poly.t * (Var.t -> Scalar.Rat.t option)

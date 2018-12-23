@@ -1,23 +1,23 @@
-let min : Cstr.Rat.Positive.t list -> Flags.min_method
+let min : Cstr.Rat.t list -> Flags.min_method
 	= fun l ->
 	if List.length l >= 10
 	then Flags.Classic
 	else Flags.Classic
 
 (** Only deal with inequalities. *)
-let proj : Cstr.Rat.Positive.t list -> Flags.proj_method
+let proj : Cstr.Rat.t list -> Flags.proj_method
 	= fun l ->
 	if List.length l >= 10
 	then Flags.Proj_PLP Flags.Float
 	else Flags.FM
 
-let join : Cstr.Rat.Positive.t list -> Cstr.Rat.Positive.t list -> Flags.join_method
+let join : Cstr.Rat.t list -> Cstr.Rat.t list -> Flags.join_method
 	= fun p1 p2 ->
 	if max(List.length p1) (List.length p2) >= 5
 	then Flags.Join_PLP Flags.Float
 	else Flags.Baryc
 
-let apply_min: Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
+let apply_min: Cstr.Rat.t list -> ('a -> 'b) -> 'a -> 'b
 	= fun cstrs f a ->
 	match !Flags.min with
 	| Flags.MHeuristic -> begin
@@ -29,7 +29,7 @@ let apply_min: Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
 		end
 	| _ -> f a
 
-let apply_proj: Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
+let apply_proj: Cstr.Rat.t list -> ('a -> 'b) -> 'a -> 'b
 	= fun cstrs f a ->
 	match !Flags.proj with
 	| Flags.PHeuristic -> begin
@@ -41,7 +41,7 @@ let apply_proj: Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
 		end
 	| _ -> f a
 
-let apply_join: Cstr.Rat.Positive.t list -> Cstr.Rat.Positive.t list -> ('a -> 'b) -> 'a -> 'b
+let apply_join: Cstr.Rat.t list -> Cstr.Rat.t list -> ('a -> 'b) -> 'a -> 'b
 	= fun cstrs1 cstrs2 f a ->
 	match !Flags.join with
 	| Flags.JHeuristic -> begin

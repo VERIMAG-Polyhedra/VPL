@@ -515,7 +515,7 @@ module Rat = struct
             |> Test.suite Cstr.Vec.Coeff.name
 	end
 
-	module Positive = Make_Tests(Cstr.Rat.Positive)
+	module Positive = Make_Tests(Cstr.Rat)
 
 	let ts : Test.t
 		= fun () -> Test.suite "Rat" [Positive.ts()]

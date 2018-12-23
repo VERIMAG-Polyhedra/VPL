@@ -1,4 +1,4 @@
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 
 type 'c t = (Var.t * 'c Cons.t) list
 

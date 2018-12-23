@@ -165,13 +165,13 @@ end
 
 module Solve = struct
 
-	let getModel : Var.t list -> Vector.Symbolic.Positive.t -> (Var.t * LPMaps.t) list
+	let getModel : Var.t list -> Vector.Symbolic.t -> (Var.t * LPMaps.t) list
 		= fun vars vec ->
 		Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Model: %s"
-			(Vector.Symbolic.Positive.to_string Var.to_string vec)));
+			(Vector.Symbolic.to_string Var.to_string vec)));
 		List.map
 			(fun v ->
-			if Scalar.Symbolic.isZ (Vector.Symbolic.Positive.get vec v)
+			if Scalar.Symbolic.isZ (Vector.Symbolic.get vec v)
 			then (v, LPMaps.Lower)
 			else (v, LPMaps.Upper))
 			vars

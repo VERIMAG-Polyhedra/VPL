@@ -1,6 +1,6 @@
 type cmpT = Cstr_type.cmpT_extended
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 module CP = CstrPoly
 module Polynomial = CP.Poly
@@ -232,7 +232,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
                 Pol.point = pol.Pol.point;
 			}
 
-    let get_regions : Vector.Rat.Positive.t option -> t -> t list
+    let get_regions : Vector.Rat.t option -> t -> t list
         = fun point -> function
         | Bottom _ -> []
         | NonBot p ->

@@ -2,8 +2,8 @@
     A parametric coefficient is an affine combination of the parameters.
  *)
 
-module Cs = Cstr.Rat.Positive
-module Poly : Poly.Type with module Vec = Vector.Rat.Positive
+module Cs = Cstr.Rat
+module Poly : Poly.Type with module Vec = Vector.Rat
 
 (** Type of parametric coefficients.*)
 type t = {

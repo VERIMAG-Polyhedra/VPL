@@ -5,7 +5,7 @@ Not that there is no handling of the empty polyhedron (i.e. the bottom value):
 a value of type [t] is assumed to be non-bottom and operators that may yield
 an empty polyhedron have an [option] type as return value. *)
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 
 module Debug : DebugTypes.Type
@@ -17,7 +17,7 @@ The vector is a point within the interior of the polyhedron. *)
 type 'c t = {
 	eqs: 'c EqSet.t;
 	ineqs: 'c IneqSet.t;
-    point: Vector.Symbolic.Positive.t option;
+    point: Vector.Symbolic.t option;
 }
 
 (** The polyhedron with no constraints. *)
@@ -25,7 +25,7 @@ val top: 'c t
 
 val get_eqs : 'c t -> 'c EqSet.t
 val get_ineqs : 'c t -> 'c IneqSet.t
-val get_point : 'c t -> Vector.Symbolic.Positive.t
+val get_point : 'c t -> Vector.Symbolic.t
 
 (** The return type of the inclusion test {!incl}.
 If inclusion holds, the certificate can be checked using function [check]. *)
@@ -209,7 +209,7 @@ val get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> 'c t list
     The normalization point is chosen using {!val:Opt.get_asg}.
     Certificates are lost during the process: frontiers of regions have no certificate.
 *)
-val get_regions : 'c Factory.t -> Vector.Rat.Positive.t option -> 'c t -> 'c t list
+val get_regions : 'c Factory.t -> Vector.Rat.t option -> 'c t -> 'c t list
 
 (** Returns an estimation of the size of the polyhedron. *)
 val size : 'c t -> Scalar.Rat.t option

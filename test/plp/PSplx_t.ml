@@ -1,5 +1,5 @@
 open Vpl
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 module PSplxDebug = PSplx.Debug
 module PSplx = PSplx.Make(Vec)

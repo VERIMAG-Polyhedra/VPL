@@ -4,7 +4,7 @@
 *)
 
 (* not clear how to plug this in NCDomain ! *)
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 module CP = CstrPoly
 module Polynomial = CP.Poly

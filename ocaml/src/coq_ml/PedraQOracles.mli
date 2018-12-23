@@ -6,8 +6,8 @@
 
 (* auxiliary functions *)
 module Nb = Scalar.Rat
-module Vec = Vector.Rat.Positive
-module Cs = Cstr.Rat.Positive
+module Vec = Vector.Rat
+module Cs = Cstr.Rat
 
 val coqPosToZ: BinNums.positive -> Scalar.Int.t
 val zToCoqPos: Scalar.Int.t -> BinNums.positive

@@ -1,4 +1,4 @@
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 
 module Debug = DebugTypes.Debug(struct let name = "PLPCore" end)
 module Profile = Profile.Profile(struct let name = "PLPCore" end)

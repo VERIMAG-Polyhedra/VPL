@@ -1,6 +1,6 @@
 open Vpl
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 
 let factory : Cs.t Factory.t = {
 	Factory.name = "Cstr";

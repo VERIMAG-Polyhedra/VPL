@@ -270,68 +270,59 @@ module Make (Coeff : Scalar.Type) = struct
 end
 
 module Rat = struct
+    module Coeff = Scalar.Rat
+	include Make (Scalar.Rat)
 
-	module Positive = struct
-        module Coeff = Scalar.Rat
-		include Make (Scalar.Rat)
-
-		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Rat.t
-			= fun v ->
-			if Scalar.Symbolic.hasDelta v
-			then Scalar.Rat.add
-					(Scalar.Symbolic.get_v v)
-					(Scalar.Rat.mul Scalar.Rat.delta (Scalar.Symbolic.get_d v))
-			else Scalar.Symbolic.get_v v
+	let ofSymbolic : Scalar.Symbolic.t -> Scalar.Rat.t
+		= fun v ->
+		if Scalar.Symbolic.hasDelta v
+		then Scalar.Rat.add
+				(Scalar.Symbolic.get_v v)
+				(Scalar.Rat.mul Scalar.Rat.delta (Scalar.Symbolic.get_d v))
+		else Scalar.Symbolic.get_v v
 
 
-		let gcd v =
-			let gcd = Rtree.fold (fun _ g a ->
-				if Scalar.Rat.cmpz a = 0 then
-					g
-				else
-					let sofRat = Scalar.Rat.ofQ in
-					match g with
-					| None -> Some (Scalar.Rat.toZ (Scalar.Rat.abs a |> sofRat))
-					| Some g -> Some (Scalar.Rat.gcd g a)) None v
-			in
-			match gcd with
-			| None -> Scalar.Rat.u
-			| Some (nGcd, dGcd) -> Scalar.Rat.ofZ dGcd nGcd |> Scalar.Rat.toQ
-	end
+	let gcd v =
+		let gcd = Rtree.fold (fun _ g a ->
+			if Scalar.Rat.cmpz a = 0 then
+				g
+			else
+				let sofRat = Scalar.Rat.ofQ in
+				match g with
+				| None -> Some (Scalar.Rat.toZ (Scalar.Rat.abs a |> sofRat))
+				| Some g -> Some (Scalar.Rat.gcd g a)) None v
+		in
+		match gcd with
+		| None -> Scalar.Rat.u
+		| Some (nGcd, dGcd) -> Scalar.Rat.ofZ dGcd nGcd |> Scalar.Rat.toQ
 end
 
 module Float = struct
-	module Positive = struct
-        module Coeff = Scalar.Float
-		include Make(Scalar.Float)
+    module Coeff = Scalar.Float
+	include Make(Scalar.Float)
 
-		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Float.t
-			= fun v ->
-			if Scalar.Symbolic.hasDelta v
-			then Scalar.Float.add
-					(Scalar.Symbolic.get_v v |> Scalar.Float.ofQ)
-					(Scalar.Float.mul Scalar.Float.delta (Scalar.Symbolic.get_d v |> Scalar.Float.ofQ))
-			else Scalar.Symbolic.get_v v |> Scalar.Float.ofQ
-	end
+	let ofSymbolic : Scalar.Symbolic.t -> Scalar.Float.t
+		= fun v ->
+		if Scalar.Symbolic.hasDelta v
+		then Scalar.Float.add
+				(Scalar.Symbolic.get_v v |> Scalar.Float.ofQ)
+				(Scalar.Float.mul Scalar.Float.delta (Scalar.Symbolic.get_d v |> Scalar.Float.ofQ))
+		else Scalar.Symbolic.get_v v |> Scalar.Float.ofQ
 end
 
 
 module Symbolic = struct
-	module Positive = struct
-        module Coeff = Scalar.Symbolic
-		include Make(Scalar.Symbolic)
+    module Coeff = Scalar.Symbolic
+	include Make(Scalar.Symbolic)
 
-		let ofSymbolic v = v
-	end
+	let ofSymbolic v = v
 end
 
 module Int = struct
-	module Positive = struct
-        module Coeff = Scalar.Int
-		include Make(Scalar.Int)
+    module Coeff = Scalar.Int
+	include Make(Scalar.Int)
 
-		let ofSymbolic : Scalar.Symbolic.t -> Scalar.Int.t
-			= fun _ ->
-			Pervasives.failwith "Vector.Int.Positive.ofSymbolic"
-	end
+	let ofSymbolic : Scalar.Symbolic.t -> Scalar.Int.t
+		= fun _ ->
+		Pervasives.failwith "Vector.Int.ofSymbolic"
 end

@@ -1,6 +1,6 @@
 type cmpT = Cstr_type.cmpT
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Poly = ParamCoeff.Poly
 
 type t = {

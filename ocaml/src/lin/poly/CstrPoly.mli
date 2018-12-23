@@ -1,6 +1,6 @@
 (** Type of polynomial constraints. *)
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Poly = ParamCoeff.Poly
 
 (** A polynomial constraint of the form [p typ 0]. *)

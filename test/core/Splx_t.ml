@@ -1,6 +1,6 @@
 open Vpl
 
-module Cs = Cstr.Rat.Positive (* XXX: à retirer pour généraliser à Var.Int *)
+module Cs = Cstr.Rat (* XXX: à retirer pour généraliser à Var.Int *)
 module Vec = Cs.Vec
 
 let x = Var.fromInt 1

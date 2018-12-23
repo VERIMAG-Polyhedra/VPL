@@ -7,9 +7,9 @@ module type Type = sig
 		@param x is a point that should lie in the interior of the polyhedron defined by [cstrs].
 		This function attach to each returned constraint [cstr] a point that violates only [cstr].
 		When possible, this point does not saturate the completentary of [cstr]. *)
-	val minimize : VecInput.t -> Cstr.Rat.Positive.t list -> (Cstr.Rat.Positive.t * VecInput.t) list
+	val minimize : VecInput.t -> Cstr.Rat.t list -> (Cstr.Rat.t * VecInput.t) list
 
-	val minimize_cone : VecInput.t -> Cstr.Rat.Positive.t list -> (Cstr.Rat.Positive.t * VecInput.t) list
+	val minimize_cone : VecInput.t -> Cstr.Rat.t list -> (Cstr.Rat.t * VecInput.t) list
 
 	val name : string
 end
@@ -52,6 +52,6 @@ module Classic : functor (Vec : Vector.Type) -> Type with module VecInput = Vec
 
 module Glpk : functor (Vec : Vector.Type) -> Type with module VecInput = Vec
 
-module Rat_Glpk : Type with module VecInput = Vector.Rat.Positive
+module Rat_Glpk : Type with module VecInput = Vector.Rat
 
 module Heuristic : functor (Vec : Vector.Type) -> Type with module VecInput = Vec

@@ -1,4 +1,4 @@
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
 
 module Debug = IneqSet.Debug
@@ -7,14 +7,14 @@ module Profile = Profile.Profile(struct let name = "Pol" end)
 type 'c t = {
 	eqs: 'c EqSet.t;
 	ineqs: 'c IneqSet.t;
-    point: Vector.Symbolic.Positive.t option;
+    point: Vector.Symbolic.t option;
 }
 
 let top: 'c t
 = {
 	eqs = EqSet.nil;
 	ineqs = IneqSet.nil;
-    point = Some Vector.Symbolic.Positive.nil;
+    point = Some Vector.Symbolic.nil;
 }
 
 let get_eqs (x : 'c t) = x.eqs
@@ -29,7 +29,7 @@ let to_string: (Var.t -> string) -> 'c t -> string
         (IneqSet.to_string varPr p.ineqs)
         (match p.point with
             | None -> "None"
-            | Some point -> Vector.Symbolic.Positive.to_string varPr point)
+            | Some point -> Vector.Symbolic.to_string varPr point)
 
 let to_string_raw: 'c t -> string
 	= fun p -> to_string Var.to_string  p
@@ -48,14 +48,14 @@ let to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 	in
     let pstr = match p.point with
         | None -> "None"
-        | Some point -> Vector.Symbolic.Positive.to_string varPr point
+        | Some point -> Vector.Symbolic.to_string varPr point
     in
 	Printf.sprintf "{\n\teqs = %s;\n\tineqs = %s;\n\tpoint = %s}" estr istr pstr
 
 let to_string_ext_raw: 'c Factory.t -> 'c t -> string
 	= fun factory p -> to_string_ext factory Var.to_string  p
 
-let get_point : 'c t -> Vector.Symbolic.Positive.t
+let get_point : 'c t -> Vector.Symbolic.t
     = fun p ->
     match p.point with
         | Some point -> point
@@ -74,7 +74,7 @@ let get_point : 'c t -> Vector.Symbolic.Positive.t
             end
 
 (*
-let get_point : 'c t -> Vector.Symbolic.Positive.t
+let get_point : 'c t -> Vector.Symbolic.t
     = fun p ->
     let ineqs = List.map Cons.get_c p.ineqs in
     let params_set = Cs.getVars ineqs in
@@ -290,7 +290,7 @@ let meetEq: 'c meetT -> 'c meetT -> bool
 type ('a,'c) mayBotT
 	= Ok of 'a | Bot of 'c
 
-let logOut: ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT -> 'c meetT
+let logOut: ('c logT * Vector.Symbolic.t option, 'c) mayBotT -> 'c meetT
 	= function
 	| Bot ce -> Contrad ce
 	| Ok (lp,point) ->
@@ -363,15 +363,15 @@ let logrewriteIneqs: 'c Factory.t -> 'c logT -> ('c logT, 'c) mayBotT
 		| Bot ce -> Bot ce
 		| Ok ip -> Ok (logIset lp ip)
 
-let logIneqSetAddM: Var.t -> Scalar.Symbolic.t Rtree.t -> 'c logT -> ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT
+let logIneqSetAddM: Var.t -> Scalar.Symbolic.t Rtree.t -> 'c logT -> ('c logT * Vector.Symbolic.t option, 'c) mayBotT
 	= let doAdd: Var.t -> 'c logT -> 'c Cons.t list -> 'c IneqSet.t -> Scalar.Symbolic.t Rtree.t
-        -> ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT
+        -> ('c logT * Vector.Symbolic.t option, 'c) mayBotT
 		= fun nvar lp l iset point ->
 		let iset' = IneqSet.addM nvar iset l point in
 		Ok (logIset lp (IMin iset'), Some point)
 	in
 	fun nvar point lp ->
-		let rec flatten: 'c Cons.t list -> 'c ipendingT -> ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT
+		let rec flatten: 'c Cons.t list -> 'c ipendingT -> ('c logT * Vector.Symbolic.t option, 'c) mayBotT
 		= fun l -> function
 			| IRw _
 			| IAddRw (_, _) -> assert false
@@ -577,7 +577,7 @@ let projectSub: 'c Factory.t -> Var.t -> 'c t -> Var.t -> 'c t
 	in
     let point' = match p.point with
         | None -> None
-        | Some point -> Some (Vector.Symbolic.Positive.project [x] point)
+        | Some point -> Some (Vector.Symbolic.project [x] point)
     in
 	{ineqs = ineqs;
      eqs = eqs;
@@ -600,7 +600,7 @@ let projectMSubFM: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
 			in
             let point' = match p.point with
                 | None -> None
-                | Some point -> Some (Vector.Symbolic.Positive.project l point)
+                | Some point -> Some (Vector.Symbolic.project l point)
             in
 			{ineqs = ineqs1; eqs = eqs1; point = point'}
             end
@@ -629,7 +629,7 @@ let projectMSubPLP: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> Flags.scalar 
 	let ineqs2 = IneqSet.pProjM factory l ineqs1 scalar_type in
     let point' = match p.point with
         | None -> None
-        | Some point -> Some (Vector.Symbolic.Positive.project l point)
+        | Some point -> Some (Vector.Symbolic.project l point)
     in
 	{ineqs = ineqs2;
      eqs = eqs1;
@@ -736,7 +736,7 @@ module Join_PLP = struct
 			p.eqs
 
 	(* Version spéciale pour extract_implicit_eq*)
-	let logOut: ('c logT * Vector.Symbolic.Positive.t option, 'c) mayBotT -> 'c t
+	let logOut: ('c logT * Vector.Symbolic.t option, 'c) mayBotT -> 'c t
 		= function
 			| Bot _ -> Pervasives.failwith "Pol.join:extract_implicit_eq"
 			| Ok (lp, point) -> begin
@@ -1066,7 +1066,7 @@ let rename: 'c Factory.t -> Var.t -> Var.t -> 'c t -> 'c t
 	ineqs = IneqSet.rename factory p.ineqs x y;
     point = (match p.point with
         | None -> None
-        | Some point -> Some (Vector.Symbolic.Positive.rename x y point))
+        | Some point -> Some (Vector.Symbolic.rename x y point))
     }
 
 (*
@@ -1251,9 +1251,9 @@ let set_point : Vec.t -> 'c t -> 'c t
         )
         (get_cstr p)
     ;
-    {p with point = Some (Vector.Symbolic.Positive.ofRat point)}
+    {p with point = Some (Vector.Symbolic.ofRat point)}
 
-let get_regions : 'c Factory.t -> Vector.Rat.Positive.t option -> 'c t -> 'c t list
+let get_regions : 'c Factory.t -> Vector.Rat.t option -> 'c t -> 'c t list
     = fun factory point p ->
 	Debug.log DebugTypes.Title (lazy "Getting regions");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
@@ -1280,7 +1280,7 @@ let size : 'c t -> Scalar.Rat.t option
     let cstrs = List.map Cons.get_c p.ineqs in
     let res = match Opt.getAsg_raw cstrs with
     | Some point ->
-        let point' =  Vector.Symbolic.Positive.toRat point in
+        let point' =  Vector.Symbolic.toRat point in
         List.map (Cs.distance_point_cstr point') cstrs
         |> Misc.max Scalar.Rat.cmp
         |> fun x -> Some x

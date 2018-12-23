@@ -66,7 +66,7 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
             toVar'
         | _ -> Pervasives.failwith "get_regions"
         in
-        Some (Vector.Rat.Positive.rename_f toVar point)
+        Some (Vector.Rat.rename_f toVar point)
         end
     in
     List.map (fun p' -> {p with pol = p'}) (LHD.get_regions point' p.pol)

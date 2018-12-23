@@ -190,7 +190,7 @@ module Slave (Minimization : Min.Type) = struct
 end
 
 module SlaveRat = struct
-	include Slave (Min.Classic(Vector.Rat.Positive))	
+	include Slave (Min.Classic(Vector.Rat))	
 end
 
 (** Waits for something to be readable in stdin. *)
