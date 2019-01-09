@@ -1,19 +1,20 @@
+(** Types and conversions for intervalization oracle. *)
+
 open ProgVar
 open FMapPositive
 
-(*
-    TODO: to avoid sorting the variable list in MonomialBasis.mk all the time, make a new operator mk_no_sorting that do not sort them.
-*)
-
 type mode = DomainInterfaces.mode
 
-module Debug = DebugTypes.Debug(struct let name = "IOracle" end)
+module Debug = OraclePattern.Debug
 
+(** Type of numerical domains providing linear terms, intervals and polynomials.
+    The intervalization oracle can be run with two domains (in Z when called from Coq, or in Q). *)
 module type Domain_T = sig
 
+    (** Type of scalar values. *)
     module N : NumC.NumSig
 
-    (* Copy from ASTerm.ModalTerm *)
+    (** Basic AST Terms, copied from ASTerm.ModalTerm *)
     module BasicTerm : sig
 
         module Annot : sig
@@ -56,127 +57,77 @@ module type Domain_T = sig
         type t = term
 
         val eval : term -> N.t Mem.t -> N.t
-
         val mdBound : term -> PVar.t -> PVar.t
-
         val fold_variables : term -> (PVar.t -> 'a1 -> 'a1) -> 'a1 -> 'a1
-
         val map : term -> PVar.t Mem.t -> term
-
         val pseudoIsZero : term -> bool
-
         val smartScalAdd1 : N.t -> term -> term
-
         val smartScalAdd : N.t -> term -> term
-
         val smartAdd : term -> term -> term
-
         val smartOpp : term -> term
-
         val smartScalMul1 : N.t -> term -> term
-
         val smartScalMul : N.t -> term -> term
-
         val smartMul : term -> term -> term
-
         val smartAnnot : Annot.topLevelAnnot -> term -> term
-
         val import_acc : (PVar.t*N.t) list -> term -> term
-
         val import : (PVar.t*N.t) list -> term
-
         val coq_Old : term -> term
-
         val xeval : term -> N.t Mem.t -> N.t Mem.t -> N.t
-
         val xmap : term -> PVar.t Mem.t -> PVar.t Mem.t -> term
-
         val isCte : term -> bool
-
         val annotAFFINEx : term -> term
-
         val annotAFFINE_rec : term -> term option
-
         val annotAFFINE : term -> term
-
         val matchCte : term -> N.t option
-
         val pr : term -> char list
     end
 
+    (** Linear terms represented as maps from variables to scalars. *)
     module LinTerm : sig
         type t = N.t PositiveMap.t
 
         val absEval : (PVar.t*N.t) list -> N.t Mem.t -> N.t
-
         val eval : t -> N.t Mem.t -> N.t
-
         type exportT = (PVar.t*N.t) list
-
         val export : t -> exportT
-
         val nil : t
-
         val isNil : t -> bool
-
         val single : PVar.t -> N.t -> t
-
         val opp : t -> N.t PositiveMap.t
-
         val mul : N.t -> t -> t
-
         val coq_N_eqb : N.t -> N.t -> bool
-
         val isEq : t -> t -> bool
-
         val add : t -> t -> t
-
         val isFree : PVar.t -> t -> bool
-
         val rename : PVar.t -> PVar.t -> t -> t
-
         val fmtAux : char list list -> char list -> char list
-
         val fmt : char list list -> char list
-
         val pairPr : (PVar.t*N.t) -> char list
-
         val pr : t -> char list
-
         val pair_to_string : (PVar.t -> char list) -> (PVar.t*N.t) -> char list
-
         val to_string : (PVar.t -> char list) -> t -> char list
     end
 
+    (** Affine terms. *)
     module AffTerm : sig
 
         type affTerm = { lin : LinTerm.t; cte : N.t }
 
         val lin : affTerm -> LinTerm.t
-
         val cte : affTerm -> N.t
-
         type t = affTerm
-
         val eval : affTerm -> N.t Mem.t -> N.t
-
         val nil : affTerm
-
         val opp : affTerm -> affTerm
-
         val mul : N.t -> affTerm -> affTerm
-
         val add : affTerm -> affTerm -> affTerm
-
         val addc : N.t -> affTerm -> affTerm
-
         val addx : PVar.t -> affTerm -> affTerm
-
         val addnx : PVar.t -> affTerm -> affTerm
-
         val isZero : affTerm -> bool
     end
 
+    (** Terms with annotations. *)
     module Term : sig
         module Annot :
         sig
@@ -213,60 +164,35 @@ module type Domain_T = sig
         type t = term
 
         val eval : term -> N.t Mem.t -> N.t
-
         val mdBound : term -> PVar.t -> PVar.t
-
         val fold_variables : term -> (PVar.t -> 'a1 -> 'a1) -> 'a1 -> 'a1
-
         val map : term -> PVar.t Mem.t -> term
-
         val pseudoIsZero : term -> bool
-
         val smartScalAdd1 : N.t -> term -> term
-
         val smartScalAdd : N.t -> term -> term
-
         val smartAdd : term -> term -> term
-
         val smartOpp : term -> term
-
         val smartScalMul1 : N.t -> term -> term
-
         val smartScalMul : N.t -> term -> term
-
         val smartMul : term -> term -> term
-
         val smartAnnot : Annot.topLevelAnnot -> term -> term
-
         val import_acc : (PVar.t*N.t) list -> term -> term
-
         val import : (PVar.t*N.t) list -> term
-
         val coq_Old : term -> term
-
         val xeval : term -> N.t Mem.t -> N.t Mem.t -> N.t
-
         val xmap : term -> PVar.t Mem.t -> PVar.t Mem.t -> term
-
         val isCte : term -> bool
-
         val annotAFFINEx : term -> term
-
         val annotAFFINE_rec : term -> term option
-
         val annotAFFINE : term -> term
-
         val matchCte : term -> N.t option
-
         val pr : term -> char list
-
         val fromLin : LinTerm.t -> BasicTerm.term
-
         val fromAff : AffTerm.affTerm -> BasicTerm.term
-
         val affineDecompose : BasicTerm.term -> BasicTerm.term*AffTerm.t
     end
 
+    (** Not necesarily bounded intervals. *)
     module NoneItv : sig
         type t
 
@@ -283,42 +209,31 @@ module type Domain_T = sig
         type t = AffTerm.t option
 
         val cte : N.t option -> t
-
         val add : t -> t -> t
-
         val opp : t -> t
-
         val mul : N.t option -> AffTerm.t -> t
-
         val mulZ1 : N.t -> t -> t
-
         val mulZ : N.t -> t -> t
      end
 
-    module NAItv :sig
+     (** Type of intervals where bounds are affine terms.
+        Bounds can be unbounded as well. *)
+     module NAItv :sig
         type itv = { low : NA.t; up : NA.t }
 
         val low : itv -> NA.t
-
         val up : itv -> NA.t
-
         val cte : NoneItv.t -> itv
-
         val single : AffTerm.t -> itv
-
         val select : mode -> NA.t -> NA.t -> itv
-
         val add : mode -> itv -> itv -> itv
-
         val opp : mode -> itv -> itv
-
         val mulZ : mode -> N.t -> itv -> itv
-
         val mulN : mode -> NoneItv.t -> AffTerm.t -> itv
-
         val mulP1 : mode -> NoneItv.t -> AffTerm.t -> itv
     end
 
+    (** Type fo polynomials. *)
     module Poly : sig
         include Poly.Type
 
@@ -329,21 +244,32 @@ module type Domain_T = sig
     end
 end
 
+(** Type of domains for intervalization. *)
 module type Type = sig
+
+    (** The input domain. *)
     module D : Domain_T
 
+    (** Environment from variables to intervals. *)
     type env = PVar.t -> D.NoneItv.t
 
+    (** Input type for intervalization. *)
     type linearizeContext = {
-        nonaffine : D.Term.t;
-        env : (PVar.t -> D.NoneItv.t);
-        affine : D.AffTerm.t;
-        source : D.Term.t;
-        cmp : NumC.cmpG;
+        nonaffine : D.Term.t; (** nonlinear part *)
+        env : (PVar.t -> D.NoneItv.t); (** static environment *)
+        affine : D.AffTerm.t; (** affine part *)
+        source : D.Term.t; (** whole expression *)
+        cmp : NumC.cmpG; (** comparison sign *)
     }
 
+    (** Type of maps indexed by monomials. *)
     module MapMonomial : Map.S with type key = D.Poly.MonomialBasis.t
 
+    (** Type of maps indexed by variables. *)
+    module MapV : Map.S with type key = Var.t
+
+    (** Extension of the type of terms.
+        Implements several strategies for intervalization. *)
     module Term : sig
 
     	type t = D.BasicTerm.term
@@ -358,28 +284,15 @@ module type Type = sig
     	val of_monomialBasis : D.Poly.MonomialBasis.t -> t
     	val of_monomial : D.Poly.Monomial.t -> t
     	val of_polynomial : D.Poly.t -> t
-    	val center_zero_var : D.Poly.Monomial.t -> Var.t -> Var.t list -> D.N.t list -> D.BasicTerm.term list
-    	val translate : D.Poly.Monomial.t -> Var.t -> D.N.t -> D.BasicTerm.term * D.Poly.Monomial.t
+        val focusing : D.Poly.Monomial.t -> Var.t -> (Var.t * D.N.t) list -> D.BasicTerm.term list
     	val get_affine_part : t -> t
+    	val get_affine_part_opt : t -> t option
     	val get_interv_part : t -> t
+        val get_interv_part_opt :  t -> t option
     end
 
-    module AnnotedVar : sig
-
-    	type t =
-    	| Var of Var.t
-    	| AVar of ASTerm.TopLevelAnnot.topLevelAnnot * t
-
-    	val of_var : Var.t -> ASTerm.TopLevelAnnot.topLevelAnnot -> t
-    	val to_var : t -> Var.t
-    	val to_term : t -> D.BasicTerm.term
-    	val to_string : t -> string
-    	val update_monomial : D.Poly.MonomialBasis.t -> (t list) MapMonomial.t -> D.Poly.MonomialBasis.t
-      	val mem : Var.t -> t list -> bool
-      	val find : Var.t -> t list -> t
-    	val apply : D.BasicTerm.t -> t list -> D.BasicTerm.t
-    end
-
+    (** Extension of the type of intervals.
+        Contains useful functions for intervalization. *)
     module Itv : sig
     	type t = D.NoneItv.t
 
@@ -391,12 +304,13 @@ module type Type = sig
     	val range : t -> D.Poly.Coeff.t
     	val is_bounded : t -> bool
     	val is_fully_unbounded : t -> bool
-    	val greatest : D.Poly.MonomialBasis.t -> env -> Var.t
+    	val greatest : D.Poly.MonomialBasis.t -> env -> Var.t option
     	val contains_zero : t -> bool
     	val get_translation_bound : t -> D.N.t
     end
 end
 
+(** Lifts a numerical domain into an intervalization domain. *)
 module Lift (D : Domain_T) = struct
 
     module D = D
@@ -412,6 +326,7 @@ module Lift (D : Domain_T) = struct
     }
 
     module MapMonomial = Map.Make(D.Poly.MonomialBasis)
+    module MapV = Map.Make(struct type t = Var.t let compare = Var.cmp end)
 
     module Term = struct
 
@@ -457,14 +372,9 @@ module Lift (D : Domain_T) = struct
 
     	let of_monomialBasis : D.Poly.MonomialBasis.t -> t
     		= fun m ->
-    		List.fold_left
-    		D.BasicTerm.smartMul
-    		one
-    		(List.map
-    			(fun x -> if x |> Var.toInt = 0
-    				then one
-    				else of_var x)
-    			(D.Poly.MonomialBasis.to_list_expanded m))
+            D.Poly.MonomialBasis.to_list_expanded m
+            |> List.map of_var
+            |> List.fold_left D.BasicTerm.smartMul one
 
     	let of_monomial : D.Poly.Monomial.t -> t
     		= fun m ->
@@ -480,13 +390,10 @@ module Lift (D : Domain_T) = struct
         		zero
         		(D.Poly.data p)
 
-    	let rec center_zero_var : D.Poly.Monomial.t -> Var.t -> Var.t list -> D.N.t list -> D.BasicTerm.term list
-    		= fun m vToKeep vlist clist ->
-            let (m,c) = D.Poly.Monomial.data m in
-    		match (vlist,clist) with
-    		| ([],[]) ->
-                let basis = Misc.pop Var.equal (D.Poly.MonomialBasis.to_list_expanded m) vToKeep
-                    |> D.Poly.MonomialBasis.mk_expanded
+        let rec focusing : D.Poly.Monomial.t -> Var.t -> (Var.t * D.N.t) list -> D.BasicTerm.term list
+    		= fun (mb,c) vToKeep -> function
+    		| [] ->
+                let basis = D.Poly.MonomialBasis.remove_var_exp vToKeep 1 mb
                     |> of_monomialBasis
                 in
                 [D.BasicTerm.smartMul
@@ -494,177 +401,85 @@ module Lift (D : Domain_T) = struct
         				ASTerm.TopLevelAnnot.INTERV
                         basis)
         			(D.BasicTerm.annotAFFINE (of_monomial (D.Poly.Monomial.mk_list [vToKeep,1] c)))]
-    		| ([],_) | (_,[]) -> Pervasives.failwith "Oracle.Term.center_zero_var"
-    		| (v :: vtl, x :: ctl) ->
-        		let tlist1 =
-                    let mono = D.Poly.Monomial.mk_expanded
-                        (Misc.pop (Var.equal) (D.Poly.MonomialBasis.to_list_expanded m) v)
-                        c
-                    in
-                    center_zero_var mono vToKeep vtl ctl
+    		| (v,x) :: l ->
+                let mb' = D.Poly.MonomialBasis.remove_var_exp v 1 mb in
+        		let tlist1 = focusing (mb',c) vToKeep l in
+        		let x' = D.Poly.n_to_coeff x
+                    |> D.Poly.Coeff.mul c
                 in
-        		let x' = D.Poly.n_to_coeff x in
-        		let tlist2 =
-                    let mono = D.Poly.Monomial.mk_expanded
-                        (Misc.pop (Var.equal) (D.Poly.MonomialBasis.to_list_expanded m) v)
-                        (D.Poly.Coeff.mul c x')
+        		let tlist2 = focusing (mb', x') vToKeep l in
+                List.map2 (fun t1 t2 ->
+                    let t1' = D.BasicTerm.smartMul
+            			(D.BasicTerm.smartAnnot
+            				ASTerm.TopLevelAnnot.INTERV
+            					(D.BasicTerm.smartAdd
+            						(of_var v)
+            						(D.BasicTerm.Opp (D.BasicTerm.Cte x))))
+            			t1
                     in
-                    center_zero_var mono vToKeep vtl ctl
-                in
-        		List.concat
-        		(List.map2
-        		(fun t1 t2->
-        		[D.BasicTerm.smartMul
-        			(D.BasicTerm.smartAnnot
-        				ASTerm.TopLevelAnnot.INTERV
-        					(D.BasicTerm.smartAdd
-        						(of_var v)
-        						(D.BasicTerm.Opp (D.BasicTerm.Cte x))))
-        			t1;
-        		t2])
-        		tlist1 tlist2)
+            		[t1' ; t2]
+                ) tlist1 tlist2
+                |> List.concat
 
-    	(* on ne translate que la variable qu'on garde*)
-    	let translate : D.Poly.Monomial.t -> Var.t -> D.N.t -> D.BasicTerm.term * D.Poly.Monomial.t
-    		= fun m vToKeep coeff ->
-            let (m,c) = D.Poly.Monomial.data m in
-    		let l = Misc.pop (Var.equal) (D.Poly.MonomialBasis.to_list_expanded m) vToKeep
-            in
-            let term = (D.BasicTerm.smartMul
-    			(D.BasicTerm.annotAFFINE
-    				(D.BasicTerm.smartScalMul
-                        (D.Poly.coeff_to_n c)
-    					(D.BasicTerm.smartAdd
-    						(of_var vToKeep)
-    						(D.BasicTerm.Opp (D.BasicTerm.Cte coeff)))))
-    			(D.BasicTerm.smartAnnot
-    				ASTerm.TopLevelAnnot.INTERV
-    				(D.Poly.MonomialBasis.mk_expanded l |> of_monomialBasis)))
-            and mono = D.Poly.Monomial.mk_expanded l (D.Poly.Coeff.mul c (D.Poly.n_to_coeff coeff))
-            in (term, mono)
+        let rec get_affine_part_opt : t -> t option
+			= D.BasicTerm.(function
+			| Var _ -> None
+			| Cte _ -> None
+			| Add (x1,x2) ->  (match (get_affine_part_opt x1, get_affine_part_opt x2) with
+				| (None, Some x) -> Some x
+				| (Some x, None) -> Some x
+				| (Some x1, Some x2) -> Some (smartAdd x1 x2)
+				| _ -> None (* a modifier *))
+  			| Opp x -> (match get_affine_part_opt x with
+  				| Some y -> Some(Opp y)
+  				| None -> None)
+			| Mul (x1,x2) ->  (match (get_affine_part_opt x1, get_affine_part_opt x2) with
+				| (None, Some x) -> Some x
+				| (Some x, None) -> Some x
+				| _ -> None (* a modifier *))
+  			| Annot (ASTerm.TopLevelAnnot.AFFINE, x) -> Some x
+  			| Annot (a, x) -> (match get_affine_part_opt x with
+  				| Some y -> Some(Annot (a, y))
+  				| None -> None)
+            )
 
     	(* Renvoie une partie affine en enlevant les annotations affines *)
     	let get_affine_part : t -> t
-    		= let rec get_affine_part_rec : t -> t option
-    			= D.BasicTerm.(function
-    			| Var _ -> None
-    			| Cte _ -> None
-    			| Add (x1,x2) ->  (match (get_affine_part_rec x1, get_affine_part_rec x2) with
-    				| (None, Some x) -> Some x
-    				| (Some x, None) -> Some x
-    				| (Some x1, Some x2) -> Some (smartAdd x1 x2)
-    				| _ -> None (* a modifier *))
-      			| Opp x -> (match get_affine_part_rec x with
-      				| Some y -> Some(Opp y)
-      				| None -> None)
-    			| Mul (x1,x2) ->  (match (get_affine_part_rec x1, get_affine_part_rec x2) with
-    				| (None, Some x) -> Some x
-    				| (Some x, None) -> Some x
-    				| _ -> None (* a modifier *))
-      			| Annot (a, x) when a = ASTerm.TopLevelAnnot.AFFINE -> Some x
-      			| Annot (a, x) -> (match get_affine_part_rec x with
-      				| Some y -> Some(Annot (a, y))
-      				| None -> None)
-                )
-    	in fun t ->
-     	match get_affine_part_rec t with
+    		= fun t ->
+         	match get_affine_part_opt t with
       		| Some x -> x
       		| None -> Pervasives.raise Not_found
 
+        (* remarque : retire les annotations interv*)
+    	let rec get_interv_part_opt : t -> t option
+			= D.BasicTerm.(function
+			| Var _ -> None
+			| Cte _ -> None
+			| Add (x1,x2) ->  (match (get_interv_part_opt x1, get_interv_part_opt x2) with
+				| (None, Some x) -> Some x
+				| (Some x, None) -> Some x
+				| (Some x1, Some x2) -> Some (Add (x1,x2))
+				| _ -> None)
+  			| Opp x -> (match get_interv_part_opt x with
+  				| Some y -> Some(Opp y)
+  				| None -> None)
+			| Mul (x1,x2) ->  (match (get_interv_part_opt x1, get_interv_part_opt x2) with
+				| (None, Some x) -> Some x
+				| (Some x, None) -> Some x
+				| (Some x1, Some x2) -> Some(Mul (x1,x2))
+				| _ -> None)
+  			| Annot (ASTerm.TopLevelAnnot.INTERV, x) -> Some x
+  			| Annot (a, x) -> (match get_interv_part_opt x with
+  				| Some y -> Some(Annot (a, y))
+  				| None -> None)
+            )
+
       	(* remarque : retire les annotations interv*)
     	let get_interv_part : t -> t
-    		= let rec get_interv_part_rec : t -> t option
-    			= D.BasicTerm.(function
-    			| Var _ -> None
-    			| Cte _ -> None
-    			| Add (x1,x2) ->  (match (get_interv_part_rec x1, get_interv_part_rec x2) with
-    				| (None, Some x) -> Some x
-    				| (Some x, None) -> Some x
-    				| (Some x1, Some x2) -> Some (Add (x1,x2))
-    				| _ -> None)
-      			| Opp x -> (match get_interv_part_rec x with
-      				| Some y -> Some(Opp y)
-      				| None -> None)
-    			| Mul (x1,x2) ->  (match (get_interv_part_rec x1, get_interv_part_rec x2) with
-    				| (None, Some x) -> Some x
-    				| (Some x, None) -> Some x
-    				| (Some x1, Some x2) -> Some(Mul (x1,x2))
-    				| _ -> None)
-      			| Annot (a, x) when a = ASTerm.TopLevelAnnot.INTERV -> Some x
-      			| Annot (a, x) -> (match get_interv_part_rec x with
-      				| Some y -> Some(Annot (a, y))
-      				| None -> None)
-                )
-      	in fun t ->
-      	match get_interv_part_rec t with
+    		= fun t ->
+          	match get_interv_part_opt t with
       		| Some x -> x
      	 	| None -> one
-    end
-
-    (* les annotations autorisées sont Interv et Static*)
-    module AnnotedVar = struct
-
-    	type t =
-    	| Var of Var.t
-    	| AVar of ASTerm.TopLevelAnnot.topLevelAnnot * t
-
-    	let of_var : Var.t -> ASTerm.TopLevelAnnot.topLevelAnnot -> t
-    		= fun v a ->
-    		AVar(a, Var v)
-
-    	let rec to_var : t -> Var.t
-    		= fun x ->
-    		match x with
-    		| Var v -> v
-    		| AVar (_,v) -> to_var v
-
-    	let rec to_term : t -> D.BasicTerm.term
-    		= fun aV ->
-    		match aV with
-    		| Var v -> D.BasicTerm.Var (D.Poly.var_to_coqvar v)
-            | AVar(a,aV') -> D.BasicTerm.smartAnnot a (to_term aV')
-
-
-    	let rec to_string : t -> string
-    	= function
-    	| Var v -> Var.to_string v
-    	| AVar (ASTerm.TopLevelAnnot.STATIC, aV') -> String.concat "" ["STATIC(" ; to_string aV' ; ")"]
-    	| AVar (ASTerm.TopLevelAnnot.INTERV, aV') -> String.concat "" ["INTERV(" ; to_string aV' ; ")"]
-    	| _ -> Pervasives.invalid_arg "IOtypes.AnnotedVar.to_string"
-
-
-    	(* utile pour prendre en compte les variables éliminées pour un monôme
-    	il faut prendre garde à ce que le pattern fournisse le monome original cependant *)
-    	let update_monomial : D.Poly.MonomialBasis.t -> (t list) MapMonomial.t -> D.Poly.MonomialBasis.t
-    		= fun m mapNKeep ->
-    		try List.fold_left
-    			(fun m' v -> Misc.pop (Var.equal) (D.Poly.MonomialBasis.to_list_expanded m') v
-                    |> D.Poly.MonomialBasis.mk_expanded)
-    			m
-    			(List.map to_var (MapMonomial.find m mapNKeep))
-    		with Not_found -> m
-
-      	let mem : Var.t -> t list -> bool
-      		= fun v aVarl ->
-      		List.mem
-      			v
-      			(List.map to_var aVarl)
-
-      	let find : Var.t -> t list -> t
-      		= fun v aVarl ->
-      		List.find
-      			(fun x -> Var.equal v (to_var x))
-      			aVarl
-
-    	let rec apply : D.BasicTerm.t -> t list -> D.BasicTerm.t
-    		= fun t aVarl ->
-    		match t with
-    		| D.BasicTerm.Var x when mem (D.Poly.coqvar_to_var x) aVarl-> to_term (find (D.Poly.coqvar_to_var x) aVarl)
-    		| D.BasicTerm.Opp x -> D.BasicTerm.smartOpp (apply x aVarl)
-    		| D.BasicTerm.Add (x1,x2) -> D.BasicTerm.smartAdd (apply x1 aVarl) (apply x2 aVarl)
-      		| D.BasicTerm.Mul (x1,x2) -> D.BasicTerm.smartMul (apply x1 aVarl) (apply x2 aVarl)
-      		| D.BasicTerm.Annot (annot, x) -> D.BasicTerm.smartAnnot annot (apply x aVarl)
-      		| _ -> t
     end
 
     module Itv = struct
@@ -719,24 +534,23 @@ module Lift (D : Domain_T) = struct
     			| (None,None) -> true
     			| _ -> false
 
-    	let greatest : D.Poly.MonomialBasis.t -> env -> Var.t
-    		= fun m env->
-    		let l = List.filter
-                (fun x -> Var.toInt x > 0)
-                (D.Poly.MonomialBasis.to_list_expanded m)
+    	let greatest : D.Poly.MonomialBasis.t -> env -> Var.t option
+    		= fun mb env ->
+            let ranges = List.map (fun (var,e) ->
+                (var, of_var env var |> range)
+                ) mb
+            (* Negative ranges correspond to unbounded intervals *)
+    		|> List.filter (fun (_, range) ->
+                D.Poly.Coeff.le D.Poly.Coeff.z range)
             in
-    		List.map (fun x -> of_var env x |> range) l
-    		|> List.combine l (*liste de paire (variable, range de l'intervalle)*)
-    		|> List.filter (fun (_,x) -> D.Poly.Coeff.le D.Poly.Coeff.z x) (* on ne garde que les ranges positives (les négatives étant des itv non bornés) *)
-            |> fun l ->
-                List.fold_left (* We take the max *)
-                (fun (var_max, max) (var,value) ->
-                    if D.Poly.Coeff.le max value
-                    then (var, value)
-                    else (var_max, max)
-                    )
-                (List.hd l) (List.tl l)
-    		|> Pervasives.fst
+            if ranges = []
+            then None
+            else
+                let max = Misc.max (fun (var1,r1) (var2,r2) ->
+                    D.Poly.Coeff.cmp r1 r2
+                ) ranges
+        		|> Pervasives.fst
+                in Some max
 
         (* TODO: le -> lt ?*)
     	let contains_zero : t -> bool
@@ -764,6 +578,7 @@ module Lift (D : Domain_T) = struct
     end
 end
 
+(** Numerical domain for integers. *)
 module DomainZ = struct
 
     module N = NumC.ZNum
@@ -813,6 +628,7 @@ module DomainZ = struct
     end
 end
 
+(** Numerical domain for rationals. *)
 module DomainQ = struct
 
     module N = NumC.QNum
@@ -881,25 +697,15 @@ module DomainQ = struct
     module NAItv = struct
         type itv = { low : NA.t; up : NA.t }
 
-        (** val low : itv -> NA.t **)
-
         let low x = x.low
 
-        (** val up : itv -> NA.t **)
-
         let up x = x.up
-
-        (** val cte : ZNItv.t -> itv **)
 
         let cte i =
         { low = (NA.cte i.NoneItv.low); up = (NA.cte i.NoneItv.up) }
 
-        (** val single : ZAffTerm.t -> itv **)
-
         let single aft =
         let bnd = Some aft in { low = bnd; up = bnd }
-
-        (** val select : mode -> NA.t -> NA.t -> itv **)
 
         let select mo l u =
         DomainInterfaces.(match mo with
@@ -908,8 +714,6 @@ module DomainQ = struct
         | LOW -> { low = l; up = None }
         )
 
-        (** val add : mode -> itv -> itv -> itv **)
-
         let add mo i1 i2 =
         DomainInterfaces.(match mo with
         | BOTH -> { low = (NA.add i1.low i2.low); up = (NA.add i1.up i2.up) }
@@ -917,16 +721,12 @@ module DomainQ = struct
         | LOW -> { low = (NA.add i1.low i2.low); up = None }
         )
 
-        (** val opp : mode -> itv -> itv **)
-
         let opp mo i =
         DomainInterfaces.(match mo with
         | BOTH -> { low = (NA.opp i.up); up = (NA.opp i.low) }
         | UP -> { low = None; up = (NA.opp i.low) }
         | LOW -> { low = (NA.opp i.up); up = None }
         )
-
-        (** val mulZ : mode -> coq_Z -> itv -> itv **)
 
         let mulZ mo c i =
         if N.ltLeDec N.z c
@@ -939,16 +739,12 @@ module DomainQ = struct
               | UP -> { low = None; up = (NA.mulZ1 c i.low) }
               | LOW -> { low = (NA.mulZ1 c i.up); up = None })
 
-        (** val mulN : mode -> NoneItv.t -> ZAffTerm.t -> itv **)
-
         let mulN mo i aft =
         DomainInterfaces.(match mo with
         | BOTH -> { low = (NA.mul i.NoneItv.up aft); up = (NA.mul i.NoneItv.low aft) }
         | UP -> { low = None; up = (NA.mul i.NoneItv.low aft) }
         | LOW -> { low = (NA.mul i.NoneItv.up aft); up = None }
         )
-
-        (** val mulP1 : mode -> NoneItv.t -> ZAffTerm.t -> itv **)
 
         let mulP1 mo i aft =
         DomainInterfaces.(match mo with

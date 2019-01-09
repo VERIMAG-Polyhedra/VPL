@@ -69,9 +69,9 @@ module QItv =
        | Closed m -> if coq_Qclt_le_dec n m then false else true)
     | Closed n -> is_not_upper n i.upper
 
-  (** val of_int : QNum.t -> t **)
+  (** val mk1 : QNum.t -> t **)
 
-  let of_int n =
+  let mk1 n =
     { lower = (Closed n); upper = (Closed n) }
 
   (** val bndAdd : bndT -> bndT -> bndT **)
@@ -126,7 +126,7 @@ module QItv =
     match coq_Qc_dec QNum.z n with
     | Coq_inleft pfn ->
       if pfn then mulcPos i n else opp (mulcPos i (coq_Qcopp n))
-    | Coq_inright -> of_int QNum.z
+    | Coq_inright -> mk1 QNum.z
 
   (** val pr : t -> char list **)
 
@@ -148,7 +148,7 @@ module QItv =
   (** val shift : t -> QNum.t -> tInd **)
 
   let shift i n =
-    add (of_int n) i
+    add (mk1 n) i
  end
 
 module ZItv =

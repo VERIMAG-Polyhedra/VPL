@@ -8,6 +8,12 @@ open Debugging;;
 
 Printf.printf "*** run tests generated from Coq...\n";;
 (*
+OraclePattern.Debug.enable DebugTypes.([Title ; MInput ; MOutput ; Normal ; Detail]);;
+OraclePattern.Debug.print_enable();;
+IOtypes.Debug.enable DebugTypes.([Title ; MInput ; MOutput ; Normal ; Detail]);;
+IOtypes.Debug.print_enable();;
+*)
+(*
 Debug.enable();;
 Debug.print_enable();;
 Debug.set_colors();;
@@ -16,7 +22,6 @@ Debug.set_colors();;
 let firstfail_mode = false;;
 
 (** Déclaration de variables *)
-module Var = Var.Positive
 
 let nextVar = ref Var.XH;;
 

@@ -35,6 +35,17 @@ module Make (Vec: Vector.Type) = struct
 			= fun m ->
 			to_string_param m "x"
 
+        let rec get_exponent : Var.t -> t -> int
+            = fun var -> function
+            | [] -> 0
+            | (v,e) :: tl ->
+                let i = Var.cmp var v in
+                if i = 0
+                then e
+                else if i < 0
+                    then 0
+                    else get_exponent var tl
+
 		let rec compare : t -> t -> int
 			= fun m1 m2 ->
 			match m1, m2 with
@@ -69,10 +80,15 @@ module Make (Vec: Vector.Type) = struct
                 Coeff.mul c (Coeff.pow (f_eval v) e)
             ) Coeff.u m
 
+        let degree : t -> int
+            = fun m ->
+            List.fold_left (fun acc (_,e) ->
+                acc + e
+            ) 0 m
+
         let is_linear : t -> bool
             = fun m ->
-            List.length m = 0
-            || (List.length m = 1 && Pervasives.snd (List.hd m) <= 1)
+            degree m <= 1
 
 		let well_formed : t -> bool
 			= fun m ->
@@ -85,6 +101,42 @@ module Make (Vec: Vector.Type) = struct
 			if well_formed l
             then List.fast_sort (fun (v1,_) (v2,_) -> Var.cmp v1 v2) l
 			else Pervasives.invalid_arg ("SxPoly.Poly.MonomialBasis.mk")
+
+        let rec add_var : (Var.t * exp) -> t -> t
+            = fun (v,e) -> function
+            | [] -> [v,e]
+            | (v',e') :: l as m ->
+                let i = Var.cmp v v' in
+                if i = 0
+                then (v, e + e') :: l
+                else if i < 0
+                    then (v,e) :: m
+                    else (v',e') :: add_var (v,e) l
+
+        let rec remove_var : Var.t -> t -> t
+            = fun v -> function
+            | [] -> []
+            | (v',e') :: l as m ->
+                let i = Var.cmp v v' in
+                if i = 0
+                then l
+                else if i < 0
+                    then m
+                    else (v',e') :: remove_var v l
+
+        let rec remove_var_exp : Var.t -> int -> t -> t
+            = fun v e -> function
+            | [] -> []
+            | (v',e') :: l as m ->
+                let i = Var.cmp v v' in
+                if i = 0
+                then let new_e = e' - e in
+                    if new_e <= 0
+                    then l
+                    else (v,new_e) :: l
+                else if i < 0
+                    then m
+                    else (v',e') :: remove_var_exp v e l
 
 		let mk_expanded : Var.t list -> t
 			= function
@@ -133,6 +185,31 @@ module Make (Vec: Vector.Type) = struct
                     else acc
                 else (v,e) :: acc
             ) m []
+
+        let rec sub : t -> t -> (t * bool)
+			= fun m1 m2 ->
+			match (m1,m2) with
+			| (_,[]) -> (m1,true)
+			| ([],_) -> ([],false)
+			| ((v1,e1)::tail1, (v2,e2)::tail2) ->
+                if Var.equal v1 v2
+				then
+                    if e1 >= e2
+                    then
+                        if e1 = e2
+                        then sub tail1 tail2
+                        else
+                            let (l,b) = sub tail1 tail2 in
+                            ((v1, e1 - e2) :: l, b)
+                    else ([],false)
+				else
+                    let (l,b) = sub tail1 m2 in
+                    ((v1,e1)::l,b)
+
+        let get_vars : t -> Var.Set.t
+            = fun m ->
+            List.map Pervasives.fst m
+            |> Var.Set.of_list
 	end
 
 	module Monomial = struct
@@ -191,6 +268,10 @@ module Make (Vec: Vector.Type) = struct
 		let data : t -> MonomialBasis.t * Coeff.t
 			= fun (m,c) -> (m,c)
 
+        let get_exponent : Var.t -> t -> int
+            = fun var (m,_) ->
+            MonomialBasis.get_exponent var m
+
         let mul : t -> t -> t
             = let rec mul_list l1 l2 =
             match l1,l2 with
@@ -235,8 +316,7 @@ module Make (Vec: Vector.Type) = struct
 
         let get_vars : t -> Var.Set.t
             = fun (m,_) ->
-            List.map Pervasives.fst m
-            |> Var.Set.of_list
+            MonomialBasis.get_vars m
 
         let change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
 			= fun ch (m,c) ->
@@ -471,27 +551,7 @@ module Make (Vec: Vector.Type) = struct
 			p (m,Coeff.z)
 
     let monomial_coefficient_poly : t -> MonomialBasis.t -> t
-		= let rec sub_monomial : MonomialBasis.t -> MonomialBasis.t -> (MonomialBasis.t * bool)
-			= fun m1 m2 ->
-			match (m1,m2) with
-			| (_,[]) -> (m1,true)
-			| ([],_) -> ([],false)
-			| ((v1,e1)::tail1, (v2,e2)::tail2) ->
-                if Var.equal v1 v2
-				then
-                    if e1 >= e2
-                    then
-                        if e1 = e2
-                        then sub_monomial tail1 tail2
-                        else
-                            let (l,b) = sub_monomial tail1 tail2 in
-                            ((v1, e1 - e2) :: l, b)
-                    else ([],false)
-				else
-                    let (l,b) = sub_monomial tail1 m2 in
-                    ((v1,e1)::l,b)
-		in
-		let rec monomial_coefficient_poly_rec : t -> MonomialBasis.t -> t
+		= let rec monomial_coefficient_poly_rec : t -> MonomialBasis.t -> t
 			= fun p m ->
 			match p with
 			| [] -> []
@@ -499,7 +559,7 @@ module Make (Vec: Vector.Type) = struct
                 if List.length m1 >= List.length m
                     && MonomialBasis.compare (Misc.sublist m1 0 (List.length m)) m > 0 (* m1 > m *)
 				then []
-				else let (l,b) = sub_monomial m1 m in
+				else let (l,b) = MonomialBasis.sub m1 m in
                     if b
 					then add [(l,c)] (monomial_coefficient_poly_rec tail m)
 					else monomial_coefficient_poly_rec tail m

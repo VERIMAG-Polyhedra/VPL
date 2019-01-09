@@ -6,7 +6,7 @@ Require Export Map_poly.
 *)
 
 Axiom oracle: linearizeContext -> imp ZTerm.t.
-Extract Constant oracle => "IOracle.oracleZ".
+Extract Constant oracle => "IntervalizationOracle.oracleZ".
 
 Axiom handelman_oracle : PedraQBackend.t -> cmpG -> QTerm.t -> list Map_poly.Handelman_compute.certif.
 Extract Constant handelman_oracle => "HOracle_backend.oracle".

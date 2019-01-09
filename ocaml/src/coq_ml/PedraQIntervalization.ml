@@ -32,7 +32,7 @@ module Lift (LHD: QInterface.LowLevelDomain) = struct
 
     include AtomicD
 
-    module Oracle = IOracle.OracleQ
+    module Oracle = IntervalizationOracle.OracleQ
 
     module QNItv = IOtypes.DomainQ.NoneItv
 
@@ -511,7 +511,7 @@ module Lift (LHD: QInterface.LowLevelDomain) = struct
 
     let assumeOpFromOracle env0 sic lc cmp0 te aft =
     G.cast
-    (G.bind (fun _ -> IOracle.oracleQ lc) (fun te0 ->
+    (G.bind (fun _ -> IntervalizationOracle.oracleQ lc) (fun te0 ->
       if skip_oracle te0
       then G.skip
       else let te' = test_eq te te0 in assumeOpAnnot env0 sic cmp0 te' aft)

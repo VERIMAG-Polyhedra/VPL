@@ -12,7 +12,7 @@ let misc = Test.prState "MISC"
 	(Test.suite "MISC" [Misc_t.ts()] Test.stateZ)
 
 let lin = Test.prState "Linearization"
-	(Test.suite "Linearization" [IndexBuild_t.ts() ; HOtypes_t.ts() ; Poly_t.ts()] Test.stateZ)
+	(Test.suite "Linearization" [IndexBuild_t.ts() ; HOtypes_t.ts() ; Poly_t.ts() ; Intervalization_t.ts()] Test.stateZ)
 
 let lp = Test.prState "Linear Programming"
 	(Test.suite "Linear Programming" [Splx_t.ts() ; Opt_t.ts()] Test.stateZ)

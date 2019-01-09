@@ -8,7 +8,7 @@ let modules : ((module Type) * color) list = [
     (module MinLP.Debug), Green;
     (module Handelman.Debug), Magenta;
     (module HOtypes.Debug), White;
-	(module IOtypes.Debug), White;
+	(module OraclePattern.Debug), White;
     (module Pol.Debug), Blue;
     (module PSplx.Debug), Yellow;
 ]

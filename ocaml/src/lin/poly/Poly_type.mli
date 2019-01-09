@@ -23,6 +23,16 @@ module type Type = sig
         (** Builds a monomial basis. *)
         val mk : (Var.t * exp) list -> t
 
+        (** Adds a variable to an already built monomial basis.
+            If the variable is already present, exponents are summed. *)
+        val add_var : (Var.t * exp) -> t -> t
+
+        (** Removes a variable (whatever its exponent) from a monomial basis. *)
+        val remove_var : Var.t -> t -> t
+
+        (** Removes the given exponent of the variable in the monomial basis.*)
+        val remove_var_exp : Var.t -> int -> t -> t
+
         (** @return the monomial basis *)
         val to_list : t -> (Var.t * exp) list
 
@@ -34,6 +44,9 @@ module type Type = sig
             @return the monomial basis where variables (which are integers) are prefixed by "x" *)
 		val to_string : t -> string
 
+        (** @return the exponent of the given variable. *)
+        val get_exponent : Var.t -> t -> int
+
 		(** Lexicographic comparison between two monomial bases.
             @return 0 if [m1] = [m2]
             @return -1 if [m1] < [m2]
@@ -42,6 +55,12 @@ module type Type = sig
 
 		(** Equality test between two monomial bases. *)
 		val equal : t -> t -> bool
+
+        (** Removes variables from a monomial basis.
+            @param m1 the monomial to substract from
+            @param m2 the monomial to substract
+            @return true if [m2] is a subset of [m1] and m1 - m2 makes sense*)
+        val sub : t -> t -> (t * bool)
 
 		(** Renames a variable.
             @param m the monomial basis
@@ -56,6 +75,12 @@ module type Type = sig
             @param m the monomial basis
             @param f the evaluation function *)
 		val eval : t -> (Var.t -> Coeff.t) -> Coeff.t
+
+        (** @return the set of variables of the monomial basis. *)
+        val get_vars : t -> Var.Set.t
+
+        (** @return the degree of the monomial. *)
+        val degree : t -> int
 
 		(** @return true if the degree of [m] is at most one.
 		    The monomial basis is assumed to be in canonical form. *)
@@ -76,6 +101,9 @@ module type Type = sig
         (** Type of monomial*)
 		type t = MonomialBasis.t * Coeff.t
 
+        (** Zero monomial. *)
+        val null : t
+
         (** pretty-printer for monomials. *)
 		val to_string : t -> string
 
@@ -95,6 +123,9 @@ module type Type = sig
 
         (** @returns the monomial. *)
         val data : t -> MonomialBasis.t * Coeff.t
+
+        (** @return the exponent of the given variable. *)
+        val get_exponent : Var.t -> t -> int
 
 		(** Multiplication of two monomials. *)
 		val mul : t -> t -> t
