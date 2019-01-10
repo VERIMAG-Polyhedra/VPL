@@ -23,6 +23,9 @@ module type OracleType = sig
         (** Type of elements needed by the prayer. *)
         type pneuma
 
+        (** If set to true, the prayer won't be tried again if it fails once. *)
+        val kill_when_fail : bool
+
         (** Praying for a pneuma to come.
             This is the parsing step of the strategy.
             The prayer determines if it can apply on the polynomial.
@@ -51,6 +54,19 @@ end
 module Make(Oracle : OracleType) = struct
     include Oracle
 
+    (** List of prayers used in the oracle.
+        It is initialized with {!val:prayers}. *)
+    let my_prayers : ((module Prayer) list) ref
+        = ref []
+
+    let remove_prayer : (module Prayer) -> unit
+        = fun m ->
+        my_prayers := Misc.pop (fun m m' ->
+            let module M = (val m : Prayer) in
+            let module M' = (val m' : Prayer) in
+            String.equal M'.name M.name
+        ) !my_prayers m
+
     (** Runs the oracle until the polynomial is 0.
         Prayers are tried in the order given by {!val:prayers}.
         If a prayer is applicable, the oracle starts back with the initial list of prayers.
@@ -61,11 +77,15 @@ module Make(Oracle : OracleType) = struct
     let rec make_prophecy : P.t -> prophecy -> (module Prayer) list
     -> prophecy
         = fun p pr -> function
-        | [] -> make_prophecy p pr prayers
-        | moldu :: l ->
-            let module M = (val moldu : Prayer) in
+        | [] -> make_prophecy p pr !my_prayers
+        | prayer :: l ->
+            let module M = (val prayer : Prayer) in
             match M.pray p pr with
-            | None -> make_prophecy p pr l
+            | None -> begin
+                if M.kill_when_fail
+                then remove_prayer prayer;
+                make_prophecy p pr l
+                end
             | Some pneuma -> begin
                 Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Praying for prophecy %s on polynomial %s.
                 And God said it was good."
@@ -76,7 +96,7 @@ module Make(Oracle : OracleType) = struct
                 then pr'
                 else begin
                     Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Continuing on %s" (P.to_string p')));
-                    make_prophecy p' pr' prayers
+                    make_prophecy p' pr' !my_prayers
                     end
                 end
 
@@ -86,5 +106,6 @@ module Make(Oracle : OracleType) = struct
         @return the prophecy *)
     let run : prophecy -> P.t -> prophecy
         = fun init_prophecy p ->
+        my_prayers := prayers;
         make_prophecy p init_prophecy prayers
 end

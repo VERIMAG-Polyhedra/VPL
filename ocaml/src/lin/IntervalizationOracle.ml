@@ -23,6 +23,7 @@ module Oracle (T : IOtypes.Type) = struct
     module type Prayer = sig
         val name : string
         type pneuma
+        val kill_when_fail : bool
         val pray : P.t -> prophecy -> pneuma option
         val inhale : P.t -> prophecy -> pneuma -> P.t * prophecy
     end
@@ -113,6 +114,8 @@ module Oracle (T : IOtypes.Type) = struct
 
         let name = "Multiplicity"
 
+        let kill_when_fail = false
+
         let get_monomial_multiplicity var mb =
             let i = MB.get_exponent var mb in
             if i = MB.degree mb
@@ -165,6 +168,8 @@ module Oracle (T : IOtypes.Type) = struct
 
         let name = "Linear Monomial"
 
+        let kill_when_fail = false
+
         let rec pray p pr =
             match p with
             | [] -> None
@@ -191,6 +196,8 @@ module Oracle (T : IOtypes.Type) = struct
 
         let name = "Constant Monomial"
 
+        let kill_when_fail = false
+
         let rec pray p pr =
             match p with
             | [] -> None
@@ -215,6 +222,8 @@ module Oracle (T : IOtypes.Type) = struct
         type pneuma = (MB.t * Var.t * int)
 
         let name = "Constant Variable"
+
+        let kill_when_fail = true
 
         let rec pray p pr =
             match p with
@@ -248,6 +257,8 @@ module Oracle (T : IOtypes.Type) = struct
         type pneuma = (MB.t * Var.t)
 
         let name = "Greatest Interval"
+
+        let kill_when_fail = false
 
         let rec pray p pr =
             match p with
@@ -283,6 +294,8 @@ module Oracle (T : IOtypes.Type) = struct
 
         let name = "One Unbounded Variable"
 
+        let kill_when_fail = false
+
         let rec pray p pr =
             match p with
             | [] -> None
@@ -313,6 +326,8 @@ module Oracle (T : IOtypes.Type) = struct
         type pneuma = (MB.t * Var.t)
 
         let name = "FirstUnbounded"
+
+        let kill_when_fail = false
 
         let rec pray p pr =
             match p with
@@ -345,6 +360,8 @@ module Oracle (T : IOtypes.Type) = struct
 
             let name = "Default"
 
+            let kill_when_fail = false
+
             let pray p _ = Some (List.hd p)
 
             let inhale p pr (mb,c) =
@@ -375,6 +392,8 @@ module Oracle (T : IOtypes.Type) = struct
         type pneuma = M.t
 
         let name = "Focusing"
+
+        let kill_when_fail = false
 
         let pray p _ = Some (List.hd p)
 
@@ -415,6 +434,8 @@ module Oracle (T : IOtypes.Type) = struct
 
         let name = "VarChosen"
 
+        let kill_when_fail = false
+        
         let rec pray p pr =
             match p with
             | [] -> None
