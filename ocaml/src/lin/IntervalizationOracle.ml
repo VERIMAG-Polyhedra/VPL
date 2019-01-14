@@ -20,6 +20,9 @@ module Oracle (T : IOtypes.Type) = struct
         terms: D.BasicTerm.term list; (** List of terms that will replace the monomial. *)
     }
 
+    let recursive_oracle : (prophecy -> P.t -> prophecy) ref
+        = ref (fun pr _ -> pr)
+
     module type Prayer = sig
         val name : string
         type pneuma
@@ -435,7 +438,7 @@ module Oracle (T : IOtypes.Type) = struct
         let name = "VarChosen"
 
         let kill_when_fail = false
-        
+
         let rec pray p pr =
             match p with
             | [] -> None
