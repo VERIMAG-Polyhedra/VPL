@@ -1,71 +1,47 @@
-(** This module defines datatypes used by the oracle that generates Schweighofer products used in Handelman linearization.
-*)
+(** This module defines datatypes used by the oracle that generates Schweighofer products used in Handelman linearization. *)
 
 module CP = CstrPoly
 module Poly = CP.Poly
 
 module Debug : DebugTypes.Type
 
-(*
-(** This module handles trace generation and printing for the oracle. *)
-module HTrace : sig
-
-	(** [enable] enables oracle trace generation, stocking them as a string list. *)
-	val enable : unit -> unit
-
-	(** [print_enable] enables oracle trace printing on the fly. *)
-	val print_enable : unit -> unit
-
-	(** [color_enable] enables the use of colors in traces IF they are printed on the fly. *)
-	val color_enable : unit -> unit
-
-	(** [enable_default] enables oracle trace printing on the fly, with colors. *)
-	val enable_default : unit -> unit
-
-	(** If printing on the fly is enabled, [log_title s] prints the given lazy string [s] in boldface.
-	Otherwise, [log_title s] stacks the string in a variable, accessible with [get]. *)
-	val log_title : string Lazy.t -> unit
-
-	(** If printing on the fly is enabled, [log s] prints the given lazy string [s].
-	Otherwise, [log s] stacks the string in a variable, accessible with [get]. *)
-	val log : string Lazy.t -> unit
-
-	(** [get] returns the current stacked traces and empties the stack. *)
-	val get : unit -> string list
-
-end
-*)
-
 (** This map binds things to elements of type {!type:Poly.t}. *)
 module MapP : Map.S with type key = Poly.t
 
-(** This module associates in a map a list of {!type:Hi.t} to a polynomial. It is used to remember what products were used to cancel a given polynomial. *)
+(** Module associating in a map a list of {!type:Hi.t} to a polynomial.
+    It is used to remember what products were used to cancel a given polynomial. *)
 module MapPolyHi : sig
 
+    (** Map from polynomials to the list of Handelman products that cancel it. *)
 	type t = Hi.t list MapP.t
 
+    (** Conversion into string. *)
 	val to_string : t -> string
 
-	(** [memMonom m map] returns [true] if [map] contains a binding to a polynomial that contains monomial [m]. *)
+	(** @return [true] if [map] contains a binding to a polynomial that contains monomial [m].
+        @param m a monomial
+        @param map a cancellation map *)
 	val memMonom : Poly.MonomialBasis.t -> t -> bool
 
 	(** [memMonomSigned m map] returns [true] if [map] contains a binding to a polynomial that contains monomial [m] and a coefficient of the same sign. *)
 	val memMonomSigned : Poly.Monomial.t -> t -> bool
 
+    (** Merges two maps. *)
 	val merge : t -> t -> t
 end
 
 (** This map binds things to elements of type {!type:Index.Int.t}. *)
 module MapI = IndexBuild.MapI
 
-(** This module associates in a map a polynomial to a Handelman index. *)
+(** This module associates in Handelman indexes to polynomials. *)
 module MapIndexP : sig
 
-	type t
+	type t = Poly.t MapI.t
 
-	(** [of_polyhedron l] creates an empty map and fill it with constraints of the polyhedron given as a list of polynomials. *)
+	(** Initializes a map from a list of constraints. *)
 	val of_polyhedron : Poly.t list -> t
 
+    (** Conversion into string. *)
 	val to_string : t -> string
 
 	(** [poly_to_deg_max p l] returns an index [ind] whose ith component is the maximum power in [p] of the ith variable in [l].
@@ -73,16 +49,6 @@ module MapIndexP : sig
 		{- [poly_to_deg_max (x^2y - 2x^3 + y^2 + xz^2) [x;z] = (3,2)]}
 		{- [poly_to_dex_max (x^2z - z^3) [x;y;z] = (2,0,3)]}} *)
 	val poly_to_deg_max : Poly.t -> Var.t list -> Index.Int.t
-
-	(** *)
-	val gen_mono : (Var.t * int) list -> Poly.MonomialBasis.t list
-
-	(** [poly_to_deg p ml] returns an index where the ith value is equal to 1 if [ml(i)] is a monomial of polynomial [p]. *)
-	val poly_to_deg : Poly.t -> Poly.MonomialBasis.t list -> Index.Int.t
-
-	(** [to_deg ind map ml] returns the index of the polynomial [map(ind)] as defined in {!poly_to_deg}.
-	@raise Not_found if [ind] has no binding in [map] *)
-	val to_deg : Index.Int.t -> t -> Poly.MonomialBasis.t list -> Index.Int.t
 
 	(** [get ind mapIP mapI] returns the polynomial corresponding to index [ind] in map [mapIP].
 	If [ind] has no binding in [mapIP], maps are updated. *)

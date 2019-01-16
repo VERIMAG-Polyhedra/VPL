@@ -263,6 +263,9 @@ module type Type = sig
 	(** Power of a polynomial by an integer. *)
 	val pow : t -> int -> t
 
+    (** Returns the maximum exponent of the variable in the polynomial. *)
+    val get_max_exponent : Var.t -> t -> int
+
 	(** Renames a variable in the polynomial.
         @param p the polynomial
         @param fromX the variable to rename

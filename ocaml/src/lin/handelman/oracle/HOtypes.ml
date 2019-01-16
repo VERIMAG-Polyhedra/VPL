@@ -5,44 +5,45 @@ module Debug = DebugTypes.Debug(struct let name = "Horacle" end)
 
 module MapP = Map.Make(Poly)
 
-module MapPolyHi
-	= struct
+module MapPolyHi = struct
 
 	type t = Hi.t list MapP.t
 
-	let (to_string : t -> string)
-		= let (to_string2 : Poly.t * Hi.t list -> string)
+	let to_string : t -> string
+		= let to_string2 : Poly.t * Hi.t list -> string
 			= fun (p,hilist) ->
 			Printf.sprintf "%s -> %s"
 				(Poly.to_string p)
-				(Misc.list_to_string Hi.to_string hilist " ; ") in
+				(Misc.list_to_string Hi.to_string hilist " ; ")
+        in
 		fun map ->
 		String.concat "\n" (List.map (fun x -> to_string2 x) (MapP.bindings map))
 
-	let (memMonom : Poly.MonomialBasis.t -> t -> bool)
+	let memMonom : Poly.MonomialBasis.t -> t -> bool
 		= fun m map ->
-		MapP.exists
-			(fun p _ -> List.exists
-				(fun (m',_) -> Poly.MonomialBasis.compare m m' = 0)
-				(List.map Poly.Monomial.data (Poly.data p)))
-			map
+		MapP.exists (fun p _ ->
+            List.exists (fun (m',_) ->
+                Poly.MonomialBasis.compare m m' = 0
+            ) p
+        ) map
 
-	let (memMonomSigned : Poly.Monomial.t -> t -> bool)
-		= let (same_sign : Q.t -> Q.t -> bool)
+	let memMonomSigned : Poly.Monomial.t -> t -> bool
+		= let same_sign : Q.t -> Q.t -> bool
 			= fun a b ->
-			(Q.geq a Q.zero && Q.geq b Q.zero) || (Q.leq a Q.zero && Q.leq b Q.zero) in
-		fun mon map ->
-		let (m,c) = Poly.Monomial.data mon in
-		MapP.exists
-			(fun p _ -> List.exists
-				(fun (m',c') -> (same_sign c c') && (Poly.MonomialBasis.compare m m' = 0))
-				(List.map Poly.Monomial.data (Poly.data p)))
-			map
+			(Q.geq a Q.zero && Q.geq b Q.zero)
+            || (Q.leq a Q.zero && Q.leq b Q.zero)
+        in
+		fun (mb,c) map ->
+		MapP.exists (fun p _ ->
+            List.exists (fun (mb',c') ->
+                same_sign c c'
+                && Poly.MonomialBasis.compare mb mb' = 0
+            ) p
+		) map
 
-	let (merge : t -> t -> t)
+	let merge : t -> t -> t
 		= fun map1 map2 ->
-		MapP.merge
-			(fun _ a_opt b_opt ->
+		MapP.merge (fun _ a_opt b_opt ->
 				match (a_opt,b_opt) with
 				| (Some l1, Some l2) -> Some (Misc.rem_dupl Hi.eq (l1 @ l2))
 				| (Some l1, None) -> Some l1
@@ -59,63 +60,27 @@ module MapIndexP
 
 	type t = Poly.t MapI.t
 
-	let (of_polyhedron : Poly.t list -> t)
+	let of_polyhedron : Poly.t list -> t
 		= fun cl ->
-		let len = List.length cl in
-		List.fold_left
-			(fun map i -> MapI.add (Index.Int.unitary i len) (List.nth cl i) map)
-			MapI.empty
-			(Misc.range 0 len)
+        let id = Index.Int.init (List.length cl) in
+        Misc.fold_left_i (fun i map p ->
+            let id' = Index.Int.set id i 1 in
+            MapI.add id' p map
+        ) MapI.empty cl
 
-	let (to_string : t -> string)
-		= let (to_string2 : Index.Int.t * Poly.t -> string)
+	let to_string : t -> string
+		= let to_string2 : Index.Int.t * Poly.t -> string
 			= fun (i,p) ->
 			Printf.sprintf "%s -> %s" (Index.Int.to_string i) (Poly.to_string p) in
 		fun map ->
 		String.concat "\n" (List.map (fun x -> to_string2 x) (MapI.bindings map))
 
-	let (poly_to_deg_max : Poly.t -> Var.t list -> Index.Int.t)
-		= let variable_to_deg : Poly.t -> Var.t -> int
-			= fun p v ->
-			Misc.max Pervasives.compare
-			(List.map
-				(fun (m,_) -> List.filter
-					(fun v' -> Var.equal v' v)
-					(Poly.MonomialBasis.to_list_expanded m)
-					|> List.length)
-				(List.map Poly.Monomial.data (Poly.data p)))
-		in fun p vl ->
-		List.map
-			(fun v -> variable_to_deg p v)
-			vl
+	let poly_to_deg_max : Poly.t -> Var.t list -> Index.Int.t
+		= fun p vl ->
+		List.map (fun var ->
+            Poly.get_max_exponent var p
+        ) vl
 		|> Index.Int.mk
-
-	let (gen_mono : (Var.t * int) list -> Poly.MonomialBasis.t list)
-			= fun l ->
-			let i = List.split l |> Pervasives.snd |> Index.Int.mk in
-			let preds = IndexBuild.Liste.get_preds i
-			|> List.filter (fun ind -> not (Index.Int.is_null ind || Index.Int.is_unitary ind)) in
-			List.map
-				(fun ind ->
-					List.fold_left
-						(fun res i -> let deg = Index.Int.get ind i in
-							let (v,_) = List.nth l i in res @ (List.map (fun _ -> v) (Misc.range 0 deg)))
-						[]
-						(Misc.range 0 (Index.Int.len ind))
-				|> Poly.MonomialBasis.mk_expanded)
-				preds
-
-	let (poly_to_deg : Poly.t -> Poly.MonomialBasis.t list -> Index.Int.t)
-		= fun p ml ->
-		List.map
-			(fun mon -> if Scalar.Rat.equal (Poly.monomial_coefficient p mon) Scalar.Rat.z then 0 else 1)
-			ml
-		|> Index.Int.mk
-
-	let (to_deg : Index.Int.t -> t -> Poly.MonomialBasis.t list -> Index.Int.t)
-		= fun i map ml ->
-		try poly_to_deg (MapI.find i map) ml
-		with | Not_found -> Pervasives.raise Not_found
 
 	(** special case of {!function get} when the index has only one non null coefficient. *)
 	let get_one_coeff_nn : Index.Int.t -> t -> IndexBuild.Map.t -> (Poly.t * t * IndexBuild.Map.t)
@@ -125,11 +90,10 @@ module MapIndexP
 		let p' = Poly.pow p (Index.Int.get id i) in
 		(p', MapI.add id p' mapIP, mapI)
 
-	let rec (get : Index.Int.t -> t -> IndexBuild.Map.t -> (Poly.t * t * IndexBuild.Map.t))
+	let rec get : Index.Int.t -> t -> IndexBuild.Map.t -> (Poly.t * t * IndexBuild.Map.t)
 		= fun id mapIP mapI ->
-		try
-			(MapI.find id mapIP, mapIP, mapI)
-		with | Not_found ->
+		try (MapI.find id mapIP, mapIP, mapI)
+		with Not_found ->
 			if Index.Int.one_coeff_nn id
 			then get_one_coeff_nn id mapIP mapI
 			else

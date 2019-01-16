@@ -15,8 +15,8 @@ module OracleCore = struct
     	mapIP : MapIndexP.t; (** Map from indexes to polynomials. *)
     	mapI : IndexBuild.Map.t; (** Map that decomposes indexes *)
     	ph : P.t list; (** Constaints of the input polyhedron. *)
-    	sx : Splx.t;
-    	lp : LPMaps.bounds
+    	sx : Splx.t; (** A simplex tableau containing constraints of the polyhedron. It is used to determine constant bounds. *)
+    	lp : LPMaps.bounds (** Known bounds for each variable. *)
     }
 
     let recursive_oracle : (prophecy -> P.t -> prophecy) ref
@@ -48,6 +48,11 @@ module OracleCore = struct
 		| Cstr_type.Lt -> [Poly.neg p]
 		| Cstr_type.Eq -> p :: [Poly.neg p]
 
+    (** Initializes a prophecy.
+        @param p the polynomial to linearize (ie. to cancel)
+        @param ph the input polyhedron
+        @return an initial prophecy
+        @return the polynomial to build (ie. [-1*p]) *)
     let init : P.t -> 'c HPol2.t -> P.t * prophecy
 		= fun p ph ->
 		let cl = HPol2.get_noneq_poly ph
@@ -59,7 +64,6 @@ module OracleCore = struct
 			(HPol2.horizon ph)
 			(List.mapi (fun i cstr -> (i,cstr)) inequalities)
 		in
-		let p' = P.neg p in
 		match sx with
 		| Splx.IsOk sx ->
             let pr = {
@@ -71,42 +75,23 @@ module OracleCore = struct
                 sx = sx;
                 lp = LPMaps.init cl ph.vars;
             } in
-            (p', pr)
+            (P.neg p, pr)
 		| Splx.IsUnsat _ -> Pervasives.failwith "Handelamn Oracle init : empty polyhedron"
 
+    (** @return the number of constraints of the polyhedron. *)
     let n_cstrs : prophecy -> int
 		= fun pr ->
 		List.length pr.ph
 
-    let computeVarIndex : Index.Int.t -> Var.t list -> P.t
-		= fun id vl ->
-		let varlist = List.fold_left2 (fun r i v ->
-            r @ (List.map (fun _ -> v) (Misc.range 0 i))
-        ) [] (Index.Int.data id) vl
-		in
-		Poly.mk_expanded_list [varlist, Q.of_int 1]
-
-    let computeBoundIndex : Index.Rat.t -> P.t list -> P.t
-		= fun id polyhedron ->
-		List.fold_left2 (fun p ci q ->
-            P.add p (Poly.mul (Poly.cste q) ci)
-        ) P.z polyhedron (Index.Rat.data id)
-
-    let computeBoundIndexList : Index.Rat.t list -> P.t list -> P.t
-		= fun il polyhedron ->
-		List.map (fun i ->
-            computeBoundIndex i polyhedron
-        ) il
-        |> P.prod
-
     let hi_to_poly : Hi.t -> prophecy -> P.t * MapIndexP.t * IndexBuild.Map.t
-		= fun hi pn ->
-		match hi with
-		| Hi.Ci i -> MapIndexP.get i pn.mapIP pn.mapI
-		| Hi.VarCi (j,i) -> let (pi,mapIP',mapI') = MapIndexP.get i pn.mapIP pn.mapI in
-			(Poly.mul pi (computeVarIndex j pn.vl), mapIP', mapI')
-		| Hi.VarBounds (j,b) -> (Poly.mul (computeBoundIndexList b pn.ph) (computeVarIndex j pn.vl), pn.mapIP, pn.mapI)
+        = fun hi pn ->
+        match hi with
+        | Hi.Ci i -> MapIndexP.get i pn.mapIP pn.mapI
+        | Hi.VarCi (j,i) -> let (pi,mapIP',mapI') = MapIndexP.get i pn.mapIP pn.mapI in
+            (Poly.mul pi (Hi.computeVarIndex j pn.vl), mapIP', mapI')
+        | Hi.VarBounds (j,b) -> (Poly.mul (Hi.computeBoundIndexList b pn.ph) (Hi.computeVarIndex j pn.vl), pn.mapIP, pn.mapI)
 
+    (** We already know how to cancel a monomial. *)
     module AlreadyIn : Prayer = struct
         type pneuma = M.t
 

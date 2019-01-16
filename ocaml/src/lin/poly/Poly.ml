@@ -445,6 +445,11 @@ module Make (Vec: Vector.Type) = struct
 	let is_linear : t -> bool
         = List.for_all Monomial.is_linear
 
+    let get_max_exponent : Var.t -> t -> int
+        = fun var p ->
+        List.map (Monomial.get_exponent var) p
+        |> Misc.max Pervasives.compare
+
     let change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
         = fun ch l ->
         List.map (Monomial.change_variable ch) l

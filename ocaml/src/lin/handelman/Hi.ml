@@ -1,5 +1,8 @@
 module Debug = DebugTypes.Debug(struct let name = "Handelman" end)
 
+module CP = CstrPoly
+module Poly = CP.Poly
+
 (* cIndex (1, 0, 3) représente C_1^1 * C_2^0 * C_3^3 *)
 type cIndex = Index.Int.t
 (* varIndex (1, 0, 3) représente x_1^1 * x_2^0 * x_3^3 *)
@@ -12,21 +15,26 @@ type t =
 | VarBounds of varIndex * (boundIndex list)
 | VarCi of varIndex * cIndex
 
-let (to_string : t -> string)
-	= fun h ->
-	match h with
-	| Ci i -> "Ci(" ^ (Index.Int.to_string i) ^ ")"
-	| VarBounds (i,j) -> "VB(" ^ (Index.Int.to_string i) ^ ", " ^ (Misc.list_to_string Index.Rat.to_string j " ; ") ^ ")"
-	| VarCi (i,j) -> "VC(" ^ (Index.Int.to_string i) ^ ", " ^ (Index.Int.to_string j) ^ ")"
+let to_string : t -> string
+	= function
+	| Ci id -> Printf.sprintf "Ci(%s)" (Index.Int.to_string id)
+	| VarBounds (id_v,id_c) -> Printf.sprintf "VB(%s, %s)"
+        (Index.Int.to_string id_v)
+        (Misc.list_to_string Index.Rat.to_string id_c " ; ")
+	| VarCi (id_v,id_c) -> Printf.sprintf "VC(%s,%s)"
+        (Index.Int.to_string id_v)
+        (Index.Int.to_string id_c)
 
-let (eq : t -> t -> bool)
+let eq : t -> t -> bool
 	= fun h1 h2 ->
 	match (h1,h2) with
 	| (Ci i1, Ci i2) -> Index.Int.equal i1 i2
-	| (VarBounds (i1,j1), VarBounds (i2,j2)) -> Index.Int.equal i1 i2
+	| (VarBounds (i1,j1), VarBounds (i2,j2)) ->
+        Index.Int.equal i1 i2
 		&& List.length j1 = List.length j2
 		&& (List.for_all2 (fun k1 k2 -> Index.Rat.equal k1 k2) j1 j2)
-	| (VarCi (i1,j1), VarCi (i2,j2)) -> Index.Int.equal i1 i2 && Index.Int.equal j1 j2
+	| (VarCi (i1,j1), VarCi (i2,j2)) ->
+        Index.Int.equal i1 i2 && Index.Int.equal j1 j2
 	| (_,_) -> false
 
 let is_linear : t -> bool
@@ -41,60 +49,22 @@ let is_linear : t -> bool
 	  ||
 		((Index.Int.is_unitary vI) && (Index.Int.is_null cI))
 
-module Eval = struct
+let computeVarIndex : Index.Int.t -> Var.t list -> Poly.t
+    = fun id vl ->
+    Poly.mk_list [List.combine vl id, Q.of_int 1]
 
-	(** [pow q i] returns [q^i]*)
-	let (pow : Q.t -> int -> Q.t)
-		= fun q i ->
-		List.fold_left
-			(fun c _ -> Q.mul c q)
-			Q.one
-			(Misc.range 0 i)
+let computeBoundIndex : Index.Rat.t -> Poly.t list -> Poly.t
+    = fun id polyhedron ->
+    List.fold_left2 (fun p ci q ->
+        Poly.add p (Poly.mul (Poly.cste q) ci)
+    ) Poly.z polyhedron (Index.Rat.data id)
 
-	(** [eval_f vl l] returns a function associating [vl[i]] to [l[i]] *)
-	let (evalf : Var.t list -> 'a list -> Var.t -> 'a)
-			= fun vl l v ->
-			try let i = Misc.findi (fun x -> Var.equal x v) vl in
-				List.nth l i
-			with
-			| Not_found -> Pervasives.failwith "HOtypes.Hi.Eval.evalf : Not_found"
-			| Invalid_argument _ -> Pervasives.failwith "HOtypes.Hi.Eval.evalf : Invalid_argument"
-
-	let (eval_cIndex : cIndex -> CstrPoly.Poly.t list -> (Var.t -> Q.t) -> Q.t)
-		= fun id pl eval  ->
-			List.fold_left2
-			(fun c i p -> Q.add c (if i = 0 then Q.zero else (pow (CstrPoly.Poly.eval p eval) i)))
-			Q.zero
-			(Index.Int.data id) pl
-
-	let (eval_varIndex : varIndex -> Var.t list -> (Var.t -> Q.t) -> Q.t)
-		= fun id vl eval ->
-			List.fold_left2
-			(fun c i v -> let p = CstrPoly.Poly.fromVar v in
-				Q.mul c (pow (CstrPoly.Poly.eval p eval) i))
-			Q.one
-			(Index.Int.data id) vl
-
-	let (eval_boundIndex : boundIndex -> CstrPoly.Poly.t list ->  (Var.t -> Q.t) -> Q.t)
-		= fun id pl eval  ->
-			List.fold_left2
-			(fun c i p -> Q.add c (if Q.equal i Q.zero then Q.zero else (Q.mul i (CstrPoly.Poly.eval p eval))))
-			Q.zero
-			(Index.Rat.data id) pl
-
-	let (eval_Hi : t -> CstrPoly.Poly.t list -> Var.t list -> Q.t list -> Q.t)
-		= fun hi pl vl ci ->
-			let eval = evalf vl ci in
-			match hi with
-			| Ci c_id -> eval_cIndex c_id pl eval
-			| VarBounds (v_id, b_ids) -> List.fold_left (fun res b_id -> Q.add res (eval_boundIndex b_id pl eval)) Q.zero b_ids
-				|> Q.mul (eval_varIndex v_id vl eval)
-			| VarCi (v_id, c_id) -> Q.mul (eval_varIndex v_id vl eval) (eval_cIndex c_id pl eval)
-
-	let (eval_poly : CstrPoly.Poly.t -> Var.t list -> Q.t list -> Q.t)
-		= fun p vl ci ->
-		CstrPoly.Poly.eval p (evalf vl ci)
-end
+let computeBoundIndexList : Index.Rat.t list -> Poly.t list -> Poly.t
+    = fun il polyhedron ->
+    List.map (fun i ->
+        computeBoundIndex i polyhedron
+    ) il
+    |> Poly.prod
 
 module Cert = struct
 	module Poly = CstrPoly.Poly
