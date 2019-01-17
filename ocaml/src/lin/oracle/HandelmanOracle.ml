@@ -277,30 +277,20 @@ end
 
 include Make(OracleCore)
 
-(** Converts a polynomial constraint into a list of polynomials.
-    The oracle treats polynomials of the form [p >= 0]. *)
-let neg_poly : CstrPoly.t -> P.t list
-	= fun cp ->
-	let p = cp.CstrPoly.p in
-	match cp.CstrPoly.typ with
-	| Cstr_type.Le -> [Poly.neg p]
-	| Cstr_type.Lt -> [Poly.neg p]
-	| Cstr_type.Eq -> p :: [Poly.neg p]
-
 (** Initializes a prophecy.
     @param p the polynomial to linearize (ie. to cancel)
     @param ph the input polyhedron
     @return an initial prophecy
     @return the polynomial to build (ie. [-1*p]) *)
-let init : P.t -> 'c HPol2.t -> P.t * prophecy
+let init : P.t -> 'c HPol.t -> P.t * prophecy
 	= fun p ph ->
-	let cl = HPol2.get_noneq_poly ph
+	let cl = HPol.get_noneq_poly ph
         |> List.map neg_poly
         |> List.concat
 	in
-	let inequalities = HPol2.get_ineqs ph in
+	let inequalities = HPol.get_ineqs ph in
 	let sx = Splx.mk
-		(HPol2.horizon ph)
+		(HPol.horizon ph)
 		(List.mapi (fun i cstr -> (i,cstr)) inequalities)
 	in
 	match sx with
@@ -317,13 +307,13 @@ let init : P.t -> 'c HPol2.t -> P.t * prophecy
         (P.neg p, pr)
 	| Splx.IsUnsat _ -> Pervasives.failwith "Handelamn Oracle init : empty polyhedron"
 
-let oracle_hi: Poly.t -> 'c HPol2.t -> Hi.t list * Poly.t list
+let oracle_hi: Poly.t -> 'c HPol.t -> Hi.t list * Poly.t list
 	= fun p ph ->
 	Debug.log DebugTypes.Title (lazy "Handelman Oracle");
 	Debug.log DebugTypes.MInput
 		(lazy (Printf.sprintf "Polynomial %s\nPolyhedron %s"
 		(Poly.to_string p)
-		(HPol2.to_string ph)));
+		(HPol.to_string ph)));
     let (p', init_prophecy) = init p ph in
 	let pr = run init_prophecy p' in
     let his = MapP.bindings pr.mapP

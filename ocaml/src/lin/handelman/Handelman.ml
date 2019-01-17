@@ -35,8 +35,8 @@ module Handelman (Minimization : Min.Type) = struct
 			= fun ph config ->
 			if config.points = []
 			then
-				let horizon = ph#horizon() in
-				match Region.getPointInside config.reg_t horizon (ph#get_ineqs()) with
+				let horizon = HPol.horizon ph in
+				match Region.getPointInside config.reg_t horizon (HPol.get_ineqs ph) with
 				| None -> Pervasives.failwith "Handelman.PLP.init : unexpected empty input polyhedron"
 				| Some point ->
 					(point, {config with points = [ExplorationPoint.Point point]})
@@ -86,7 +86,7 @@ module Handelman (Minimization : Min.Type) = struct
 
 		let init_region : 'c HPol.t -> region_t -> Region.t list
 			= fun ph region_type ->
-			let horizon = ph#horizon() in
+			let horizon = HPol.horizon ph in
 			List.mapi
 				(fun id ineq ->
 					match Region.getPointInside region_type horizon [ineq], Region.getPointInside region_type horizon [Cs.compl ineq] with
@@ -96,7 +96,7 @@ module Handelman (Minimization : Min.Type) = struct
 							Region.r = [boundary, None];
 							Region.point = pOutside;
 							Region.sx = None})
-				(ph#get_ineqs())
+				(HPol.get_ineqs ph)
 
 		let run_plp : 'c HPol.t -> Obj.pivotStrgyT -> PSplx.t -> bool -> (Region.t * 'c Cons.t) list option
 			= fun ph st sx is_normalized ->
@@ -295,7 +295,7 @@ module Handelman (Minimization : Min.Type) = struct
 			let his_p'_cstr = List.map (CP.mk Cstr_type.Le) his_p'
 				|> List.map (fun p -> CP.compl p |> CP.toCstr)
 			in
-			let ineqs = List.map (fun c -> {c with Cs.typ = Cstr_type.Lt}) (ph#get_ineqs() @ his_p'_cstr)
+			let ineqs = List.map (fun c -> {c with Cs.typ = Cstr_type.Lt}) (HPol.get_ineqs ph @ his_p'_cstr)
 			in
 			Debug.log DebugTypes.Detail
 				(lazy (Printf.sprintf "get : ineqs = %s" (Cs.list_to_string ineqs)));
@@ -313,7 +313,7 @@ module Handelman (Minimization : Min.Type) = struct
 					|> List.map Cs.canon
 					|> Cs.list_to_string)))
 			;
-			match getPointInside ineqs (ph#get_vars) with
+			match getPointInside ineqs ph.vars with
 			| None -> None
 			| Some pointInside ->
 				match !Flags.handelman_normalize with
@@ -329,7 +329,7 @@ module Handelman (Minimization : Min.Type) = struct
 	let handelman : Obj.pivotStrgyT -> 'c HPol.t -> Poly.t list -> Poly.t
 		-> (PLP.Region.t * 'c Cons.t) list option
 		= fun st ph his_p f ->
-		let variables = ph#get_vars in
+		let variables = ph.vars in
 		let nb_h = (List.length his_p) in
 		let n = Var.next (Misc.max Var.cmp variables) |> Var.toInt in
 		let lpvars = List.map
@@ -436,8 +436,8 @@ module Handelman (Minimization : Min.Type) = struct
 		match handelman Obj.Bland ph his_poly g with
 		| None -> None
 		| Some regs -> begin
-			let vars = ph#get_vars in
-			let n_cstrs = List.length ph#get_poly_rep in
+			let vars = ph.vars in
+			let n_cstrs = List.length ph.poly_rep in
 			let res = compute_certs his n_cstrs vars regs in
 			Debug.log DebugTypes.MOutput
 				(lazy(Misc.list_to_string CP.to_string (List.map Pervasives.fst res) "\n "))
@@ -454,15 +454,6 @@ module Handelman (Minimization : Min.Type) = struct
 			;
 			Some res
 			end
-			(*let adjustCmp_ins = adjustCmp (ph#get_cstr()) his in
-			let res = compute_certs his regs in
-			let l =
-			List.map
-				(fun (csP,cert) -> let csP' = {csP with CP.typ = adjustCmp_ins cert}
-					in (csP',cert))
-				res
-			in
-			Some l*)
 
 	exception Timeout
 
@@ -491,16 +482,16 @@ module Handelman (Minimization : Min.Type) = struct
 
 		let (is_empty : t -> bool)
 	  		= fun pb ->
-	  		pb.ph#is_empty
+	  		HPol.is_empty pb.ph
 
-		let empty : t = {ph = new HPol.t ; g = Poly.z}
+		let empty : t = {ph = HPol.empty ; g = Poly.z}
 
 		let current_result : t list ref = ref []
 
 		let (run_one : t -> t)
 			= fun pb ->
-            let ph = match pb.ph#get_vpl_rep with
-                | Some p -> HPol2.mkPol p
+            let ph = match pb.ph.vpl_rep with
+                | Some p -> HPol.mkPol p
                 | _ -> failwith "run_one"
             in
 			let (his,his_poly) = HandelmanOracle.oracle_hi pb.g ph in
@@ -512,12 +503,12 @@ module Handelman (Minimization : Min.Type) = struct
 					|> Pervasives.fst
 					|> List.map (fun cp -> (cp, FactoryUnit.factory.top))
 				in
-				let ph' = pb.ph#addM FactoryUnit.factory p in
+				let ph' = HPol.addM FactoryUnit.factory p pb.ph in
 				{pb with ph = ph'}
 
 		let (poly_equal : t -> t -> bool)
 			= fun pb1 pb2 ->
-			pb1.ph#equal FactoryUnit.factory FactoryUnit.factory pb2.ph
+            HPol.equal FactoryUnit.factory FactoryUnit.factory pb1.ph pb2.ph
 
 		let (poly_equal_opt : t -> t option -> bool)
 			= fun pb1 pb2 ->
@@ -529,7 +520,7 @@ module Handelman (Minimization : Min.Type) = struct
 			= fun pb pl ->
 			match pl with
 			| [] -> [pb]
-			| g::tl -> if pb.ph#is_empty
+			| g::tl -> if HPol.is_empty pb.ph
 				then [pb]
 				else let pb = run_one {pb with g = g} in
 					pb :: (run_rec pb tl)
@@ -537,7 +528,7 @@ module Handelman (Minimization : Min.Type) = struct
 		let rec (run_loop_rec : t -> Poly.t list -> Poly.t list -> t option -> unit)
 			= fun pb pl pl_cpy pb_prev ->
 			match pl with
-			| [] -> if pb.ph#is_empty
+			| [] -> if HPol.is_empty pb.ph
 				then current_result := !current_result @ [pb]
 				else if poly_equal_opt pb pb_prev
 					then current_result := !current_result @ [pb]
@@ -545,7 +536,7 @@ module Handelman (Minimization : Min.Type) = struct
 						current_result := !current_result @ [pb];
 						run_loop_rec pb pl_cpy pl_cpy (Some pb)
 						end
-			| g::tl -> if pb.ph#is_empty
+			| g::tl -> if HPol.is_empty pb.ph
 				then current_result := !current_result @ [empty]
 				else let pb = run_one {pb with g = g} in
 					current_result := !current_result @ [pb];
@@ -616,9 +607,7 @@ module Handelman (Minimization : Min.Type) = struct
 		let mkHPol : 'c Pol.t -> FactoryUnit.cert HPol.t
 			= fun phPol ->
 			let phPol_unit = FactoryUnit.convert phPol in
-			let ph = new HPol.t in
-			ph#mkPol phPol_unit;
-			ph
+			HPol.mkPol phPol_unit
 
 		(** Used for Coq only *)
 		let run_oracle : 'c Pol.t -> CP.t -> (CP.t * Hi.Cert.schweighofer list) list option
@@ -631,14 +620,14 @@ module Handelman (Minimization : Min.Type) = struct
 			let ph = mkHPol phPol in
 			let pl' = rewrite_polynomials phPol [poly] (* rewritting w.r.t equalities in phPol *)
 				|> List.fold_left
-					(fun res cp -> (HOtypes.Pneuma.neg_poly cp) @ res) []
+					(fun res cp -> (HOtypes.neg_poly cp) @ res) []
 				(* Putting the polynomial on the form p >= 0*)
 			in
 			Debug.log DebugTypes.Detail
 				(lazy (Printf.sprintf "Rewritted polynomials in nonnegative form using equalities into %s"
 				(Misc.list_to_string Poly.to_string pl' " ; ")));
 			match pl' with
-			| [g] -> let ph_omg = HPol2.mkPol phPol in
+			| [g] -> let ph_omg = HPol.mkPol phPol in
     			let (his,his_poly) = HandelmanOracle.oracle_hi g ph_omg in
 				run ph his his_poly g
 			| _ -> Pervasives.failwith "Handelman.pb.run_oracle"
@@ -653,7 +642,7 @@ module Handelman (Minimization : Min.Type) = struct
 			let ph = mkHPol phPol in
 			let pl' = rewrite_polynomials phPol pl (* rewritting w.r.t equalities in phPol *)
 				|> List.fold_left
-					(fun res cp -> (HOtypes.Pneuma.neg_poly cp) @ res) []
+					(fun res cp -> (HOtypes.neg_poly cp) @ res) []
 				(* Putting the polynomial on the form p >= 0*)
 			in
 			Debug.log DebugTypes.Detail
@@ -688,44 +677,3 @@ module Rat = Handelman(Min.Classic(Vector.Rat))
 module Symbolic = Handelman(Min.Classic(Vector.Symbolic))
 
 module Float = Handelman(Min.Classic(Vector.Float))
-
-
-(*
-	let init_map : 'c Factory.t -> int -> 'c Cons.t PLP.MapV.t
-		= fun factory nb_his ->
-		let trivial_cstr = Cs.mk Cstr_type.Le [] Scalar.Rat.u in
-		List.fold_left
-			(fun map i -> PLP.MapV.add i (Cons.triv factory) map)
-			PLP.MapV.empty
-			(Misc.range 0 nb_his)
-	*)
-	(*
-	module Norm = struct
-		let getPointInside : Cs.t list -> Var.t list -> Var.t -> Scalar.Rat.t option
-			= fun cstrs params v ->
-			let horizon = Cs.getVars cstrs
-				|> Var.horizon
-			in
-			match Splx.getAsgOpt horizon (List.mapi (fun i c -> (i,c)) cstrs) with
-			| None -> Pervasives.failwith "getPointInside : empty polyhedron"
-			| Some point ->
-				let vec = Rtree.map (Vector.Rat.ofSymbolic) point in
-				if List.mem v params
-				then Some (Vector.Rat.get vec v)
-				else None
-
-		let get : 'c HPol.t -> Poly.t -> Poly.t * (Var.t -> Scalar.Rat.t option)
-			= fun ph objective ->
-			let ineqs = List.map (fun c -> {c with Cs.typ = Cstr_type.Lt}) (ph#get_ineqs()) in
-			Debug.log DebugTypes.Detail
-				(lazy (Printf.sprintf "get : ineqs = %s" (Cs.list_to_string ineqs)));
-			(*List.map (Cs.mulc Scalar.Rat.negU) (ph#get_ineqs())*) (* XXX: mais purkwa? *)
-			let pointInside = getPointInside ineqs (ph#get_vars) in
-			let res = Poly.sub
-				(Poly.eval_partial objective pointInside)
-				(Poly.cste Scalar.Rat.u) (* This is the normalization constraint constant *)
-		(*	|> fun res -> Poly.mulc res Scalar.Rat.negU*)
-			in
-			(res, pointInside)
-	end
-	*)

@@ -1,4 +1,5 @@
 module CP = CstrPoly
+module Cs = CP.Cs
 module Poly = CP.Poly
 
 let get_vars : CP.t list -> Var.t list
@@ -20,110 +21,96 @@ let add_vars : Var.t list -> CP.t list -> Var.t list
     Var.Set.union set1 set2
     |> Var.Set.elements
 
-class ['c] t =
-	object (self)
-	val mutable poly_rep : CP.t list = []
-	val mutable vpl_rep : 'c Pol.t option = None
-	val mutable vars : Var.t list = []
+type 'c t = {
+    poly_rep : CP.t list;
+    vpl_rep : 'c Pol.t option;
+    vars : Var.t list;
+}
 
-	method to_string : string
-		= Misc.list_to_string CP.to_string poly_rep " ; "
+let to_string : 'c t -> string
+	= fun p ->
+    Misc.list_to_string CP.to_string p.poly_rep " ; "
 
-	method get_poly_rep : CP.t list
-		= poly_rep
+let get_noneq_poly : 'c t -> CP.t list
+	= fun p ->
+    List.filter (fun cp ->
+        cp.CP.typ <> Cstr_type.Eq
+    ) p.poly_rep
 
-	method get_noneq_poly : CP.t list
-		= List.filter (fun cp -> cp.CP.typ <> Cstr_type.Eq) poly_rep
+let get_cstrs : 'c t -> Cs.t list
+	= fun p ->
+	match p.vpl_rep with
+	| None -> []
+	| Some p -> Pol.get_cstr p
 
-	method get_vars : Var.t list
-		= vars
+let get_ineqs : 'c t -> Cs.t list
+	= fun p ->
+	match p.vpl_rep with
+	| None -> []
+	| Some p -> Pol.get_cstr_ineqs p
 
-	method get_vpl_rep : 'c Pol.t option
-		= vpl_rep
+let horizon : 'c t -> Var.t
+	= fun p ->
+	Misc.max Var.cmp p.vars
+		|> Var.next
 
-	method get_cstr : unit -> CP.Cs.t list
-		= fun () ->
-		match vpl_rep with
-		| None -> []
-		| Some p -> Pol.get_cstr p
+let is_empty : 'c t -> bool
+	= fun p ->
+    match p.vpl_rep with
+	| None -> true
+	| _ -> false
 
-	method get_ineqs : unit -> CP.Cs.t list
-		= fun () ->
-		match vpl_rep with
-		| None -> []
-		| Some p -> Pol.get_cstr_ineqs p
+let empty : 'c t
+	= {
+        vpl_rep = None;
+        poly_rep = [];
+		vars = [];
+    }
 
-	method horizon : unit -> Var.t
-		= fun () ->
-		Misc.max Var.cmp vars
-			|> Var.next
+let mk : 'c Pol.t -> CP.t list -> Var.t list -> 'c t
+	= fun vpl cl variables -> {
+    	vpl_rep = Some vpl;
+    	poly_rep = cl;
+    	vars = variables;
+    }
 
-	method is_empty : bool
-		= match vpl_rep with
-		| None -> true
-		| _ -> false
+let mkPol : 'c Pol.t -> 'c t
+	= fun vpl_rep ->
+	let cstrs = Pol.get_cstr vpl_rep in
+    let poly_rep = List.map CP.ofCstr cstrs in
+    mk vpl_rep poly_rep (get_vars poly_rep)
 
-	method private update : unit -> unit
-		= fun () ->
-		if self#is_empty
-		then poly_rep <- [];
-			vars <- [];
+let addM : 'c Factory.t -> (CP.t * 'c) list -> 'c t -> 'c t
+	= fun factory l p ->
+	match p.vpl_rep with
+	| None -> empty
+	| Some vpl_rep ->
+		let variables = add_vars p.vars (List.map Pervasives.fst l) in
+		let conss = List.map (fun (cp,cert) -> (CP.toCstr cp, cert)) l in
+    	match Pol.addM factory vpl_rep conss with
+    		| Pol.Contrad _ -> empty
+    		| Pol.Added p' ->
+    			let cstrs = Pol.get_cstr p'
+    				|> List.map CP.ofCstr in
+    			mk p' cstrs variables
 
-	method init : unit -> unit
-		= fun () ->
-		vpl_rep <- None;
-		self#update()
+let equal : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> bool
+	= fun factory1 factory2 p1 p2 ->
+	match (p1.vpl_rep, p2.vpl_rep) with
+	| (None,None) -> true
+	| (Some p1, Some p2) ->	(match (Pol.incl factory1 p1 p2, Pol.incl factory2 p2 p1) with
+		| (Pol.Incl _, Pol.Incl _) -> true
+	| (_,_) -> false)
+	| (_,_) -> false
 
-	method mkPol : 'c Pol.t -> unit
-		= fun p ->
-		if self#is_empty
-		then let cstrs = Pol.get_cstr p in
-			vpl_rep <- Some p;
-			poly_rep <- List.map CP.ofCstr cstrs;
-			vars <- get_vars poly_rep
+let isInside : Poly.Vec.t -> 'c t -> bool
+	= fun point p ->
+	List.for_all
+		(fun cstr -> CP.Cs.satisfy point cstr)
+		(get_ineqs p)
 
-	method mk : 'c Pol.t -> CP.t list -> Var.t list -> unit
-		= fun vpl cl variables ->
-		vpl_rep <- Some vpl;
-		poly_rep <- cl;
-		vars <- variables
-
-	method addM : 'c Factory.t -> (CP.t * 'c) list -> 'c t
-		= fun factory l ->
-		let ph' = new t in
-		begin
-			match vpl_rep with
-			| None -> ()
-			| Some p ->
-				let variables = add_vars vars (List.map Pervasives.fst l) in
-				let conss = List.map (fun (cp,cert) -> (CP.toCstr cp, cert)) l in
-			match Pol.addM factory p conss with
-				| Pol.Contrad _ -> ph'#init()
-				| Pol.Added p' ->
-					let cstrs = Pol.get_cstr p'
-						|> List.map CP.ofCstr in
-					ph'#mk p' cstrs variables
-		end;
-		ph'
-
-	method equal : 'c Factory.t -> 'c2 Factory.t -> 'c2 t -> bool
-		= fun factory1 factory2 p' ->
-		match (vpl_rep,p'#get_vpl_rep) with
-		| (None,None) -> true
-		| (Some p1, Some p2) ->	(match (Pol.incl factory1 p1 p2, Pol.incl factory2 p2 p1) with
-			| (Pol.Incl _, Pol.Incl _) -> true
-		| (_,_) -> false)
-		| (_,_) -> false
-
-	method isInside : Poly.Vec.t -> bool
-		= fun point ->
-		List.for_all
-			(fun cstr -> CP.Cs.satisfy point cstr)
-			(self#get_ineqs())
-
-	method cstrInPol : CP.Cs.t -> bool
-		= fun cstr ->
-		List.exists
-			(CP.Cs.equal cstr)
-			(self#get_cstr())
-end
+let cstrInPol : Cs.t -> 'c t -> bool
+	= fun cstr p ->
+	List.exists
+		(CP.Cs.equal cstr)
+		(get_cstrs p)

@@ -5,6 +5,16 @@ module Debug = Hi.Debug
 
 module MapP = Map.Make(Poly)
 
+(** Converts a polynomial constraint into a list of polynomials.
+    The oracle treats polynomials of the form [p >= 0]. *)
+let neg_poly : CstrPoly.t -> Poly.t list
+	= fun cp ->
+	let p = cp.CstrPoly.p in
+	match cp.CstrPoly.typ with
+	| Cstr_type.Le -> [Poly.neg p]
+	| Cstr_type.Lt -> [Poly.neg p]
+	| Cstr_type.Eq -> p :: [Poly.neg p]
+
 module MapPolyHi = struct
 
 	type t = Hi.t list MapP.t
@@ -239,92 +249,4 @@ module LPMaps = struct
 		try let (b1,b2) = MapV.find v mapB in
 			MapV.add v (if bound = Upper then (b1, Some bI) else (Some bI, b2)) mapB
 		with Not_found -> MapV.add v (if bound = Upper then (None, Some bI) else (Some bI, None)) mapB
-end
-
-module Pneuma
-	= struct
-
-	type t = {
-	p : Poly.t;
-	vl : Var.t list;
-	mapP : MapPolyHi.t;
-	mapIP : MapIndexP.t;
-	mapI : IndexBuild.Map.t;
-	ph : Poly.t list;
-	sx : Splx.t;
-	lp : LPMaps.bounds}
-
-	let (to_string : t -> string)
-		= fun pn ->
-		Printf.sprintf "\n\tPolynomial : %s\n\tVariables : %s\n\tMap Poly -> Index list :\n%s \n\tMap Index -> Poly :\n%s\n\tMap Index -> Index list : \n%s"
-		(Poly.to_string pn.p)
-		(Poly.MonomialBasis.to_string (Poly.MonomialBasis.mk_expanded pn.vl))
-		(MapPolyHi.to_string pn.mapP |> Misc.add_tab 2)
-		(MapIndexP.to_string pn.mapIP |> Misc.add_tab 2)
-		(IndexBuild.Map.to_string pn.mapI |> Misc.add_tab 2)
-
-	(* l'oracle traite les polynômes sous la forme p >= 0 *)
-	let neg_poly : CstrPoly.t -> Poly.t list
-		= fun cp ->
-		let p = cp.CstrPoly.p in
-		match cp.CstrPoly.typ with
-		| Cstr_type.Le -> [Poly.neg p]
-		| Cstr_type.Lt -> [Poly.neg p]
-		| Cstr_type.Eq -> p :: [Poly.neg p]
-
-	(* On initialise uniquement avec les inégalités du polyèdre.
-	Les polynômes à linéariser ont été réécris pour ne plus parler des variables définies par des égalités. *)
-	let (init : Poly.t -> 'c HPol.t -> t)
-		= fun p ph ->
-		let cl = List.fold_left
-			(fun res cp -> res @ (neg_poly cp))
-			[] ph#get_noneq_poly in
-		let inequalities = ph#get_ineqs() in
-		let sx = Splx.mk
-			(Var.next (Var.max ph#get_vars))
-			(List.mapi (fun i cstr -> (i,cstr)) inequalities)
-		in
-		let p' = Poly.neg p in
-		match sx with
-		| Splx.IsOk sx ->
-			{p=p' ;
-			 vl=ph#get_vars ;
-			 mapIP = MapIndexP.of_polyhedron cl ;
-			 mapP = MapP.empty ;
-			 mapI = IndexBuild.MapI.empty ;
-			 ph = cl ;
-			 sx = sx ;
-			 lp = LPMaps.init cl ph#get_vars}
-		| Splx.IsUnsat _ -> Pervasives.failwith "HOtypes.Pneuma.init : polyhedron empty"
-
-	let (n_cstrs : t -> int)
-		= fun pn ->
-		List.length pn.ph
-
-	let (computeVarIndex : Index.Int.t -> Var.t list -> Poly.t)
-		= fun id vl ->
-		let varlist = List.fold_left2
-			(fun r i v -> r @ (List.map (fun _ -> v) (Misc.range 0 i)))
-			[]
-			(Index.Int.data id) vl
-		in
-		(Poly.mk_expanded_list [varlist, Q.of_int 1])
-
-	let (computeBoundIndex : Index.Rat.t -> Poly.t list -> Poly.t)
-		= fun id polyhedron ->
-		List.fold_left2
-			(fun p ci q-> Poly.add p (Poly.mul (Poly.cste q) ci))
-			Poly.z polyhedron (Index.Rat.data id)
-
-	let (computeBoundIndexList : Index.Rat.t list -> Poly.t list -> Poly.t)
-		= fun il polyhedron ->
-		Poly.prod (List.map (fun i -> computeBoundIndex i polyhedron) il)
-
-	let (hi_to_poly : Hi.t -> t -> Poly.t * MapIndexP.t * IndexBuild.Map.t)
-		= fun hi pn ->
-		match hi with
-		| Hi.Ci i -> MapIndexP.get i pn.mapIP pn.mapI
-		| Hi.VarCi (j,i) -> let (pi,mapIP',mapI') = MapIndexP.get i pn.mapIP pn.mapI in
-			(Poly.mul pi (computeVarIndex j pn.vl), mapIP', mapI')
-		| Hi.VarBounds (j,b) -> (Poly.mul (computeBoundIndexList b pn.ph) (computeVarIndex j pn.vl), pn.mapIP, pn.mapI)
 end

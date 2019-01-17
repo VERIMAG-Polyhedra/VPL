@@ -8,6 +8,8 @@ module Debug : DebugTypes.Type
 (** This map binds things to elements of type {!type:Poly.t}. *)
 module MapP : Map.S with type key = Poly.t
 
+val neg_poly : CstrPoly.t -> Poly.t list
+
 (** Module associating in a map a list of {!type:Hi.t} to a polynomial.
     It is used to remember what products were used to cancel a given polynomial. *)
 module MapPolyHi : sig
@@ -104,36 +106,4 @@ module LPMaps : sig
 	Otherwise, it binds the lower bound of variable [v] to [value]. *)
 	val updateMapB : mapBound -> Var.t -> Hi.boundIndex -> t -> mapBound
 
-end
-
-(** This module defines the main functions used by the Handelman oracle.
-The sacred pneuma is the exhalation emerging from the cleft where the Pythia was sitting. *)
-module Pneuma : sig
-
-	type t = {
-	p : Poly.t; (** polynomial to linearize*)
-	vl : Var.t list; (** variables appearing in p and ph *)
-	mapP : MapPolyHi.t;
-	mapIP : MapIndexP.t;
-	mapI : IndexBuild.Map.t;
-	ph : Poly.t list; (** constraints of the input polyhedron, represented as polynomials.
-		Polynomial [p] represented constraint [p >= 0]. *)
-	sx : Splx.t;
-	lp : LPMaps.bounds}
-
-	val to_string : t -> string
-
-	val neg_poly : CstrPoly.t -> Poly.t list
-
-	(** [init p ph] initializes a {!type Pneuma.t} with polynomial [p], and a polyhedron [ph]. *)
-	val init : Poly.t -> 'c HPol.t -> t
-
-	(** [len pn] returns the number of constraints of the input polyhedron. *)
-	val n_cstrs : t -> int
-
-	(** [compute ind vl] returns [vl(0)^(ind(0)) * ... * vl(n)^(ind(n))]. *)
-	val computeVarIndex : Index.Int.t -> Var.t list -> Poly.t
-
-	(** [hi_to_poly hi pn]  returns the polynomial equal to [hi] and updates maps in [pn]. *)
-	val hi_to_poly : Hi.t -> t -> Poly.t * MapIndexP.t * IndexBuild.Map.t
 end
