@@ -31,25 +31,9 @@ module MapIndexP = struct
 
 	module MB = Poly.MonomialBasis
 
-	let poly_to_deg_ts : Test.t
-		= fun () ->
-        let chk : string * (Poly.t * MB.t list) * Index.Int.t -> (Test.stateT -> Test.stateT)
-		= fun (nm, (p,mbs), ei) state ->
-		let ai = poly_to_deg p mbs in
-		Test.equals nm Index.Int.to_string Index.Int.equal ei ai state
-		   in
-		   let tcs : (string * (Poly.t * MB.t list) * Index.Int.t ) list
-		= [
-			 "null polynomial", (Poly.z, [MB.mk_expanded [x;z] ; MB.mk_expanded [y;z;z]]), mk [0;0] ;
-			 "null monomial list", (Poly.of_string "x1 + 2*x1*x1 + -1*x4*x3*x3", []), mk [] ;
-			 "normal", (Poly.of_string "x1 + 2*x1*x1 + -1*x4*x3*x3", [MB.mk_expanded [x] ; MB.mk_expanded[z;t] ; MB.mk_expanded [z;z;t]]), mk [1;0;1] ;
-		  ] in
-		   Test.suite "poly_to_deg" (List.map chk tcs)
-
 	let ts : Test.t
 		= fun () -> [
 	     poly_to_deg_max_ts();
-	     poly_to_deg_ts()
 	  	] |> Test.suite "MapIndexP"
 end
 

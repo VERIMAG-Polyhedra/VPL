@@ -67,7 +67,6 @@ let empty : 'c t
 		vars = [];
     }
 
-
 let mk : 'c Pol.t -> CP.t list -> Var.t list -> 'c t
 	= fun vpl cl variables -> {
     	vpl_rep = Some vpl;

@@ -49,7 +49,7 @@ module type OracleType = sig
     val prayers : (module Prayer) list
 
     (** Pointer to the oracle, to allow recursive calls within the oracle itself. *)
-    val recursive_oracle : (prophecy -> P.t -> prophecy) ref
+    val recursive_oracle : (P.t -> prophecy -> (module Prayer) list -> prophecy) ref
 
 end
 
@@ -109,7 +109,7 @@ module Make(Oracle : OracleType) = struct
         @return the prophecy *)
     let rec run : prophecy -> P.t -> prophecy
         = fun init_prophecy p ->
-        recursive_oracle := run;
+        recursive_oracle := make_prophecy;
         my_prayers := prayers;
         make_prophecy p init_prophecy prayers
 end

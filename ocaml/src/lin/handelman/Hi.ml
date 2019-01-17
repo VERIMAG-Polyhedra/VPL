@@ -1,4 +1,4 @@
-module Debug = DebugTypes.Debug(struct let name = "Handelman" end)
+module Debug = DebugTypes.Debug(struct let name = "Horacle" end)
 
 module CP = CstrPoly
 module Poly = CP.Poly
@@ -56,7 +56,7 @@ let computeVarIndex : Index.Int.t -> Var.t list -> Poly.t
 let computeBoundIndex : Index.Rat.t -> Poly.t list -> Poly.t
     = fun id polyhedron ->
     List.fold_left2 (fun p ci q ->
-        Poly.add p (Poly.mul (Poly.cste q) ci)
+        Poly.add p (Poly.mulc ci q)
     ) Poly.z polyhedron (Index.Rat.data id)
 
 let computeBoundIndexList : Index.Rat.t list -> Poly.t list -> Poly.t

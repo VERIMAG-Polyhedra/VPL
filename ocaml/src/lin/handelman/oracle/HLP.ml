@@ -200,7 +200,7 @@ module Solve = struct
 	let rec exec : LPMaps.bounds -> Poly.t list -> Splx.t -> Var.t list -> Var.t list -> Scalar.Rat.t
 		-> Hi.boundIndex list option * LPMaps.bounds
 		= fun bounds ph sxPh vars varsMon coeffMon ->
-		let pos = (Scalar.Rat.le Scalar.Rat.z coeffMon) in
+		let pos = Scalar.Rat.le coeffMon Scalar.Rat.z in
 		let mapDB = bounds.LPMaps.mapDB and mapB = bounds.LPMaps.mapB in
 		let sxBool = Build.build varsMon pos mapDB in
 		match solve sxBool varsMon mapDB with
@@ -215,7 +215,6 @@ end
 
 let run : LPMaps.bounds -> Poly.t list -> Splx.t -> Var.t list -> Poly.Monomial.t
 	-> Hi.boundIndex list option * LPMaps.bounds
-	= fun bounds ph sxPh vars mon ->
-	let (mB,coeffMon) = Poly.Monomial.data mon in
-	let varsMon = Poly.MonomialBasis.to_list_expanded mB in
-	Solve.exec bounds ph sxPh vars varsMon coeffMon
+	= fun bounds ph sxPh vars (mb, c) ->
+	let varsMon = Poly.MonomialBasis.to_list_expanded mb in
+	Solve.exec bounds ph sxPh vars varsMon c

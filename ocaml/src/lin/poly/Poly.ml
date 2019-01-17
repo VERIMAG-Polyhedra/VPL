@@ -99,7 +99,17 @@ module Make (Vec: Vector.Type) = struct
 		let mk : (Var.t * exp) list -> t
 			= fun l ->
 			if well_formed l
-            then List.fast_sort (fun (v1,_) (v2,_) -> Var.cmp v1 v2) l
+            then
+                let m = List.filter (fun (_,e) -> e > 0) l
+                |> List.fast_sort (fun (v1,_) (v2,_) -> Var.cmp v1 v2)
+                in
+                List.fold_right (fun (v,e) m ->
+                    match m with
+                    | [] -> [v,e]
+                    | (v',e') :: m' -> if Var.equal v v'
+                        then (v, e+e') :: m'
+                        else (v,e) :: m
+                ) m []
 			else Pervasives.invalid_arg ("SxPoly.Poly.MonomialBasis.mk")
 
         let rec add_var : (Var.t * exp) -> t -> t

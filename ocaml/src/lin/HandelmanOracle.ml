@@ -1,26 +1,36 @@
 (** Handelman oracle. *)
 
 open OraclePattern
+open HOtypes
+
+module Debug = OraclePattern.Debug
+
+type prophecy_ = {
+    vl : Var.t list; (** List of variables in the problem *)
+    mapP : MapPolyHi.t; (** Map from polynomials to His *)
+    mapIP : MapIndexP.t; (** Map from indexes to polynomials. *)
+    mapI : IndexBuild.Map.t; (** Map that decomposes indexes *)
+    ph : Poly.t list; (** Constaints of the input polyhedron. *)
+    sx : Splx.t; (** A simplex tableau containing constraints of the polyhedron. It is used to determine constant bounds. *)
+    lp : LPMaps.bounds (** Known bounds for each variable. *)
+}
+
+let hi_to_poly : Hi.t -> prophecy_ -> Poly.t * MapIndexP.t * IndexBuild.Map.t
+    = fun hi pn ->
+    match hi with
+    | Hi.Ci i -> MapIndexP.get i pn.mapIP pn.mapI
+    | Hi.VarCi (j,i) ->
+        let (pi,mapIP',mapI') = MapIndexP.get i pn.mapIP pn.mapI in
+        (Poly.mul pi (Hi.computeVarIndex j pn.vl), mapIP', mapI')
+    | Hi.VarBounds (j,b) -> (Poly.mul (Hi.computeBoundIndexList b pn.ph) (Hi.computeVarIndex j pn.vl), pn.mapIP, pn.mapI)
 
 module OracleCore = struct
-    open HOtypes
+
+    type prophecy = prophecy_
 
     module P = Poly
     module M = P.Monomial
     module MB = P.MonomialBasis
-
-    type prophecy = {
-    	vl : Var.t list; (** List of variables in the problem *)
-    	mapP : MapPolyHi.t; (** Map from polynomials to His *)
-    	mapIP : MapIndexP.t; (** Map from indexes to polynomials. *)
-    	mapI : IndexBuild.Map.t; (** Map that decomposes indexes *)
-    	ph : P.t list; (** Constaints of the input polyhedron. *)
-    	sx : Splx.t; (** A simplex tableau containing constraints of the polyhedron. It is used to determine constant bounds. *)
-    	lp : LPMaps.bounds (** Known bounds for each variable. *)
-    }
-
-    let recursive_oracle : (prophecy -> P.t -> prophecy) ref
-        = ref (fun pr _ -> pr)
 
     module type Prayer = sig
         val name : string
@@ -30,6 +40,9 @@ module OracleCore = struct
         val inhale : P.t -> prophecy -> pneuma -> P.t * prophecy
     end
 
+    let recursive_oracle : (P.t -> prophecy -> (module Prayer) list -> prophecy) ref
+        = ref (fun _ pr _ -> pr)
+
     let prophecy_to_string : prophecy -> string
         = fun pr ->
     		Printf.sprintf "\n\tVariables : %s\n\tMap Poly -> Index list :\n%s \n\tMap Index -> Poly :\n%s\n\tMap Index -> Index list : \n%s"
@@ -38,61 +51,13 @@ module OracleCore = struct
     		(MapIndexP.to_string pr.mapIP |> Misc.add_tab 2)
     		(IndexBuild.Map.to_string pr.mapI |> Misc.add_tab 2)
 
-    (** Converts a polynomial constraint into a list of polynomials.
-        The oracle treats polynomials of the form [p >= 0]. *)
-	let neg_poly : CstrPoly.t -> P.t list
-		= fun cp ->
-		let p = cp.CstrPoly.p in
-		match cp.CstrPoly.typ with
-		| Cstr_type.Le -> [Poly.neg p]
-		| Cstr_type.Lt -> [Poly.neg p]
-		| Cstr_type.Eq -> p :: [Poly.neg p]
-
-    (** Initializes a prophecy.
-        @param p the polynomial to linearize (ie. to cancel)
-        @param ph the input polyhedron
-        @return an initial prophecy
-        @return the polynomial to build (ie. [-1*p]) *)
-    let init : P.t -> 'c HPol2.t -> P.t * prophecy
-		= fun p ph ->
-		let cl = HPol2.get_noneq_poly ph
-            |> List.map neg_poly
-            |> List.concat
-		in
-		let inequalities = HPol2.get_ineqs ph in
-		let sx = Splx.mk
-			(HPol2.horizon ph)
-			(List.mapi (fun i cstr -> (i,cstr)) inequalities)
-		in
-		match sx with
-		| Splx.IsOk sx ->
-            let pr = {
-                vl = ph.vars;
-                mapIP = MapIndexP.of_polyhedron cl;
-                mapP = MapP.empty;
-                mapI = IndexBuild.MapI.empty;
-                ph = cl;
-                sx = sx;
-                lp = LPMaps.init cl ph.vars;
-            } in
-            (P.neg p, pr)
-		| Splx.IsUnsat _ -> Pervasives.failwith "Handelamn Oracle init : empty polyhedron"
-
     (** @return the number of constraints of the polyhedron. *)
     let n_cstrs : prophecy -> int
 		= fun pr ->
 		List.length pr.ph
 
-    let hi_to_poly : Hi.t -> prophecy -> P.t * MapIndexP.t * IndexBuild.Map.t
-        = fun hi pn ->
-        match hi with
-        | Hi.Ci i -> MapIndexP.get i pn.mapIP pn.mapI
-        | Hi.VarCi (j,i) -> let (pi,mapIP',mapI') = MapIndexP.get i pn.mapIP pn.mapI in
-            (Poly.mul pi (Hi.computeVarIndex j pn.vl), mapIP', mapI')
-        | Hi.VarBounds (j,b) -> (Poly.mul (Hi.computeBoundIndexList b pn.ph) (Hi.computeVarIndex j pn.vl), pn.mapIP, pn.mapI)
-
     (** We already know how to cancel a monomial. *)
-    module AlreadyIn : Prayer = struct
+    module rec AlreadyIn : Prayer = struct
         type pneuma = M.t
 
         let name = "Already In"
@@ -111,13 +76,12 @@ module OracleCore = struct
             (p', pr)
 
     end
-
-    module LinearMonomial : Prayer = struct
+    and LinearMonomial : Prayer = struct
         type pneuma = M.t
 
         let name = "Linear Monomial"
 
-        let kill_when_fail = true
+        let kill_when_fail = false
 
         let rec pray p pr =
             match p with
@@ -132,7 +96,7 @@ module OracleCore = struct
             (p', pr)
     end
 
-    module ExtractEvenPowers : Prayer = struct
+    and ExtractEvenPowers : Prayer = struct
 
         type pneuma = M.t * Index.Int.t
 
@@ -151,14 +115,25 @@ module OracleCore = struct
         			then Some (m, id)
         			else pray p' pr
 
+        (** @return the greatest multiple of 2 smaller than [i].
+            @param i the bound *)
+        let rec get_max_power_two : int -> int
+            = fun i ->
+            if i <= 1
+            then 0
+            else 2 + get_max_power_two (i-2)
+
+        (** @return an index of even powers
+            @return the next index to find *)
         let extract : Index.Int.t -> (Index.Int.t * Index.Int.t)
 			= fun id ->
 			let (id1,id2) = List.map
-				(fun i -> ((i/2)*2, i mod 2))
+				(fun i -> (get_max_power_two i, i mod 2))
 				(Index.Int.data id)
 			|> List.split
 			|> fun (i1,i2) -> (Index.Int.mk i1, Index.Int.mk i2)
-			in if Index.Int.is_null id2
+			in
+            if Index.Int.is_null id2
 			then let j = Index.Int.first_positive id1 in
 				let id1' = Index.Int.set id1 j ((Index.Int.get id1 j)-2) in
 				let id2' = Index.Int.set id2 j 2 in
@@ -200,23 +175,25 @@ module OracleCore = struct
 
         let inhale p pr ((mb,c),id) =
             let (id,idm') = extract id in
-			let mb' = List.fold_left2 (fun r i v ->
-                r @ (List.map (fun _ -> v) (Misc.range 0 i))
-                ) [] (Index.Int.data idm') pr.vl
-				|> Poly.MonomialBasis.mk_expanded
-			in
-            (* we compute the opposite coefficient because we want to build c*m', not to cancel c*m'. Since of_pattern tries to cancel monomials, wa ask to cancel -c*m'. *)
-            let opposite_coeff = Scalar.Rat.neg c in
-			let p' = [mb', opposite_coeff] in
-			let pr' = !recursive_oracle pr p' in
+			let mb' = List.combine pr.vl idm'
+                |> MB.mk
+            in
+			let p' = [mb', c] in
+            let prayers_ltone : (module Prayer) list = [
+                (module AlreadyIn);
+                (module DegreeLTOne);
+            ] in
+			let pr' = !recursive_oracle p' pr prayers_ltone in
 			let hil = updateHi (MapP.find p' pr'.mapP) id in
-			HOtypes.Debug.log DebugTypes.Detail
+			Debug.log DebugTypes.Detail
 				(lazy("new Hi= " ^ (Misc.list_to_string Hi.to_string hil " ; ")));
-			let (hi_p,mapIP',mapI') = List.fold_left (fun (l,mapIP,mapI) hi ->
-					let (p,mapIP',mapI') = hi_to_poly hi {pr' with mapIP = mapIP ; mapI = mapI}
-					in
+			let (hi_p,mapIP',mapI') = List.fold_right (fun hi (l,mapIP,mapI) ->
+					let (p,mapIP',mapI') = hi_to_poly hi {pr' with
+                        mapIP = mapIP;
+                        mapI = mapI
+                    } in
 					(p :: l,mapIP',mapI')
-				) ([],pr.mapIP, pr.mapI) hil
+				) hil ([],pr.mapIP, pr.mapI)
 			in
 			let final_p = compute_new_poly hi_p p (mb,c) c in
 			let mapP' = MapPolyHi.merge pr.mapP pr'.mapP
@@ -230,7 +207,7 @@ module OracleCore = struct
             (final_p, final_pr)
     end
 
-    module DegreeLTOne : Prayer = struct
+    and DegreeLTOne : Prayer = struct
 
         type pneuma = M.t
 
@@ -263,20 +240,22 @@ module OracleCore = struct
                 | (Some bI, bounds) -> (bI,bounds)
                 | (None,_) -> Pervasives.raise Not_found
             in
-            HOtypes.Debug.log DebugTypes.Detail (lazy(
+            Debug.log DebugTypes.Detail (lazy(
                 Printf.sprintf "Result LP = %s"
                 (Misc.list_to_string Index.Rat.to_string bI " ; ")));
             let id = List.length pr.vl |> Index.Int.init in
             let newHi = Hi.VarBounds(id,bI) in
-            HOtypes.Debug.log DebugTypes.Detail
+            Debug.log DebugTypes.Detail
                 (lazy("new Hi= " ^ (Hi.to_string newHi)));
             let (p',mapIP',mapI') = hi_to_poly newHi pr in
-            let mapP' = MapP.add (Poly.mk [m]) [newHi] pr.mapP in (* MULTIPLIER PAR -1 *)
+            Debug.log DebugTypes.Detail
+                (lazy(Printf.sprintf "Corresponding polynomial: %s" (P.to_string p')));
+            let mapP' = MapP.add (Poly.mk [m]) [newHi] pr.mapP in
             let p'' = get_coeff p' m
                 |> Poly.mulc  p'
                 |> Poly.add p
             in
-            HOtypes.Debug.log DebugTypes.Detail
+            Debug.log DebugTypes.Detail
                 (lazy("p''= " ^ (Poly.to_string p'')));
             let pr' = {pr with
                 mapP = mapP';
@@ -296,6 +275,68 @@ module OracleCore = struct
     ]
 end
 
-module Oracle = struct
-    include Make(OracleCore)
-end
+include Make(OracleCore)
+
+(** Converts a polynomial constraint into a list of polynomials.
+    The oracle treats polynomials of the form [p >= 0]. *)
+let neg_poly : CstrPoly.t -> P.t list
+	= fun cp ->
+	let p = cp.CstrPoly.p in
+	match cp.CstrPoly.typ with
+	| Cstr_type.Le -> [Poly.neg p]
+	| Cstr_type.Lt -> [Poly.neg p]
+	| Cstr_type.Eq -> p :: [Poly.neg p]
+
+(** Initializes a prophecy.
+    @param p the polynomial to linearize (ie. to cancel)
+    @param ph the input polyhedron
+    @return an initial prophecy
+    @return the polynomial to build (ie. [-1*p]) *)
+let init : P.t -> 'c HPol2.t -> P.t * prophecy
+	= fun p ph ->
+	let cl = HPol2.get_noneq_poly ph
+        |> List.map neg_poly
+        |> List.concat
+	in
+	let inequalities = HPol2.get_ineqs ph in
+	let sx = Splx.mk
+		(HPol2.horizon ph)
+		(List.mapi (fun i cstr -> (i,cstr)) inequalities)
+	in
+	match sx with
+	| Splx.IsOk sx ->
+        let pr : prophecy = {
+            vl = ph.vars;
+            mapIP = MapIndexP.of_polyhedron cl;
+            mapP = MapP.empty;
+            mapI = IndexBuild.MapI.empty;
+            ph = cl;
+            sx = sx;
+            lp = LPMaps.init cl ph.vars;
+        } in
+        (P.neg p, pr)
+	| Splx.IsUnsat _ -> Pervasives.failwith "Handelamn Oracle init : empty polyhedron"
+
+let oracle_hi: Poly.t -> 'c HPol2.t -> Hi.t list * Poly.t list
+	= fun p ph ->
+	Debug.log DebugTypes.Title (lazy "Handelman Oracle");
+	Debug.log DebugTypes.MInput
+		(lazy (Printf.sprintf "Polynomial %s\nPolyhedron %s"
+		(Poly.to_string p)
+		(HPol2.to_string ph)));
+    let (p', init_prophecy) = init p ph in
+	let pr = run init_prophecy p' in
+    let his = MapP.bindings pr.mapP
+		|> List.map (fun (_,i) -> i)
+		|> List.concat
+		|> Misc.rem_dupl Hi.eq
+		|> List.filter (fun hi -> Hi.is_linear hi |> not)
+    in
+    let polys = List.map (fun hi ->
+        let (p,_,_) = hi_to_poly hi pr in p
+    ) his
+    in
+	Debug.exec (his,polys)
+		DebugTypes.MOutput (lazy (Printf.sprintf "His = %s\nPolys associated = %s"
+			(Misc.list_to_string Hi.to_string his " ; ")
+			(Misc.list_to_string Poly.to_string polys " ; ")))

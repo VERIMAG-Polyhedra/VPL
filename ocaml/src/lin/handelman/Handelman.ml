@@ -1,4 +1,4 @@
-module Debug = Hi.Debug
+module Debug = HOtypes.Debug
 
 module Cs = PLP.Cs
 module CP = CstrPoly
@@ -499,7 +499,11 @@ module Handelman (Minimization : Min.Type) = struct
 
 		let (run_one : t -> t)
 			= fun pb ->
-			let (his,his_poly) = HOracle.oracle_hi pb.g pb.ph in
+            let ph = match pb.ph#get_vpl_rep with
+                | Some p -> HPol2.mkPol p
+                | _ -> failwith "run_one"
+            in
+			let (his,his_poly) = HandelmanOracle.oracle_hi pb.g ph in
 			match run pb.ph his his_poly pb.g with
 			| None -> pb
 			| Some result ->
@@ -634,7 +638,8 @@ module Handelman (Minimization : Min.Type) = struct
 				(lazy (Printf.sprintf "Rewritted polynomials in nonnegative form using equalities into %s"
 				(Misc.list_to_string Poly.to_string pl' " ; ")));
 			match pl' with
-			| [g] -> let (his,his_poly) = HOracle.oracle_hi g ph in
+			| [g] -> let ph_omg = HPol2.mkPol phPol in
+    			let (his,his_poly) = HandelmanOracle.oracle_hi g ph_omg in
 				run ph his his_poly g
 			| _ -> Pervasives.failwith "Handelman.pb.run_oracle"
 

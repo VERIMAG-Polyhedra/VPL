@@ -23,7 +23,7 @@ module MapPolyHi : sig
         @param map a cancellation map *)
 	val memMonom : Poly.MonomialBasis.t -> t -> bool
 
-	(** [memMonomSigned m map] returns [true] if [map] contains a binding to a polynomial that contains monomial [m] and a coefficient of the same sign. *)
+	(** @return [true] if [map] contains a binding to a polynomial that contains monomial [m] with a coefficient of the same sign. *)
 	val memMonomSigned : Poly.Monomial.t -> t -> bool
 
     (** Merges two maps. *)
@@ -44,10 +44,13 @@ module MapIndexP : sig
     (** Conversion into string. *)
 	val to_string : t -> string
 
-	(** [poly_to_deg_max p l] returns an index [ind] whose ith component is the maximum power in [p] of the ith variable in [l].
-	For instance, {ul
-		{- [poly_to_deg_max (x^2y - 2x^3 + y^2 + xz^2) [x;z] = (3,2)]}
-		{- [poly_to_dex_max (x^2z - z^3) [x;y;z] = (2,0,3)]}} *)
+	(** @return an index [ind] whose [i]th component is the maximum power in [p] of the [i]th variable in [l].
+        For instance, {ul
+            {- [poly_to_deg_max (x^2y - 2x^3 + y^2 + xz^2) [x;z] = (3,2)]}
+            {- [poly_to_dex_max (x^2z - z^3) [x;y;z] = (2,0,3)]}
+        }
+        @param p the polynomial
+        @param vl the list of variables *)
 	val poly_to_deg_max : Poly.t -> Var.t list -> Index.Int.t
 
 	(** [get ind mapIP mapI] returns the polynomial corresponding to index [ind] in map [mapIP].

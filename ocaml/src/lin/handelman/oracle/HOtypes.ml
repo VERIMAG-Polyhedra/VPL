@@ -1,7 +1,7 @@
 module CP = CstrPoly
 module Poly = CP.Poly
 
-module Debug = DebugTypes.Debug(struct let name = "Horacle" end)
+module Debug = Hi.Debug
 
 module MapP = Map.Make(Poly)
 
@@ -97,11 +97,9 @@ module MapIndexP
 			if Index.Int.one_coeff_nn id
 			then get_one_coeff_nn id mapIP mapI
 			else
-				let (il,mapI') =
-					try
-						(IndexBuild.MapI.find id mapI, mapI)
-					with Not_found ->
-						IndexBuild.Map.compute_from_map id mapI
+				let (il,mapI') = try (IndexBuild.MapI.find id mapI, mapI)
+				with Not_found ->
+					IndexBuild.Map.compute_from_map id mapI
 				in
 				let (p',mapIP',mapI') = List.fold_left
 					(fun (p,mapIP,mapI) i ->

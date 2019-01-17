@@ -20,9 +20,6 @@ module Oracle (T : IOtypes.Type) = struct
         terms: D.BasicTerm.term list; (** List of terms that will replace the monomial. *)
     }
 
-    let recursive_oracle : (prophecy -> P.t -> prophecy) ref
-        = ref (fun pr _ -> pr)
-
     module type Prayer = sig
         val name : string
         type pneuma
@@ -30,6 +27,9 @@ module Oracle (T : IOtypes.Type) = struct
         val pray : P.t -> prophecy -> pneuma option
         val inhale : P.t -> prophecy -> pneuma -> P.t * prophecy
     end
+    
+    let recursive_oracle : (P.t -> prophecy -> (module Prayer) list -> prophecy) ref
+        = ref (fun _ pr _ -> pr)
 
     (** @return true if the sign of the variable is changed by the monomial. *)
     let sign_change : M.t -> Var.t -> env -> bool
