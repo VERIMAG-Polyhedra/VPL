@@ -30,13 +30,13 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
   let minkowski p1 p2 =
     {p1 with pol = LHD.minkowski p1.pol p2.pol}
 
-  let projectM vars pol =
+  let project_vars vars pol =
   match backend_rep pol with
-  | None -> Pervasives.failwith "projectM"
+  | None -> Pervasives.failwith "project_vars"
   | Some (p,(ofVar,toVar)) ->
     let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
     let vars' = List.map ofVar' vars in
-  	{pol with pol = LHD.projectM vars' pol.pol}
+  	{pol with pol = LHD.project vars' pol.pol}
 
   let set_point point pol = auto_lifting (LHD.set_point point) pol
 
@@ -260,12 +260,12 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
 
   let set_point point pol = auto_lifting (LHD.set_point point) pol
 
-  let projectM vars pol =
+  let project_vars vars pol =
   match backend_rep pol with
-  | None -> Pervasives.failwith "projectM"
+  | None -> Pervasives.failwith "project_vars"
   | Some (p,(ofVar,toVar)) ->
     let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
     let vars' = List.map ofVar' vars in
-  	{pol with pol = LHD.projectM vars' pol.pol}
+  	{pol with pol = LHD.project vars' pol.pol}
 
 end

@@ -83,9 +83,6 @@ module type LowLevelDomain = sig
   Boolean [b] has no effect here. It is used in the high-level version of [mapi]. *)
   val mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
 
-  (** Projection of several variables at the same time. *)
-  val projectM: Var.t list -> t -> t
-
   (**
    * Returns the partition into regions of the given polyhedron.
    *)
@@ -205,6 +202,7 @@ module Interface (Coeff: Scalar.Type) = struct
 
     val guassign: (Var.t list) -> Cond.t -> t -> t
 
+    val project_vars : Var.t list -> t -> t
   end
 
 end

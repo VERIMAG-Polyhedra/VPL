@@ -44,3 +44,6 @@ val minkowskiSetup_1 : 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c1 t
 
 val minkowskiSetup_2 : 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c2 t
     	-> Var.t * Var.t option Rtree.t * (('c1,'c2) discr_t) t
+
+(** Removes duplicates and trivial constraints. *)
+val clean : 'c t list -> 'c t list

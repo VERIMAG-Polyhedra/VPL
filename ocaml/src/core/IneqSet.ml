@@ -300,9 +300,9 @@ let subst: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t -> 'c Cons.t -> 'c t -> 
 
 
 (* XXX: le new_horizon renvoyé devrait être la nouvelle next variable *)
-let pProj : 'c Factory.t -> Var.t -> 'c t -> Flags.scalar -> 'c t
-	= fun factory x s scalar_type ->
-	Proj.proj factory scalar_type [x] s
+let pProj : 'c Factory.t -> Vector.Rat.t -> Var.t -> 'c t -> 'c t
+	= fun factory normalization_point x s ->
+	Proj.proj factory normalization_point [x] s
 		|> Pervasives.fst
 
 let fmElim: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t ->  'c t -> 'c t
@@ -324,9 +324,9 @@ let fmElim: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t ->  'c t -> 'c t
     List.fold_left (apply factory) zs pos
 	|> trimSet nxt
 
-let pProjM : 'c Factory.t -> Var.t list -> 'c t -> Flags.scalar -> 'c t
-	= fun factory xs s scalar_type ->
-	Proj.proj factory scalar_type xs s
+let pProjM : 'c Factory.t -> Cs.Vec.t -> Var.t list -> 'c t -> 'c t
+	= fun factory normalization_point xs s ->
+	Proj.proj factory normalization_point xs s
 		|> Pervasives.fst
 
 let fmElimM: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t option Rtree.t -> 'c t -> 'c t
@@ -519,13 +519,13 @@ let addM: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 *)
 let get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> ('c t * Vector.Symbolic.t) list
     = fun factory p point ->
-    let regions = PoltoPLP.minimize_and_plp factory point p in
+    let regions = PoltoPLP.to_plp factory point p in
     List.map
         (fun (reg,cons) ->
             let ineqs = List.map
                 (fun cstr -> cstr, factory.top)
-                ((Cons.get_c cons) :: PoltoPLP.PLP.Region.get_cstrs reg)
-            and point = Vector.Symbolic.ofRat reg.PoltoPLP.PLP.Region.point
+                ((Cons.get_c cons) :: PLP.Region.get_cstrs reg)
+            and point = Vector.Symbolic.ofRat reg.PLP.Region.point
             in
             (ineqs, point)
         ) regions.PoltoPLP.mapping

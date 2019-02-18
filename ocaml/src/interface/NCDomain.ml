@@ -106,10 +106,8 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
 		match p with
 		| Bottom c -> Bottom c
 		| NonBot p' ->
-			let p' = Pol.projectM F.factory p' vars in
+			let p' = Pol.project F.factory p' vars in
 			check (NonBot p')
-
-	let projectM = project
 
 	let widen: t -> t -> t
 		= fun p1 p2 ->

@@ -262,9 +262,4 @@ end
 
 let ts: Test.t
     = fun () ->
-    (*Min.Debug.enable DebugTypes.([Title ; MInput ; MOutput ; Normal ; Detail]);
-    Debug.print_enable();
-    Debug.set_colors();*)
-    let t = Test.suite "Min" [Classic.ts (); Raytracing.ts ()] in
-    Debug.disable();
-    t
+    Test.suite "Min" [Classic.ts (); Raytracing.ts ()]

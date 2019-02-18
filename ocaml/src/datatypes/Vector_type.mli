@@ -38,6 +38,11 @@ module type Type = sig
 	(** [getvars l] returns the set of variables that appear in the list of vectors [l]. *)
 	val getVars: t list -> Var.Set.t
 
+    (** Evaluates a vector on a point.
+        @param vec vector to evaluate
+        @param point evaluation point *)
+	val eval: t -> t -> Coeff.t
+
 	(** [neg vec] multiplies each coefficient in [vec] by -1. *)
 	val neg : t -> t
 

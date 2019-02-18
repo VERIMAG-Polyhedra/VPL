@@ -210,14 +210,14 @@ let joinSetup_1: 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c1 
 	-> Var.t * Var.t option Rtree.t * (Var.t * (('c1,'c2) Cons.discr_t) Cons.t) list
 	= fun factory2 nxt relocTbl alpha s ->
 	let apply (x, c) (nxt1, relocTbl1, s1) =
-		let (nxt2, relocTbl2, c1) = Cons.joinSetup_1 factory2 nxt1 relocTbl1 alpha c in
-		let x1 =	match Rtree.get None relocTbl2 x with
-				| None -> failwith "EqSet.joinSetup_1"
-				| Some x1 -> x1
-		in
-		(nxt2, relocTbl2, (x1, c1)::s1)
+        let (nxt2, relocTbl2, c1) = Cons.joinSetup_1 factory2 nxt1 relocTbl1 alpha c in
+        let x1 = match Rtree.get None relocTbl2 x with
+            | None -> failwith "EqSet.joinSetup_1"
+            | Some x1 -> x1
+        in
+        (nxt2, relocTbl2, (x1, c1)::s1)
 	in
-(* List.fold_right is necessary because order needs to be preserved (echelon form) *)
+    (* List.fold_right is necessary because order needs to be preserved (echelon form) *)
 	List.fold_right apply s (nxt, relocTbl, nil)
 
 let joinSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c2 t
@@ -228,7 +228,7 @@ let joinSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c2 
 		let x1 = x in
 		(nxt2, relocTbl2, (x1, c1)::s1)
 	in
-(* List.fold_right is necessary because order needs to be preserved (echelon form) *)
+    (* List.fold_right is necessary because order needs to be preserved (echelon form) *)
 	List.fold_right apply s (nxt, relocTbl, nil)
 
 let minkowskiSetup_1: 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c1 t

@@ -1,7 +1,7 @@
 type cmpT = Cstr_type.cmpT
 
 module Cs = Cstr.Rat
-module Poly = ParamCoeff.Poly
+module Poly = Poly.Make(Vector.Rat)
 
 type t = {
 	typ : cmpT;

@@ -12,12 +12,12 @@ type 'c t = {
     rename : Var.t -> Var.t -> 'c -> 'c;
 }
 
+let add_mul : 'c t -> 'c -> 'c -> Scalar.Rat.t -> 'c
+    = fun factory cert1 cert2 coeff ->
+    factory.add cert1 (factory.mul coeff cert2)
+
 let linear_combination : 'c t -> ('c * Scalar.Rat.t) list -> 'c
 	= fun factory l ->
-		List.fold_left
-			(fun res (cert,n) ->
-				factory.add
-					res
-					(factory.mul n cert))
-			(factory.top)
-			l
+	List.fold_left (fun res (cert,n) ->
+        add_mul factory res cert n
+    ) factory.top l

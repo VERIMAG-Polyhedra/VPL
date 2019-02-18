@@ -365,7 +365,7 @@ let project: ('c pedraCert) * ProgVar.PVar.t -> t * ('c list)
   let lcf = cstrLCF_from_frontend p.lcf in
   let ip = import lcf p.backend p.cert in
   let x' = progVarToVar x in
-  export (Pol.project lcf ip x')
+  export (Pol.project lcf ip [x'])
 
 (* [rename ((x,y),p1)]
    - assumes that [y] is a variable fresh in p1

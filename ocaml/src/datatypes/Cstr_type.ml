@@ -27,6 +27,9 @@ module type Type = sig
     (** Module name. *)
 	val name : string
 
+    (** 0 = 0 *)
+    val top : t
+
     (** Returns the contraint comparator. *)
 	val get_typ : t -> cmpT
 
@@ -126,6 +129,9 @@ module type Type = sig
 	(** Multiplies a constraint by a constant.
 	   @raise BadMult if a negative constant is provided and the constraint is an inequality *)
 	val mulc: Vec.Coeff.t -> t -> t
+
+    (** Same as {!val:mulc} but works for negative constants as well. *)
+    val mulc_no_exc : Vec.Coeff.t -> t -> t
 
     (** The type of properties the can be told by examining a constraint on its own. *)
 	type prop_t =

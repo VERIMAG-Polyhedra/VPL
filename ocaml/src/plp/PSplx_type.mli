@@ -1,84 +1,65 @@
+(** This module defines the type of parametric simplex tableau.
+    In VPL, the PLP is always use to express a combination of some input linear constraints. This specificity is thus put  directly in the simplex tableau.
+    Each column of the tableau is associated with an input constraint (with a certificate).
+    Constraints of the problem are expressed as a function of these constraints. *)
+
 module Cs = Cstr.Rat
 
-(** Type of pivoting strategy for the choice of the leaving variable. *)
-type rowPivotStrgyT =
-    | Standard
-    | LexPositive
+(** Each column of the simplex tableau is associated with a decision variable.
+Therefore, decision variables are identified by their column position in the simplex tableau. *)
+type decision_variable = int
 
-(** Type of simplex tableau. It is parametrized by a type of vectors, which defines the type of parametric points. *)
-module type Type = sig
+(** Decision variables can be given a set of variables, with which they are allowed to pivot.
+    By default, variables are given the set [1]. *)
+type var_set = int
 
-    (** Type of parametric points, used to instantiate the objective function. *)
-    module Vec : Vector.Type
+module VarMap : Map.S with type key = decision_variable
 
-    (** Type of Pivot, that instantiates objective functions with parametric points. *)
-    module Pivot : Objective.PivotType with module Vec = Vec
+(** Type of simplex tableau. *)
+type 'c t = {
+    obj : Objective.t; (** Objective function *)
+    mat : Tableau.Matrix.t; (** Constraint matrix *)
+    get_set : var_set VarMap.t; (** map associating decision variables to their set *)
+    basis : int list;
+    sets : var_set list; (** Associates a var_set to each row *)
+    cstrs : 'c Cons.t list; (** The constraint associated to each variable. *)
+    add_col : 'c Cons.t -> Tableau.Vector.t; (* Computes the the column from a constraint. *)
+}
 
-    (** Naming module for decision variables and parameters. *)
-    module Naming = Pivot.Naming
+(** Empty simplex tableau. *)
+val empty : t
 
-    type pivotT = ParamCoeff.t * Tableau.Vector.t -> ParamCoeff.t * Tableau.Vector.t
+(** Conversion intro string. *)
+val to_string : t -> string
 
-    (** Type of simple tableau. *)
-    type t = {
-        obj : Objective.t; (** Objective function *)
-        mat : Tableau.Matrix.t; (** Matrix of constraints *)
-        basis : int list; (** Current basis *)
-        names : Naming.t; (** Naming module *)
-        (** Function that applies pivots to columns and objective *)
-        pivot : pivotT;
-    }
+(** Prints the simplex tableau in the standard output. *)
+val print : t -> unit
 
-    (** Build a simplex tableau.
-        @param obj the objective function
-        @param mat the matrix of constraints
-        @param basis the basis
-        @param names the naming module*)
-    val mk : Objective.t -> Tableau.Matrix.t -> int list -> Naming.t -> t
+(** Adds a row to the simplex tableau.
+    @param row the row
+    @param set the variable set associated to the row
+    @param sx the simplex tableau *)
+val addRow : Tableau.Vector.t -> var_set -> 'c t -> 'c t
 
-    (** An empty simplex tableau.*)
-    val empty : t
+(** @return the number of decision variables of the problem. *)
+val nVars : 'c t -> int
 
-    (** Returns the objective function. *)
-    val get_obj : t -> Objective.t
+(** @return the number of parameters of the problem. *)
+val nParams : 'c t -> int
 
-    (** Returns the matrix of constraints. *)
-    val get_mat : t -> Tableau.Matrix.t
+(** @return the number of rows of the problem. *)
+val nRows : 'c t -> int
 
-    (** Current basis. *)
-    val get_basis : t -> int list
+(** @return the set of parameters of the problem. *)
+val getParams : 'c t -> Var.Set.t
 
-    (** Conversion intro string. *)
-    val to_string : t -> string
+(** @return the current value of the objective function, expressed as a constraint over the parameters. *)
+val objValue : 'c t -> Cs.t
 
-    (** Returns the number of rows of the simplex tableau. *)
-    val nRows : t -> int
-
-    (** Returns the number of columns of the simplex tableau. *)
-    val nCols : t -> int
-
-    (** Returns the number of decision variables of the simplex tableau. *)
-    val nVars : t -> int
-
-    (** Returns the number of parameters in the objective function. *)
-    val nParams : t -> int
-
-    (** Returns the decision variables of the simplex tableau. *)
-    val getVars : t -> Var.t list
-
-    (** Returns the parameters of the simplex tableau. *)
-    val getParams : t -> Var.t list
-
-    (** Returns the current (parametric) value of the objective function. *)
-    val obj_value : t -> ParamCoeff.t
-
-    (** Returns the current value of the objective function, expressed as a constraint of the parameters. *)
-    val obj_value' : t -> Cs.t
-
-    (** [getCurVal sx] returns the current value of the basic variables in [sx].
-    The value of the other variables is implicitly zero.  Each basic variable
-    is given its value as a pair (column number, value) *)
-    val getCurVal : t -> (int * Q.t) list
+(** [getCurVal sx] returns the current value of the basic variables in [sx].
+The value of the other variables is implicitly zero.  Each basic variable
+is given its value as a pair (column number, value) *)
+val getCurVal : t -> (int * Q.t) list
 
     (** Syntactic equality test between two simplex tableaus. *)
     val equal : t -> t -> bool

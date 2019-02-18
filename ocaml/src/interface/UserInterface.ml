@@ -160,7 +160,7 @@ module type Type = sig
 
 			(** Eliminates the given list of variables from a polyhedron, by orthogonal projection. *)
 			val project: Var.t list -> t -> t
-			val projectM: Var.t list -> t -> t
+			val project_vars: Var.t list -> t -> t
 
 			val widen: t -> t -> t
 
@@ -258,7 +258,7 @@ module type Type = sig
 
 			(** Eliminates the given list of variables from a polyhedron, by orthogonal projection. *)
 			val project: Expr.Ident.t list -> t -> t
-			val projectM: Expr.Ident.t list -> t -> t
+			val project_vars: Expr.Ident.t list -> t -> t
 
 			val widen: t -> t -> t
 
@@ -722,14 +722,14 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 				lazy (project' vars p)
 				|> handle
 
-			let projectM: Var.t list -> t -> t
-				= let projectM': Var.t list -> t -> t
+			let project_vars: Var.t list -> t -> t
+				= let project_vars': Var.t list -> t -> t
 					= fun vars p ->
 					let name = Track.project vars p in
-					mk name (I.projectM vars p.value)
+					mk name (I.project_vars vars p.value)
 				in
 				fun vars p ->
-				lazy (projectM' vars p)
+				lazy (project_vars' vars p)
 				|> handle
 
 			let widen : t -> t -> t
@@ -1005,10 +1005,10 @@ module MakeInterface (Coeff : Scalar.Type) = struct
 				let vars' = List.map Expr.Ident.toVar vars in
 				BuiltIn.project vars' p
 
-			let projectM: Expr.Ident.t list -> t -> t
+			let project_vars: Expr.Ident.t list -> t -> t
 				= fun vars p ->
 				let vars' = List.map Expr.Ident.toVar vars in
-				BuiltIn.projectM vars' p
+				BuiltIn.project_vars vars' p
 
 			let guassign: (Expr.Ident.t list) -> UserCond.t -> t -> t
 				= fun vl c p ->

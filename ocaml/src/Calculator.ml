@@ -126,10 +126,10 @@ module Print = struct
 	let ineq_string : string list -> string
 		=fun sl -> "p_ineq = ["^(String.map (fun c -> if c = '.' then '*' else c) (cs_string sl))^" ]\n"
 
-	let sage_beginning_string = "# coding=UTF-8\n"^PLPPlot.str_to_ieq^PLPPlot.str_projection^PLPPlot.str_plot_polyhedra^
+	let sage_beginning_string = "UNDEFINED" (*"# coding=UTF-8\n"^PLPPlot.str_to_ieq^PLPPlot.str_projection^PLPPlot.str_plot_polyhedra^
 		PLPPlot.str_plot_polynomial^
 		PLPPlot.str_color^
-		PLPPlot.str_color_from_polyhedra
+		PLPPlot.str_color_from_polyhedra*)
 
 	let var_list_to_parameters : string list -> string =
 		fun sl -> List.fold_left (fun s sel -> s^"\""^sel^"\",") "" sl
@@ -153,7 +153,7 @@ module Print = struct
 		= fun p sl ->
 		if sl = [] then p else
 		let vars_to_project = filter_vars (getVars p) sl in
-		VPL.User.projectM vars_to_project p
+		VPL.User.project_vars vars_to_project p
 
 	(** If the polyhedron is plotted on one or two dimensions, the image is saved to be shown after Sage has terminated.
 	Otherwise, it is directly plotted, as Jmol still works when Sage terminates. *)
@@ -247,5 +247,5 @@ module Notations = struct
     let (|-) a b =
 		let var_list = (string_to_var_list b) in
 		Ident.addVars var_list ;
-		VPL.User.projectM var_list a (** VPL.t |- string **)
+		VPL.User.project_vars var_list a (** VPL.t |- string **)
 end

@@ -28,7 +28,6 @@ module type PolyhedronDomain = sig
 	val join : t -> t -> t
 	val minkowski : t -> t -> t
 	val project : t -> Var.t list -> t
-	val projectM : t -> Var.t list -> t
 	val widen : t -> t -> t
 	val incl : t -> t -> bool
 	val to_string : (Var.t -> string) -> t -> string
@@ -78,10 +77,6 @@ module Lift (P : PolyhedronDomain)  = struct
 		let project: Var.t list -> t -> t
 			= fun vars p ->
 			P.project p vars
-
-		let projectM: Var.t list -> t -> t
-			= fun vars p ->
-			P.projectM p vars
 
 		let partition_affine : (cmpT * Term.t) list -> Cs.t list * CP.t list
 			= fun l ->

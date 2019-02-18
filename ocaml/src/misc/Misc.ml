@@ -26,6 +26,17 @@ let findi : ('a -> bool) -> 'a list -> int
 in fun prop l ->
 findi_rec prop l 0
 
+let array_findi : (int -> 'a -> bool) -> 'a array -> int
+	= fun f ar ->
+	let a = ref (-1) in
+	for i = 0 to (Array.length ar) - 1 do
+		if f i ar.(i)
+		then a := i
+	done;
+	if !a >= 0
+	then !a
+	else raise Not_found
+
 let rec find_res : ('a -> (bool * 'a)) -> 'a list -> 'a
 	= fun prop l ->
 	match l with
@@ -170,6 +181,14 @@ let fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 		(fun i b -> f i (List.nth a_s i) b)
 		(range 0 (List.length a_s))
 		b0
+
+let array_fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
+	= fun f a0 bs ->
+	let a = ref a0 in
+	for i = 0 to (Array.length bs) - 1 do
+		a := f i !a bs.(i)
+	done;
+	!a
 
 let string_equal : string -> string -> bool
 	= fun s1 s2 ->

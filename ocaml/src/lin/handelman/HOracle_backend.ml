@@ -1,3 +1,6 @@
+let oracle _ = failwith "Handelman linearization is not currently available"
+
+(*
 module Poly = ParamCoeff.Poly
 module Coeff = Poly.Coeff
 module CP = CstrPoly
@@ -123,3 +126,4 @@ let oracle : PedraQBackend.t -> NumC.cmpG -> ASTerm.BasicQTerm.t -> Map_poly.Han
                 (IndexBuild.Map.to_string build_order));
 		Translation.cert_trans build_order res
         end
+*)

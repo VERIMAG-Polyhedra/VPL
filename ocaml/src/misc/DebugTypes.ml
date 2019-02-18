@@ -1,5 +1,7 @@
 type levelT = Title | Normal | Detail | MInput | MOutput | Sage
 
+let levels = [Title ; Normal ; Detail ; MInput ; MOutput ; Sage]
+
 type color = Black | Red | Green | Yellow | Blue | Magenta | Cyan | White
 
 let default : unit -> unit
@@ -22,6 +24,8 @@ module type Type = sig
 	module D : sig val name : string end
 
 	val enable : levelT list -> unit
+
+    val enable_all : unit -> unit
 
 	val print_enable : unit -> unit
 
@@ -75,6 +79,10 @@ module Debug (D : sig val name : string end) = struct
 	  	| lvl when List.mem lvl lvls -> true
 	  	| _ -> false)
 
+    let enable_all : unit -> unit
+        = fun () ->
+        enable levels
+        
 	let print_enable : unit -> unit
 	  = fun () -> print_on_fly := true
 

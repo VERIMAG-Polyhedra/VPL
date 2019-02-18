@@ -1,3 +1,20 @@
+(*
+Vpl.Pol.Debug.enable_all();;
+Vpl.Pol.Debug.print_enable();;
+*)
+(*Vpl.Join.Debug.enable_all();;
+Vpl.Join.Debug.print_enable();;
+Vpl.Proj.Debug.enable_all();;
+Vpl.Proj.Debug.print_enable();;
+Vpl.PLPCore2.Debug.enable_all();;
+Vpl.PLPCore2.Debug.print_enable();;
+Vpl.PLPCore.Debug.enable_all();;
+Vpl.PLPCore.Debug.print_enable();;
+Vpl.PSplx2.Debug.enable [Title ; MInput ; MOutput];;
+Vpl.PSplx2.Debug.print_enable();;
+Vpl.PSplx.Debug.enable [Title ; MInput ; MOutput];;
+Vpl.PSplx.Debug.print_enable();;
+*)
 open Vpl
 
 module Cs = Cstr.Rat
@@ -747,7 +764,7 @@ module Make_Tests (F : sig
 	let projectTs: Test.t
 	= fun () ->
 		let chk_res (t, v, p, r) = fun state ->
-			let p1 = Pol.project factory p v in
+			let p1 = Pol.project factory p [v] in
 			if Pol.equal factory factory p1 r && check_certificates p1 then
 				Test.succeed state
 			else
@@ -854,7 +871,13 @@ module Make_Tests (F : sig
 	let projectMTs: Test.t
 	= fun () ->
 		let chk_res (t, l, p, r) = fun state ->
-			let p1 = Pol.projectM factory p l in
+			(*Proj.Debug.enable_all();
+			Proj.Debug.print_enable();
+			PLPCore.Debug.enable_all();
+			PLPCore.Debug.print_enable();
+			PSplxExec.Debug.enable_all();
+			PSplxExec.Debug.print_enable();*)
+			let p1 = Pol.project factory p l in
 			if Pol.equal factory factory p1 r && check_certificates p1 then
 				Test.succeed state
 			else
@@ -1074,7 +1097,9 @@ module Make_Tests (F : sig
 			match Pol.incl factory p1 p, check_certificates p with
 			| Pol.Incl _, true -> Test.succeed state
 			| Pol.NoIncl, _ ->
-				let err = Printf.sprintf "p1 not in p\np:\n%s" (Pol.to_string_ext factory varPr p) in
+				let err = Printf.sprintf "p1 not in p\np:\n%s\np1:%s"
+                    (Pol.to_string_ext factory varPr p)
+                    (Pol.to_string_ext factory varPr p1) in
 				Test.fail name err state
 			| _, false ->
 				let err = Printf.sprintf "wrong certificate in p1 : %s" (Pol.to_string_ext factory varPr p) in
@@ -1085,7 +1110,9 @@ module Make_Tests (F : sig
 			match Pol.incl factory p2 p, check_certificates p with
 			| Pol.Incl _, true -> Test.succeed state
 			| Pol.NoIncl, _ ->
-				let err = Printf.sprintf "p2 not in p\np:\n%s" (Pol.to_string_ext factory varPr p) in
+				let err = Printf.sprintf "p2 not in p\np:\n%s\np2:%s"
+                    (Pol.to_string_ext factory varPr p)
+                    (Pol.to_string_ext factory varPr p2) in
 				Test.fail name err state
 			| _, false ->
 				let err = Printf.sprintf "wrong certificate in p2 : %s" (Pol.to_string_ext factory varPr p) in
@@ -1356,28 +1383,4 @@ module PLP_Rat = Make_Tests
 let ts2
 	= Test.suite "Pol" [ PLP_Rat.ts() ] ts1
 
-module PLP_Float = Make_Tests
-	(struct
-		let set : unit -> unit
-			= fun () ->
-			Flags.min := Flags.Classic;
-			Flags.proj := Flags.Proj_PLP Flags.Float;
-			Flags.join := Flags.Join_PLP Flags.Float;
-	end)
-
-let ts3
-	= Test.suite "Pol" [ PLP_Rat.ts() ] ts2
-
-module PLP_Sym = Make_Tests
-	(struct
-		let set : unit -> unit
-			= fun () ->
-			Flags.min := Flags.Classic;
-			Flags.proj := Flags.Proj_PLP Flags.Symbolic;
-			Flags.join := Flags.Join_PLP Flags.Symbolic;
-	end)
-
-let ts4
-	= Test.suite "Pol" [ PLP_Rat.ts() ] ts3
-
-let ts = Test.prState "Pol" ts4
+let ts = Test.prState "Pol" ts2

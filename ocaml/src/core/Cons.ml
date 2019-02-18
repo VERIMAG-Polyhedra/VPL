@@ -156,3 +156,15 @@ let minkowskiSetup_2 : 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c2 t
 	let c' = {c with Cs.v = vec2} in
 	let cert' = (factory1.Factory.top, cert) in
 	(nxt1, relocTbl1, (c',cert'))
+
+let rec clean : 'c t list -> 'c t list
+    = function
+    | [] -> []
+    | (c,cert) :: l ->
+        match Cs.tellProp c with
+        | Cs.Contrad -> invalid_arg "clean: contradictory constraint"
+        | Cs.Trivial -> clean l
+        | Cs.Nothing ->
+            if List.exists (fun (c',_) -> Cs.equal c c') l
+            then clean l
+            else (c,cert) :: clean l

@@ -162,7 +162,7 @@ module Polyhedron: NCInterface.PolyhedronDomain = struct
       | Bottom -> Bottom
       | NonBot p ->
          let p = synchro true p in
-	 let p = fresh p.input (Pol.projectM (ASTCert.factory p.input) p.pol vars) in
+	 let p = fresh p.input (Pol.project (ASTCert.factory p.input) p.pol vars) in
 	 NonBot p
 
   let widen: t -> t -> t
@@ -208,7 +208,7 @@ module Polyhedron: NCInterface.PolyhedronDomain = struct
 
   	let minkowski _ _ = failwith "not_yet_implemented : minkowski"
 
-	let projectM _ _ = failwith "not_yet_implemented : projectM"
+	let project_vars _ _ = failwith "not_yet_implemented : project_vars"
 
     let set_point _ _ = failwith "not_yet_implemented : set_point"
 end

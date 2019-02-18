@@ -51,7 +51,7 @@ module Make (Vec : Vector.Type) = struct
 
 	let eval : t -> Vec.t -> Coeff.t
 		= fun c pt ->
-		Coeff.sub (Rtree.fold (fun _ -> Coeff.add) Coeff.z (Vec.mul_t c.v pt)) c.c
+		Coeff.sub (Vec.eval c.v pt) c.c
 
 	let add : t -> t -> t
 		= fun c1 c2 ->
@@ -59,12 +59,18 @@ module Make (Vec : Vector.Type) = struct
 		v = Vec.add c1.v c2.v;
 		c = Coeff.add c1.c c2.c }
 
-	(* XXX: c'est vraiment ce qu'on veut?*)
 	let mulc : Coeff.t -> t -> t
 		= fun c cstr ->
 		if cstr.typ <> Eq && Coeff.le c Coeff.z
 		then Pervasives.raise BadMult
 		else { cstr with v = Vec.mulc c cstr.v; c = Coeff.mul c cstr.c }
+
+
+	let mulc_no_exc : Coeff.t -> t -> t
+		= fun c cstr -> { cstr with
+            v = Vec.mulc c cstr.v;
+            c = Coeff.mul c cstr.c
+        }
 
 	let compl : t -> t
 		= fun c ->
@@ -85,6 +91,8 @@ module Make (Vec : Vector.Type) = struct
 	let eq v c = mk Eq v c
 	let le v c = mk Le v c
 	let lt v c = mk Lt v c
+
+    let top = eq [] Vec.Coeff.z
 
 	let mkInt typ v c =
 		match typ with

@@ -5,7 +5,7 @@ let datatypes =
     Test.prState "Datatypes" (Test.suite "Datatypes" tcs Test.stateZ)
 
 let plp =
-    let tcs = List.map Test.run [Tableau_t.ts ; ParamCoeff_t.ts ; Objective_t.ts; PSplx_t.ts ; Min_t.ts] in
+    let tcs = List.map Test.run [Tableau_t.ts ; Min_t.ts] in
     Test.prState "PLP" (Test.suite "PLP" tcs Test.stateZ)
 
 let misc = Test.prState "MISC"
@@ -18,7 +18,7 @@ let lp = Test.prState "Linear Programming"
 	(Test.suite "Linear Programming" [Splx_t.ts() ; Opt_t.ts()] Test.stateZ)
 
 let core = Test.prState "Core"
-	(Test.suite "Core" [EqSet_t.ts() ; IneqSet_t.ts() ; ProjBuild_t.ts()] Test.stateZ)
+	(Test.suite "Core" [EqSet_t.ts() ; IneqSet_t.ts()] Test.stateZ)
 
 (*
 let calculator = Test.prState "Calculator"

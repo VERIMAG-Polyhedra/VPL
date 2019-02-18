@@ -1,17 +1,13 @@
 module CP = CstrPoly
 
-module F = Handelman.FactoryUnit
+module F = FactoryMaker.Make(FactoryMaker.Unit)
 
 let addPolyM' : 'a Factory.t -> 'a Pol.t -> CP.t list -> F.cert Pol.t option
 	= fun factory phPol pl ->
 	if Pol.equal factory factory Pol.top phPol
 	then Some (F.convert phPol)
-	else match !Flags.proj with
-		| Flags.Proj_PLP(Flags.Rat) -> (Handelman.Rat.Pb.run phPol pl).Handelman.Rat.Pb.ph.vpl_rep
-		| Flags.Proj_PLP(Flags.Symbolic)-> (Handelman.Symbolic.Pb.run phPol pl).Handelman.Symbolic.Pb.ph.vpl_rep
-		| Flags.Proj_PLP(Flags.Float) -> (Handelman.Float.Pb.run phPol pl).Handelman.Float.Pb.ph.vpl_rep
-		| Flags.FM -> (Handelman.Rat.Pb.run phPol pl).Handelman.Rat.Pb.ph.vpl_rep
-		| Flags.PHeuristic -> Pervasives.failwith "Lin.addPolyM"
+	else failwith "Handelman linearization is not currently available"
+	(*(Handelman.Rat.Pb.run phPol pl).Handelman.Rat.Pb.ph.vpl_rep*)
 
 
 let addPolyM : 'a Factory.t -> 'a Pol.t -> CP.t list -> F.cert Pol.t option

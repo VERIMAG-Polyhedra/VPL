@@ -6,11 +6,10 @@ let modules : ((module Type) * color) list = [
     (module Proj.Debug), Magenta;
     (module PLPCore.Debug), Red;
     (module MinLP.Debug), Green;
-    (module Handelman.Debug), Magenta;
     (module HOtypes.Debug), White;
 	(module OraclePattern.Debug), White;
     (module Pol.Debug), Blue;
-    (module PSplx.Debug), Yellow;
+    (module PSplxExec.Debug), Yellow;
 ]
 
 let print_enable : unit -> unit

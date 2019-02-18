@@ -61,6 +61,12 @@ module Make (Coeff : Scalar.Type) = struct
 		in
 		_map v0
 
+    let eval vec point =
+        Rtree.fold
+            (fun _ -> Coeff.add)
+            Coeff.z
+            (mul_t vec point)
+
 	let mulc n v = map (fun v' -> Coeff.mul n v') v
 
 	let divc v c = map (fun n -> Coeff.div n c) v

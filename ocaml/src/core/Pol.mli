@@ -103,17 +103,11 @@ val addMSub: 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 val meet: 'c Factory.t -> 'c t -> 'c t -> 'c meetT
 val meetSub: 'c Factory.t -> Var.t -> 'c t -> 'c t -> 'c meetT
 
-(** Forget all information about a given variable [v] in a polyhedron [p].
-The certificate proves that the result includes the geometric projection of the [p] with respect to [v].
-The certificate can be checked using function [check]. *)
-val project: 'c Factory.t -> 'c t -> Var.t -> 'c t
-val projectSub: 'c Factory.t -> Var.t -> 'c t -> Var.t -> 'c t
-
 (** Forget all information about a set of variables.
 Although the result is identical to projecting the variables one by one,
 heuristic choices on the projection order make [projectM] more efficient. *)
-val projectM: 'c Factory.t -> 'c t -> Var.t list -> 'c t
-val projectMSub: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
+val project: 'c Factory.t -> 'c t -> Var.t list -> 'c t
+val projectSub: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
 
 (** [join p1 p2] computes the convex hull [p] of [p1] and [p2].
 The certificate provides the necessary arguments to show inclusion of [p1] and [p2] in [p]. *)
@@ -221,6 +215,7 @@ val split_in_half : 'c Factory.t -> 'c t -> Cs.t option
 (** [set_point point p] returns the polyhedron [p] with its interior point set to [p].
     @raise Invalid_argument if [point] is not inside [p]'s interior. *)
 val set_point : Vec.t -> 'c t -> 'c t
+
 (**
   * Returns true if the given point satisfies the constraints of the polyhedron.
   *)

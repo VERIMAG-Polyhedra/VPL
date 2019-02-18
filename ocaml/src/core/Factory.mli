@@ -20,5 +20,8 @@ type 'c t = {
     rename : Var.t -> Var.t -> 'c -> 'c; (** Renaming a variable in a constraint. *)
 }
 
+(** [add_mul factory cert1 cert2 coeff] computes [cert + cert2 * coeff]. *)
+val add_mul : 'c t -> 'c -> 'c -> Scalar.Rat.t -> 'c
+
 (** Computes a linear combinations of a list of certificates. *)
 val linear_combination : 'c t -> ('c * Scalar.Rat.t) list -> 'c

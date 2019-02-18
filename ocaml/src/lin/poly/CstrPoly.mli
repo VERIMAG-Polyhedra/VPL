@@ -1,7 +1,7 @@
 (** Type of polynomial constraints. *)
 
 module Cs = Cstr.Rat
-module Poly = ParamCoeff.Poly
+module Poly : Poly.Type with module Vec = Vector.Rat
 
 (** A polynomial constraint of the form [p typ 0]. *)
 type t = {

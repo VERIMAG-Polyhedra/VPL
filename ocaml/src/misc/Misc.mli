@@ -13,6 +13,8 @@ val substring : string -> int -> string
 @raise Not_found if no such element exists *)
 val findi : ('a -> bool) -> 'a list -> int
 
+val array_findi : (int -> 'a -> bool) -> 'a array -> int
+
 val find_res : ('a -> (bool * 'a)) -> 'a list -> 'a
 
 (** [popi l i] returns the list [l] where the [ith] element has been removed.
@@ -78,6 +80,8 @@ val add_tab : int -> string -> string
 val fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 
 val fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a list -> 'b -> 'b
+
+val array_fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 
 val string_equal : string -> string -> bool
 

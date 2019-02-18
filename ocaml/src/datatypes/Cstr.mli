@@ -10,7 +10,7 @@ module Rat : sig
 
     include Type with module Vec = Vector.Rat and module Coeff = Scalar.Rat
 
-    (** [elim c1 c2 x] linearly combines [t1] and [t2] to eliminate [x] from the result.
+    (** [elim c1 c2 x] linearly combines [c1] and [c2] to eliminate [x] from the result.
 	The coefficients applied to [c1] and [c2] are returned, in order.
 	@raise NoElim if [x] does not appear in any of the two constraints
 	@raise CannotElim if elimination is impossible, due to [x] not appearing in one of the two constraints

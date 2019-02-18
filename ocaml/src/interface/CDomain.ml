@@ -74,7 +74,7 @@ module PedraQWrapper: QInterface.HighLevelDomain = struct
 
   	let minkowski _ _ = not_yet_implemented "minkowski"
 
-	let projectM _ _ = not_yet_implemented "projectM"
+	let project_vars _ _ = not_yet_implemented "project_vars"
 
     let get_regions _ _ = not_yet_implemented "get_regions"
 
@@ -153,7 +153,7 @@ module PedraZWrapper: ZInterface.HighLevelDomain = struct
 
     let minkowski _ _ = not_yet_implemented "minkowski"
 
-	let projectM _ _ = not_yet_implemented "projectM"
+	let project_vars _ _ = not_yet_implemented "project_vars"
 
     let get_regions _ _ = not_yet_implemented "get_regions"
 
