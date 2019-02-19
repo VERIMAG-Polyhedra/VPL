@@ -85,7 +85,7 @@ module Region = struct
 		id : int;
 		r : (Boundary.t * int option) list;
 		point : Vec.t; (* Un point dans la région *)
-		sx : 'c PSplx.t option (* Tableau de simplexe dont l'objectif a donné cette région *)
+		sx : 'c PSplx.t (* Tableau de simplexe dont l'objectif a donné cette région *)
 	}
 
 	let mk : int -> Boundary.t list -> Vec.t -> 'c PSplx.t -> 'c t
@@ -93,7 +93,7 @@ module Region = struct
 		{id = id;
 		 r = List.map (fun b -> (b,None)) bounds;
 		 point = point;
-		 sx = Some sx
+		 sx = sx
 		}
 
     let canon : 'c t -> 'c t
@@ -123,7 +123,7 @@ module Region = struct
 				cstrs ",") ^ ")"))
 		^
 		(if Debug.is_enabled DebugTypes.Detail
-		then Printf.sprintf "\n\tTableau : \n%s" (match r.sx with None -> "None" | Some sx -> PSplx.to_string sx)
+		then Printf.sprintf "\n\tTableau : \n%s" (PSplx.to_string r.sx)
 		else "")
 
 	let extract : 'c PSplx.t -> Cs.t list
@@ -206,11 +206,8 @@ module Region = struct
 
 	let eval_obj : 'c t -> Cs.Vec.t -> Cs.Vec.Coeff.t option
 		= fun reg p ->
-		match reg.sx with
-		| None -> None
-		| Some sx ->
-			let cstr = PSplx.objValue sx in
-			Some (Cs.eval cstr p)
+		let cstr = PSplx.objValue reg.sx in
+		Some (Cs.eval cstr p)
 end
 
 type 'c mapRegs_t = 'c Region.t MapV.t
@@ -293,14 +290,11 @@ module Adjacency = struct
 	@param cstr2 must belong to [reg2] *)
 	let adjacent_cstr : 'c Region.t -> 'c Region.t -> Cs.t -> Cs.t -> bool
 		= fun reg1 reg2 cstr1 cstr2 ->
-			match reg1.Region.sx, reg2.Region.sx with
-			| Some sx1, Some sx2 ->
-				let p = Cs.get_saturating_point cstr1 in
-				let obj1 = PSplx.objValue sx1
-				and obj2 = PSplx.objValue sx2
-				in
-				Cs.Vec.Coeff.equal (Cs.eval obj1 p) (Cs.eval obj2 p)
-			| _,_ -> adjacent_cstr_lp reg1 reg2 cstr1 cstr2
+		let p = Cs.get_saturating_point cstr1 in
+		let obj1 = PSplx.objValue reg1.sx
+		and obj2 = PSplx.objValue reg2.sx
+		in
+		Cs.Vec.Coeff.equal (Cs.eval obj1 p) (Cs.eval obj2 p)
 
 	let adjacent' : int -> Cs.t -> ((int * Cs.t) * 'a) list -> 'c mapRegs_t -> int option
 		= fun id_init cstr l regMap ->
@@ -921,12 +915,6 @@ let extract_points : 'c Region.t -> int -> ExplorationPoint.t list
 		(fun (b,_) -> ExplorationPoint.Direction (reg_id, b))
 		reg.Region.r
 
-let get_sx : 'c PSplx.t -> 'c Region.t -> 'c PSplx.t
-	= fun sx_init reg ->
-	match reg.Region.sx with
-	| Some sx -> sx
-	| None -> sx_init
-
 type 'c config = {
 	add_region : 'c Region.t option -> 'c Region.t -> ExplorationPoint.t -> 'c t -> 'c t;
 	reg_t : region_t;
@@ -1018,7 +1006,7 @@ let rec exec : 'c config -> 'c PSplx.t -> 'c t -> 'c t
 					(Cs.to_string Var.to_string cstr)
 					(Vec.to_string Var.to_string pointToExplore)));
 			let reg = MapV.find id plp'.regs in
-			match Exec.exec config.reg_t (get_sx sx_init reg) pointToExplore with
+			match Exec.exec config.reg_t reg.sx pointToExplore with
 			| None ->
 				let newPointToExplore = find_new_point reg.Region.point pointToExplore in
 				let newExplorationPoint = ExplorationPoint.Direction(id, (cstr, newPointToExplore)) in
@@ -1047,25 +1035,23 @@ let result_to_string : ('c Region.t * 'c Cons.t) list option -> string
 (** Careful: if a region has no simplex tableau (because it was given in input), it does not appear in the result. *)
 let get_results : 'c Factory.t -> 'c t -> ('c Region.t * 'c Cons.t) list
 	= fun factory plp ->
-	let results = MapV.bindings plp.regs
-        |> List.fold_left
-			(fun res (_,reg) -> match (Region.canon reg).Region.sx with
-				| None -> res
-				| Some sx -> (reg, PSplx.objValueCert factory sx) :: res)
-			[]
+	let results = List.map (fun (_,reg) ->
+        let reg' = Region.canon reg in
+        (reg', PSplx.objValueCert factory reg'.Region.sx)
+    ) (MapV.bindings plp.regs)
 	in
 	Debug.exec results DebugTypes.MOutput
 		(lazy(result_to_string (Some results)))
 
 (* also initializes the fresh region id *)
-let init_regions : 'c config -> 'c mapRegs_t
-	= fun config ->
+let init_regions : 'c config -> 'c PSplx.t -> 'c mapRegs_t
+	= fun config init_sx ->
 	reg_id := 0;
 	List.fold_left
 		(fun map reg ->
 			if !reg_id <= reg.Region.id
 			then reg_id := reg.Region.id + 1;
-			MapV.add reg.Region.id {reg with Region.sx = None} map)
+			MapV.add reg.Region.id {reg with Region.sx = init_sx} map)
 		MapV.empty config.regions
 
 let choose_init_point : 'c PSplx.t -> 'c config -> Vec.t * 'c config
@@ -1090,7 +1076,7 @@ let init_and_exec : 'c Factory.t -> 'c config -> 'c PSplx.t -> 'c t option
 	let (point,config) = choose_init_point sx config in
 	if init_sx factory sx point
 	then let plp = {
-		regs = init_regions config;
+		regs = init_regions config sx;
 		todo = config.points
 		} in
 		Some (exec config sx plp)
