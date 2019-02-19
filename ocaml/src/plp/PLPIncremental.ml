@@ -29,8 +29,23 @@ let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * Exploration
     else (* The new frontier is redundant *)
         ({reg with sx = sx'}, [])
 
-(*
-let add_column : (Region.t * 'c Cons.t) list -> ParamCoeff.t -> Tableau.Vector.t -> (Region.t * 'c Cons.t) list
-    = fun regs pcoeff column ->
-    List.map (fun (reg, cons) -> add_column_to_region reg)
-*)
+
+let add_column : 'c Factory.t -> 'c config -> ('c Region.t * 'c Cons.t) list -> 'c Cons.t -> ('c Region.t * 'c Cons.t) list
+    = fun factory config regs cons ->
+    let (regs', todo) = List.fold_left (fun (regs, todo) (reg, _) ->
+        let (reg', todo') = add_column_to_region reg cons in
+        reg' :: regs, todo @ todo'
+    ) ([],[]) regs
+    in
+    let (max_id, map) = List.fold_left (fun (max_id,map) reg ->
+        let map' = MapV.add reg.Region.id reg map
+        and max_id' = if max_id < reg.id then reg.id else max_id in
+        (max_id', map')
+    ) (0, MapV.empty) regs' in
+    reg_id := max_id;
+    let plp = {
+        regs = map;
+        todo = todo;
+    } in
+    exec config (List.hd regs').Region.sx plp
+    |> get_results factory
