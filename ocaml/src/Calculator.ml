@@ -2,7 +2,7 @@
 module CP = CstrPoly
 module Poly = CP.Poly
 
-include UserInterface.MakeInterface(Scalar.Rat)
+include WrapperTraductors.Interface(Scalar.Rat)
 
 let folder = "/tmp/"
 
@@ -31,10 +31,6 @@ module Expr = struct
 
 	type t = PolyParserBuild.poly
 
-	exception Out_of_Scope
-
-	module Ident = Ident
-
 	let rec poly_to_pol_rec : PolyParserBuild.poly -> Poly.t
 		= fun p ->
 			match p with
@@ -60,28 +56,28 @@ module Expr = struct
 	let to_term : t -> Term.t
 		= fun p ->
 		to_poly p |> poly_to_term
+
+    let of_term _ = failwith "unimplemented of_term"
 end
 
 (*module VPL = Interface(CDomain.PedraQWrapper)(Expr)*)
-module VPL = Lift(NCDomain.NCVPL_Unit.Q)(Expr)
+module VPL = UserInterface.MakeCustom(Domains.UnitQ)(Ident)(Expr)
 
-let polyCP_to_polCP : PolyParserBuild.cstr list -> VPL.UserCond.t
+let polyCP_to_polCP : PolyParserBuild.cstr list -> VPL.b_expr
 	= fun l ->
-	List.fold_left
-		(fun res (e1,cmp,e2) ->
-			let atom = VPL.UserCond.Atom (e1,cmp,e2) in
-			VPL.UserCond.BinL (res, WrapperTraductors.AND, atom))
-		(VPL.UserCond.Basic true)
-		l
+	List.fold_left (fun res (e1,cmp,e2) ->
+        let atom = UserInterface.Atom (e1,cmp,e2) in
+        UserInterface.BinL (res, WrapperTraductors.AND, atom)
+    ) (UserInterface.Basic true) l
 
 let stmtl_list_to_vpl : PolyParserBuild.stmt list -> VPL.t
 	= fun stmt_list ->
 	List.fold_left
 		(fun vpl stmt ->
 		match stmt with
-		| PolyParserBuild.Constraints l -> VPL.User.assume (polyCP_to_polCP l) vpl
+		| PolyParserBuild.Constraints l -> VPL.assume (polyCP_to_polCP l) vpl
 		| PolyParserBuild.Assigns l ->
-			Ident.addVars (List.map (fst) l); VPL.User.assign l vpl) VPL.top stmt_list
+			Ident.addVars (List.map (fst) l); VPL.assign l vpl) VPL.top stmt_list
 
 let parse : string -> VPL.t =
 	fun s ->
@@ -94,26 +90,9 @@ let string_to_var_list : string -> string list
 
 module Print = struct
 
-	let get_cstrs : VPL.t -> Pol.Cs.t list
-		= fun p ->
-		match VPL.backend_rep p with
-		| None -> []
-		| Some (p,(ofVar,toVar)) ->
-			let (p',_,toVar') = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
-			let convert c =
-				let v' = Pol.Cs.get_v c
-					|> Pol.Cs.Vec.toList
-					|> List.map (fun (v,c) -> c, (toVar' v))
-					|> Pol.Cs.Vec.mk
-				in
-				{c with Pol.Cs.v = v'}
-			in
-			List.map (fun (_,c) -> Cons.get_c c |> convert) (Pol.get_eqs p')
-			@ List.map (fun c -> Cons.get_c c |> convert) (Pol.get_ineqs p')
-
 	let get_eqs_and_ineqs : VPL.t -> Pol.Cs.t list * Pol.Cs.t list (*eqs, ineqs*)
 		= fun p ->
-			get_cstrs p
+			VPL.get_cstrs p
 			|> List.partition (fun c -> Pol.Cs.get_typ c = Cstr_type.Eq)
 
 	let cs_string : string list -> string
@@ -136,7 +115,7 @@ module Print = struct
 
 	let getVars : VPL.t -> string list
 		=  fun p ->
-		get_cstrs p
+		VPL.get_cstrs p
 		|> Pol.Cs.getVars
 		|> Var.Set.elements
 		|> List.map (Ident.get_string)
@@ -153,7 +132,7 @@ module Print = struct
 		= fun p sl ->
 		if sl = [] then p else
 		let vars_to_project = filter_vars (getVars p) sl in
-		VPL.User.project_vars vars_to_project p
+		VPL.project_vars vars_to_project p
 
 	(** If the polyhedron is plotted on one or two dimensions, the image is saved to be shown after Sage has terminated.
 	Otherwise, it is directly plotted, as Jmol still works when Sage terminates. *)
@@ -234,7 +213,7 @@ affiche toutes les contraintes et affectations du polyhèdre
 **)
 let print : VPL.t -> unit
 	= fun p ->
-	VPL.to_string Ident.get_string p
+	VPL.to_string Ident.to_string p
 	|> print_endline
 
 module Notations = struct
@@ -247,5 +226,5 @@ module Notations = struct
     let (|-) a b =
 		let var_list = (string_to_var_list b) in
 		Ident.addVars var_list ;
-		VPL.User.project_vars var_list a (** VPL.t |- string **)
+		VPL.project_vars var_list a (** VPL.t |- string **)
 end

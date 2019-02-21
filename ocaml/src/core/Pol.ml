@@ -1268,21 +1268,18 @@ let set_point : Vec.t -> 'c t -> 'c t
     ;
     {p with point = Some (Vector.Symbolic.ofRat point)}
 
-let get_regions : 'c Factory.t -> Vector.Rat.t option -> 'c t -> 'c t list
-    = fun factory point p ->
+let get_regions : 'c Factory.t -> 'c t -> 'c t list
+    = fun factory p ->
 	Debug.log DebugTypes.Title (lazy "Getting regions");
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
 			(to_string_raw p)))
 	;
     Profile.start "get_regions";
-    let point' = match point with
-    | Some point -> point
-    | None -> get_point p |> Rtree.map Vec.ofSymbolic
-    in
+    let point = get_point p |> Rtree.map Vec.ofSymbolic in
     Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Normalization point generated: %s"
-			(Vec.to_string Var.to_string point')))
+			(Vec.to_string Var.to_string point)))
 	;
-    let regions = get_regions_from_point factory p point' in
+    let regions = get_regions_from_point factory p point in
     Profile.stop "get_regions";
     regions
 

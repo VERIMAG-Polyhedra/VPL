@@ -3,7 +3,6 @@
 open PSplxBuild
 
 module Cs = Cstr.Rat
-module Debug : DebugTypes.Type
 
 (** Exception raised when a problem is unbounded. *)
 exception Unbounded_problem

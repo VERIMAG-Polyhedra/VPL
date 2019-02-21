@@ -217,24 +217,11 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
   			and ineqs = List.map (fun (c,_) -> (c,())) p.Pol.ineqs
   			in Some {Pol.eqs = eqs ; Pol.ineqs = ineqs; Pol.point = p.Pol.point}
 
-	let mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
-		= fun _ f1 f2 ->
-		function
-		| Bottom c -> Bottom c
-		| NonBot pol ->
-			let eqs = Pol.get_eqs pol
-			and ineqs = Pol.get_ineqs pol in
-			NonBot {
-				Pol.eqs = List.mapi (fun i (v,(cstr,_)) -> (v, F.mkCons (f1 i cstr))) eqs;
-				Pol.ineqs = List.mapi (fun i (cstr,_) -> F.mkCons (f2 i cstr)) ineqs;
-                Pol.point = pol.Pol.point;
-			}
-
-    let get_regions : Vector.Rat.t option -> t -> t list
-        = fun point -> function
+    let get_regions : t -> t list
+        = function
         | Bottom _ -> []
         | NonBot p ->
-            Pol.get_regions F.factory point p
+            Pol.get_regions F.factory p
             |> List.map (fun p -> NonBot (F.convert p))
 
     let set_point : Vec.t -> t -> t

@@ -40,36 +40,8 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   let set_point point pol = auto_lifting (LHD.set_point point) pol
 
-  let mapi b f1 f2 pol =
-  match backend_rep pol with
-  | None -> Pervasives.failwith "map"
-  | Some (p,(ofVar,toVar)) ->
-  	 if b
-  	 then let (_,ofVar',toVar') = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
-		 let f' : (int -> Pol.Cs.t -> Pol.Cs.t) -> int -> Pol.Cs.t -> Pol.Cs.t
-		 	= fun f i cstr ->
-		 	Pol.Cs.rename_f toVar' cstr
-		 	|> f i
-		 	|> Pol.Cs.rename_f ofVar'
-		 in
-    	 auto_lifting (fun p -> LHD.mapi false (f' f1) (f' f2) p) pol
-    else
-    	 auto_lifting (fun p -> LHD.mapi false f1 f2 p) pol
-
-  let get_regions point p =
-    let point' = match point with
-    | None -> None
-    | Some point -> begin
-        let toVar = match backend_rep p with
-        | Some (p',(ofVar, toVar)) ->
-            let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
-            toVar'
-        | _ -> Pervasives.failwith "get_regions"
-        in
-        Some (Vector.Rat.rename_f toVar point)
-        end
-    in
-    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions point' p.pol)
+  let get_regions p =
+    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions p.pol)
 
   let is_bottom = isBottom
 
@@ -236,27 +208,11 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
   	try Some (export_ZbndT (getItvMode LOW (import_ZTerm t) p).ZItv.low)
   	with Failure s when String.compare s "empty" = 0 -> None
 
-  let mapi b f1 f2 pol =
-  match backend_rep pol with
-  | None -> Pervasives.failwith "map"
-  | Some (p,(ofVar,toVar)) ->
-  	 if b
-  	 then let (_,ofVar',toVar') = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
-		 let f' : (int -> Pol.Cs.t -> Pol.Cs.t) -> int -> Pol.Cs.t -> Pol.Cs.t
-		 	= fun f i cstr ->
-		 	Pol.Cs.rename_f toVar' cstr
-		 	|> f i
-		 	|> Pol.Cs.rename_f ofVar'
-		 in
-    	 auto_lifting (fun p -> LHD.mapi false (f' f1) (f' f2) p) pol
-    else
-    	 auto_lifting (fun p -> LHD.mapi false f1 f2 p) pol
-
   let minkowski p1 p2 =
     {p1 with pol = LHD.minkowski p1.pol p2.pol}
 
-  let get_regions point p =
-    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions point p.pol)
+  let get_regions p =
+    List.map (fun p' -> {p with pol = p'}) (LHD.get_regions p.pol)
 
   let set_point point pol = auto_lifting (LHD.set_point point) pol
 

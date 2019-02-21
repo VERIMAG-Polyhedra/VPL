@@ -68,15 +68,13 @@ module PedraQWrapper: QInterface.HighLevelDomain = struct
     	then None
     	else Some (export_QbndT itv.QItv.lower)
 
-  	let mapi _ _ _ _ = not_yet_implemented "mapi"
-
     let get_bottom_cert _ = not_yet_implemented "get_bottom_cert"
 
   	let minkowski _ _ = not_yet_implemented "minkowski"
 
 	let project_vars _ _ = not_yet_implemented "project_vars"
 
-    let get_regions _ _ = not_yet_implemented "get_regions"
+    let get_regions _ = not_yet_implemented "get_regions"
 
     let set_point _ _ = not_yet_implemented "set_point"
 end
@@ -149,13 +147,11 @@ module PedraZWrapper: ZInterface.HighLevelDomain = struct
 
     let get_bottom_cert _ = not_yet_implemented "get_bottom_cert"
 
-    let mapi _ _ _ _ = not_yet_implemented "mapi"
-
     let minkowski _ _ = not_yet_implemented "minkowski"
 
 	let project_vars _ _ = not_yet_implemented "project_vars"
 
-    let get_regions _ _ = not_yet_implemented "get_regions"
+    let get_regions _ = not_yet_implemented "get_regions"
 
     let set_point _ _ = not_yet_implemented "set_point"
 end

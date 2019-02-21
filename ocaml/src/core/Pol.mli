@@ -203,7 +203,7 @@ val get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> 'c t list
     The normalization point is chosen using {!val:Opt.get_asg}.
     Certificates are lost during the process: frontiers of regions have no certificate.
 *)
-val get_regions : 'c Factory.t -> Vector.Rat.t option -> 'c t -> 'c t list
+val get_regions : 'c Factory.t -> 'c t -> 'c t list
 
 (** Returns an estimation of the size of the polyhedron. *)
 val size : 'c t -> Scalar.Rat.t option

@@ -2,7 +2,6 @@ open PSplx
 open PSplxBuild
 
 module Cs = Cstr.Rat
-module Debug = DebugTypes.Debug(struct let name = "PSplx" end)
 
 exception Unbounded_problem
 exception Infeasible_problem

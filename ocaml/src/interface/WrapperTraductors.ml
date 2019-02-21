@@ -15,8 +15,8 @@ type cmpT = Cstr_type.cmpT_extended
 type binl = AND | OR
 
 let binl_to_string = function
-	| AND -> Symbols.s_and
-	| OR -> Symbols.s_or
+	| AND -> "&&"
+	| OR -> "||"
 
 module CP = CstrPoly
 module Polynomial = CP.Poly
@@ -77,18 +77,9 @@ module type LowLevelDomain = sig
   type rep = PedraQOracles.t
   val backend_rep : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option
 
-  (** Uncertified functions : *)
-
-  (** [mapi b f1 f2 pol] applies function [f1] to each equation and [f2] to each inequation of [pol].
-  Boolean [b] has no effect here. It is used in the high-level version of [mapi]. *)
-  val mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
-
-  (**
-   * Returns the partition into regions of the given polyhedron.
-   *)
-  val get_regions : Vector.Rat.t option -> t -> t list
-
+  val get_regions : t -> t list
   val set_point : Vector.Rat.t -> t -> t
+
 end
 
 module Interface (Coeff: Scalar.Type) = struct
@@ -148,6 +139,19 @@ module Interface (Coeff: Scalar.Type) = struct
             | Poly p -> Polynomial.to_string p
 			| Annot (annot,t) -> Printf.sprintf "%s (%s)" (Annot.to_string annot) (to_string varPr t)
 
+        let rec to_string_c : t -> string
+			= function
+			| Var v -> Var.to_string' "x" v
+			| Cte c -> Coeff.to_string c
+			| Add (t1,t2) -> Printf.sprintf "%s + %s" (to_string_c t1) (to_string_c t2)
+			| Sum l -> String.concat " + " (List.map (to_string_c) l)
+			| Opp t -> Printf.sprintf "-(%s)" (to_string_c t)
+			| Mul (t1,t2) ->  Printf.sprintf "(%s) * (%s)" (to_string_c t1) (to_string_c t2)
+			| Prod l -> String.concat " * " (List.map (fun t -> Printf.sprintf "(%s)" (to_string_c t)) l)
+            | Div (t1,t2) ->  Printf.sprintf "(%s) / (%s)" (to_string_c t1) (to_string_c t2)
+            | Poly p -> Polynomial.to_string p
+			| Annot (annot,t) -> Printf.sprintf "%s (%s)" (Annot.to_string annot) (to_string_c t)
+
 		let of_cstr : Pol.Cs.t -> t
 			= fun cstr ->
 			let l = Pol.Cs.get_v cstr
@@ -174,7 +178,16 @@ module Interface (Coeff: Scalar.Type) = struct
       	(Term.to_string varPr t1) (Cstr.cmpT_extended_to_string cmp) (Term.to_string varPr t2)
       | BinL (c1, bin, c2) -> Printf.sprintf "(%s %s %s)"
       	(to_string varPr c1) (binl_to_string bin) (to_string varPr c2)
-      | Not c -> Printf.sprintf "%s (%s)" Symbols.s_not (to_string varPr c)
+      | Not c -> Printf.sprintf "¬ (%s)" (to_string varPr c)
+
+    let rec to_string_c : t -> string
+      = function
+      | Basic b -> if b then "1" else "0"
+      | Atom (t1,cmp,t2) -> Printf.sprintf "%s %s %s"
+      	(Term.to_string_c t1) (Cstr.cmpT_extended_to_string cmp) (Term.to_string_c t2)
+      | BinL (c1, bin, c2) -> Printf.sprintf "(%s %s %s)"
+      	(to_string_c c1) (binl_to_string bin) (to_string_c c2)
+      | Not c -> Printf.sprintf "! (%s)"  (to_string_c c)
 
     let of_cstrs : Pol.Cs.t list -> t
 		= fun cstrs ->
@@ -189,8 +202,7 @@ module Interface (Coeff: Scalar.Type) = struct
 
   module type LowLevelDomain = LowLevelDomain with module Term = Term
 
-  module type HighLevelDomain =
-  sig
+  module type HighLevelDomain = sig
 
     include LowLevelDomain
 

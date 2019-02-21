@@ -40,8 +40,7 @@ module type PolyhedronDomain = sig
 	val rename : Var.t -> Var.t -> t -> t
 
 	(* Non certifed functions: *)
-	val mapi : bool -> (int -> Pol.Cs.t -> Pol.Cs.t) -> (int -> Pol.Cs.t -> Pol.Cs.t) -> t -> t
-    val get_regions : Vector.Rat.t option -> t -> t list
+	val get_regions : t -> t list
 
     val set_point : Pol.Vec.t -> t -> t
 

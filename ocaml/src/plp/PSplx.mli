@@ -3,6 +3,9 @@
     Each column of the tableau is associated with an input constraint (with a certificate).
     Constraints of the problem are expressed as functions of these constraints. *)
 
+
+module Debug : DebugTypes.Type
+
 module Cs = Cstr.Rat
 
 (** Each column of the simplex tableau is associated with a decision variable.
