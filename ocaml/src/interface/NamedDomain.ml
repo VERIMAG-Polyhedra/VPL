@@ -61,10 +61,10 @@ module Make(D : AbstractDomain.Type) = struct
         }
 
     let top : t
-        = mk "top" D.top
+        = mk "top()" D.top
 
     let bottom : t
-        = mk "bottom" D.bottom
+        = mk "bot()" D.bottom
 
     module Lift = struct
 

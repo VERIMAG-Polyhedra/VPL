@@ -4,19 +4,25 @@ module Make (D: AbstractDomain.Type) = struct
     module Track = struct
         let file = Config.log_file
 
+        let () =
+            let out_channel = Pervasives.open_out_gen [Open_creat; Open_wronly; Open_trunc] 0o640 !file in
+            "typedef int abs_value;\ntypedef int var;\nvoid main(){\n"
+            |> Pervasives.output_string out_channel;
+            Pervasives.close_out(out_channel)
+
         let track : string -> unit
             = fun s ->
             if !Flags.log_trace
             then begin
-                let out_channel = Pervasives.open_out_gen [Open_creat ; Open_wronly ; Open_append] 0o640 !file in
-                Pervasives.output_string out_channel (s ^ "\n");
+                let out_channel = Pervasives.open_out_gen [Open_wronly ; Open_append] 0o640 !file in
+                Pervasives.output_string out_channel ("\t" ^ s ^ "\n");
                 Pervasives.close_out(out_channel)
             end
 
         let unary : string -> (t -> t) -> (t -> t)
             = fun op_name op p ->
             let p' = op p in
-            Printf.sprintf "abs_value %s = %s(%s);"
+            Printf.sprintf "{abs_value %s = %s(%s);}"
                 p'.name op_name p.name
             |> track;
             p'
@@ -24,7 +30,7 @@ module Make (D: AbstractDomain.Type) = struct
         let binary : string -> (t -> t -> t) -> (t -> t -> t)
             = fun op_name op p1 p2 ->
             let p' = op p1 p2 in
-            Printf.sprintf "abs_value %s = %s(%s,%s);"
+            Printf.sprintf "{abs_value %s = %s(%s,%s);}"
                 p'.name op_name p1.name p2.name
             |> track;
             p'
@@ -66,7 +72,7 @@ module Make (D: AbstractDomain.Type) = struct
 
     let assume cond p =
         let p' = assume cond p in
-        Printf.sprintf "abs_value %s = guard(%s, %s);"
+        Printf.sprintf "{abs_value %s = guard(%s, %s);}"
             p'.name p.name
             (b_expr_to_string cond)
         |> Track.track;
@@ -74,7 +80,7 @@ module Make (D: AbstractDomain.Type) = struct
 
     let assign terms p =
         let p' = assign terms p in
-        Printf.sprintf "abs_value %s = assign(%s, %s);"
+        Printf.sprintf "{abs_value %s = assign(%s, %s);}"
             p'.name p.name
             (List.map (fun (var, aexpr) ->
                 Printf.sprintf "%s = %s"
@@ -87,7 +93,7 @@ module Make (D: AbstractDomain.Type) = struct
 
     let project vars p =
         let p' = project vars p in
-        Printf.sprintf "abs_value %s = elim(%s, %s);"
+        Printf.sprintf "{abs_value %s = elim(%s, %s);}"
             p'.name p.name
             (List.map var_to_string vars |> String.concat ", ")
         |> Track.track;
@@ -95,7 +101,7 @@ module Make (D: AbstractDomain.Type) = struct
 
     let project_vars vars p =
         let p' = project_vars vars p in
-        Printf.sprintf "abs_value %s = elim(%s, %s);"
+        Printf.sprintf "{abs_value %s = elim(%s, %s);}"
             p'.name p.name
             (List.map var_to_string vars |> String.concat ", ")
         |> Track.track;
