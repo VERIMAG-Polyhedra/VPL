@@ -19,14 +19,12 @@ let find_record() =
   in let root = get_root (Filename.dirname Sys.executable_name) in
      Filename.concat root relative_record;;
 
-let record = find_record()    
+let record = find_record()
 let log_file = Filename.concat relative_record relative_logfile
 let tracerunner_input = Filename.concat relative_record relative_tracerunner_input;;
 
 *)
 
 let log_file = ref "/tmp/vpl.log"
-
-let mail_sender = "/usr/sbin/sendmail"
 
 let sage_log = "/tmp/vpl_sage.sage"

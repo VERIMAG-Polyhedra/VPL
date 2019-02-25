@@ -252,4 +252,33 @@ module Lift_Ident (I : sig
 		= fun var ->
 		Map_var_to_t.find var !maps.var_to_t
         |> I.to_string
+
+    let rename : t -> t -> unit
+        = fun fromX toY ->
+        if Map_t_to_var.mem toY !maps.t_to_var
+        then Printf.sprintf "rename: new variable name %s already exists" (I.to_string toY)
+            |> Pervasives.invalid_arg
+        else try
+            let var = Map_t_to_var.find fromX !maps.t_to_var in
+            let t_to_var' = Map_t_to_var.add toY var !maps.t_to_var
+            |> Map_t_to_var.remove fromX
+            and var_to_t' = Map_var_to_t.add var toY !maps.var_to_t in
+            maps := {!maps with
+                t_to_var = t_to_var';
+                var_to_t = var_to_t';
+            }
+        with Not_found -> Printf.sprintf "rename: variable %s does not exist" (I.to_string fromX)
+            |> Pervasives.invalid_arg
+
+    let remove : t -> unit
+        = fun var ->
+        if Map_t_to_var.mem var !maps.t_to_var
+        then let var' = Map_t_to_var.find var !maps.t_to_var in
+            maps := { !maps with
+            t_to_var = Map_t_to_var.remove var !maps.t_to_var;
+            var_to_t = Map_var_to_t.remove var' !maps.var_to_t;
+        }
+        else Printf.sprintf "remove: variable %s does not exist" (I.to_string var)
+            |> Pervasives.invalid_arg
+
 end

@@ -69,5 +69,6 @@ module Lift_Ident : functor (I : sig
 
     val addVars : t list -> unit
     val get_string : Var.t -> string
-
+    val rename : t -> t -> unit
+    val remove : t -> unit
 end

@@ -1,4 +1,4 @@
-module Make (D: AbstractDomain.Type) : AbstractDomain.Type = struct
+module Make (D: AbstractDomain.Type) = struct
     include NamedDomain.Make(D)
 
     module Track = struct
@@ -16,7 +16,7 @@ module Make (D: AbstractDomain.Type) : AbstractDomain.Type = struct
         let unary : string -> (t -> t) -> (t -> t)
             = fun op_name op p ->
             let p' = op p in
-            Printf.sprintf "%s = %s(%s);"
+            Printf.sprintf "abs_value %s = %s(%s);"
                 p'.name op_name p.name
             |> track;
             p'
@@ -24,7 +24,7 @@ module Make (D: AbstractDomain.Type) : AbstractDomain.Type = struct
         let binary : string -> (t -> t -> t) -> (t -> t -> t)
             = fun op_name op p1 p2 ->
             let p' = op p1 p2 in
-            Printf.sprintf "%s = %s(%s,%s);"
+            Printf.sprintf "abs_value %s = %s(%s,%s);"
                 p'.name op_name p1.name p2.name
             |> track;
             p'
@@ -66,7 +66,7 @@ module Make (D: AbstractDomain.Type) : AbstractDomain.Type = struct
 
     let assume cond p =
         let p' = assume cond p in
-        Printf.sprintf "%s = guard(%s, %s);"
+        Printf.sprintf "abs_value %s = guard(%s, %s);"
             p'.name p.name
             (b_expr_to_string cond)
         |> Track.track;
@@ -74,7 +74,7 @@ module Make (D: AbstractDomain.Type) : AbstractDomain.Type = struct
 
     let assign terms p =
         let p' = assign terms p in
-        Printf.sprintf "%s = assign(%s, %s);"
+        Printf.sprintf "abs_value %s = assign(%s, %s);"
             p'.name p.name
             (List.map (fun (var, aexpr) ->
                 Printf.sprintf "%s = %s"
@@ -87,7 +87,7 @@ module Make (D: AbstractDomain.Type) : AbstractDomain.Type = struct
 
     let project vars p =
         let p' = project vars p in
-        Printf.sprintf "%s = elim(%s, %s);"
+        Printf.sprintf "abs_value %s = elim(%s, %s);"
             p'.name p.name
             (List.map var_to_string vars |> String.concat ", ")
         |> Track.track;
@@ -95,7 +95,7 @@ module Make (D: AbstractDomain.Type) : AbstractDomain.Type = struct
 
     let project_vars vars p =
         let p' = project_vars vars p in
-        Printf.sprintf "%s = elim(%s, %s);"
+        Printf.sprintf "abs_value %s = elim(%s, %s);"
             p'.name p.name
             (List.map var_to_string vars |> String.concat ", ")
         |> Track.track;

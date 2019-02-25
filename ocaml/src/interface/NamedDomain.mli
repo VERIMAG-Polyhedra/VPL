@@ -11,5 +11,8 @@ type 'a named_of = {
     name: string;
 }
 
-module Make : functor (D : AbstractDomain.Type) ->
-    AbstractDomain.Type with type t = D.t named_of
+module Make : functor (D : AbstractDomain.Type) -> AbstractDomain.Type with 
+    type t = D.t named_of and
+    type var = D.var and
+    type a_expr = D.a_expr and
+    type b_expr = D.b_expr

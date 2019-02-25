@@ -30,7 +30,7 @@ type 'a named_of = {
     name: string;
 }
 
-module Make(D : AbstractDomain.Type) : AbstractDomain.Type with type t = D.t named_of = struct
+module Make(D : AbstractDomain.Type) = struct
 
     type t = D.t named_of
 

@@ -2,7 +2,10 @@
     A tracked operator logs its operands into the log file {!val:Config.log_file}.
     The log file can then be executed. *)
 
-module Make : functor (D: AbstractDomain.Type) -> AbstractDomain.Type
+module Make : functor (D: AbstractDomain.Type) -> AbstractDomain.Type with
+    type var = D.var and
+    type a_expr = D.a_expr and
+    type b_expr = D.b_expr
 
 open WrapperTraductors
 
