@@ -623,37 +623,6 @@ let projectSub: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
     		| Flags.FM -> projectSubFM factory nxt p l
     		| Flags.PHeuristic -> Pervasives.invalid_arg "Pol.projectSub"
 
-let proj_incl : 'c Factory.t -> 'c t -> 'c t -> 'c t option
-    = fun factory p1 p2 ->
-    let var_set_p1 = varSet p1
-    and var_set_p2 = varSet p2 in
-    let vars_to_project = Var.Set.diff var_set_p1 var_set_p2
-        |> Var.Set.elements in
-    let nxtVar = Var.horizon var_set_p1 in
-    let msk = List.fold_left (fun m x ->
-        Rtree.set None m x (Some x)
-    ) Rtree.Nil vars_to_project in
-	let rec findEq eqs ineqs point vars =
-		let (opte, eqs1) = EqSet.trySubstM factory msk eqs in
-		match opte with
-		| Some (e, x) ->
-			let ineqs1 = IneqSet.subst factory nxtVar eqs1 x e ineqs in
-            let vec = Cons.get_c e |> Cs.get_v |> Vector.Rat.neg |> Vector.Symbolic.ofRat in
-            let point1 = Vector.Symbolic.elim x vec point in
-            let vars' = try
-                let i = Misc.findi (Var.equal x) vars in
-                Misc.popi vars i
-                with Not_found -> vars
-            in
-			findEq eqs1 ineqs1 point1 vars'
-		| None -> (eqs, ineqs, point, vars)
-	in
-	let (eqs1, ineqs1, point, vars_to_project') = findEq p1.eqs p1.ineqs (get_point p1) vars_to_project in
-    let normalization_point = Vector.Symbolic.toRat point in
-    match IneqSet.proj_incl factory normalization_point vars_to_project' eqs1 ineqs1 p2.ineqs with
-    | None -> None
-    | Some ineqs -> Some {eqs = eqs1; ineqs = ineqs; point = Some point}
-
 (* note: x = y1 + y2 and alpha1 + alpha2 = 1 are substituted on the fly *)
 let joinSetup: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t
 	-> Var.t * (('c1,'c2) Cons.discr_t) t * Var.t list * ('c1,'c2) Cons.discr_cert
@@ -1409,3 +1378,43 @@ let spawn : 'c Factory.t -> 'c t -> Vec.t
             Vec.set point var coeff
         )
         point p.eqs
+
+let smart_proj_incl : 'c Factory.t -> Var.t -> Var.t list -> 'c t -> 'c t -> 'c t option
+    = fun factory nxtVar vars_to_project p1 p2 ->
+    let msk = List.fold_left (fun m x ->
+        Rtree.set None m x (Some x)
+    ) Rtree.Nil vars_to_project in
+	let rec findEq eqs ineqs point vars =
+		let (opte, eqs1) = EqSet.trySubstM factory msk eqs in
+		match opte with
+		| Some (e, x) ->
+			let ineqs1 = IneqSet.subst factory nxtVar eqs1 x e ineqs in
+            let vec = Cons.get_c e |> Cs.get_v |> Vector.Rat.neg |> Vector.Symbolic.ofRat in
+            let point1 = Vector.Symbolic.elim x vec point in
+            let vars' = try
+                let i = Misc.findi (Var.equal x) vars in
+                Misc.popi vars i
+                with Not_found -> vars
+            in
+			findEq eqs1 ineqs1 point1 vars'
+		| None -> (eqs, ineqs, point, vars)
+	in
+	let (eqs1, ineqs1, point, vars_to_project') = findEq p1.eqs p1.ineqs (get_point p1) vars_to_project in
+    let normalization_point = Vector.Symbolic.toRat point in
+    match IneqSet.proj_incl factory normalization_point vars_to_project' eqs1 ineqs1 p2.ineqs with
+    | None -> None
+    | Some ineqs -> Some {eqs = eqs1; ineqs = ineqs; point = Some point}
+
+let proj_incl : 'c Factory.t -> 'c t -> 'c t -> 'c t option
+    = fun factory p1 p2 ->
+    let var_set_p1 = varSet p1
+    and var_set_p2 = varSet p2 in
+    let vars_to_project = Var.Set.diff var_set_p1 var_set_p2
+        |> Var.Set.elements
+    and nxtVar = Var.horizon var_set_p1 in
+    if !Flags.smart_proj_incl
+    then smart_proj_incl factory nxtVar vars_to_project p1 p2
+    else let p1' = projectSub factory nxtVar p1 vars_to_project in
+        match incl factory p2 p1' with
+        | NoIncl -> None
+        | Incl _ -> Some p1'

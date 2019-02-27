@@ -147,3 +147,7 @@ type lin_method =
     | Both
 
 let lin : lin_method ref = ref Both
+
+(** If set to [true], the [proj_incl] operator will use the smart PLP operator.
+    Otherwise, it computes the projection, then tests the inclusion. *)
+let smart_proj_incl : bool ref = ref true

@@ -62,6 +62,10 @@ module type Type = sig
         Contrary to {!val:project}, this operator actually eliminates all variables at the same time. *)
 	val project_vars: var list -> t -> t
 
+    (** @param p1 the first polyhedron
+        @param p2 the second polyhedron
+        @return the projection of [p1] on [p2]'s variables
+        @return None if the projection of [p1] on [p2]'s variables is not includes in [p2] *)
     val proj_incl : t -> t -> t option
 
     (** Widening operator. *)
