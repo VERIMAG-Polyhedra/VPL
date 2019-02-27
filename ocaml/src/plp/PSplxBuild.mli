@@ -18,7 +18,7 @@ end
     @param cstrs the list of constraint associated with each column
     @param n_rows the number of rows
     @param obj_cstrs the indices of objective constraints in [cstrs]
-    @param normalization_point *)
+    @param normalization_point the normalization point *)
 val init : 'c Cons.t list -> int -> int list -> Cs.Vec.t -> 'c PSplx.t
 
 (** Adds a constraint to eliminate a variable.
@@ -37,7 +37,6 @@ val elim_from : int -> Var.t -> int list -> PSplx.var_set -> 'c t -> unit
     @param i_cstrs2 a second set of constraints
     @param sx the simplex tableau *)
 val var_equal : int -> Var.t -> int list -> int list -> PSplx.var_set -> 'c PSplx.t -> unit
-
 
 (** Adds an equality constraint between the constants in two sets of constraints.
     If the variable does not appear in any constraint, no row is added.
