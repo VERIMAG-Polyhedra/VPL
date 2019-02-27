@@ -19,6 +19,8 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   include FullDom
 
+  let proj_incl _ _ = not_yet_implemented "proj_incl"
+
   type cert = LHD.cert
 
   module Term = QInterface.Term
@@ -223,5 +225,8 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
     let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
     let vars' = List.map ofVar' vars in
   	{pol with pol = LHD.project vars' pol.pol}
+
+  let proj_incl _ _ = not_yet_implemented "proj_incl"
+
 
 end

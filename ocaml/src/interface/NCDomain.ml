@@ -228,6 +228,17 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
         = fun point -> function
         | Bottom _ as p -> p
         | NonBot p -> NonBot (Pol.set_point point p)
+
+    let proj_incl : t -> t -> t option
+        = fun p1 p2 ->
+        match p1,p2 with
+        | _, Bottom _ -> None
+        | Bottom _, _ -> Some p1
+        | NonBot p1, NonBot p2 ->
+            match Pol.proj_incl F.factory p1 p2 with
+            | None -> None
+            | Some p -> Some (NonBot p)
+
 end
 
 let translate_cstr : Cs.t -> Vec.t -> Cs.t

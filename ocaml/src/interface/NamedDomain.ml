@@ -146,4 +146,11 @@ module Make(D : AbstractDomain.Type) = struct
     let get_vars = Lift.unary_other D.get_vars
     let spawn = Lift.unary_other D.spawn
     let satisfy point = Lift.unary_other (D.satisfy point)
+
+    let proj_incl p1 p2 = match D.proj_incl p1.value p2.value with
+        | None -> None
+        | Some p -> Some {
+            value = p;
+            name = new_name();
+        }
 end

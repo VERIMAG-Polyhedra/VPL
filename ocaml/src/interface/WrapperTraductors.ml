@@ -61,6 +61,8 @@ module type LowLevelDomain = sig
 
   val widen: t -> t -> t
 
+  val proj_incl: t -> t -> t option
+
   val rename: Var.t -> Var.t -> t -> t
 
   (** Test the inclusion of two polyhedra. *)

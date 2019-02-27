@@ -77,6 +77,8 @@ module PedraQWrapper: QInterface.HighLevelDomain = struct
     let get_regions _ = not_yet_implemented "get_regions"
 
     let set_point _ _ = not_yet_implemented "set_point"
+
+    let proj_incl _ _ = not_yet_implemented "proj_incl"
 end
 
 (* lifting de PedraZ.FullDom *)
@@ -154,4 +156,7 @@ module PedraZWrapper: ZInterface.HighLevelDomain = struct
     let get_regions _ = not_yet_implemented "get_regions"
 
     let set_point _ _ = not_yet_implemented "set_point"
+
+    let proj_incl _ _ = not_yet_implemented "proj_incl"
+
 end

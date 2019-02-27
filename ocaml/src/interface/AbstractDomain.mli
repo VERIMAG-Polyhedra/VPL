@@ -62,6 +62,8 @@ module type Type = sig
         Contrary to {!val:project}, this operator actually eliminates all variables at the same time. *)
 	val project_vars: var list -> t -> t
 
+    val proj_incl : t -> t -> t option
+
     (** Widening operator. *)
 	val widen: t -> t -> t
 

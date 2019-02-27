@@ -209,6 +209,9 @@ module Polyhedron: NCInterface.PolyhedronDomain = struct
 	let project_vars _ _ = failwith "not_yet_implemented : project_vars"
 
     let set_point _ _ = failwith "not_yet_implemented : set_point"
+
+    let proj_incl _ _ = failwith "not_yet_implemented : proj_incl"
+
 end
 
 

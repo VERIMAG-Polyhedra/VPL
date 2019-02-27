@@ -60,6 +60,7 @@ module Make (D: AbstractDomain.Type) = struct
     let minkowski = Track.binary "minkowski" minkowski
     let join = Track.binary "join" join
     let widen = Track.binary "widen" widen
+    let proj_incl = Track.binary_other "proj_incl" proj_incl
 
     (*****************************************)
     (************  OTHER OPERATORS ***********)

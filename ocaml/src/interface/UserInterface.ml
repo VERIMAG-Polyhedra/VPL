@@ -72,6 +72,7 @@ module MakeCustom
     let minkowski = D.minkowski
     let join = D.join
     let widen = D.widen
+    let proj_incl = D.proj_incl
     let leq = D.leq
     let size = D.size
     let set_point = D.set_point

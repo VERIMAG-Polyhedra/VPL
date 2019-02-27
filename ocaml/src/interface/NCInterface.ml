@@ -34,7 +34,7 @@ module type PolyhedronDomain = sig
 	val getUpperBound : t -> Vec.t -> Pol.bndT option
 	val getLowerBound : t -> Vec.t -> Pol.bndT option
 	val itvize : t -> Vec.t -> Pol.itvT
-
+    val proj_incl : t -> t -> t option
    type rep = unit Pol.t
 	val backend_rep : t -> rep option
 	val rename : Var.t -> Var.t -> t -> t
