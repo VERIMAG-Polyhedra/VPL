@@ -495,19 +495,24 @@ let joinSetupTs: Test.t
 let inclTs: Test.t
 = fun () ->
 	let chk (name, s1, s2, expected) = fun state ->
-		let actual = EqSet.incl factory s1 s2 in
+		let actual = EqSet.leq factory s1 s2 in
 		if relEq actual expected then
 			Test.succeed state
 		else
 			Test.fail name (relPr actual) state
 	in
 	let tcs = [
-		"id0", mks [eq [1, x] 0 ], mks [eq [1, x] 0 ], EqSet.Incl [eq [1, x] 0];
+		"id0",
+        mks [eq [1, x] 0 ],
+        mks [eq [1, x] 0 ],
+        EqSet.Incl [eq [1, x] 0];
 
-		"id1", mks [
+		"id1",
+        mks [
 			eq [1, y] 0;
-			eq [1, x] 0
-		], mks [eq [1, x] 0 ], EqSet.Incl [eq [1, x] 0];
+			eq [1, x] 0],
+        mks [eq [1, x] 0 ],
+        EqSet.Incl [eq [1, x] 0];
 
 		"bin0", mks [
 			eq [1, y] 0;

@@ -1,33 +1,51 @@
+(** This module handles equality sets.
+    Equality sets are maintained in echelon form. *)
+
 module Cs = Cstr.Rat
 
+(** Type of equality set.
+    Each equality defines a variable in terms of the others. *)
 type 'c t = (Var.t * 'c Cons.t) list
 
 val to_string: (Var.t -> string) -> 'c t -> string
 val to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 
+(** Empty equality set: top. *)
+val nil : 'c t
+
+(** @return true if the given equality set is top. *)
+val isTop: 'c t -> bool
+
+(** @return the list of equalities of the set. *)
+val list : 'c t -> 'c Cons.t list
+
+(** Rewrites a constraint according to an equality set.
+    @param factory the factory
+    @param set the equality set
+    @param cons the constraint to rewrite
+    @return [cons] where each variable in [set] has been substitued with its definition. *)
+val filter : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c Cons.t
+
+(** Rewrites a constraint according to an equality set.
+    @param factory the factory
+    @param set the equality set
+    @param cons the constraint to rewrite
+    @return [cstr'] which is equal to [cons] where variables have been substitued by their definition in [eqset]
+	@return [cert]: the combination of constraints of [set] that must be added to [cons] to obtain [cstr']
+    For instance, [filter2 f (x = 2y+1) (2x <= 1)] returns [(4y<=-1, 2x - 4y = 2)].*)
+val filter2 : 'c Factory.t -> 'c t -> Cs.t -> Cs.t * 'c Cons.t
+
+(** Result of an inclusion testing. *)
 type 'c rel_t =
 	| NoIncl
 	| Incl of 'c list
 
-val nil : 'c t
-
-val isTop: 'c t -> bool
-val list : 'c t -> 'c Cons.t list
-
-(** [filter factory s c] replaces in [c] each variable defined in [s] by its definition. *)
-val filter : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c Cons.t
-
-(** [filter2 factory eqset cstr] returns a couple [(cstr',cert)] where
-{ul
-	{- [cstr'] is [cstr] where variables have been substitued by their definition in [eqset].}
-	{- [cert] is the combination of constraints of [eqset] that must be added to [cstr] to obtain [cstr']}
-}.
-For instance, [filter2 f (x = 2y+1) (2x <= 1)] returns [(4y<=-1, 2x - 4y = 2)].*)
-val filter2 : 'c Factory.t -> 'c t -> Cs.t -> Cs.t * 'c Cons.t
-
-val implies : 'c Factory.t -> 'c t -> 'c Cons.t -> bool
-
-val incl : 'c1 Factory.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
+(** Tests the inclusion between two equality sets
+    @param factory the factory for [set1]
+    @param set1 the first equality set
+    @param set2 the second equality set
+    @return true if [set1] <= [set2], ie. if [set2] includes [set1]. *)
+val leq : 'c1 Factory.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 
 val satisfy : 'c t -> Cs.Vec.t -> bool
 

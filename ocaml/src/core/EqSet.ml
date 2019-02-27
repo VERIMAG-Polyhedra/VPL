@@ -51,16 +51,7 @@ let filter2 : 'c Factory.t -> 'c t -> Cs.t -> Cs.t * 'c Cons.t
 	in
 	List.fold_left filter1 (c, Cons.triv factory) s
 
-let implies : 'c Factory.t -> 'c t -> 'c Cons.t -> bool
-	= fun factory s (c,cert) ->
-	let (c',_) = filter factory s (c,cert) in
-	match Cs.tellProp c' with
-	| Cs.Trivial -> true
-	| Cs.Contrad (* should tell something useful *)
-	| Cs.Nothing -> false
-
-
-let incl : 'c1 Factory.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
+let leq : 'c1 Factory.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 	= fun factory s1 s2 ->
 	if List.length s1 < List.length s2 then
 		NoIncl

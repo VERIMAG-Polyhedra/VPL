@@ -859,7 +859,7 @@ let inclSub: 'c1 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 rel_t
 		(to_string_ext factory Var.to_string p1)
 		(to_string Var.to_string p2)))
 	;
-	match EqSet.incl factory p1.eqs p2.eqs with
+	match EqSet.leq factory p1.eqs p2.eqs with
 	| EqSet.NoIncl -> NoIncl
 	| EqSet.Incl certE -> begin
 		Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Inclusion holds for equalities: %s"
