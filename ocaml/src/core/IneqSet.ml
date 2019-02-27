@@ -327,9 +327,12 @@ let pProjM : 'c Factory.t -> Cs.Vec.t -> Var.t list -> 'c t -> 'c t
 	= fun factory normalization_point xs s ->
 	Proj.proj factory normalization_point xs s
 
-let proj_incl : 'c1 Factory.t -> 'c2 Factory.t -> Cs.Vec.t -> Var.t list -> 'c1 t -> 'c2 t -> 'c1 t option
-    = fun factory1 factory2 normalization_point xs p1 p2 ->
-    ProjIncl.proj_incl factory1 factory2 normalization_point xs p1 p2
+
+(* TODO: use two factories *)
+let proj_incl : 'c Factory.t -> Cs.Vec.t -> Var.t list -> 'c EqSet.t -> 'c1 t -> 'c2 t -> 'c1 t option
+    = fun factory normalization_point xs p2_eqs p1_ineqs p2_ineqs ->
+    let p1_ineqs' = List.map (EqSet.filter factory p2_eqs) p1_ineqs in
+    ProjIncl.proj_incl factory factory normalization_point xs p1_ineqs' p2_ineqs
 
 let fmElimM: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t option Rtree.t -> 'c t -> 'c t
 = fun factory nxt es msk s ->

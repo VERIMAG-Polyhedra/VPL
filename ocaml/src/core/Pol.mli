@@ -109,6 +109,8 @@ heuristic choices on the projection order make [projectM] more efficient. *)
 val project: 'c Factory.t -> 'c t -> Var.t list -> 'c t
 val projectSub: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
 
+val proj_incl : 'c Factory.t -> 'c t -> 'c t -> 'c t option
+
 (** [join p1 p2] computes the convex hull [p] of [p1] and [p2].
 The certificate provides the necessary arguments to show inclusion of [p1] and [p2] in [p]. *)
 val join: 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
