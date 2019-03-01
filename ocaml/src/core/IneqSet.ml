@@ -1,73 +1,36 @@
-(** {!module:Pol} treats equalities and inequalities differently.
-This module is the data structure that hosts the inequalities of a polyhedron.
-It represents only sets of inequalities with {b nonempty interior}, meaning that these sets must be feasible and they should not contain any implicit equality.
-
-{e Remarks.} It can be used only with variables of {!module:Var.Positive} (because of {!module:Splx}).
-*)
-
 module Cs = Cstr.Rat
 module Vec = Cs.Vec
 
 module Debug = Opt.Debug
 
-type 'c t = 'c Cons.t list
+type 'c t = {
+    ineqs : 'c Cons.t list;
+    regions : 'c PLP.Region.t list option;
+}
 
-let list x = x
+let is_top s = (s.ineqs = [])
 
-let isTop (s : 'c t) = (s = [])
-
-(** The certificates are the constraints that must be added to obtain the associated result.*)
-type 'c prop_t =
-| Empty of 'c
-| Trivial
-| Implied of 'c
-| Check of 'c Cons.t
-
-type 'c rel_t =
-| NoIncl
-| Incl of 'c list
-
-type 'c simpl_t =
-| SimplMin of 'c t
-| SimplBot of 'c
-
-module Stat = struct
-
-	let n_lp : int ref = ref 0
-
-	let size_lp : int ref = ref 0
-
-	let reset : unit -> unit
-		= fun () ->
-		n_lp := 0;
-		size_lp := 0
-
-	let incr_size : int -> unit
-		= fun size ->
-		size_lp := !size_lp + size
-
-	let incr : unit -> unit
-		= fun () ->
-		n_lp := !n_lp + 1
-
-	let base_n_cstr : int ref = ref 0
-end
-
-let nil : 'c t = []
+let nil : 'c t = {
+    ineqs = [];
+    regions = None;
+}
 
 let to_string: (Var.t -> string) -> 'c t -> string
-= fun varPr s -> List.fold_left (fun str c -> str ^ (Cons.to_string varPr c) ^ "\n") "" s
+    = fun varPr s ->
+    List.map (Cons.to_string varPr) s.ineqs
+    |> String.concat "\n"
 
 let to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
-= fun factory varPr s ->
-	List.fold_left (fun str c -> str ^ (Cons.to_string_ext factory varPr c) ^ "\n") "" s
-
+    = fun factory varPr s ->
+    List.map (Cons.to_string_ext factory varPr) s.ineqs
+    |> String.concat "\n"
+(*
 let equal s1 s2 =
-	let incl l1 = List.for_all
-		(fun (c2,_) ->
+	let incl l1 = List.for_all (fun (c2,_) ->
 		List.exists (fun (c1,_) -> Cs.inclSyn c1 c2) l1)
 	in
-	incl s1 s2 && incl s2 s1
+	incl s1.ineqs s2.ineqs && incl s2.ineqs s1.ineqs
+*)
 
 exception CertSyn
 
@@ -99,6 +62,12 @@ let certSyn: 'c Factory.t -> 'c Cons.t -> Cs.t -> 'c
 		end
 	| None -> Pervasives.raise CertSyn
 
+type 'c prop_t =
+| Empty of 'c
+| Trivial
+| Implied of 'c
+| Check of 'c Cons.t
+
 let synIncl : 'c1 Factory.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 	= fun factory es s c ->
 	match Cs.tellProp c with
@@ -114,7 +83,7 @@ let synIncl : 'c1 Factory.t -> 'c1 EqSet.t -> 'c1 t -> Cs.t -> 'c1 prop_t
 		| Cs.Contrad -> Empty cert1
 		| Cs.Nothing ->
 		try
-			let consI = List.find (fun (cstr2,_) -> Cs.incl cstr2 cstr1) s in
+			let consI = List.find (fun (cstr2,_) -> Cs.incl cstr2 cstr1) s.ineqs in
 			Implied (factory.Factory.add cert1 (certSyn factory consI cstr1))
 		with Not_found ->
 			Check (cstr1,cert1)
@@ -138,9 +107,13 @@ let mkCert : 'c Factory.t -> 'c Cons.t list -> Cs.t -> (int * Scalar.Rat.t) list
 	with
 		Not_found -> Pervasives.failwith "IneqSet.mkCert"
 
+type 'c rel_t =
+| NoIncl
+| Incl of 'c list
+
 let incl: 'c1 Factory.t -> Var.t -> 'c1 EqSet.t -> 'c1 t ->  'c2 t -> 'c1 rel_t
 	= fun factory nxt es s1 s2 ->
-	let rec _isIncl : 'c1 list -> Splx.t Splx.mayUnsatT option -> 'c2 t -> 'c1 rel_t
+	let rec _isIncl
 		= fun certs optSx ->
 		function
 		| [] -> Incl certs
@@ -153,18 +126,18 @@ let incl: 'c1 Factory.t -> Var.t -> 'c1 EqSet.t -> 'c1 t ->  'c2 t -> 'c1 rel_t
 				let sx =
 					match optSx with
 					| Some sx -> sx
-					| None -> Splx.mk nxt (List.mapi (fun i (c,_) -> i,c) s1)
+					| None -> Splx.mk nxt (List.mapi (fun i (c,_) -> i,c) s1.ineqs)
 				in
 				let c1' = Cs.compl (Cons.get_c c1) in
 				match Splx.checkFromAdd (Splx.addAcc sx (-1, c1')) with
 				| Splx.IsOk _ -> NoIncl
 				| Splx.IsUnsat w ->
-					let cert = mkCert factory s1 (Cons.get_c c1) w
+					let cert = mkCert factory s1.ineqs (Cons.get_c c1) w
 						|> factory.Factory.add (Cons.get_cert c1)
 					in
 					_isIncl (cert::certs) (Some sx) t
 	in
-	_isIncl [] None s2
+	_isIncl [] None s2.ineqs
 
 type 'c satChkT = Sat of Splx.t | Unsat of 'c
 
@@ -174,10 +147,10 @@ a linear combination of the input constraints is returned. [nvar] is used for
 fresh variable generation. *)
 let chkFeasibility: 'c Factory.t -> Var.t -> 'c t -> 'c satChkT
 = fun factory nvar s ->
-	let cs = List.mapi (fun i c -> (i, Cons.get_c c)) s in
+	let cs = List.mapi (fun i c -> (i, Cons.get_c c)) s.ineqs in
 	match Splx.checkFromAdd (Splx.mk nvar cs) with
 	| Splx.IsOk sx -> Sat sx
-	| Splx.IsUnsat w -> Unsat (Cons.linear_combination_cert factory s w)
+	| Splx.IsUnsat w -> Unsat (Cons.linear_combination_cert factory s.ineqs w)
 
 let rename factory s fromX toY = List.map (Cons.rename factory fromX toY) s
 
@@ -217,7 +190,7 @@ let pick : Var.t option Rtree.t -> 'c t -> Var.t option
 			Rtree.Sub (l, n, r)
 	in
 	let scores = List.fold_left (fun a c -> build msk a (Cs.get_v (Cons.get_c c)))
-		Rtree.Nil s
+		Rtree.Nil s.ineqs
 	in
 	let (optv, _) =
 		let choose (best, sc) (v, p, m) =
@@ -256,6 +229,11 @@ let trimSet : Var.t -> 'c t -> 'c t
 	| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.trimSet"
 	| Splx.IsOk sx -> Pervasives.fst (trim s sx)
 
+(*
+type 'c simpl_t =
+| SimplMin of 'c t
+| SimplBot of 'c
+
 let simpl: 'c Factory.t -> Var.t -> 'c EqSet.t -> 'c t -> 'c simpl_t
 	= fun factory nxt es s ->
 	let rec filter s1
@@ -273,7 +251,7 @@ let simpl: 'c Factory.t -> Var.t -> 'c EqSet.t -> 'c t -> 'c simpl_t
 			filter (h1::(List.filter (fun c -> not (Cons.implies h1 c)) s1)) t
 	in
 	filter [] (List.rev s)
-
+*)
 (* XXX: À revoir?
 Cette fonction n'est utilisée que dans la projection?
 A priori, si synIncl renvoie Check c, c n'aura pas été réécrit car il vient d'une contrainte déjà présente dans le polyèdre.*)
@@ -386,8 +364,6 @@ let minkowskiSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c2 t
 the constraint set represented by [sx]. *)
 let isRed: Splx.t -> int -> bool
 	= fun sx i ->
-	Stat.incr ();
-	Stat.incr_size !Stat.base_n_cstr;
 	let sx' = Splx.compl sx i in
 	match Splx.check sx' with
 	| Splx.IsOk _ -> false
@@ -411,10 +387,7 @@ module RmRedAux = struct
 		let classic: Splx.t * 'c t -> (int * 'c Cons.t) -> Splx.t * 'c t
 			= fun (sx, s) (i,cons) ->
 			if isRed sx i
-			then begin
-				Stat.base_n_cstr := !Stat.base_n_cstr - 1;
-				(Splx.forget sx i, s)
-			end
+			then (Splx.forget sx i, s)
 			else (sx, cons::s)
 		in
 		List.fold_left classic (sx, []) conss
@@ -436,11 +409,9 @@ let rmRedAux : 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
 			match !Flags.min with
 			| Flags.Raytracing ->
 				RmRedAux.glpk s point
-			| Flags.Classic -> begin
-				Stat.base_n_cstr := List.length s;
-				let conss = List.mapi (fun i c -> (i,c)) s in
+			| Flags.Classic ->
+                let conss = List.mapi (fun i c -> (i,c)) s in
 				RmRedAux.classic sx conss
-				end
 			| _ -> Pervasives.invalid_arg "IneqSet.rmRedAux"
 	in
 	fun s sx ->
