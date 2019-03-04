@@ -85,7 +85,8 @@ module Factory = struct
             ) p.Pol.eqs;
             Pol.ineqs = List.map (fun (cstr,_) ->
                 mkCons cstr
-            ) p.Pol.ineqs;
+            ) p.Pol.ineqs.ineqs
+            |> IneqSet.of_list;
             Pol.point = p.Pol.point;
         }
 
@@ -118,13 +119,13 @@ let p (l: Cs.t list): Cs.t Pol.t =
 let p': (Var.t * Cs.t) list -> Cs.t list -> Cs.t Pol.t
 	= fun eqs ineqs -> {
 		Pol.eqs = List.map (fun (x, c) -> (x, mkCons c)) eqs;
-		Pol.ineqs = List.map mkCons ineqs;
+		Pol.ineqs = List.map mkCons ineqs |> IneqSet.of_list;
         Pol.point = None}
 
 let check_certificates : Cs.t Pol.t -> bool
 	= fun p ->
 	List.for_all (fun (c,cert) -> Cs.equal c cert)
-	(EqSet.list p.Pol.eqs @ IneqSet.list p.Pol.ineqs)
+	(EqSet.list p.Pol.eqs @ p.Pol.ineqs.ineqs)
 
 
 module Make_Tests (F : sig
@@ -328,7 +329,7 @@ module Make_Tests (F : sig
 			in
 			let mkplist p =
 				let e = EqSet.list p.Pol.eqs in
-				let i = IneqSet.list p.Pol.ineqs in
+				let i = p.Pol.ineqs.ineqs in
 				List.append e i
 			in
 			(* TODO: remplacer ces tests par des tests d'inclusion*)
@@ -677,13 +678,13 @@ module Make_Tests (F : sig
 		"branch", true, {
 		Pol.eqs = [
 			(x, mkCons (eq [1, x] 3))];
-		Pol.ineqs = [];
+		Pol.ineqs = IneqSet.top;
         Pol.point = None;
 		}, {
 		Pol.eqs = [];
 		Pol.ineqs = [
 			mkCons (le [-1, x] 0);
-			mkCons (le [1, x] 3)];
+			mkCons (le [1, x] 3)] |> IneqSet.of_list;
         Pol.point = None;};
 
 		"unsat_eq", false, {
@@ -692,7 +693,7 @@ module Make_Tests (F : sig
 		Pol.ineqs = [
 			mkCons (le [-1, z] (-1));
 			mkCons (le [1, y] 0);
-			];
+			]|> IneqSet.of_list;
         Pol.point = None;
 		}, {
 		Pol.eqs = [];
@@ -700,7 +701,7 @@ module Make_Tests (F : sig
 			mkCons (le [1, x] 0);
 			mkCons (le [-1, z] (-1));
 			mkCons (le [-1, x ; 1, y] (-1))
-			];
+			]|> IneqSet.of_list;
         Pol.point = None;};
 		(*
 		"sylvain_while2", true, {

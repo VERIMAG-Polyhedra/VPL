@@ -19,7 +19,7 @@ val of_list : 'c Cons.t list -> 'c t
 (** Conversion into string. *)
 val to_string_raw : 'c t -> string
 
-(** Conversion into string.
+(** Conversion into string.-
     @param varPr the variable printer *)
 val to_string: (Var.t -> string) -> 'c t -> string
 
@@ -114,4 +114,6 @@ val joinSetup_1: 'c2 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c1 
 	-> Var.t * Var.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
 val joinSetup_2: 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> Var.t -> 'c2 t
 	-> Var.t * Var.t option Rtree.t * (('c1,'c2) Cons.discr_t) Cons.t list
+val pick : Var.t option Rtree.t -> 'c t -> Var.t option
+val fmElim_one: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t ->  'c t -> 'c t
 (**/**)
