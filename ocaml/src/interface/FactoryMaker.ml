@@ -33,7 +33,8 @@ module Make(F : Type) = struct
             ) p.Pol.eqs;
             Pol.ineqs = List.map (fun (cstr,_) ->
                 mkCons cstr
-            ) p.Pol.ineqs;
+            ) p.Pol.ineqs.ineqs
+            |> IneqSet.of_list;
             Pol.point = p.Pol.point;
         }
 

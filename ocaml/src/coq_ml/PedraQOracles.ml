@@ -148,7 +148,7 @@ let unimplemented: string -> 'a -> 'b
 let pToConsSet: 'c Pol.t -> ConsSet.Cs.t
 = fun p ->
   let e = EqSet.list (Pol.get_eqs p) in
-  let i = IneqSet.list (Pol.get_ineqs p) in
+  let i = p.ineqs.ineqs in
   unimplemented "pToConsSet" (List.map cToConsC (List.append e i))
 
 (***********************************************)
@@ -233,9 +233,9 @@ let rec eqs_import: 'c Factory.t -> ('a * unit Cons.t) list -> 'c list -> ('a * 
 let import: 'c Factory.t -> unit Pol.t -> 'c list -> 'c Pol.t
 = fun lcf p l ->
   let (eqs, l0) = eqs_import lcf p.Pol.eqs l [] in
-  let (ineqs, l1) = ineqs_import lcf p.Pol.ineqs l0 [] in
+  let (ineqs, l1) = ineqs_import lcf p.Pol.ineqs.ineqs l0 [] in
   assert (l1=[]);
-  {Pol.eqs = eqs; Pol.ineqs = ineqs ; Pol.point = p.Pol.point}
+  {Pol.eqs = eqs; Pol.ineqs = IneqSet.of_list ineqs ; Pol.point = p.Pol.point}
 
 (*** EXPORT certificates from backend representation
 **)
@@ -255,9 +255,9 @@ let rec eqs_export: ('a * 'c Cons.t) list ->  ('a * unit Cons.t) list -> 'c list
 
 let export: 'c Pol.t -> (unit Pol.t) * ('c list)
 = fun p ->
-  let (ineqs, l1) = ineqs_export p.Pol.ineqs [] [] in
+  let (ineqs, l1) = ineqs_export p.Pol.ineqs.ineqs [] [] in
   let (eqs, l2) = eqs_export p.Pol.eqs [] l1 in
-  ({Pol.eqs = eqs; Pol.ineqs = ineqs; Pol.point = p.Pol.point}, l2)
+  ({Pol.eqs = eqs; Pol.ineqs = IneqSet.of_list ineqs; Pol.point = p.Pol.point}, l2)
 
 
 (**********************************************)
