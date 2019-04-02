@@ -18,7 +18,7 @@ let top: 'c t
 }
 
 let get_eqs (x : 'c t) = x.eqs
-let get_ineqs (x : 'c t) = x.ineqs
+let get_ineqs (x : 'c t) = x.ineqs.ineqs
 
 let mkplist p =
 	let e = EqSet.list p.eqs in

@@ -24,7 +24,7 @@ type 'c t = {
 val top: 'c t
 
 val get_eqs : 'c t -> 'c EqSet.t
-val get_ineqs : 'c t -> 'c IneqSet.t
+val get_ineqs : 'c t -> 'c Cons.t list
 val get_point : 'c t -> Vector.Symbolic.t
 
 (** The return type of the inclusion test {!incl}.

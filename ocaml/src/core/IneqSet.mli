@@ -23,15 +23,6 @@ val to_string: (Var.t -> string) -> 'c t -> string
     @param varPr the variable printer *)
 val to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 
-(** Exception raised when ?*)
-exception CertSyn
-
-(** @param factory the factory
-    @param cons a constraint
-    @param cstr a second constraint
-    @return a certificate such that *)
-val certSyn: 'c Factory.t -> 'c Cons.t -> Cs.t -> 'c
-
 (** Result of a syntactic inclusion test.
     Certificates are the constraints that must be added to obtain the associated result.*)
 type 'c prop_t =
@@ -40,4 +31,4 @@ type 'c prop_t =
 | Implied of 'c
 | Check of 'c Cons.t
 
-val synIncl : 'c Factory.t -> 'c EqSet.t -> 'c t -> Cs.t -> 'c prop_t
+val synIncl : 'c Factory.t -> 'c EqSet.t -> 'c t -> Cstr.Rat.t -> 'c prop_t
