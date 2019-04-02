@@ -1,36 +1,28 @@
 module Debug = DebugTypes.Debug(struct let name = "ProjIncl" end)
 module Cs = Cstr.Rat
-(*
-let regsToCs : ('c PLP.Region.t * 'c Cons.t) list
-    -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
-    = fun regs ->
-    Debug.log DebugTypes.MOutput
-        (lazy (Printf.sprintf "Regions: \n%s\n"
-            (Misc.list_to_string
-                (fun (reg,sol) -> Printf.sprintf "%s --> %s"
-                    (Cons.to_string Var.to_string sol)
-                    (PLP.Region.to_string reg)) regs "\n")));
-    Debug.log DebugTypes.Title (lazy "Building result from regions");
-    let sols = Cons.clean (List.split regs |> Pervasives.snd) in
-    let regions = List.map (fun (reg,sol) ->
-        (PLP.Region.get_cstrs reg, sol)
-    ) regs in
-    Debug.log DebugTypes.Title (lazy "Result has been built from regions");
-    (sols, regions)
 
-let explore : 'c Factory.t -> 'c PSplx.t -> 'c Cons.t list * (Cs.t list * 'c Cons.t) list
-    = fun factory tab ->
-    let config = { PLP.std_config with
-        PLP.reg_t = (if !Flags.sum_lambda_1 then PLP.NCone else PLP.Cone);
+let get_left_cert : (('c1,'c2) Cons.discr_t) Cons.t -> 'c1 Cons.t
+    = fun (cstr, (cert,_)) ->
+    (cstr, cert)
+
+let get_left_cert_region : (('c1,'c2) Cons.discr_t) PLP.Region.t -> 'c1 PLP.Region.t
+    = fun reg -> {reg with
+        sx = {reg.sx with
+            cstrs = List.map get_left_cert reg.sx.cstrs;
+        };
     }
-    in
-    match PLP.run factory config tab with
-    | None -> ([],[])
-    | Some regs -> regsToCs regs
-*)
+
+let get_cert : ((('c1,'c2) Cons.discr_t) PLP.Region.t * (('c1,'c2) Cons.discr_t) Cons.t) list option
+    -> ('c1 PLP.Region.t * 'c1 Cons.t) list
+    = function
+    | None -> []
+    | Some regions ->
+        List.fold_left (fun acc (reg, cons) ->
+            (get_left_cert_region reg, get_left_cert cons) :: acc
+        ) [] regions
 
 let proj_incl' : 'c1 Factory.t -> 'c2 Factory.t -> Cs.Vec.t -> Var.t list -> 'c1 Cons.t list
-    -> 'c2 Cons.t list -> 'c1 Cons.t list option
+    -> 'c2 Cons.t list -> ('c1 PLP.Region.t * 'c1 Cons.t) list option
 	= fun factory1 factory2 normalization_point vars p1 p2 ->
     if List.length p1 = 0
     then if List.length p2 = 0
@@ -68,14 +60,13 @@ let proj_incl' : 'c1 Factory.t -> 'c2 Factory.t -> Cs.Vec.t -> Var.t list -> 'c1
         try
             let regs = PLP.run_classic factory_mix sx in
         	let res = Join.filter_trivial regs
-        	|> Join.rem_dupl
-            |> Join.get_join_cert
-            |> Pervasives.fst
+            	|> Join.rem_dupl
+                |> get_cert
             in Some res
         with PSplxExec.Infeasible_problem -> None
 
 let proj_incl : 'c1 Factory.t -> 'c2 Factory.t -> Cs.Vec.t -> Var.t list -> 'c1 Cons.t list
-    -> 'c2 Cons.t list -> 'c1 Cons.t list option
+    -> 'c2 Cons.t list -> ('c1 PLP.Region.t * 'c1 Cons.t) list option
 	= fun factory1 factory2 normalization_point vars p1 p2 ->
     Debug.log DebugTypes.Title (lazy "Building ProjInclusion");
     Debug.log DebugTypes.MInput (lazy (Printf.sprintf
@@ -87,6 +78,7 @@ let proj_incl : 'c1 Factory.t -> 'c2 Factory.t -> Cs.Vec.t -> Var.t list -> 'c1 
     Debug.log DebugTypes.MOutput (lazy (
         match res with
         | None -> "Inclusion does not hold"
-        | Some p -> Misc.list_to_string (Cons.to_string Var.to_string) p " ; ")
+        | Some p -> Misc.list_to_string (Cons.to_string Var.to_string)
+            (List.split p |> snd) " ; ")
     );
     res

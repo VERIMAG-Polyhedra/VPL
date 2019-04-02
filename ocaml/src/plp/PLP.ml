@@ -1,4 +1,4 @@
-include PLPCore
+include PLPIncremental
 
 let standard : 'c Region.t option -> 'c Region.t -> ExplorationPoint.t -> 'c t -> 'c t
 		= fun origin_reg reg point plp ->

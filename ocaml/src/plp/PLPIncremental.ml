@@ -30,9 +30,9 @@ let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * Exploration
         ({reg with sx = sx'}, [])
 
 
-let add_column : 'c Factory.t -> 'c config -> ('c Region.t * 'c Cons.t) list -> 'c Cons.t -> ('c Region.t * 'c Cons.t) list
+let add_column : 'c Factory.t -> 'c config -> 'c Region.t list -> 'c Cons.t -> ('c Region.t * 'c Cons.t) list
     = fun factory config regs cons ->
-    let (regs', todo) = List.fold_left (fun (regs, todo) (reg, _) ->
+    let (regs', todo) = List.fold_left (fun (regs, todo) reg ->
         let (reg', todo') = add_column_to_region reg cons in
         reg' :: regs, todo @ todo'
     ) ([],[]) regs

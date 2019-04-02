@@ -284,10 +284,12 @@ let proj_incl : 'c Factory.t -> Cs.Vec.t -> Var.t list -> 'c EqSet.t -> 'c t -> 
     let p1_ineqs' = List.map (EqSet.filter factory p2_eqs) p1_ineqs.ineqs in
     match ProjIncl.proj_incl factory factory normalization_point xs p1_ineqs' p2_ineqs.ineqs with
     | None -> None
-    | Some ineqs' -> Some {
-        ineqs = ineqs';
-        regions = None
-    }
+    | Some res ->
+        let (regs,ineqs) = List.split res in
+        Some {
+            ineqs = ineqs;
+            regions = Some regs;
+        }
 
 let fmElim: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t option Rtree.t -> 'c t -> 'c t
     = fun factory nxt es msk s ->
@@ -433,6 +435,17 @@ let assume: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 		match Splx.checkFromAdd (Splx.mk nvar ilist) with
 		| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.addM: unexpected unsat set"
 		| Splx.IsOk sx -> rmRedAux s2 sx point
+
+let assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t
+    = fun factory s cons ->
+    match s.regions with
+    | Some regs ->
+        let (regs', ineqs') = PLP.add_column factory PLP.std_config regs cons
+        |> List.split in {
+            ineqs = ineqs';
+            regions = Some regs';
+        }
+    | None -> failwith "no stored regions"
 
 (*
 (*TEST FOR EFFICIENCY : *)
