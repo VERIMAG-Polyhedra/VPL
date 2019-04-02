@@ -179,9 +179,9 @@ module Polyhedron: NCInterface.PolyhedronDomain = struct
 	  = fun _ _ -> assert false
 
         let dump: nonempty -> unit Pol.t = fun p ->
-          let ineqs = List.fold_left (fun l (c, _) -> (c, ())::l) [] p.pol.Pol.ineqs in
+          let ineqs = List.fold_left (fun l (c, _) -> (c, ())::l) [] p.pol.Pol.ineqs.ineqs in
           let eqs = List.fold_left (fun l (a, (c,_)) -> (a,(c,()))::l) [] p.pol.Pol.eqs in
-          {Pol.eqs = eqs; Pol.ineqs = ineqs; Pol.point = p.pol.Pol.point}
+          {Pol.eqs = eqs; Pol.ineqs = IneqSet.of_list ineqs; Pol.point = p.pol.Pol.point}
 
         exception Wrong_Certificate of string
 

@@ -47,3 +47,11 @@ val minkowskiSetup_2 : 'c1 Factory.t -> Var.t -> Var.t option Rtree.t -> 'c2 t
 
 (** Removes duplicates and trivial constraints. *)
 val clean : 'c t list -> 'c t list
+
+(** Adjust the constant part of a certificate
+    @param factory the factory
+    @param cons a constraint
+    @param cstr a second constraint
+    @return a certificate showing that [cstr] includes [cons].
+    @raise Invalid_argument if [cstr] does not include [cons]. *)
+val adjust_cert_constant: 'c Factory.t -> 'c t -> Cs.t -> 'c

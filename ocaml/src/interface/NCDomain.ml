@@ -214,7 +214,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
   		| Bottom _ -> None
   		| NonBot p ->
   			let eqs = List.map (fun (v, (c,_)) -> (v, (c,()))) p.Pol.eqs
-  			and ineqs = List.map (fun (c,_) -> (c,())) p.Pol.ineqs
+  			and ineqs = IneqSet.map (fun cert -> ()) p.Pol.ineqs
   			in Some {Pol.eqs = eqs ; Pol.ineqs = ineqs; Pol.point = p.Pol.point}
 
     let get_regions : t -> t list

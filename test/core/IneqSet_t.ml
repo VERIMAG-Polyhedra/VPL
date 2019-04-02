@@ -80,7 +80,7 @@ let iset: Cs.t list -> Cs.t IneqSet.t
 	| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet_t.iset: unexpected empty interior"
 	| Splx.IsOk sx_strict ->
 		let conss = List.map (fun c -> c,c) l in
-		IneqSet.addM nxt IneqSet.nil conss (Splx.getAsg sx_strict)
+		IneqSet.assume nxt IneqSet.top conss (Splx.getAsg sx_strict)
 
 let relEq: Cs.t IneqSet.rel_t -> Cs.t IneqSet.rel_t -> bool
 = fun r1 r2 ->
@@ -172,20 +172,27 @@ let synInclTs: Test.t
 = fun () ->
 Test.suite "synIncl" [synInclCheckTs() ; synInclImpliedTs()]
 
-(* IneqSet.addM *)
+let equal s1 s2 =
+	let incl l1 = List.for_all
+		(fun (c2,_) ->
+		List.exists (fun (c1,_) -> Cs.inclSyn c1 c2) l1.IneqSet.ineqs)
+	in
+incl s1 s2.IneqSet.ineqs && incl s2 s1.IneqSet.ineqs
+
+(* IneqSet.assume *)
 let addMTs: Test.t
 = fun () ->
 let chk (nm, s, l, r)
 	= fun st ->
-		let ilist = List.mapi (fun i cs -> i, cs) (l @ (List.map Pervasives.fst s))
+		let ilist = List.mapi (fun i cs -> i, cs) (l @ (List.map Pervasives.fst s.IneqSet.ineqs))
 		in
 		let l_stricten = List.map (fun (i,c) -> i, {c with Cs.typ = Cstr_type.Lt}) ilist in
 		match Splx.checkFromAdd (Splx.mk nxt l_stricten) with
 		| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet_t.iset: unexpected empty interior"
 		| Splx.IsOk sx_strict ->
 			let conss = List.map mkCons l in
-			let s' = IneqSet.addM nxt s conss (Splx.getAsg sx_strict) in
-			if IneqSet.equal r s'
+			let s' = IneqSet.assume nxt s conss (Splx.getAsg sx_strict) in
+			if equal r s'
 			then Test.succeed st
 			else
 				let estr = Printf.sprintf "expected:\n%s\ngot:\n%s\n"
@@ -195,7 +202,7 @@ let chk (nm, s, l, r)
 	in
 	let tcs: (string * Cs.t IneqSet.t * Cs.t list * Cs.t IneqSet.t) list
 	= [
-	"triv0", IneqSet.nil, [], IneqSet.nil;
+	"triv0", IneqSet.top, [], IneqSet.top;
 
 	"triv1", iset [le [1, x] 0], [], iset [le [1, x] 0];
 
@@ -300,7 +307,7 @@ let substTs: Test.t
 		let s2 = iset s in
 		let s3 = iset s1 in
 		let s4 = IneqSet.subst factory nxt EqSet.nil x e s2 in
-		if IneqSet.equal s3 s4 then
+		if equal s3 s4 then
 			Test.succeed state
 		else
 			Test.fail t (IneqSet.to_string_ext factory varPr s4) state
@@ -348,8 +355,8 @@ let fmElimTs: Test.t
 	let chk_res (t, x, s, s1) = fun state ->
 		let s2 = iset s in
 		let s3 = iset s1 in
-		let s4 = IneqSet.fmElim factory nxt EqSet.nil x s2 in
-		if IneqSet.equal s3 s4 then
+		let s4 = IneqSet.fmElim_one factory nxt EqSet.nil x s2 in
+		if equal s3 s4 then
 			Test.succeed state
 		else
 			Test.fail t (IneqSet.to_string_ext factory varPr s4) state
@@ -412,7 +419,7 @@ let fmElimTs: Test.t
 			le [1, y] 0;
 			le [1, z] 0 ]
 	] in
-	Test.suite "fmElim" [
+	Test.suite "fmElim_one" [
 		Test.suite "res" (List.map chk_res tcs)
 	]
 
@@ -422,8 +429,8 @@ let fmElimMTs: Test.t
 	let chk_res (t, msk, cList, cList1) =fun state ->
 		let s = iset cList in
 		let s1 = iset cList1 in
-		let s2 = IneqSet.fmElimM factory nxt EqSet.nil msk s in
-		if IneqSet.equal s1 s2 then
+		let s2 = IneqSet.fmElim factory nxt EqSet.nil msk s in
+		if equal s1 s2 then
 			Test.succeed state
 		else
 			Test.fail t (IneqSet.to_string_ext factory varPr s2) state
@@ -452,7 +459,7 @@ let fmElimMTs: Test.t
 		], [
 			le [1, z] 0 ]
 	] in
-	Test.suite "fmElimM" [
+	Test.suite "fmElim" [
 		Test.suite "res" (List.map chk_res tcs)
 	]
 

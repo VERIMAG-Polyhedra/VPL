@@ -13,7 +13,7 @@ type 'c t = {
 let top: 'c t
 = {
 	eqs = EqSet.nil;
-	ineqs = IneqSet.nil;
+	ineqs = IneqSet.top;
     point = Some Vector.Symbolic.nil;
 }
 
@@ -22,7 +22,7 @@ let get_ineqs (x : 'c t) = x.ineqs.ineqs
 
 let mkplist p =
 	let e = EqSet.list p.eqs in
-	let i = IneqSet.list p.ineqs in
+	let i = p.ineqs.ineqs in
 	List.map (fun c -> (Cons.get_c c)) (List.append e i)
 
 let varSet: 'c t -> Var.Set.t
@@ -30,7 +30,7 @@ let varSet: 'c t -> Var.Set.t
 
 let to_string: (Var.t -> string) -> 'c t -> string
 	= fun varPr p ->
-	if EqSet.isTop p.eqs && IneqSet.isTop p.ineqs
+	if EqSet.isTop p.eqs && IneqSet.is_top p.ineqs
 	then "top"
 	else Printf.sprintf "%s%s%s"
         (EqSet.to_string varPr p.eqs)
@@ -50,7 +50,7 @@ let to_string_ext: 'c Factory.t -> (Var.t -> string) -> 'c t -> string
 		else "\n" ^ (EqSet.to_string_ext factory varPr p.eqs)
 	in
 	let istr =
-		if IneqSet.isTop p.ineqs
+		if IneqSet.is_top p.ineqs
 		then " top"
 		else "\n" ^ (IneqSet.to_string_ext factory varPr p.ineqs)
 	in
@@ -68,7 +68,7 @@ let get_point : 'c t -> Vector.Symbolic.t
     match p.point with
         | Some point -> point
         | None -> begin
-            let ineqs = List.map Cons.get_c p.ineqs in
+            let ineqs = List.map Cons.get_c p.ineqs.ineqs in
             let horizon = Cs.getVars ineqs |> Var.horizon in
             match Splx.getPointInside_cone horizon ineqs with
             | Some point -> point
@@ -122,7 +122,7 @@ let getCst: assign_t -> cstT
 = fun a -> a.cst
 
 let get_cons p : 'c Cons.t list =
-	EqSet.list p.eqs @ IneqSet.list p.ineqs
+	EqSet.list p.eqs @ p.ineqs.ineqs
 
 let get_cstr p : Cs.t list =
   (List.map (fun (_,c) -> Cons.get_c c) (get_eqs p)) @
@@ -154,7 +154,7 @@ let equalSyn p1 p2: bool =
 			(fun c1 -> Cs.inclSyn (Cons.get_c c1) (Cons.get_c c2)) l1) l2
 	in
 	let eq l1 l2 = incl l1 l2 && incl l2 l1 in
-	EqSet.equal p1.eqs p2.eqs && eq p1.ineqs p2.ineqs
+	EqSet.equal p1.eqs p2.eqs && eq p1.ineqs.ineqs p2.ineqs.ineqs
 
 type 'c ependingT =
 	| EMin of 'c EqSet.t
@@ -176,13 +176,13 @@ let rec needsRewrite: 'c ipendingT -> 'c ipendingT
 	| IRw _ as ip -> ip
 
 type 'c rewriteT =
-	| Rewritten of 'c IneqSet.t
+	| Rewritten of 'c Cons.t list
 	| RewriteBot of 'c
 
 (** [rewriteIneqs es s] projects from [s] all variables defined in [es].
 The produced certificates prove that the result [s'] is implied by [s].
 No redundancy elimination is performed on [s']. *)
-let rewriteIneqs: 'c Factory.t -> 'c EqSet.t -> 'c IneqSet.t -> 'c rewriteT
+let rewriteIneqs: 'c Factory.t -> 'c EqSet.t -> 'c Cons.t list -> 'c rewriteT
 =	let rewrite: 'c Factory.t -> 'c EqSet.t -> 'c rewriteT -> 'c Cons.t -> 'c rewriteT
 	= fun factory es -> function
 		| RewriteBot _ as r -> fun _ -> r
@@ -341,9 +341,9 @@ let logrewriteIneqs: 'c Factory.t -> 'c logT -> ('c logT, 'c) mayBotT
 				end
 			| IMin _ | IRed _ ->	Ok ip
 			| IRw iset ->
-				match rewriteIneqs factory eset iset with
+				match rewriteIneqs factory eset iset.ineqs with
 				| RewriteBot f -> Bot f
-				| Rewritten iset' ->  Ok (IRed iset')
+				| Rewritten iset' ->  Ok (IRed (IneqSet.of_list iset'))
 	in
 	match lp.eset with
 	| EAdd (_, _) -> assert false
@@ -356,7 +356,7 @@ let logIneqSetAddM: Var.t -> Scalar.Symbolic.t Rtree.t -> 'c logT -> ('c logT * 
 	= let doAdd: Var.t -> 'c logT -> 'c Cons.t list -> 'c IneqSet.t -> Scalar.Symbolic.t Rtree.t
         -> ('c logT * Vector.Symbolic.t option, 'c) mayBotT
 		= fun nvar lp l iset point ->
-		let iset' = IneqSet.addM nvar iset l point in
+		let iset' = IneqSet.assume nvar iset l point in
 		Ok (logIset lp (IMin iset'), Some point)
 	in
 	fun nvar point lp ->
@@ -438,7 +438,7 @@ let rec extract_implicit_eqs' : 'c Factory.t -> Var.t -> 'c logT -> (('c logT, '
 	let rec get_ineqs :'c ipendingT -> 'c Cons.t list
 		= fun iset ->
 		match iset with
-		| IMin iset | IRed iset | IRw iset -> iset
+		| IMin iset | IRed iset | IRw iset -> iset.ineqs
 		| IAdd (iset,tail) | IAddRw (iset,tail) -> iset @ (get_ineqs tail)
 	in
 	let conss = get_ineqs lp.iset
@@ -542,7 +542,7 @@ let addSub: 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t -> 'c meetT
 
 let meetSub: 'c Factory.t -> Var.t -> 'c t -> 'c t -> 'c meetT
 	= fun factory nvar p1 p2 ->
-	addAux factory nvar p1 (EqSet.list p2.eqs @ IneqSet.list p2.ineqs)
+	addAux factory nvar p1 (EqSet.list p2.eqs @ p2.ineqs.ineqs)
 
 let mkSub: 'c Factory.t -> Var.t -> 'c Cons.t list -> 'c t option
 	= fun factory nvar l ->
@@ -563,7 +563,7 @@ let projectSubFM: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
 			let ineqs1 = IneqSet.subst factory nxtVar eqs1 x e ineqs in
 			project1 eqs1 ineqs1
 		| None -> begin
-			let ineqs1 = IneqSet.fmElimM factory nxtVar eqs1 msk ineqs
+			let ineqs1 = IneqSet.fmElim factory nxtVar eqs1 msk ineqs
 			in
             let point' = match p.point with
                 | None -> None
@@ -603,7 +603,7 @@ let projectSubPLP: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
     }
     else
         let normalization_point = Vector.Symbolic.toRat point in
-    	let ineqs2 = IneqSet.pProjM factory normalization_point vars' ineqs1 in
+    	let ineqs2 = IneqSet.plpElim factory normalization_point vars' ineqs1 in
         let point' = Vector.Symbolic.project vars' point in {
             ineqs = ineqs2;
             eqs = eqs1;
@@ -618,7 +618,7 @@ let projectSub: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
     else match !Flags.proj with
     	| Flags.Proj_PLP _ -> projectSubPLP factory nxt p l
     	| Flags.FM -> projectSubFM factory nxt p l
-    	| Flags.PHeuristic -> match Heuristic.proj (List.map Cons.get_c p.ineqs) with
+    	| Flags.PHeuristic -> match Heuristic.proj (List.map Cons.get_c p.ineqs.ineqs) with
     		| Flags.Proj_PLP _ -> projectSubPLP factory nxt p l
     		| Flags.FM -> projectSubFM factory nxt p l
     		| Flags.PHeuristic -> Pervasives.invalid_arg "Pol.projectSub"
@@ -645,10 +645,10 @@ let joinSetup: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t
 		(EqSet.to_string_ext factory Var.to_string eqs2)));
 	let (varNxt3, r, ineqs1) = IneqSet.joinSetup_1 factory2 varNxt2 r alpha p1.ineqs in
 	Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Inequalities of P1 handled: \n%s"
-		(IneqSet.to_string_ext factory Var.to_string ineqs1)));
+		(IneqSet.to_string_ext factory Var.to_string (IneqSet.of_list ineqs1))));
 	let (varNxt4, r, ineqs2) = IneqSet.joinSetup_2 factory1 varNxt3 r alpha p2.ineqs in
 	Debug.log DebugTypes.Detail (lazy (Printf.sprintf "Inequalities of P2 handled: \n%s"
-		(IneqSet.to_string_ext factory Var.to_string ineqs2)));
+		(IneqSet.to_string_ext factory Var.to_string (IneqSet.of_list ineqs2))));
 	let eqs = List.append eqs1 eqs2 in
 	let ineqs = List.concat [ineqs1; ineqs2; aIneqs] in
 	let vars =
@@ -658,7 +658,7 @@ let joinSetup: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t
         | Some point, _ | _, Some point -> Some point
         | _,_ -> None
     in
-	(varNxt4, {ineqs = ineqs; eqs = eqs; point = point'}, vars, factory)
+	(varNxt4, {ineqs = IneqSet.of_list ineqs; eqs = eqs; point = point'}, vars, factory)
 
 let fix_cmp: 'c Factory.t -> 'c Cons.t -> Cs.t list -> 'c Cons.t
 	= fun fac (c,cert) inputIneqs ->
@@ -676,21 +676,22 @@ let fix_cmp: 'c Factory.t -> 'c Cons.t -> Cs.t list -> 'c Cons.t
  *)
 let split_certificates : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> (('c1,'c2) Cons.discr_t) t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 p1 p2 p ->
-    let inputIneqs1 = p1.ineqs
-    and inputIneqs2 = p2.ineqs in
+    let inputIneqs1 = p1.ineqs.ineqs
+    and inputIneqs2 = p2.ineqs.ineqs in
 	let (ineqs1,ineqs2) =
     let inputIneqs = List.map Cons.get_c inputIneqs1 @ List.map Cons.get_c inputIneqs2 in
 	List.fold_left
 		(fun (ineqs1,ineqs2) (c, (cert1,cert2)) ->
 			((fix_cmp factory1 (c, cert1) inputIneqs)::ineqs1),
 			((fix_cmp factory2 (c, cert2) inputIneqs)::ineqs2))
-		([],[]) p.ineqs
+		([],[]) p.ineqs.ineqs
 	and (eqs1,eqs2) =
 	List.fold_left
 		(fun (eqs1,eqs2) (v, (c, (cert1,cert2))) -> (v, (c, cert1))::eqs1, (v, (c, cert2))::eqs2)
 		([],[]) p.eqs
 	in
-	{eqs = eqs1 ; ineqs = ineqs1 ; point = p1.point}, {eqs = eqs2 ; ineqs = ineqs2 ; point = p2.point}
+	{eqs = eqs1 ; ineqs = IneqSet.of_list ineqs1 ; point = p1.point},
+    {eqs = eqs2 ; ineqs = IneqSet.of_list ineqs2 ; point = p2.point}
 
 let joinSub_classic: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 nxtVar p1 p2 ->
@@ -789,12 +790,12 @@ module Join_PLP = struct
 
 	let compute_point p1_cons p2_cons =
 		let p1_point = get_point {
-			ineqs = p1_cons;
+			ineqs = IneqSet.of_list p1_cons;
 			eqs = [];
 			point = None;
 		}
 		and p2_point = get_point {
-			ineqs = p2_cons;
+			ineqs = IneqSet.of_list p2_cons;
 			eqs = [];
 			point = None;
 		}
@@ -811,9 +812,9 @@ module Join_PLP = struct
 		let (p1_cons, p2_cons) =
 			if p1_eqs <> [] || p2_eqs <> []
 			then (
-				(add_epsilon epsilon p1_eqs) @ p1.ineqs,
-				(add_epsilon epsilon p2_eqs) @ p2.ineqs)
-			else (p1.ineqs, p2.ineqs)
+				(add_epsilon epsilon p1_eqs) @ p1.ineqs.ineqs,
+				(add_epsilon epsilon p2_eqs) @ p2.ineqs.ineqs)
+			else (p1.ineqs.ineqs, p2.ineqs.ineqs)
 		in
 		let normalization_point = compute_point p1_cons p2_cons in
 		let (p1',p2') =
@@ -826,11 +827,11 @@ module Join_PLP = struct
 		and p2'_ineqs = remove_epsilon epsilon p2' |> filter_trivial
 		in
 		(extract_implicit_eq factory1 nxtVar {
-			ineqs = p1'_ineqs;
+			ineqs = IneqSet.of_list p1'_ineqs;
 			eqs = [];
 			point = p1.point;},
 		 extract_implicit_eq factory2 nxtVar {
-			 ineqs = p2'_ineqs;
+			 ineqs = IneqSet.of_list p2'_ineqs;
 			 eqs = [];
 			 point = p2.point;}
 		)
@@ -882,7 +883,8 @@ let joinSub: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t 
 			Some {
 				ineqs = List.map2
 					(fun (cstr,_) cert -> (cstr,cert))
-					ineqs (Misc.sublist p2_from_p1 0 len_ineqs);
+					ineqs (Misc.sublist p2_from_p1 0 len_ineqs)
+                    |> IneqSet.of_list;
 				eqs = List.map2
 					(fun (v, (cstr,_)) cert -> (v, (cstr,cert)))
 					eqs (Misc.sublist p2_from_p1 len_ineqs (List.length p2_from_p1));
@@ -915,14 +917,14 @@ let widen : 'c Factory.t -> 'c t -> 'c t -> 'c t
 		match Cs.tellProp (Cons.get_c c1) with
 		| Cs.Trivial -> c::s (* XXX: c shouldn't get in, right? *)
 		| Cs.Nothing ->
-			if List.exists (fun c2 -> Cons.equal c2 c1) p1.ineqs then
+			if List.exists (fun c2 -> Cons.equal c2 c1) p1.ineqs.ineqs then
 				c::s
 			else
 				s
 
 		| Cs.Contrad -> failwith "Pol.widen"
 	in
-	{ p2 with ineqs = List.fold_left elect [] p2.ineqs }
+	{ p2 with ineqs = List.fold_left elect [] p2.ineqs.ineqs |> IneqSet.of_list}
 
 let opt2itv: (Scalar.Rat.t -> Scalar.Rat.t) -> 'c Factory.t -> 'c Cons.t list -> Opt.optT -> bndT * 'c option
 	= fun f factory conss ->
@@ -947,7 +949,7 @@ let getUpperBoundImpl : 'c Factory.t -> 'c Cons.t list -> Vec.t -> Splx.t Splx.m
 
 let getUpperBoundSub : 'c Factory.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
   = fun factory x p v ->
-  let conss = EqSet.list p.eqs @ IneqSet.list p.ineqs in
+  let conss = EqSet.list p.eqs @ p.ineqs.ineqs in
   let i_cstr = List.mapi (fun i cons -> (i, Cons.get_c cons)) conss in
   Splx.mk x i_cstr
     |> getUpperBoundImpl factory conss v
@@ -960,14 +962,14 @@ let getLowerBoundImpl : 'c Factory.t -> 'c Cons.t list -> Vec.t -> Splx.t Splx.m
 
 let getLowerBoundSub : 'c Factory.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
   = fun factory x p v ->
-  let conss = EqSet.list p.eqs @ IneqSet.list p.ineqs in
+  let conss = EqSet.list p.eqs @ p.ineqs.ineqs in
   let i_cstr = List.mapi (fun i cons -> (i, Cons.get_c cons)) conss in
   Splx.mk x i_cstr
     |> getLowerBoundImpl factory conss v
 
 let itvizeSub: 'c Factory.t -> Var.t -> 'c t -> Vec.t -> itvT * 'c option * 'c option
 	= fun factory nxtVar p v ->
-	let conss = EqSet.list p.eqs @ IneqSet.list p.ineqs in
+	let conss = EqSet.list p.eqs @ p.ineqs.ineqs in
 	let i_cstr = List.mapi (fun i cons -> (i, Cons.get_c cons)) conss in
 	let sx = Splx.mk nxtVar i_cstr in
 	let (up, upf) = getUpperBoundImpl factory conss v sx in
@@ -1093,7 +1095,7 @@ let invChk: 'c Factory.t -> 'c t -> bool * string
 			= fun c -> Cs.tellProp (Cons.get_c c) = Cs.Nothing
 		in
 		fun p ->
-			List.for_all chk1 p.ineqs && List.for_all (fun (_, c) -> chk1 c) p.eqs
+			List.for_all chk1 p.ineqs.ineqs && List.for_all (fun (_, c) -> chk1 c) p.eqs
 	in
 	let chkDefU: 'c t -> bool
 		= let chk1: Var.t * 'c Cons.t -> bool
@@ -1117,13 +1119,13 @@ let invChk: 'c Factory.t -> 'c t -> bool * string
 			let lin = Cs.get_v (Cons.get_c c) in
 			List.for_all (fun x -> Scalar.Rat.cmpz (Vec.get lin x) = 0) l
 		in
-		fun p -> List.for_all (chk1 (List.map fst p.eqs)) p.ineqs
+		fun p -> List.for_all (chk1 (List.map fst p.eqs)) p.ineqs.ineqs
 	in
 	let chkBot: 'c t -> bool
 		= let cs: 'c t -> (int * Cs.t) list
 			= fun p ->
 			List.mapi (fun i c -> (i, Cons.get_c c))
-				(List.append p.ineqs (List.map snd p.eqs))
+				(List.append p.ineqs.ineqs (List.map snd p.eqs))
 		in
 		fun p ->
 			let h = varSet p |> Var.horizon in
@@ -1146,14 +1148,7 @@ let invChk: 'c Factory.t -> 'c t -> bool * string
 				| None -> false
 				| Some es' -> List.length es = List.length es'
 		in
-		let chkI: 'c t -> bool
-			= fun p ->
-			let nxt = varSet p |> Var.horizon in
-			match IneqSet.simpl factory nxt p.eqs p.ineqs with
-			| IneqSet.SimplBot _ -> false
-			| IneqSet.SimplMin is -> List.length is = List.length p.ineqs
-		in
-		fun p -> chkI p && chkE p.eqs
+		fun p -> chkE p.eqs
 	in
 	let tr: bool -> string -> bool * string
 		= fun r m -> (r, if r then "" else m)
@@ -1200,11 +1195,12 @@ let to_unit : 'c t -> unit t
 			(get_eqs ph);
 		ineqs = List.map
 			(fun (cstr, _) -> (cstr,()))
-			(get_ineqs ph);
+			(get_ineqs ph)
+            |> IneqSet.of_list ;
         point = ph.point;
 	}
 
-
+(*
 let minkowskiSetup : 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t
 -> Var.t * (('c1,'c2) Cons.discr_t) t * Var.t list * ('c1,'c2) Cons.discr_cert
 	= fun factory1 factory2 nxt p1 p2 ->
@@ -1229,13 +1225,16 @@ let minkowskiSub: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> '
 	let (nxtVar1, p0, vars, factory) = minkowskiSetup factory1 factory2 nxtVar p1 p2 in
 	let p = projectSub factory nxtVar1 p0 vars in
 	split_certificates factory1 factory2 p1 p2 p
-
+*)
 let minkowski : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 	= fun factory1 factory2 p1 p2 ->
+    failwith "minkowski: not implemented"
+    (*
 	let nxt = Var.Set.union (varSet p1) (varSet p2)
 		|> Var.horizon
 	in
 	minkowskiSub factory1 factory2 nxt p1 p2
+    *)
 
 let get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> 'c t list
     = fun factory p point ->
@@ -1245,7 +1244,7 @@ let get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> 'c t list
     List.map
         (fun (ineqs,point) -> {
             eqs = eqs;
-            ineqs = ineqs;
+            ineqs = IneqSet.of_list ineqs;
             point = Some point;
         })
         regions
@@ -1287,7 +1286,7 @@ let size : 'c t -> Scalar.Rat.t option
 	Debug.log DebugTypes.MInput (lazy (Printf.sprintf "P = %s"
     	(to_string_raw p)));
     Profile.start "size";
-    let cstrs = List.map Cons.get_c p.ineqs in
+    let cstrs = List.map Cons.get_c p.ineqs.ineqs in
     let res = match Opt.getAsg_raw cstrs with
     | Some point ->
         let point' =  Vector.Symbolic.toRat point in

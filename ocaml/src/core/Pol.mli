@@ -118,7 +118,6 @@ val joinSub: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t 
 
 (** [minkowski p1 p2] computes the minkowski sum [p] of [p1] and [p2]. *)
 val minkowski: 'c1 Factory.t -> 'c2 Factory.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
-val minkowskiSub: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t * 'c2 t
 
 (** Widening operator.
 The result includes the two operands, although no certificate is created.

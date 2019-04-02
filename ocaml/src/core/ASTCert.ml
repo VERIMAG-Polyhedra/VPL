@@ -202,8 +202,8 @@ let import (i: input) (access:'a -> Cs.t) (update: 'a -> dcstr -> 'b) (l: 'a lis
 let import_pol (i: input) (p: 'a Pol.t) =
   let e = get_env i in
   let eqs = rec_import e (fun (_, (c,_)) -> c) (fun (a, (c,_)) cert -> (a,(c,cert))) p.Pol.eqs [] in
-  let ineqs = rec_import e  (fun (c,_) -> c) (fun (c, _) cert -> (c, cert)) p.Pol.ineqs [] in
-  {Pol.eqs = eqs; Pol.ineqs = ineqs; Pol.point = p.Pol.point}
+  let ineqs = rec_import e  (fun (c,_) -> c) (fun (c, _) cert -> (c, cert)) p.Pol.ineqs.ineqs [] in
+  {Pol.eqs = eqs; Pol.ineqs = IneqSet.of_list ineqs; Pol.point = p.Pol.point}
 
 
 (***********************************************)
@@ -215,7 +215,7 @@ let set_output input roots =
   e.roots <- roots
 
 let set_output_from_pol (i: input) (p: dcstr Pol.t) =
-  let l0 = List.fold_left (fun l (_, cert) -> cert::l) [] (List.rev_append p.Pol.ineqs []) in
+  let l0 = List.fold_left (fun l (_, cert) -> cert::l) [] (List.rev_append p.Pol.ineqs.ineqs []) in
   let l1 = List.fold_left (fun l (x, (_,cert)) -> cert.vardef <- Some x; cert::l) l0 (List.rev_append p.Pol.eqs []) in
   set_output i l1
 
@@ -230,7 +230,7 @@ let set_output_map f input roots =
 let set_output_fp_map f i p =
   (* equalities in the good order for the Coq tactic ! *)
   let l0 = List.fold_left (fun l (x, (_, cert)) -> let cert = (f cert) in cert.vardef <- Some x; cert::l) [] (List.rev_append p.Pol.eqs []) in
-  let l1 = List.fold_left (fun l (_, cert) -> (f cert)::l) l0 p.Pol.ineqs in
+  let l1 = List.fold_left (fun l (_, cert) -> (f cert)::l) l0 p.Pol.ineqs.ineqs in
   set_output i l1
 
 

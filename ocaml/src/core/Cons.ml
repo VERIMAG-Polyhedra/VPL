@@ -168,3 +168,33 @@ let rec clean : 'c t list -> 'c t list
             if List.exists (fun (c',_) -> Cs.equal c c') l
             then clean l
             else (c,cert) :: clean l
+
+exception CertSyn
+
+let adjust_cert_constant : 'c Factory.t -> 'c t -> Cs.t -> 'c
+	= fun factory (c1,cert1) c2 ->
+	let v1 = Cs.get_v c1 in
+	let v2 = Cs.get_v c2 in
+	match Vector.Rat.isomorph v2 v1 with
+	| Some r -> (* v2 = r.v1 *)
+		begin
+		let cert =
+			let cste = Scalar.Rat.sub
+				(Cs.get_c c2)
+				(Scalar.Rat.mul r (Cs.get_c c1))
+			in
+            if Cs.get_typ c2 = Cstr_type.Lt && Scalar.Rat.equal r Scalar.Rat.u && Scalar.Rat.equal cste Scalar.Rat.z
+            then cert1
+			else if Scalar.Rat.lt cste Scalar.Rat.z
+    			then factory.Factory.mul r cert1
+    			else
+                    let cste_cert = factory.Factory.triv (Cs.get_typ c2) cste
+    				in
+    				factory.Factory.mul r cert1
+    				|> factory.Factory.add cste_cert
+    	in
+		match Cs.get_typ c1, Cs.get_typ c2 with
+		| Cstr_type.Lt, Cstr_type.Le -> factory.Factory.to_le cert
+		| _,_ -> cert
+		end
+	| None -> Pervasives.invalid_arg "Inclusion does not hold"
