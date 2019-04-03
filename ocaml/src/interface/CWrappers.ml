@@ -19,10 +19,6 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   include FullDom
 
-  let proj_incl _ _ = not_yet_implemented "proj_incl"
-  let assume_back _ _ = not_yet_implemented "assume_back"
-
-
   type cert = LHD.cert
 
   module Term = QInterface.Term
@@ -31,8 +27,16 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     = fun f poly ->
     {poly with pol = f poly.pol}
 
-  let minkowski p1 p2 =
-    {p1 with pol = LHD.minkowski p1.pol p2.pol}
+  let auto_lifting2 : (LHD.t -> LHD.t -> LHD.t) -> t -> t -> t
+    = fun f p1 p2 ->
+    {p1 with pol = f p1.pol p2.pol}
+
+  let proj_incl p1 p2 =
+    match LHD.proj_incl p1.pol p2.pol with
+    | Some p -> Some {p1 with pol = p}
+    | None -> None
+
+  let minkowski = auto_lifting2 LHD.minkowski
 
   let project_vars vars pol =
   match backend_rep pol with
@@ -51,8 +55,15 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   let get_bottom_cert p = LHD.get_bottom_cert p.pol
 
-  let assume c p =
-    assume (import_QCond c) p
+  let assume c p = assume (import_QCond c) p
+
+  let assume_back c =
+      let rec to_term = function
+        | QCond.Basic b -> []
+        | QCond.Atom (t1,c,t2) -> [c, QTerm.Add (t1, (QTerm.Opp t2))]
+        | QCond.BinL (c1, AND, c2) -> to_term c1 @ to_term c2
+        | _ -> invalid_arg "assume_back : to_term"
+    in auto_lifting (LHD.assume_back (to_term c))
 
   let asserts c p =
     coq_assert (import_QCond c) p
@@ -230,6 +241,6 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
 
   let proj_incl _ _ = not_yet_implemented "proj_incl"
 
-  let assume_back _ _ = not_yet_implemented "assume_back" 
+  let assume_back _ _ = not_yet_implemented "assume_back"
 
 end
