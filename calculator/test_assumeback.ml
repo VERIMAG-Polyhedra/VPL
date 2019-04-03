@@ -25,10 +25,10 @@ print p3;;
 
 let mk_poly s = PolyParser.one_poly PolyLexer.token (Lexing.from_string s);;
 
-let ineq = UserInterface.Atom (mk_poly "x + y", LE, mk_poly "3");;
-
-let p4 = VPL.assume_back ineq p3;;
-
 let ineq2 = UserInterface.Atom (mk_poly "x", LE, mk_poly "3/4");;
 
 let p5 = VPL.assume_back ineq2 p3;;
+
+let ineq = UserInterface.Atom (mk_poly "x + y", LE, mk_poly "3");;
+
+let p4 = VPL.assume_back ineq p3;;

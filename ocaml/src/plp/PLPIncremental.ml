@@ -2,15 +2,28 @@ include PLPCore
 
 let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * ExplorationPoint.t list
     = fun reg cons ->
+    Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+        "Adding constraint %s to region: \n%s"
+        (Cons.to_string Var.to_string cons)
+        (Region.to_string reg)));
     let regid = reg.id in
+    let prev_frontiers = Region.extract reg.Region.sx in
     let sx' = PSplxBuild.add_col cons reg.Region.sx in
+    Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+        "New simplex tableau:\n%s"
+        (PSplx.to_string sx')));
     let frontiers = Region.extract sx' in
     (* Frontier associated with the new column: *)
     let i_new_col = (Tableau.nCols sx'.tab) - 2 in
     (* -2 because the last column contains the current objective value *)
     let new_frontier = Objective.get i_new_col sx'.PSplx.obj in
+    Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+        "Frontier associated with the new column : %s"
+        (Cs.to_string Var.to_string new_frontier)));
     if List.mem new_frontier frontiers
-    then (* The new frontier is irredundant *)
+        && not (List.exists (Cs.equal new_frontier) prev_frontiers)
+    then begin
+        Debug.log DebugTypes.Detail (lazy("The frontier is irredundant"));
         match Exec.exec Cone sx' reg.point with
         | None -> failwith "add_column_to_region"
         | Some reg -> begin
@@ -26,8 +39,11 @@ let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * Exploration
                 ) [] reg'.r
             in (reg', todo)
             end
-    else (* The new frontier is redundant *)
+    end
+    else begin(* The new frontier is redundant *)
+        Debug.log DebugTypes.Detail (lazy("The frontier is redundant"));
         ({reg with sx = sx'}, [])
+    end
 
 let add_column : 'c Factory.t -> 'c config -> 'c Region.t list -> 'c Cons.t -> ('c Region.t * 'c Cons.t) list
     = fun factory config regs cons ->

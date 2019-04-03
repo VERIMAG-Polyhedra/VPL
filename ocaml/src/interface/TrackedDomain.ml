@@ -35,7 +35,6 @@ module Make (D: AbstractDomain.Type) = struct
             |> track;
             p'
 
-
         let unary_other : string -> (t -> 'a) -> (t -> 'a)
             = fun op_name op p ->
             let res = op p in
@@ -259,6 +258,5 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
             in
             Vec.rename_f toVar point
             |> Pol.satisfy rep
-
     end
 end

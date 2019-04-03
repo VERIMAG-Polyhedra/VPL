@@ -163,6 +163,19 @@ module Interface (Coeff: Scalar.Type) = struct
 			and c = Pol.Cs.get_c cstr |> Pol.Cs.Vec.Coeff.neg |> fun c -> Cte (Coeff.ofQ c)
 			in
 			Sum (c::l)
+
+        let rec rename_f : (Var.t -> Var.t) -> t -> t
+            = fun f -> function
+            | Var v -> Var (f v)
+            | Opp t -> Opp (rename_f f t)
+			| Add (t1,t2) -> Add (rename_f f t1, rename_f f t2)
+            | Mul (t1,t2) -> Mul (rename_f f t1, rename_f f t2)
+            | Div (t1,t2) -> Div (rename_f f t1, rename_f f t2)
+            | Sum l -> Sum (List.map (rename_f f) l)
+			| Prod l -> Prod (List.map (rename_f f) l)
+            | Poly p -> invalid_arg "Term: rename_f"
+			| Annot (annot,t) -> Annot (annot, rename_f f t)
+            | t -> t
 	end
 
   module Cond =

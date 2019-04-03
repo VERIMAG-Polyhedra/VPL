@@ -46,7 +46,15 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
     let vars' = List.map ofVar' vars in
   	{pol with pol = LHD.project vars' pol.pol}
 
-  let set_point point pol = auto_lifting (LHD.set_point point) pol
+  let set_point point p =
+      let (rep, toVar) = match backend_rep p with
+          | Some (p',(ofVar,toVar)) ->
+              let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
+              (p', toVar')
+          | _ -> Pervasives.failwith "get_vars"
+      in
+      let point' = Vec.rename_f toVar point in
+      auto_lifting (LHD.set_point point') p
 
   let get_regions p =
     List.map (fun p' -> {p with pol = p'}) (LHD.get_regions p.pol)
@@ -57,13 +65,18 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   let assume c p = assume (import_QCond c) p
 
-  let assume_back c =
-      let rec to_term = function
-        | QCond.Basic b -> []
-        | QCond.Atom (t1,c,t2) -> [c, QTerm.Add (t1, (QTerm.Opp t2))]
-        | QCond.BinL (c1, AND, c2) -> to_term c1 @ to_term c2
-        | _ -> invalid_arg "assume_back : to_term"
-    in auto_lifting (LHD.assume_back (to_term c))
+  let assume_back c p =
+      match backend_rep p with
+      | None -> Pervasives.failwith "assume_back"
+      | Some (pol,(ofVar,toVar)) ->
+        let (_,ofVar',_) = PedraQOracles.export_backend_rep (pol,(ofVar,toVar)) in
+        let rec to_term = function
+            | QCond.Basic b -> []
+            | QCond.Atom (t1,c,t2) -> [c, QTerm.Add (QTerm.rename_f ofVar' t2, (QTerm.Opp (QTerm.rename_f ofVar' t1)))]
+            | QCond.BinL (c1, AND, c2) -> to_term c1 @ to_term c2
+            | _ -> invalid_arg "assume_back : to_term"
+        in
+        auto_lifting (LHD.assume_back (to_term c)) p
 
   let asserts c p =
     coq_assert (import_QCond c) p
