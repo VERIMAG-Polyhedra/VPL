@@ -226,3 +226,5 @@ val satisfy : 'c t -> Vec.t -> bool
  * Randomly generates a point in the polyhedron.
  *)
 val spawn : 'c Factory.t -> 'c t -> Vec.t
+
+val assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t

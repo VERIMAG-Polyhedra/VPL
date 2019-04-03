@@ -87,6 +87,10 @@ module MakeCustom
         = fun c p ->
         D.assume (to_cond c) p
 
+	let assume_back: b_expr -> t -> t
+        = fun c p ->
+        D.assume_back (to_cond c) p
+
     let asserts: b_expr -> t -> bool
         = fun c p ->
         D.asserts (to_cond c) p

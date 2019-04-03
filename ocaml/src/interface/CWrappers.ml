@@ -20,6 +20,8 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
   include FullDom
 
   let proj_incl _ _ = not_yet_implemented "proj_incl"
+  let assume_back _ _ = not_yet_implemented "assume_back"
+
 
   type cert = LHD.cert
 
@@ -228,5 +230,6 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
 
   let proj_incl _ _ = not_yet_implemented "proj_incl"
 
+  let assume_back _ _ = not_yet_implemented "assume_back" 
 
 end

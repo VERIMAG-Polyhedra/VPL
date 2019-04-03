@@ -66,6 +66,14 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
 		= fun _ _ ->
 		Pervasives.failwith "VPL.addNLM: unimplemented"
 
+    let assume_back : t -> Cs.t -> t
+		= fun p cs ->
+		match p with
+		| Bottom _ -> p
+		| NonBot p ->
+			let cs' = F.mkCons cs in
+			NonBot (Pol.assume_back F.factory p cs')
+
 	let meet : t -> t -> t
 		= fun p1 p2 ->
 		match p1,p2 with
