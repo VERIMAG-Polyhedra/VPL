@@ -65,7 +65,7 @@ module type Type = sig
     (** @param p1 the first polyhedron
         @param p2 the second polyhedron
         @return the projection of [p1] on [p2]'s variables
-        @return None if the projection of [p1] on [p2]'s variables is not includes in [p2] *)
+        @return None if the projection of [p1] on [p2]'s variables does not contain [p2] *)
     val proj_incl : t -> t -> t option
 
     (** Widening operator. *)

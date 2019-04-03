@@ -29,7 +29,6 @@ let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * Exploration
     else (* The new frontier is redundant *)
         ({reg with sx = sx'}, [])
 
-
 let add_column : 'c Factory.t -> 'c config -> 'c Region.t list -> 'c Cons.t -> ('c Region.t * 'c Cons.t) list
     = fun factory config regs cons ->
     let (regs', todo) = List.fold_left (fun (regs, todo) reg ->

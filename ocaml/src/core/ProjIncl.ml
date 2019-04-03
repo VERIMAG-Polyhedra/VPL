@@ -21,6 +21,7 @@ let get_cert : ((('c1,'c2) Cons.discr_t) PLP.Region.t * (('c1,'c2) Cons.discr_t)
             (get_left_cert_region reg, get_left_cert cons) :: acc
         ) [] regions
 
+(* TODO : remove [vars] from function parameters *)
 let proj_incl' : 'c1 Factory.t -> 'c2 Factory.t -> Cs.Vec.t -> Var.t list -> 'c1 Cons.t list
     -> 'c2 Cons.t list -> ('c1 PLP.Region.t * 'c1 Cons.t) list option
 	= fun factory1 factory2 normalization_point vars p1 p2 ->
@@ -39,7 +40,7 @@ let proj_incl' : 'c1 Factory.t -> 'c2 Factory.t -> Cs.Vec.t -> Var.t list -> 'c1
             |> Cs.getVars
             |> Var.Set.elements in
         let n_vars = List.length vars in
-        let n_rows = n_vars + (List.length params) + 2 in
+        let n_rows = (List.length params) + 2 in
         let sx = PSplxBuild.init conss n_rows i_cstrs1 normalization_point in
         List.iter (fun i_col ->
             PSplxBuild.set_var_set i_col 2 sx
@@ -49,11 +50,12 @@ let proj_incl' : 'c1 Factory.t -> 'c2 Factory.t -> Cs.Vec.t -> Var.t list -> 'c1
             PSplxBuild.elim_from (i_row + 1) var i_cstrs1 1 sx
         ) vars;
         (* Inclusion constraints for variables: *)
+        let params_to_equal = Misc.subtract params vars in
         List.iteri (fun i_row var ->
             PSplxBuild.var_equal (i_row + n_vars + 1) var i_cstrs1 i_cstrs2 2 sx
-        ) params;
+        ) params_to_equal;
         (* Projection constraint for constant: *)
-        PSplxBuild.cste_equal (n_rows - 1) i_cstrs1 i_cstrs2 1 sx;
+        PSplxBuild.cste_equal (n_rows - 1) i_cstrs1 i_cstrs2 2 sx;
         Debug.log DebugTypes.Normal (lazy (Printf.sprintf "Initial simplex tableau: %s"
             (PSplx.to_string sx)));
         let factory_mix = Cons.discr_factory factory1 factory2 in

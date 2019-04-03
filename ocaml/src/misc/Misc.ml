@@ -197,3 +197,7 @@ let string_equal : string -> string -> bool
 let init_list : int -> (int -> 'a) -> 'a list
     = fun len f ->
     List.init len f
+
+let subtract : 'a list -> 'a list -> 'a list
+	= fun l1 l2 ->
+	List.filter (fun x -> not (List.mem x l2)) l1

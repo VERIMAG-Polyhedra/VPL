@@ -102,6 +102,11 @@ module Region = struct
             r = List.map (fun (bnd, i) -> (Boundary.canon bnd, i)) reg.r;
         }
 
+	let copy : 'c t -> 'c t
+		= fun reg -> { reg with
+			sx = PSplx.copy reg.sx;
+		}
+
 	let get_cstrs : 'c t -> Cs.t list
 		= fun reg ->
 		List.map (fun (b,_) -> Boundary.get_cstr b) reg.r

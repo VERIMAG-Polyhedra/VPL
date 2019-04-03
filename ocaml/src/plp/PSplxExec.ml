@@ -176,6 +176,10 @@ module Init = struct
             if i_row >= nRows sx
             then true
             else try
+                Debug.log DebugTypes.Detail (lazy (Printf.sprintf
+                    "Looking for basic variable in row %i, of variable set %i"
+                    i_row
+                    (List.nth sx.sets i_row)));
                 let row_var_set = List.nth sx.sets i_row in
                 let i_col = match Misc.array_fold_left_i (fun i_col res coeff ->
                     match res with

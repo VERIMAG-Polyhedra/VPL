@@ -35,6 +35,14 @@ let to_string_raw : 'c t -> string
     List.map (Cons.to_string Var.to_string) s.ineqs
     |> String.concat "\n"
 
+let copy : 'c t -> 'c t
+    = fun s -> {
+        ineqs = s.ineqs;
+        regions = match s.regions with
+            | None -> None
+            | Some regs -> Some (List.map PLP.Region.copy regs);
+    }
+
 let map : ('c1 -> 'c2) -> 'c1 t -> 'c2 t
     = fun f s ->
     let ineqs' = List.map (fun (cstr,cert) -> (cstr, f cert)) s.ineqs
@@ -438,7 +446,8 @@ let assume: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 
 let assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t
     = fun factory s cons ->
-    match s.regions with
+    let s' = copy s in
+    match s'.regions with
     | Some regs ->
         let (regs', ineqs') = PLP.add_column factory PLP.std_config regs cons
         |> List.split in {

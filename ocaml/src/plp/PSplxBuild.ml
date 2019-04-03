@@ -43,6 +43,9 @@ module Init = struct
 
     let normalize : int list -> Cs.Vec.t -> var_set -> 'c t -> unit
         = fun obj_cstrs point set sx ->
+        Debug.log DebugTypes.Normal (lazy (Printf.sprintf
+            "Building normalization constraint on point %s"
+            (Cs.Vec.to_string Var.to_string point)));
         let f cstr = Cs.eval cstr point |> Scalar.Rat.neg in
         init_row (fun i_col cons ->
             if List.mem i_col obj_cstrs

@@ -90,3 +90,5 @@ val string_equal : string -> string -> bool
      @param f an initialization function: index [i] is initialized as [f i]
      @param raise Invalid_argument if [len] < 1 *)
 val init_list : int -> (int -> 'a) -> 'a list
+
+val subtract : 'a list -> 'a list -> 'a list
