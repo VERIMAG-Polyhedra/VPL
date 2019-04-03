@@ -79,6 +79,14 @@ module Make (D: AbstractDomain.Type) = struct
         |> Track.track;
         p'
 
+    let assume_back cond p =
+        let p' = assume_back cond p in
+        Printf.sprintf "{abs_value %s = guard_back(%s, %s);}"
+            p'.name p.name
+            (b_expr_to_string cond)
+        |> Track.track;
+        p'
+
     let assign terms p =
         let p' = assign terms p in
         Printf.sprintf "{abs_value %s = assign(%s, %s);}"
@@ -251,5 +259,6 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
             in
             Vec.rename_f toVar point
             |> Pol.satisfy rep
+
     end
 end

@@ -78,6 +78,9 @@ val rename : 'c Factory.t -> 'c t -> Var.t -> Var.t -> 'c t
     @param point a point within the polyhedron's interior *)
 val assume: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 
+
+val assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t
+
 (** Substitutes a variable with an expression in an equality set.
     @param factory the factory
     @param h the hoizon variable

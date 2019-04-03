@@ -1417,3 +1417,12 @@ let proj_incl : 'c Factory.t -> 'c t -> 'c t -> 'c t option
         match incl factory p2 p1' with
         | NoIncl -> None
         | Incl _ -> Some p1'
+
+let assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t
+    = fun factory p cons ->
+	match Cons.get_c cons |> Cs.get_typ with
+	| Eq -> invalid_arg "assume_back: equations are not handled yet"
+	| _ ->
+		let ineqs' = IneqSet.assume_back factory p.ineqs cons in { p with
+			ineqs = ineqs';
+		}

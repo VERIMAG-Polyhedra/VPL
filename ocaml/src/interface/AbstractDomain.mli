@@ -91,6 +91,8 @@ module type Type = sig
         It computes the intersection between a condition and a polyhedron. *)
 	val assume: b_expr -> t -> t
 
+	val assume_back : b_expr -> t -> t
+
 	(** Returns true if the given condition is satisfied in the given polyhedron. *)
 	val asserts: b_expr -> t -> bool
 

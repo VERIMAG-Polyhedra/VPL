@@ -109,6 +109,7 @@ module Make(D : AbstractDomain.Type) = struct
     (************ UNARY OPERATORS ************)
     (*****************************************)
     let assume cond = Lift.unary (D.assume cond)
+    let assume_back cond = Lift.unary (D.assume_back cond)
     let assign terms = Lift.unary (D.assign terms)
     let project vars = Lift.unary (D.project vars)
     let project_vars vars = Lift.unary (D.project_vars vars)
