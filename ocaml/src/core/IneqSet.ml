@@ -444,16 +444,17 @@ let assume: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 		| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.addM: unexpected unsat set"
 		| Splx.IsOk sx -> rmRedAux s2 sx point
 
-let assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t
-    = fun factory s cons ->
+let assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> Vector.Symbolic.t -> 'c t * Vector.Symbolic.t
+    = fun factory s cons old_point ->
     let s' = copy s in
     match s'.regions with
     | Some regs ->
-        let (regs', ineqs') = PLP.add_column factory PLP.std_config regs cons
-        |> List.split in {
+        let ineqs = List.map (fun (ineq,_) -> ineq) s.ineqs in
+        let (sols, new_point) = PLP.add_column factory PLP.std_config ineqs regs cons old_point in
+        let (regs', ineqs') = List.split sols in ({
             ineqs = ineqs';
             regions = Some regs';
-        }
+        }, new_point)
     | None -> failwith "no stored regions"
 
 (*

@@ -170,42 +170,47 @@ module Init = struct
 
     exception Empty_row
 
+    let chooseBasicVar : int -> 'c t -> bool
+        = fun i_row sx ->
+        try
+            Debug.log DebugTypes.Detail (lazy (Printf.sprintf
+                "Looking for basic variable in row %i, of variable set %i"
+                i_row
+                (List.nth sx.sets i_row)));
+            let row_var_set = List.nth sx.sets i_row in
+            let i_col = match Misc.array_fold_left_i (fun i_col res coeff ->
+                match res with
+                | Some _ -> res
+                | None -> if not (Scalar.Rat.isZ coeff)
+                    && VarMap.find i_col sx.get_set = row_var_set
+                    then Some i_col
+                    else None
+                ) None sx.tab.(i_row)
+                with Some i -> i | None -> raise Not_found
+            in
+            if i_col > (Tableau.nCols sx.tab) - 2
+            then false (* last column is the constant *)
+            else begin
+                sx.basis <- sx.basis @ [i_col];
+                sx.pivots <- sx.pivots @ [
+                    Explore.add_pivots false i_row (Objective.get i_col sx.obj) (Tableau.getCol i_col sx.tab)
+                ];
+                Tableau.pivot i_row i_col sx.tab;
+                sx.obj <- Objective.elim sx.tab i_row i_col sx.obj;
+                true
+            end
+        with Not_found -> raise Empty_row
+
     let correction : 'c t -> bool
-        = let rec chooseBasicVar : int -> 'c t -> bool
+        = let rec correction_rec
             = fun i_row sx ->
             if i_row >= nRows sx
             then true
-            else try
-                Debug.log DebugTypes.Detail (lazy (Printf.sprintf
-                    "Looking for basic variable in row %i, of variable set %i"
-                    i_row
-                    (List.nth sx.sets i_row)));
-                let row_var_set = List.nth sx.sets i_row in
-                let i_col = match Misc.array_fold_left_i (fun i_col res coeff ->
-                    match res with
-                    | Some _ -> res
-                    | None -> if not (Scalar.Rat.isZ coeff)
-                        && VarMap.find i_col sx.get_set = row_var_set
-                        then Some i_col
-                        else None
-                    ) None sx.tab.(i_row)
-                    with Some i -> i | None -> raise Not_found
-                in
-                if i_col > (Tableau.nCols sx.tab) - 2
-                then false (* last column is the constant *)
-                else begin
-                    sx.basis <- sx.basis @ [i_col];
-                    sx.pivots <- sx.pivots @ [
-                        Explore.add_pivots false i_row (Objective.get i_col sx.obj) (Tableau.getCol i_col sx.tab)
-                    ];
-                    Tableau.pivot i_row i_col sx.tab;
-                    sx.obj <- Objective.elim sx.tab i_row i_col sx.obj;
-                    chooseBasicVar (i_row + 1) sx
-                end
-            with Not_found -> raise Empty_row
+            else (chooseBasicVar i_row sx)
+                && (correction_rec (i_row + 1) sx)
         in
         fun sx ->
-        chooseBasicVar (List.length sx.basis) sx
+        correction_rec (List.length sx.basis) sx
 
     let buildFeasibleTab : Objective.t -> 'c t -> unit
         = let syncObjWithBasis : Tableau.t -> int list -> Objective.t -> Objective.t

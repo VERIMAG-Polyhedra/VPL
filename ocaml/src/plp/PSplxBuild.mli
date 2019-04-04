@@ -4,8 +4,11 @@ open PSplx
 
 val trivial_constraint : 'c Factory.t -> 'c Cons.t
 
+val update_new_col : int -> (Cs.t -> Scalar.Rat.t) -> 'c t -> unit
+
 (**/**)
 module Init : sig
+    val init_row : (int -> 'c Cons.t -> Q.t) -> Q.t -> int -> 'c t -> unit
     val init_cstrs : 'c Cons.t list -> 'c PSplx.t -> 'c PSplx.t
     val mk_obj : int list -> 'c PSplx.t -> unit
     val init_var_set : 'c PSplx.t -> unit

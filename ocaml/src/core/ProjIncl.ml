@@ -61,9 +61,9 @@ let proj_incl' : 'c1 Factory.t -> 'c2 Factory.t -> Cs.Vec.t -> Var.t list -> 'c1
         let factory_mix = Cons.discr_factory factory1 factory2 in
         try
             let regs = PLP.run_classic factory_mix sx in
-        	let res = Join.filter_trivial regs
-            	|> Join.rem_dupl
-                |> get_cert
+        	let res = (*Join.filter_trivial regs *)
+            	(*Join.rem_dupl regs*) (* TODO : il faut merger les régions !! *)
+                get_cert regs
             in Some res
         with PSplxExec.Infeasible_problem -> None
 

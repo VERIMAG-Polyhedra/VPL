@@ -21,6 +21,8 @@ module Explore : sig
 end
 
 module Init : sig
+    val chooseBasicVar : int -> 'c PSplx.t -> bool
+
     (** Tries to find a feasible basis.
         @param factory the certified factory
         @param sx the simplex tableau to initialize

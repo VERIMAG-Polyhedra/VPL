@@ -1422,7 +1422,10 @@ let assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t
     = fun factory p cons ->
 	match Cons.get_c cons |> Cs.get_typ with
 	| Eq -> invalid_arg "assume_back: equations are not handled yet"
-	| _ ->
-		let ineqs' = IneqSet.assume_back factory p.ineqs cons in { p with
-			ineqs = ineqs';
-		}
+	| _ -> match p.point with
+        | Some point ->
+			let (ineqs', point) = IneqSet.assume_back factory p.ineqs cons point in { p with
+				ineqs = ineqs';
+				point = Some point;
+			}
+		| None -> invalid_arg "assume_back: input polyhedron has no normalization point set"
