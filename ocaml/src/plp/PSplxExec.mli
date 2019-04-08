@@ -12,6 +12,8 @@ exception Infeasible_problem
 
 module Explore : sig
 
+    val pivot : bool -> 'c PSplx.t -> int -> int -> unit
+
     (** Run the optimization process of the simplex algorithm.
         @param init_phase is true if this is the initialization phase
         @param point the parametric point on which the objective function is instantiated

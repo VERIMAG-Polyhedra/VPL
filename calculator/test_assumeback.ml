@@ -51,7 +51,7 @@ let ineq = UserInterface.Atom (mk_poly "x", LE, mk_poly "2");;
 let p_join_1' = VPL.assume_back ineq p_join_1;;
 (* -> OK *)
 let p_join_2' = VPL.assume_back ineq p_join_2;;
-(* -> unfeasible *)
+(* -> infeasible *)
 *)
 
 let ineq' = UserInterface.Atom (mk_poly "x", GE, mk_poly "y");;
@@ -62,6 +62,6 @@ let p_join_2'' = VPL.assume_back ineq' p_join_2;;
 
 let ineq'' = UserInterface.Atom (mk_poly "y", GE, mk_poly "1");;
 (*let p_join_1''' = VPL.assume_back ineq'' p_join_1'';;*)
-(* -> unfeasible *)
+(* -> infeasible *)
 let p_join_2''' = VPL.assume_back ineq'' p_join_2'';;
 (* -> UNBOUNDED *)
