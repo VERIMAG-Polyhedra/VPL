@@ -112,17 +112,20 @@ let isFeasible : 'c t -> bool
 (* PRETTY PRINTERS *)
 let t_get_width_column_vector : 'c t -> int list
     = fun sx ->
-    let l =
-      List.map2
-         Pervasives.max
-         (Tableau.get_width_column_vector sx.tab)
-         (Objective.getColumnsWidth Var.to_string sx.obj)
+    let l = List.map (fun (cstr,_) ->
+        Cs.to_string Var.to_string cstr
+        |> String.length
+    ) sx.cstrs
+    @ [0]
+    |> List.map2 Pervasives.max
+        (Tableau.get_width_column_vector sx.tab)
+    |>  List.map2 Pervasives.max
+        (Objective.getColumnsWidth Var.to_string sx.obj)
     in
-    List.mapi
-      (fun i n ->
+    List.mapi (fun i n ->
         let n' = var_to_string i |> String.length in
-        Pervasives.max n n')
-      (Misc.sublist l 0 (List.length l - 1))
+        Pervasives.max n n'
+    ) (Misc.sublist l 0 (List.length l - 1))
     @ [List.nth l (List.length l - 1)]
 
 let to_string : 'c t -> string
@@ -165,9 +168,18 @@ let to_string : 'c t -> string
                 with _ -> "?")
     ) sx.basis
     |> String.concat ""
+    and cstrs = List.mapi (fun i (cstr,_) ->
+        let s = Cs.to_string Var.to_string cstr in
+        let nb_spaces = (List.nth width_columns i) - (String.length s) in
+        Printf.sprintf "%s%s%s"
+            (Misc.string_repeat " " (nb_spaces/2))
+            s
+            (Misc.string_repeat " " (nb_spaces/2 + (nb_spaces mod 2)))
+    ) sx.cstrs
+    |> String.concat " | "
     in
-    Printf.sprintf "\n%s\n%s\n%s\n%s\n%s\n"
-        var_names var_set obj sep rows
+    Printf.sprintf "\n%s\n%s\n%s\n%s\n%s\n%s\n"
+        var_names cstrs var_set obj sep rows
 
 let print : 'c t -> unit
     = fun sx ->

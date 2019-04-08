@@ -35,8 +35,21 @@ let pr : (Var.t -> string) -> t -> string
 let to_string : t -> string
     = pr Var.to_string
 
+let param_coeff_to_string : (Var.t -> string) -> Cs.t -> string
+    = fun f cstr ->
+    if Cs.Coeff.isZ cstr.c
+    then Cs.Vec.to_string f cstr.v
+    else
+        if Cs.Coeff.lt cstr.c Cs.Coeff.z
+        then Printf.sprintf "%s + %s"
+            (Cs.Vec.to_string f cstr.v)
+            (Cs.Coeff.neg cstr.c |> Cs.Coeff.to_string)
+        else Printf.sprintf "%s %s"
+            (Cs.Vec.to_string f cstr.v)
+            (Cs.Coeff.neg cstr.c |> Cs.Coeff.to_string)
+
 let getColumnWidth : (Var.t -> string) -> t -> Cs.t -> int
-    = fun f _ c -> Cs.to_string f c |> String.length
+    = fun f _ c -> param_coeff_to_string f c |> String.length
 
 let getColumnsWidth : (Var.t -> string) -> t -> int list
     = fun f o ->
@@ -47,7 +60,7 @@ let pretty_print : (Var.t -> string) -> t -> int list -> string
 	   = fun f o p i ->
 	   let nb_spaces = i - getColumnWidth f o p in
 	   [String.init (nb_spaces/2) (fun _ -> ' ');
-	    Cs.to_string f p;
+	    param_coeff_to_string f p;
 	    String.init (nb_spaces/2 + (nb_spaces mod 2)) (fun _ -> ' ')]
 	   |> String.concat ""
 	 in

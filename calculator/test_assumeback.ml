@@ -46,11 +46,13 @@ let p_join_1 = VPL.proj_incl p_join p1 |> get_res;;
 let p_join_2 = VPL.proj_incl p_join p2 |> get_res;;
 
 let mk_poly s = PolyParser.one_poly PolyLexer.token (Lexing.from_string s);;
+(*
 let ineq = UserInterface.Atom (mk_poly "x", LE, mk_poly "2");;
 let p_join_1' = VPL.assume_back ineq p_join_1;;
 (* -> OK *)
 let p_join_2' = VPL.assume_back ineq p_join_2;;
 (* -> unfeasible *)
+*)
 
 let ineq' = UserInterface.Atom (mk_poly "x", GE, mk_poly "y");;
 let p_join_1'' = VPL.assume_back ineq' p_join_1;;
@@ -59,7 +61,7 @@ let p_join_2'' = VPL.assume_back ineq' p_join_2;;
 (* -> OK *)
 
 let ineq'' = UserInterface.Atom (mk_poly "y", GE, mk_poly "1");;
-let p_join_1''' = VPL.assume_back ineq'' p_join_1'';;
+(*let p_join_1''' = VPL.assume_back ineq'' p_join_1'';;*)
 (* -> unfeasible *)
 let p_join_2''' = VPL.assume_back ineq'' p_join_2'';;
 (* -> UNBOUNDED *)
