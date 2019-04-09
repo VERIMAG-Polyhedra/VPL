@@ -1,3 +1,5 @@
+PROCMAX := $(shell nproc)
+
 all: vpl
 
 vpl: setup
@@ -48,15 +50,15 @@ oasis_clean:
 
 # extract Coq files into the expected  ocaml/ subdir.
 coq_update:
-	$(MAKE) -j -C coq/ OPT:="-opt" DemoExtract.vo
+	$(MAKE) -j$(PROCMAX) -C coq/ OPT:="-opt" DemoExtract.vo
 
 coq_extract:
 	$(MAKE) -C coq/ cleanextract
-	$(MAKE) -j -C coq/ OPT:="-opt" DemoExtract.vo
+	$(MAKE) -j$(PROCMAX) -C coq/ OPT:="-opt" DemoExtract.vo
 
 # targets for opam installation.
 coq_build:
-	$(MAKE) -j -C coq/ OPT:="-opt" build
+	$(MAKE) -j$(PROCMAX) -C coq/ OPT:="-opt" build
 
 coq_install:
 	$(MAKE) -C coq/ install
