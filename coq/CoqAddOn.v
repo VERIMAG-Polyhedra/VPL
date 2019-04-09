@@ -144,7 +144,7 @@ Module Q.
     repeat rewrite Zmult_assoc.
     rewrite (Pmult_comm d4 d3).
     apply Zmult_lt_compat_r;
-      [ apply Zgt_lt; apply Zgt_pos_0 | assumption ].
+      [ apply Z.gt_lt; apply Zgt_pos_0 | assumption ].
 
     rewrite (Pmult_comm d2 d4), (Pmult_comm d1 d3).
     rewrite (Zmult_comm (Zpos (Pmult d4 d2)) n3), (Zmult_comm (Zpos (Pmult d3 d1)) n4).
@@ -153,7 +153,7 @@ Module Q.
     repeat rewrite Zmult_assoc.
     rewrite (Pmult_comm d2 d1).
     apply Zmult_lt_compat_r;
-    [ apply Zgt_lt; apply Zgt_pos_0 | assumption ].
+    [ apply Z.gt_lt; apply Zgt_pos_0 | assumption ].
   Qed.
 
   Lemma Qplus_eqlt_compat: forall n1 n2 n3 n4: Q, n1 = n2 -> Qlt n3 n4 -> Qlt (Qplus n1 n3) (Qplus n2 n4).
@@ -178,7 +178,7 @@ Module Q.
     rewrite (Zmult_comm (Zpos (Pmult d2 d2)) (Zmult (Zpos d3) n4)).
     rewrite (Zmult_comm (Zpos d3) n4).
     apply Zmult_lt_compat_r;
-    [ apply Zgt_lt; apply Zgt_pos_0 | assumption ].
+    [ apply Z.gt_lt; apply Zgt_pos_0 | assumption ].
   Qed.
 
 End Q.

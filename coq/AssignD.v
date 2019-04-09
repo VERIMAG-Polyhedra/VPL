@@ -44,6 +44,7 @@ NB: currently renaming on the underlying domain is encoded through as assume+pro
 
 *)
 
+Require Import String.
 Require Export ASCond.
 Require Import Debugging.
 
@@ -54,6 +55,7 @@ Require MSetFacts.
 Module Import PositiveSetFacts:=MSetFacts.Facts(PositiveSet). 
 Require Export Setoid.
 Require Export Relation_Definitions.
+Import BinPosDef.
 
 Existing Instance PositiveSet.eq_equiv.
 
@@ -146,12 +148,13 @@ Qed.
   Hint Rewrite decode_encodeE: vpl.
 
   Local Opaque PositiveSet.mem.
+  Local Open Scope positive_scope.
 
   Lemma decode_diff_encodeE r aux m x: x <> (encodeE r (decode x)) -> decodeIn r aux m x = aux x.
   Proof.
     unfold decodeIn, encodeE, encode; destruct x as [p | p | ]; simpl;
       try (destruct (PositiveSet.mem p r); simpl; intuition).
-    destruct (PositiveSet.mem 1 r); simpl; auto.
+    destruct (PositiveSet.mem 1%positive r); simpl; auto.
   Qed.
 
   Lemma decode_encodeO r aux m x: decodeIn r aux m (encodeO r x) = aux (encodeO r x).

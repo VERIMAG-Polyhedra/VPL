@@ -18,7 +18,7 @@ Open Scope Z_scope.
     ring_theory >-> Ncring.Ring.
 
 *)
-Instance Zops: (@Ncring.Ring_ops Z 0%Z 1%Z Zplus Zmult Zminus Zopp (@eq Z)).
+Instance Zops: (@Ncring.Ring_ops Z 0%Z 1%Z Zplus Zmult Zminus Z.opp (@eq Z)).
 
 Instance Qri : (Ncring.Ring (Ro:=Zops)).
 constructor; try Morphisms.solve_proper.
@@ -50,7 +50,7 @@ Definition Pol:=Pol Z.
 
 (* evaluation of polynomial expressions *)
 Definition PEeval (l:list Z) (p:PExpr): Z
- := PEeval 0 1 Zplus Zmult Zminus Zopp (fun x => x) (fun x => x) Zpower l p.
+ := PEeval 0 1 Zplus Zmult Zminus Z.opp (fun x => x) (fun x => x) Zpower l p.
 
 (* evaluation of efficient polynomials *)
 Definition Pphi (l:list Z) (p:Pol): Z
@@ -58,7 +58,7 @@ Definition Pphi (l:list Z) (p:Pol): Z
 
 (* normalisation *)
 Definition norm (pe:PExpr): Pol := 
-  norm_aux 0 1 Zplus Zmult Zminus Zopp Zeq_bool pe.
+  norm_aux 0 1 Zplus Zmult Zminus Z.opp Zeq_bool pe.
 
 (* polynomial equality test *)
 Definition Peq (p1 p2:Pol) : bool :=
@@ -79,7 +79,7 @@ Fixpoint PEsem (pe: PExpr) (m: positive -> Z): Z :=
   | PEadd pe1 pe2 => Zplus (PEsem pe1 m) (PEsem pe2 m)
   | PEsub pe1 pe2 => Zminus (PEsem pe1 m) (PEsem pe2 m)
   | PEmul pe1 pe2 => Zmult (PEsem pe1 m) (PEsem pe2 m)
-  | PEopp pe1 => Zopp (PEsem pe1 m)
+  | PEopp pe1 => Z.opp (PEsem pe1 m)
   | PEpow pe1 n => Zpower (PEsem pe1 m) n
   end.
 
@@ -207,9 +207,9 @@ Qed.
 Fixpoint bound (pe:PExpr): positive :=
   match pe with
   | PEX _ x => x
-  | PEadd pe1 pe2 => Pmax (bound pe1) (bound pe2)
-  | PEsub pe1 pe2 => Pmax (bound pe1) (bound pe2)
-  | PEmul pe1 pe2 => Pmax (bound pe1) (bound pe2)
+  | PEadd pe1 pe2 => Pos.max (bound pe1) (bound pe2)
+  | PEsub pe1 pe2 => Pos.max (bound pe1) (bound pe2)
+  | PEmul pe1 pe2 => Pos.max (bound pe1) (bound pe2)
   | PEopp pe => bound pe
   | PEpow pe _ => bound pe
   | _ => xH
@@ -241,7 +241,7 @@ Qed.
 Theorem PExpr_eq_correct (pe1 pe2: PExpr) (m: positive -> Z):
   PExpr_eq pe1 pe2 = true -> PEsem pe1 m = PEsem pe2 m.
 Proof.
-  unfold PExpr_eq, Peq. intro H; rewrite! PEnorm_correct with (bnd:=Pmax (bound pe1) (bound pe2)); auto.
+  unfold PExpr_eq, Peq. intro H; rewrite! PEnorm_correct with (bnd:=Pos.max (bound pe1) (bound pe2)); auto.
   unfold Pphi. refine (Peq_ok _ _ _ _ _ H _).
   - eapply Cring.cring_eq_ext; eauto.
   - eapply mkmorph; eauto.

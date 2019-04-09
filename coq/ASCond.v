@@ -7,6 +7,7 @@
 
 *)
 
+Require Import String.
 Require Import Bool.
 Require Import ZArith.
 Require Export ASTerm.
