@@ -81,7 +81,7 @@ module type LowLevelDomain = sig
 
   val get_regions : t -> t list
   val set_point : Vector.Rat.t -> t -> t
-  val assume_back : (cmpT * Term.t) list -> t -> t
+  val assume_back : (cmpT * Term.t) list -> t -> t option
 
 end
 
@@ -224,7 +224,7 @@ module Interface (Coeff: Scalar.Type) = struct
 
     val assume: Cond.t -> t -> t
 
-    val assume_back : Cond.t -> t -> t
+    val assume_back : Cond.t -> t -> t option
 
     val asserts: Cond.t -> t -> bool
 

@@ -1,32 +1,75 @@
 include PLPCore
 
-exception EmptyInput
-
-(** @return None if the old normalization point is still ok
-    @return a new normalization point otherwise
-    @raise EmptyInput if the new polyhedron is empty *)
-let check_normalization_point : Cs.t list -> 'c Cons.t -> Cs.Vec.t -> Vector.Symbolic.t option
-    = fun cstrs (new_cstr,_) old_normalization_point ->
-    if Cs.satisfy old_normalization_point new_cstr
-    then begin
-        Debug.log DebugTypes.Detail (lazy(Printf.sprintf
-            "Old normalization point %s is still ok"
-            (Cs.Vec.to_string Var.to_string old_normalization_point)));
-        None
-    end else begin
-        Debug.log DebugTypes.Detail (lazy(Printf.sprintf
-            "Old normalization point %s violates the new constraint"
-            (Cs.Vec.to_string Var.to_string old_normalization_point)));
-        let cstrs' = new_cstr :: cstrs in
-        let cstrs'' = List.mapi
-            (fun i cstr -> i, cstr)
-            cstrs'
-        in
-        let horizon = Cs.getVars cstrs' |> Var.horizon in
-        match Opt.getAsg horizon cstrs'' with
-        | None -> raise EmptyInput
-        | Some pl -> Some pl
+let fix_tableau : 'c PSplx.t -> unit
+    = fun sx ->
+    Debug.log DebugTypes.Detail (lazy (Printf.sprintf
+        "Fixing tableau %s"
+        (PSplx.to_string sx)));
+    let tab = sx.tab in
+    let pivot_coeff = tab.(0).(List.nth sx.basis 0) in
+    if Scalar.Rat.equal pivot_coeff Scalar.Rat.z
+    then failwith "fix_tableau: wrong basic variable"
+    else begin
+        (* Scaling normalization row *)
+        Array.iteri (fun i_col coeff ->
+            Scalar.Rat.div coeff pivot_coeff
+            |> Array.set tab.(0) i_col
+        ) tab.(0);
+        (* Scaling normalization row according to other basic variables. *)
+        List.iteri (fun i_row i_col ->
+            let coeff = tab.(0).(i_col) in
+            Array.iteri (fun i_col' c ->
+                Scalar.Rat.mul coeff c
+                |> Scalar.Rat.sub tab.(0).(i_col')
+                |> Array.set tab.(0) i_col'
+            ) tab.(i_row)
+        ) (List.tl sx.basis);
+        Debug.log DebugTypes.Detail (lazy (Printf.sprintf
+            "Tableau fixed: %s"
+            (PSplx.to_string sx)))
     end
+
+let renormalize : Vector.Rat.t -> 'c PSplx.t -> unit
+    = fun point sx ->
+    Debug.log DebugTypes.Normal (lazy (Printf.sprintf
+        "Renormalizing region on point %s"
+        (Vector.Rat.to_string Var.to_string point)));
+    let f cstr = Cs.eval cstr point |> Scalar.Rat.neg in
+    PSplxBuild.Init.init_row (fun i_col cons ->
+        if PSplx.VarMap.find i_col sx.get_set = 1
+        then f (List.nth sx.cstrs i_col |> fst)
+        else Scalar.Rat.z
+    ) Scalar.Rat.u 0 sx;
+    PSplxBuild.update_new_col 0 f sx;
+    fix_tableau sx
+
+    exception EmptyInput
+
+    (** @return None if the old normalization point is still ok
+        @return a new normalization point otherwise
+        @raise EmptyInput if the new polyhedron is empty *)
+    let check_normalization_point : Cs.t list -> 'c Cons.t -> Cs.Vec.t -> Vector.Symbolic.t option
+        = fun cstrs (new_cstr,_) old_normalization_point ->
+        if Cs.satisfy old_normalization_point new_cstr
+        then begin
+            Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+                "Old normalization point %s is still ok"
+                (Cs.Vec.to_string Var.to_string old_normalization_point)));
+            None
+        end else begin
+            Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+                "Old normalization point %s violates the new constraint"
+                (Cs.Vec.to_string Var.to_string old_normalization_point)));
+            let cstrs' = new_cstr :: cstrs in
+            let cstrs'' = List.mapi
+                (fun i cstr -> i, cstr)
+                cstrs'
+            in
+            let horizon = Cs.getVars cstrs' |> Var.horizon in
+            match Opt.getAsg horizon cstrs'' with
+            | None -> raise EmptyInput
+            | Some pl -> Some pl
+        end
 
 let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * ExplorationPoint.t list
     = fun reg cons ->
@@ -78,11 +121,8 @@ let add_column : 'c Factory.t -> 'c config -> Cs.t list -> 'c Region.t list -> '
     -> ('c Region.t * 'c Cons.t) list * Vector.Symbolic.t
     = fun factory config ineqs regs cons old_point ->
     let new_point = match check_normalization_point ineqs cons (Rtree.map Vec.ofSymbolic old_point) with
-        | Some new_point ->
-            let new_point_rat = Rtree.map Vec.ofSymbolic new_point in
-            List.iter (fun reg ->
-                (*let (solution,_) = PSplx.objValueCert factory reg.Region.sx in*)
-                Renormalization.renormalize_sx new_point_rat reg.Region.sx
+        | Some new_point -> List.iter (fun reg ->
+                renormalize (Rtree.map Vec.ofSymbolic new_point) reg.Region.sx
             ) regs;
             new_point
         | None -> old_point

@@ -79,12 +79,15 @@ module Make (D: AbstractDomain.Type) = struct
         p'
 
     let assume_back cond p =
-        let p' = assume_back cond p in
-        Printf.sprintf "{abs_value %s = guard_back(%s, %s);}"
-            p'.name p.name
-            (b_expr_to_string cond)
-        |> Track.track;
-        p'
+        match assume_back cond p with
+        | None -> None
+        | Some p' -> begin
+            Printf.sprintf "{abs_value %s = assume_back(%s, %s);}"
+                p'.name p.name
+                (b_expr_to_string cond)
+            |> Track.track;
+            Some p'
+        end
 
     let assign terms p =
         let p' = assign terms p in

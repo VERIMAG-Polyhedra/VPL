@@ -43,7 +43,7 @@ module type PolyhedronDomain = sig
 	val get_regions : t -> t list
 
     val set_point : Pol.Vec.t -> t -> t
-	val assume_back : t -> Cs.t -> t
+	val assume_back : t -> Cs.t -> t option
 
 end
 
@@ -94,11 +94,15 @@ module Lift (P : PolyhedronDomain)  = struct
 				then p'
 				else P.addNLM p' polys
 
-		let assume_back: (cmpT * Term.t) list -> t -> t
+		let assume_back: (cmpT * Term.t) list -> t -> t option
 			= fun cstrs p ->
 			let (affs,_) = partition_affine cstrs
 			in
-			List.fold_left P.assume_back p affs
+			List.fold_left (fun p aff ->
+				match p with
+				| Some p -> P.assume_back p aff
+				| None -> None
+			) (Some p) affs
 
 		let to_string : (Var.t -> string) -> t -> string
 			= fun varPr p ->

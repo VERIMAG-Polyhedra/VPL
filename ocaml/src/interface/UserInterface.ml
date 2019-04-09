@@ -87,7 +87,7 @@ module MakeCustom
         = fun c p ->
         D.assume (to_cond c) p
 
-	let assume_back: b_expr -> t -> t
+	let assume_back: b_expr -> t -> t option
         = fun c p ->
         D.assume_back (to_cond c) p
 

@@ -1418,14 +1418,17 @@ let proj_incl : 'c Factory.t -> 'c t -> 'c t -> 'c t option
         | NoIncl -> None
         | Incl _ -> Some p1'
 
-let assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t
+let assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t option
     = fun factory p cons ->
 	match Cons.get_c cons |> Cs.get_typ with
 	| Eq -> invalid_arg "assume_back: equations are not handled yet"
 	| _ -> match p.point with
-        | Some point ->
-			let (ineqs', point) = IneqSet.assume_back factory p.ineqs cons point in { p with
+        | Some point -> begin
+			match IneqSet.assume_back factory p.ineqs cons point with
+			| Some (ineqs', point) -> Some { p with
 				ineqs = ineqs';
 				point = Some point;
 			}
+			| None -> None
+		end
 		| None -> invalid_arg "assume_back: input polyhedron has no normalization point set"

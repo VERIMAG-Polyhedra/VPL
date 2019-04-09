@@ -76,7 +76,9 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
             | QCond.BinL (c1, AND, c2) -> to_term c1 @ to_term c2
             | _ -> invalid_arg "assume_back : to_term"
         in
-        auto_lifting (LHD.assume_back (to_term c)) p
+        match LHD.assume_back (to_term c) p.pol with
+        | Some pol -> Some {p with pol = pol}
+        | None -> None
 
   let asserts c p =
     coq_assert (import_QCond c) p

@@ -849,8 +849,8 @@ module Exec = struct
 		If no such point exists, [None] is returned.
 		It uses {!val:Region.getPointInside}.
 	*)
-	let correct_point : region_t -> Cs.t list -> Vec.t -> Vec.t option
-		= fun reg_t cstrs point ->
+	let correct_point : region_t -> Cs.t list -> Vec.t option
+		= fun reg_t cstrs ->
 		Debug.log DebugTypes.Normal (lazy("Correcting region"));
         let horizon = Cs.getVars cstrs |> Var.horizon in
 		match Region.getPointInside reg_t horizon cstrs with
@@ -858,8 +858,7 @@ module Exec = struct
 			(lazy (Printf.sprintf "Region has empty interior:\n%s"
 				(Cs.list_to_string cstrs)))
 		| Some p when Region.contains' cstrs p -> begin
-			Debug.log DebugTypes.Normal (lazy(Printf.sprintf "Changing point %s to %s"
-				(Vec.to_string Var.to_string point)
+			Debug.log DebugTypes.Normal (lazy(Printf.sprintf "Changing point to %s"
 				(Vec.to_string Var.to_string p)));
 			Some p
 			end
@@ -890,7 +889,7 @@ module Exec = struct
 	 	Debug.log DebugTypes.Normal
 	  		(lazy("Found solution " ^ (PSplx.objValue sx |> Cs.to_string Var.to_string)));
 	 	let cstrs = Region.extract sx in
-	 	match correct_point reg_t cstrs pointToExplore with
+	 	match correct_point reg_t cstrs with
 	 	| None -> None
 	 	| Some point ->
 	 		let bounds = get_boundaries reg_t cstrs point in

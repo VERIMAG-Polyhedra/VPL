@@ -227,4 +227,4 @@ val satisfy : 'c t -> Vec.t -> bool
  *)
 val spawn : 'c Factory.t -> 'c t -> Vec.t
 
-val assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t
+val assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> 'c t option
