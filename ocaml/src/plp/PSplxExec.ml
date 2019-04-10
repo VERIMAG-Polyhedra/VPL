@@ -1,13 +1,14 @@
 open PSplx
 open PSplxBuild
 
+module Tableau = Tableau2
 module Cs = Cstr.Rat
 
 exception Unbounded_problem
 exception Infeasible_problem
 
 module Explore = struct
-
+    (*
     let add_pivots: bool -> int -> Cs.t -> Tableau.col -> pivotT
         = fun init_phase i_row pcoeff col (pcoeff', i_new_col, tab) ->
         let bk' = Q.div tab.(i_row).(i_new_col) col.(i_row) in
@@ -22,17 +23,18 @@ module Explore = struct
         else Cs.mulc_no_exc bk' pcoeff
         |> Cs.mulc_no_exc Scalar.Rat.negU
         |> Cs.add pcoeff'
+        *)
 
     let pivot : bool -> 'c t -> int -> int -> unit
         = fun init_phase sx i_row i_col ->
         Debug.log DebugTypes.Detail (lazy
             (Printf.sprintf "Pivoting column %i and row %i" i_col i_row));
-        sx.pivots <- sx.pivots @ [
+        (*sx.pivots <- sx.pivots @ [
             add_pivots init_phase i_row (Objective.get i_col sx.obj) (Tableau.getCol i_col sx.tab)
-        ];
+        ];*)
         sx.basis <- List.mapi (fun i j -> if i = i_row then i_col else j) sx.basis;
         Tableau.pivot i_row i_col sx.tab;
-        sx.obj <- Objective.elim sx.tab i_row i_col sx.obj
+        sx.obj <- Objective.elim sx.tab.mat i_row i_col sx.obj
 
     let fix_tableau : bool -> int -> 'c t -> unit
         = fun init_phase i_row sx ->
@@ -55,7 +57,7 @@ module Explore = struct
                     && VarMap.find i_col sx.get_set = row_var_set
                     then Some (i_col, coeff)
                     else None
-            ) None sx.tab.(i_row)
+            ) None sx.tab.mat.(i_row)
             with Some (i,_) -> i | None -> raise Infeasible_problem
         in
         pivot init_phase sx i_row i_col
@@ -65,7 +67,7 @@ module Explore = struct
         let i_col = constant_index sx in
         try let i_row = Misc.array_findi (fun _ row ->
                 Q.lt row.(i_col) Q.zero
-            ) sx.tab in
+            ) sx.tab.mat in
             fix_tableau init_phase i_row sx;
             check_tableau init_phase sx
         with Not_found -> ()
@@ -124,7 +126,7 @@ module Init = struct
         try Misc.array_findi (fun i_col coeff ->
                 i_col < max_col
                 && not (Scalar.Rat.isZ coeff)
-            ) sx.tab.(i_row)
+            ) sx.tab.mat.(i_row)
         with Not_found -> Pervasives.failwith "t.a_still_in_basis"
 
     let buildInitFeasibilityPb : 'c Factory.t -> 'c t -> 'c t
@@ -135,7 +137,7 @@ module Init = struct
                 (fun (i, j, a) row ->
                 let b = row.(last_col) in
                 if Q.lt b a then (i + 1, i, b) else (i + 1, j, a))
-            (0, -1, Q.zero) tab
+            (0, -1, Q.zero) tab.mat
             in
             if Q.lt a Q.zero then i
             else Pervasives.failwith "t.buildInitFeasibilityPb"
@@ -152,7 +154,7 @@ module Init = struct
         Init.mk_obj obj_cstrs sx';
         Init.init_new_col (Tableau.nRows sx.tab) sx';
         let tab' = Tableau.addCol (fun i_row ->
-            if Q.lt (sx.tab.(i_row).(i_last_col)) Q.zero
+            if Q.lt (sx.tab.mat.(i_row).(i_last_col)) Q.zero
             then Q.minus_one
             else Q.zero
         ) sx.tab
@@ -185,18 +187,18 @@ module Init = struct
                     && VarMap.find i_col sx.get_set = row_var_set
                     then Some i_col
                     else None
-                ) None sx.tab.(i_row)
+                ) None sx.tab.mat.(i_row)
                 with Some i -> i | None -> raise Not_found
             in
             if i_col > (Tableau.nCols sx.tab) - 2
             then false (* last column is the constant *)
             else begin
                 sx.basis <- sx.basis @ [i_col];
-                sx.pivots <- sx.pivots @ [
+                (*sx.pivots <- sx.pivots @ [
                     Explore.add_pivots false i_row (Objective.get i_col sx.obj) (Tableau.getCol i_col sx.tab)
-                ];
+                ];*)
                 Tableau.pivot i_row i_col sx.tab;
-                sx.obj <- Objective.elim sx.tab i_row i_col sx.obj;
+                sx.obj <- Objective.elim sx.tab.mat i_row i_col sx.obj;
                 true
             end
         with Not_found -> raise Empty_row
@@ -214,9 +216,9 @@ module Init = struct
 
     let buildFeasibleTab : Objective.t -> 'c t -> unit
         = let syncObjWithBasis : Tableau.t -> int list -> Objective.t -> Objective.t
-            = fun mat basis obj ->
+            = fun tab basis obj ->
             Misc.fold_left_i (fun i_row obj i_col ->
-                Objective.elim mat i_row i_col obj
+                Objective.elim tab.mat i_row i_col obj
             ) obj basis
         in
         fun o sx ->
@@ -230,6 +232,8 @@ module Init = struct
         if not(correction sx)
         then false
         else begin
+        Debug.log DebugTypes.Detail (lazy (Printf.sprintf
+            "Correction gave:"));
             Debug.log DebugTypes.Detail (lazy (Printf.sprintf
                 "Correction gave: \n%s"
                 (to_string sx)));

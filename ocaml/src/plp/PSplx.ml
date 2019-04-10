@@ -1,13 +1,11 @@
 module Cs = Cstr.Rat
-
+module Tableau = Tableau2
 module Debug = DebugTypes.Debug(struct let name = "PSplx" end)
 
 type decision_variable = int
 type var_set = int
 
 module VarMap = Map.Make (struct type t = decision_variable let compare = Pervasives.compare end)
-
-type pivotT = Cs.t * int * Tableau.t -> Cs.t
 
 type 'c t = {
     mutable obj : Objective.t; (** Objective function *)
@@ -17,7 +15,6 @@ type 'c t = {
     mutable sets : var_set list; (** Associates a var_set to each row *)
     cstrs : 'c Cons.t list; (** The constraint associated to each variable. *)
     mutable new_col : (Cs.t -> Scalar.Rat.t) array;
-    mutable pivots : pivotT list;
 }
 
 let empty : 'c t = {
@@ -28,7 +25,6 @@ let empty : 'c t = {
     sets = [];
     cstrs = [];
     new_col = [||];
-    pivots = [];
 }
 
 let copy : 'c t -> 'c t
@@ -40,7 +36,6 @@ let copy : 'c t -> 'c t
         tab = Tableau.copy sx.tab;
         cstrs = sx.cstrs;
         new_col = Array.copy sx.new_col;
-        pivots = sx.pivots;
     }
 
 (** Copy sx in sx' (do not copy the cstrs field) *)
@@ -51,8 +46,7 @@ let copy_in : 'c t -> 'c t -> unit
     sx'.basis <- sx.basis;
     sx'.sets <- sx.sets;
     sx'.tab <- Tableau.copy sx.tab;
-    sx'.new_col <- Array.copy sx.new_col;
-    sx'.pivots <- sx.pivots
+    sx'.new_col <- Array.copy sx.new_col
 
 let nVars : 'c t -> int
     = fun sx ->
@@ -87,7 +81,7 @@ let getCurVal : 'c t -> (decision_variable * Q.t) list
     = fun sx ->
     let i_col = constant_index sx in
     List.mapi (fun i_row var ->
-        (var, sx.tab.(i_row).(i_col))
+        (var, Tableau.get i_row i_col sx.tab)
     ) sx.basis
 
 let objValueCert : 'c Factory.t -> 'c t -> 'c Cons.t
@@ -107,7 +101,7 @@ let isFeasible : 'c t -> bool
     let i_col = constant_index sx in
     Array.for_all (fun row ->
         Q.geq row.(i_col) Q.zero
-    ) sx.tab
+    ) sx.tab.mat
 
 (* PRETTY PRINTERS *)
 let t_get_width_column_vector : 'c t -> int list
@@ -178,8 +172,13 @@ let to_string : 'c t -> string
     ) sx.cstrs
     |> String.concat " | "
     in
-    Printf.sprintf "\n%s\n%s\n%s\n%s\n%s\n%s\n"
-        var_names cstrs var_set obj sep rows
+    let inv = List.mapi (fun i_row _ ->
+        Tableau.pretty_print_row_inv i_row sx.tab width_columns
+    ) sx.basis
+    |> String.concat "\n"
+    in
+    Printf.sprintf "\n%s\n%s\n%s\n%s\n%s\n%s\n\n%s\n"
+        var_names cstrs var_set obj sep rows inv
 
 let print : 'c t -> unit
     = fun sx ->

@@ -13,9 +13,9 @@ module Init = struct
     let init_row : (int -> 'c Cons.t -> Q.t) -> Q.t -> int -> 'c t -> unit
         = fun init_f cst i_row sx ->
         List.iteri (fun i_col cons ->
-            Array.set sx.tab.(i_row) i_col (init_f i_col cons)
+            Array.set sx.tab.mat.(i_row) i_col (init_f i_col cons)
         ) sx.cstrs;
-        Array.set sx.tab.(i_row) (constant_index sx) cst
+        Array.set sx.tab.mat.(i_row) (constant_index sx) cst
 
     let init_matrix : int -> int -> 'c t -> unit
         = fun n_rows n_cols sx ->
@@ -118,7 +118,7 @@ let set_var_set : decision_variable -> var_set -> 'c t -> unit
     sx.get_set <- VarMap.add var set sx.get_set
 
 let add_col : 'c Cons.t -> 'c t -> 'c t
-    = fun cons sx ->
+    = fun cons sx -> sx(*
     let i_new_col = Tableau.nCols sx.tab - 1 in
     let cstr = Cons.get_c cons in
     sx.obj <- Objective.add_col sx.obj cstr i_new_col;
@@ -135,4 +135,4 @@ let add_col : 'c Cons.t -> 'c t -> 'c t
     sx'.obj <- {sx'.obj with
         lin = List.mapi (fun i_col pcoeff -> if i_col = i_new_col then pcoeff' else pcoeff) sx'.obj.lin;
     };
-    sx'
+    sx'*)

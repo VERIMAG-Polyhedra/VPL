@@ -1,28 +1,30 @@
 include PLPCore
 
+module Tableau = Tableau2
+
 let fix_tableau : 'c PSplx.t -> unit
     = fun sx ->
     Debug.log DebugTypes.Detail (lazy (Printf.sprintf
         "Fixing tableau %s"
         (PSplx.to_string sx)));
     let tab = sx.tab in
-    let pivot_coeff = tab.(0).(List.nth sx.basis 0) in
+    let pivot_coeff = tab.mat.(0).(List.nth sx.basis 0) in
     if Scalar.Rat.equal pivot_coeff Scalar.Rat.z
     then failwith "fix_tableau: wrong basic variable"
     else begin
         (* Scaling normalization row *)
         Array.iteri (fun i_col coeff ->
             Scalar.Rat.div coeff pivot_coeff
-            |> Array.set tab.(0) i_col
-        ) tab.(0);
+            |> Array.set tab.mat.(0) i_col
+        ) tab.mat.(0);
         (* Scaling normalization row according to other basic variables. *)
         List.iteri (fun i_row i_col ->
-            let coeff = tab.(0).(i_col) in
+            let coeff = tab.mat.(0).(i_col) in
             Array.iteri (fun i_col' c ->
                 Scalar.Rat.mul coeff c
-                |> Scalar.Rat.sub tab.(0).(i_col')
-                |> Array.set tab.(0) i_col'
-            ) tab.(i_row)
+                |> Scalar.Rat.sub tab.mat.(0).(i_col')
+                |> Array.set tab.mat.(0) i_col'
+            ) tab.mat.(i_row)
         ) (List.tl sx.basis);
         Debug.log DebugTypes.Detail (lazy (Printf.sprintf
             "Tableau fixed: %s"
