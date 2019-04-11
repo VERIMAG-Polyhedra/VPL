@@ -185,3 +185,12 @@ let print : 'c t -> unit
     = fun sx ->
     to_string sx
     |> Pervasives.print_endline
+
+let remCol : int -> 'c t -> 'c t
+    = fun i_col sx -> {sx with
+        tab = Tableau.remCol i_col sx.tab;
+        obj = {sx.obj with
+            Objective.lin = Misc.popi sx.obj.Objective.lin i_col;
+        };
+        cstrs = Misc.popi sx.cstrs i_col;
+    }

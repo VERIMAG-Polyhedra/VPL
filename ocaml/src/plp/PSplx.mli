@@ -79,3 +79,5 @@ val getCurVal : 'c t -> (int * Q.t) list
 (** @return true is the basic solution is feasible, i.e. if all variables have a nonnegative value.
     The basic solution consists in setting all non-basic variables to zero and setting each basic variable to the right-hand side of the constraint it appears on. *)
 val isFeasible : 'c t -> bool
+
+val remCol : int -> 'c t -> 'c t

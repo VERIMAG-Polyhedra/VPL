@@ -121,52 +121,67 @@ module Init = struct
     let getReplacementForA : 'c t -> int -> int
         = fun sx i_row ->
         let max_col = (Tableau.nCols sx.tab) - 2 in
+        let set_row = List.nth sx.sets i_row in
         try Misc.array_findi (fun i_col coeff ->
                 i_col < max_col
                 && not (Scalar.Rat.isZ coeff)
+                && set_row = VarMap.find i_col sx.get_set
             ) sx.tab.(i_row)
         with Not_found -> Pervasives.failwith "t.a_still_in_basis"
 
-    let buildInitFeasibilityPb : 'c Factory.t -> 'c t -> 'c t
-        = let getMinRhs : Tableau.t -> int
-            = fun tab ->
-            let last_col = (Tableau.nCols tab) - 1 in
-            let (_, i, a) = Array.fold_left
-                (fun (i, j, a) row ->
-                let b = row.(last_col) in
-                if Q.lt b a then (i + 1, i, b) else (i + 1, j, a))
-            (0, -1, Q.zero) tab
+        let buildAuxiliaryPB : 'c Factory.t -> 'c t -> 'c t * (int list)
+            = fun factory sx ->
+            Debug.log DebugTypes.Detail (lazy "Building auxiliary problem");
+            (* One auxiliary variable is created for each variable set *)
+            let var_sets = VarMap.bindings sx.get_set
+                |> List.fold_left (fun acc (_,var_set) ->
+                    if List.mem var_set acc
+                    then acc
+                    else var_set :: acc
+                ) []
             in
-            if Q.lt a Q.zero then i
-            else Pervasives.failwith "t.buildInitFeasibilityPb"
-        in
-        fun factory sx ->
-        Debug.log DebugTypes.Detail (lazy "Building auxiliary problem");
-        let cstrs' = sx.cstrs @ [Cons.mkTriv factory Le Scalar.Rat.u]
-        in
-        let i_new_col = (List.length cstrs') - 1 in
-        let obj_cstrs = [i_new_col] in
-        let i_last_col = constant_index sx in
-        let sx' = Init.init_cstrs cstrs' empty in
-        Init.init_var_set sx';
-        Init.mk_obj obj_cstrs sx';
-        Init.init_new_col (Tableau.nRows sx.tab) sx';
-        let tab' = Tableau.addCol (fun i_row ->
-            if Q.lt (sx.tab.(i_row).(i_last_col)) Q.zero
-            then Q.minus_one
-            else Q.zero
-        ) sx.tab
-        in
-        let sx'' = {sx' with
-            tab = tab';
-            basis = sx.basis;
-            sets = sx.sets;
-        } in
-        Debug.log DebugTypes.Detail (lazy (Printf.sprintf
-            "Auxiliary problem: \n%s"
-            (to_string sx'')));
-        Explore.pivot true sx'' (getMinRhs sx.tab) i_new_col;
-        sx''
+            let i_last_col = (Tableau.nCols sx.tab) - 1 in
+            let get_set' = Misc.fold_left_i (fun i acc var_set ->
+                VarMap.add (i + i_last_col) var_set acc
+            ) sx.get_set var_sets in
+            let i_new_cols = List.mapi (fun i _ ->
+                i + i_last_col
+            ) var_sets in
+            let cstrs' = sx.cstrs
+                @ List.map (fun _ -> Cons.mkTriv factory Le Scalar.Rat.u) i_new_cols
+            in
+            let sx' = Init.init_cstrs cstrs' empty in
+            Init.init_var_set sx';
+            Init.mk_obj i_new_cols sx';
+            Init.init_new_col (Tableau.nRows sx.tab) sx';
+            let tab' = List.fold_left (fun tab var_set ->
+                Tableau.addCol (fun i_row ->
+                    if List.nth sx.sets i_row = var_set
+                    && Q.lt (sx.tab.(i_row).(i_last_col)) Q.zero
+                    then Q.minus_one
+                    else Q.zero
+                ) tab
+            ) sx.tab var_sets
+            in
+            let sx'' = {sx' with
+                tab = tab';
+                get_set = get_set';
+                basis = sx.basis;
+                sets = sx.sets;
+            } in
+            (* Removing null columns *)
+            let (sx'', i_new_cols') = List.fold_right (fun i_col (sx,l) ->
+                if Tableau.getCol i_col sx.tab
+                    |> Array.for_all (Scalar.Rat.equal Scalar.Rat.z)
+                then (remCol i_col sx, Misc.pop (=) l i_col)
+                else (sx, l)
+            ) i_new_cols (sx'', i_new_cols)
+            in
+            Debug.log DebugTypes.Detail (lazy (Printf.sprintf
+                "Auxiliary problem: \n%s"
+                (to_string sx'')));
+            (sx'',i_new_cols')
+
 
     exception Empty_row
 
@@ -212,15 +227,14 @@ module Init = struct
         fun sx ->
         correction_rec (List.length sx.basis) sx
 
-    let buildFeasibleTab : Objective.t -> 'c t -> unit
+    let buildFeasibleTab : Objective.t -> 'c t -> int -> unit
         = let syncObjWithBasis : Tableau.t -> int list -> Objective.t -> Objective.t
             = fun mat basis obj ->
             Misc.fold_left_i (fun i_row obj i_col ->
                 Objective.elim mat i_row i_col obj
             ) obj basis
         in
-        fun o sx ->
-        let i_col = (nVars sx) - 1 in
+        fun o sx i_col ->
         sx.tab <- Tableau.remCol i_col sx.tab;
         sx.obj <- syncObjWithBasis sx.tab sx.basis o
 
@@ -236,7 +250,7 @@ module Init = struct
             if isFeasible sx
             then true
             else begin
-                let sx' = buildInitFeasibilityPb factory sx in
+                let (sx', aux_vars) = buildAuxiliaryPB factory sx in
                 Explore.push true point sx';
                 Debug.log DebugTypes.Detail (lazy (Printf.sprintf
                     "Auxiliary problem after exploration: \n%s"
@@ -244,13 +258,18 @@ module Init = struct
                 let obj_value = objValue sx' in
                 if not (Cs.Vec.equal obj_value.v Cs.Vec.nil && Scalar.Rat.isZ obj_value.c)
                 then false
-                else begin (try
-                        let i_auxiliary_variable = (List.length sx'.cstrs) - 1 in
-                        let i_row = Misc.findi ((=) i_auxiliary_variable) sx'.basis in
-                        getReplacementForA sx' i_row
-                        |> Explore.pivot false sx' i_row
-                    with Not_found -> ());
-                    buildFeasibleTab sx.obj sx';
+                else begin
+                    List.iter (fun i_col ->
+                        try
+                            let i_row = Misc.findi ((=) i_col) sx'.basis in
+                            getReplacementForA sx' i_row
+                            |> Explore.pivot false sx' i_row
+                        with Not_found -> ()
+                    ) aux_vars;
+                    List.iter (fun i_col ->
+                        buildFeasibleTab sx.obj sx' i_col
+                    ) (List.rev aux_vars);
+                    (* List.rev necessary : columns must be removed from the right to the left*)
                     copy_in sx' sx;
                     true
                 end

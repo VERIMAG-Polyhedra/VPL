@@ -55,11 +55,19 @@ let renormalize : Vector.Rat.t -> 'c PSplx.t -> unit
             Debug.log DebugTypes.Detail (lazy(Printf.sprintf
                 "Old normalization point %s is still ok"
                 (Cs.Vec.to_string Var.to_string old_normalization_point)));
+                Printf.sprintf
+                    "Old normalization point %s is still ok"
+                    (Cs.Vec.to_string Var.to_string old_normalization_point)
+                    |> print_endline;
             None
         end else begin
             Debug.log DebugTypes.Detail (lazy(Printf.sprintf
                 "Old normalization point %s violates the new constraint"
                 (Cs.Vec.to_string Var.to_string old_normalization_point)));
+                Printf.sprintf
+                    "Old normalization point %s violates the new constraint"
+                    (Cs.Vec.to_string Var.to_string old_normalization_point)
+                    |> print_endline;
             let cstrs' = new_cstr :: cstrs in
             let cstrs'' = List.mapi
                 (fun i cstr -> i, cstr)
