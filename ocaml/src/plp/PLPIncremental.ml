@@ -52,7 +52,7 @@ let renormalize : Vector.Rat.t -> 'c PSplx.t -> unit
         = fun cstrs (new_cstr,_) old_normalization_point ->
         if Cs.satisfy old_normalization_point new_cstr
         then begin
-            Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+            Debug.log DebugTypes.Normal (lazy(Printf.sprintf
                 "Old normalization point %s is still ok"
                 (Cs.Vec.to_string Var.to_string old_normalization_point)));
                 Printf.sprintf
@@ -61,7 +61,7 @@ let renormalize : Vector.Rat.t -> 'c PSplx.t -> unit
                     |> print_endline;
             None
         end else begin
-            Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+            Debug.log DebugTypes.Normal (lazy(Printf.sprintf
                 "Old normalization point %s violates the new constraint"
                 (Cs.Vec.to_string Var.to_string old_normalization_point)));
                 Printf.sprintf
@@ -81,7 +81,7 @@ let renormalize : Vector.Rat.t -> 'c PSplx.t -> unit
 
 let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * ExplorationPoint.t list
     = fun reg cons ->
-    Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+    Debug.log DebugTypes.Normal (lazy(Printf.sprintf
         "Adding constraint %s to region: \n%s"
         (Cons.to_string Var.to_string cons)
         (Region.to_string reg)));
@@ -89,7 +89,7 @@ let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * Exploration
     (* TODO : is it necessary to extract? *)
     let prev_frontiers = Region.extract reg.Region.sx in
     let sx' = PSplxBuild.add_col cons reg.Region.sx in
-    Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+    Debug.log DebugTypes.Normal (lazy(Printf.sprintf
         "New simplex tableau:\n%s"
         (PSplx.to_string sx')));
     let frontiers = Region.extract sx' in
@@ -97,13 +97,13 @@ let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * Exploration
     let i_new_col = (Tableau.nCols sx'.tab) - 2 in
     (* -2 because the last column contains the current objective value *)
     let new_frontier = Objective.get i_new_col sx'.PSplx.obj in
-    Debug.log DebugTypes.Detail (lazy(Printf.sprintf
+    Debug.log DebugTypes.Normal (lazy(Printf.sprintf
         "Frontier associated with the new column : %s"
         (Cs.to_string Var.to_string new_frontier)));
     if List.mem new_frontier frontiers
         && not (List.exists (Cs.equal new_frontier) prev_frontiers)
     then begin
-        Debug.log DebugTypes.Detail (lazy("The frontier is irredundant"));
+        Debug.log DebugTypes.Normal (lazy("The frontier is irredundant"));
         match Exec.exec Cone sx' reg.point with
         | None -> failwith "add_column_to_region"
         | Some reg -> begin
@@ -121,7 +121,7 @@ let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * Exploration
             end
     end
     else begin(* The new frontier is redundant *)
-        Debug.log DebugTypes.Detail (lazy("The frontier is redundant"));
+        Debug.log DebugTypes.Normal (lazy("The frontier is redundant"));
         ({reg with sx = sx'}, [])
     end
 
@@ -135,10 +135,11 @@ let add_column : 'c Factory.t -> 'c config -> Cs.t list -> 'c Region.t list -> '
             new_point
         | None -> old_point
     in
-    let (regs', todo) = List.fold_left (fun (regs, todo) reg ->
+    let (regs', todo, n_update) =
+        List.fold_left (fun (regs, todo, n_update) reg ->
         let (reg', todo') = add_column_to_region reg cons in
-        reg' :: regs, todo @ todo'
-    ) ([],[]) regs
+        reg' :: regs, todo @ todo', n_update + (if todo' = [] then 0 else 1)
+    ) ([],[], 0) regs
     in
     let (max_id, map) = List.fold_left (fun (max_id,map) reg ->
         let map' = MapV.add reg.Region.id reg map
@@ -150,6 +151,12 @@ let add_column : 'c Factory.t -> 'c config -> Cs.t list -> 'c Region.t list -> '
         regs = map;
         todo = todo;
     } in
-    let regs = exec config (List.hd regs').Region.sx plp
+    let regs'' = exec config (List.hd regs').Region.sx plp
     |> get_results factory in
-    (regs, new_point)
+    Printf.sprintf
+        "initial regions : %i, Regions modified : %i, new regions : %i"
+        (List.length regs)
+        n_update
+        ((List.length regs'') - (List.length regs))
+        |> print_endline;
+    (regs'', new_point)
