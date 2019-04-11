@@ -128,6 +128,7 @@ let add_col : 'c Cons.t -> 'c t -> 'c t
         cstrs = sx.cstrs @ [cons];
         tab = Tableau.addCol (fun i_row -> Array.get new_col i_row) sx.tab;
     } in
+    Printf.sprintf "Tableau after adding new columns, but before pivoting it : \n%s" (to_string sx') |> print_endline;
     let pcoeff' = List.fold_left (fun pcoeff f_pivot ->
         f_pivot (pcoeff, i_new_col, sx'.tab)
     ) (Objective.get i_new_col sx'.obj) sx'.pivots

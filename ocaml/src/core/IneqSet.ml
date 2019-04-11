@@ -295,7 +295,9 @@ let proj_incl : 'c Factory.t -> Cs.Vec.t -> Var.t list -> 'c EqSet.t -> 'c t -> 
     | Some res ->
         let (regs,ineqs) = List.split res in
         Some {
-            ineqs = ineqs;
+            ineqs = List.filter (fun cons ->
+                Cs.tellProp (Cons.get_c cons) <> Cs.Trivial
+            ) ineqs;
             regions = Some regs;
         }
 

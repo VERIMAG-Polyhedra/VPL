@@ -168,6 +168,7 @@ module Init = struct
                 get_set = get_set';
                 basis = sx.basis;
                 sets = sx.sets;
+                new_col = sx.new_col;
             } in
             (* Removing null columns *)
             let (sx'', i_new_cols') = List.fold_right (fun i_col (sx,l) ->
