@@ -79,51 +79,54 @@ let renormalize : Vector.Rat.t -> 'c PSplx.t -> unit
             | Some pl -> Some pl
         end
 
-let add_column_to_region : 'c Region.t -> 'c Cons.t -> 'c Region.t * ExplorationPoint.t list
+let add_column_to_region : 'c Region.t -> 'c Cons.t -> ('c Region.t * ExplorationPoint.t list) option
     = fun reg cons ->
     Debug.log DebugTypes.Normal (lazy(Printf.sprintf
         "Adding constraint %s to region: \n%s"
         (Cons.to_string Var.to_string cons)
         (Region.to_string reg)));
     let regid = reg.id in
-    (* TODO : is it necessary to extract? *)
-    let prev_frontiers = Region.extract reg.Region.sx in
+    let prev_frontiers = Region.get_cstrs reg in
     let sx' = PSplxBuild.add_col cons reg.Region.sx in
     Debug.log DebugTypes.Normal (lazy(Printf.sprintf
         "New simplex tableau:\n%s"
         (PSplx.to_string sx')));
-    let frontiers = Region.extract sx' in
-    (* Frontier associated with the new column: *)
     let i_new_col = (Tableau.nCols sx'.tab) - 2 in
-    (* -2 because the last column contains the current objective value *)
     let new_frontier = Objective.get i_new_col sx'.PSplx.obj in
-    Debug.log DebugTypes.Normal (lazy(Printf.sprintf
-        "Frontier associated with the new column : %s"
-        (Cs.to_string Var.to_string new_frontier)));
-    if List.mem new_frontier frontiers
-        && not (List.exists (Cs.equal new_frontier) prev_frontiers)
-    then begin
-        Debug.log DebugTypes.Normal (lazy("The frontier is irredundant"));
-        match Exec.exec Cone sx' reg.point with
-        | None -> failwith "add_column_to_region"
-        | Some reg -> begin
-            let reg' = {reg with id = regid} in
-            (* A new id was given by the execution. *)
-            reg_id := !reg_id - 1;
-            let new_frontier = Objective.get i_new_col reg.sx.PSplx.obj
-            in
-            let todo = List.fold_left (fun todo ((cs,point) as b,_) ->
-                if Cs.equalSyn cs new_frontier
-                then ExplorationPoint.Direction (regid, b) :: todo
-                else todo
-                ) [] reg'.r
-            in (reg', todo)
-            end
-    end
-    else begin(* The new frontier is redundant *)
-        Debug.log DebugTypes.Normal (lazy("The frontier is redundant"));
-        ({reg with sx = sx'}, [])
-    end
+    let cstrs = new_frontier :: prev_frontiers
+        |> Misc.rem_dupl Cs.equal
+	  	|> List.filter (fun c -> is_trivial c |> not)
+    in
+    match Exec.correct_point Cone cstrs with
+    | None -> None
+    | Some point ->
+        let bounds = Exec.get_boundaries Cone cstrs point in
+        let new_frontiers = List.map Boundary.get_cstr bounds in
+        (* -2 because the last column contains the current objective value *)
+        if List.mem new_frontier new_frontiers
+            && not (List.mem new_frontier prev_frontiers)
+        then begin
+            Debug.log DebugTypes.Normal (lazy("The frontier is irredundant"));
+            match Exec.exec Cone sx' point with
+            | None -> None
+            | Some reg -> begin
+                let reg' = {reg with id = regid} in
+                (* A new id was given by the execution. *)
+                reg_id := !reg_id - 1;
+                let new_frontier = Objective.get i_new_col reg.sx.PSplx.obj
+                in
+                let todo = List.fold_left (fun todo ((cs,point) as b,_) ->
+                    if Cs.equalSyn cs new_frontier
+                    then ExplorationPoint.Direction (regid, b) :: todo
+                    else todo
+                    ) [] reg'.r
+                in Some (reg', todo)
+                end
+        end
+        else begin(* The new frontier is redundant *)
+            Debug.log DebugTypes.Normal (lazy("The frontier is redundant"));
+            Some ({reg with sx = sx'}, [])
+        end
 
 let add_column : 'c Factory.t -> 'c config -> Cs.t list -> 'c Region.t list -> 'c Cons.t -> Vector.Symbolic.t
     -> ('c Region.t * 'c Cons.t) list * Vector.Symbolic.t
@@ -135,11 +138,17 @@ let add_column : 'c Factory.t -> 'c config -> Cs.t list -> 'c Region.t list -> '
             new_point
         | None -> old_point
     in
-    let (regs', todo, n_update) =
-        List.fold_left (fun (regs, todo, n_update) reg ->
-        let (reg', todo') = add_column_to_region reg cons in
-        reg' :: regs, todo @ todo', n_update + (if todo' = [] then 0 else 1)
-    ) ([],[], 0) regs
+    let (regs', todo, n_update, n_deleted) =
+        List.fold_left (fun (regs, todo, n_update, n_deleted) reg ->
+            match add_column_to_region reg cons with
+            | None -> (regs, todo, n_update, n_deleted+1)
+            | Some (reg', todo') -> (
+                reg' :: regs,
+                todo @ todo',
+                n_update + (if todo' = [] then 0 else 1),
+                n_deleted
+            )
+    ) ([],[], 0, 0) regs
     in
     let (max_id, map) = List.fold_left (fun (max_id,map) reg ->
         let map' = MapV.add reg.Region.id reg map
@@ -154,9 +163,10 @@ let add_column : 'c Factory.t -> 'c config -> Cs.t list -> 'c Region.t list -> '
     let regs'' = exec config (List.hd regs').Region.sx plp
     |> get_results factory in
     Printf.sprintf
-        "initial regions : %i, Regions modified : %i, new regions : %i"
+        "initial regions : %i, Regions modified : %i, new regions : %i, regions deleted : %i"
         (List.length regs)
         n_update
         ((List.length regs'') - (List.length regs))
+        n_deleted
         |> print_endline;
     (regs'', new_point)

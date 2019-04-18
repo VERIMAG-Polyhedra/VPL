@@ -124,6 +124,11 @@ let add_col : 'c Cons.t -> 'c t -> 'c t
     sx.obj <- Objective.add_col sx.obj cstr i_new_col;
     sx.get_set <- VarMap.add i_new_col 1 sx.get_set;
     let new_col = Array.map (fun f -> f cstr) sx.new_col in
+    Debug.log DebugTypes.Normal (lazy (Printf.sprintf
+        "Initial column to add:[%s]"
+        (Array.to_list new_col
+            |> List.map Scalar.Rat.to_string
+            |> String.concat ";")));
     let sx' = {sx with
         cstrs = sx.cstrs @ [cons];
         tab = Tableau.addCol (fun i_row -> Array.get new_col i_row) sx.tab;

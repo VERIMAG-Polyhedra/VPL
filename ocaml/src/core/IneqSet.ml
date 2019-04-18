@@ -294,10 +294,13 @@ let proj_incl : 'c Factory.t -> Cs.Vec.t -> Var.t list -> 'c EqSet.t -> 'c t -> 
     | None -> None
     | Some res ->
         let (regs,ineqs) = List.split res in
+        let ineqs' = List.filter (fun cons ->
+            Cs.tellProp (Cons.get_c cons) <> Cs.Trivial
+        ) ineqs
+        |> Misc.rem_dupl Cons.equal
+        in
         Some {
-            ineqs = List.filter (fun cons ->
-                Cs.tellProp (Cons.get_c cons) <> Cs.Trivial
-            ) ineqs;
+            ineqs = ineqs';
             regions = Some regs;
         }
 

@@ -8,6 +8,11 @@ exception Infeasible_problem
 
 module Explore = struct
 
+    let add_pivot_obj : int -> Cs.t ->  pivotT
+        = fun i_row pcoeff (pcoeff', i_new_col, tab) ->
+        Cs.mulc_no_exc tab.(i_row).(i_new_col) pcoeff
+        |> Cs.add pcoeff'
+
     let add_pivots: bool -> int -> Cs.t -> Tableau.col -> pivotT
         = fun init_phase i_row pcoeff col (pcoeff', i_new_col, tab) ->
         let bk' = Q.div tab.(i_row).(i_new_col) col.(i_row) in
@@ -19,9 +24,11 @@ module Explore = struct
         ) i_new_col tab;
         if init_phase
         then pcoeff' (* objective must not be affected by the initialization phase*)
-        else Cs.mulc_no_exc bk' pcoeff
-        |> Cs.mulc_no_exc Scalar.Rat.negU
-        |> Cs.add pcoeff'
+        else begin
+            Cs.mulc_no_exc bk' pcoeff
+            |> Cs.mulc_no_exc Scalar.Rat.negU
+            |> Cs.add pcoeff'
+        end
 
     let pivot : bool -> 'c t -> int -> int -> unit
         = fun init_phase sx i_row i_col ->
@@ -129,59 +136,60 @@ module Init = struct
             ) sx.tab.(i_row)
         with Not_found -> Pervasives.failwith "t.a_still_in_basis"
 
-        let buildAuxiliaryPB : 'c Factory.t -> 'c t -> 'c t * (int list)
-            = fun factory sx ->
-            Debug.log DebugTypes.Detail (lazy "Building auxiliary problem");
-            (* One auxiliary variable is created for each variable set *)
-            let var_sets = VarMap.bindings sx.get_set
-                |> List.fold_left (fun acc (_,var_set) ->
-                    if List.mem var_set acc
-                    then acc
-                    else var_set :: acc
-                ) []
-            in
-            let i_last_col = (Tableau.nCols sx.tab) - 1 in
-            let get_set' = Misc.fold_left_i (fun i acc var_set ->
-                VarMap.add (i + i_last_col) var_set acc
-            ) sx.get_set var_sets in
-            let i_new_cols = List.mapi (fun i _ ->
-                i + i_last_col
-            ) var_sets in
-            let cstrs' = sx.cstrs
-                @ List.map (fun _ -> Cons.mkTriv factory Le Scalar.Rat.u) i_new_cols
-            in
-            let sx' = Init.init_cstrs cstrs' empty in
-            Init.init_var_set sx';
-            Init.mk_obj i_new_cols sx';
-            Init.init_new_col (Tableau.nRows sx.tab) sx';
-            let tab' = List.fold_left (fun tab var_set ->
-                Tableau.addCol (fun i_row ->
-                    if List.nth sx.sets i_row = var_set
-                    && Q.lt (sx.tab.(i_row).(i_last_col)) Q.zero
-                    then Q.minus_one
-                    else Q.zero
-                ) tab
-            ) sx.tab var_sets
-            in
-            let sx'' = {sx' with
-                tab = tab';
-                get_set = get_set';
-                basis = sx.basis;
-                sets = sx.sets;
-                new_col = sx.new_col;
-            } in
-            (* Removing null columns *)
-            let (sx'', i_new_cols') = List.fold_right (fun i_col (sx,l) ->
-                if Tableau.getCol i_col sx.tab
-                    |> Array.for_all (Scalar.Rat.equal Scalar.Rat.z)
-                then (remCol i_col sx, Misc.pop (=) l i_col)
-                else (sx, l)
-            ) i_new_cols (sx'', i_new_cols)
-            in
-            Debug.log DebugTypes.Detail (lazy (Printf.sprintf
-                "Auxiliary problem: \n%s"
-                (to_string sx'')));
-            (sx'',i_new_cols')
+    let buildAuxiliaryPB : 'c Factory.t -> 'c t -> 'c t * (int list)
+        = fun factory sx ->
+        Debug.log DebugTypes.Detail (lazy "Building auxiliary problem");
+        (* One auxiliary variable is created for each variable set *)
+        let var_sets = VarMap.bindings sx.get_set
+            |> List.fold_left (fun acc (_,var_set) ->
+                if List.mem var_set acc
+                then acc
+                else var_set :: acc
+            ) []
+        in
+        let i_last_col = (Tableau.nCols sx.tab) - 1 in
+        let get_set' = Misc.fold_left_i (fun i acc var_set ->
+            VarMap.add (i + i_last_col) var_set acc
+        ) sx.get_set var_sets in
+        let i_new_cols = List.mapi (fun i _ ->
+            i + i_last_col
+        ) var_sets in
+        let cstrs' = sx.cstrs
+            @ List.map (fun _ -> Cons.mkTriv factory Le Scalar.Rat.u) i_new_cols
+        in
+        let sx' = Init.init_cstrs cstrs' empty in
+        Init.init_var_set sx';
+        Init.mk_obj i_new_cols sx';
+        Init.init_new_col (Tableau.nRows sx.tab) sx';
+        let tab' = List.fold_left (fun tab var_set ->
+            Tableau.addCol (fun i_row ->
+                if List.nth sx.sets i_row = var_set
+                && Q.lt (sx.tab.(i_row).(i_last_col)) Q.zero
+                then Q.minus_one
+                else Q.zero
+            ) tab
+        ) sx.tab var_sets
+        in
+        let sx'' = {sx' with
+            tab = tab';
+            get_set = get_set';
+            basis = sx.basis;
+            sets = sx.sets;
+            new_col = sx.new_col;
+            pivots = sx.pivots;
+        } in
+        (* Removing null columns *)
+        let (sx'', i_new_cols') = List.fold_right (fun i_col (sx,l) ->
+            if Tableau.getCol i_col sx.tab
+                |> Array.for_all (Scalar.Rat.equal Scalar.Rat.z)
+            then (remCol i_col sx, Misc.pop (=) l i_col)
+            else (sx, l)
+        ) i_new_cols (sx'', i_new_cols)
+        in
+        Debug.log DebugTypes.Detail (lazy (Printf.sprintf
+            "Auxiliary problem: \n%s"
+            (to_string sx'')));
+        (sx'',i_new_cols')
 
 
     exception Empty_row
@@ -228,17 +236,21 @@ module Init = struct
         fun sx ->
         correction_rec (List.length sx.basis) sx
 
-    let buildFeasibleTab : Objective.t -> 'c t -> int -> unit
+    let buildFeasibleTab : Objective.t -> 'c t -> unit
         = let syncObjWithBasis : Tableau.t -> int list -> Objective.t -> Objective.t
             = fun mat basis obj ->
-            Misc.fold_left_i (fun i_row obj i_col ->
-                Objective.elim mat i_row i_col obj
+            Misc.fold_left_i (fun i_row obj i_col' ->
+                Objective.elim mat i_row i_col' obj
             ) obj basis
         in
-        fun o sx i_col ->
-        sx.tab <- Tableau.remCol i_col sx.tab;
+        fun o sx ->
+        List.iteri (fun i_row i_col' ->
+            let pcoeff = Cs.mulc_no_exc Scalar.Rat.negU (Objective.get i_col' o) in
+            sx.pivots <- sx.pivots @ [
+                Explore.add_pivot_obj i_row pcoeff
+            ]
+        ) sx.basis;
         sx.obj <- syncObjWithBasis sx.tab sx.basis o
-
 
     let findFeasibleBasis : 'c Factory.t -> 'c t -> Cs.Vec.t -> bool
         = fun factory sx point ->
@@ -268,9 +280,10 @@ module Init = struct
                         with Not_found -> ()
                     ) aux_vars;
                     List.iter (fun i_col ->
-                        buildFeasibleTab sx.obj sx' i_col
+                        sx'.tab <- Tableau.remCol i_col sx'.tab;
                     ) (List.rev aux_vars);
                     (* List.rev necessary : columns must be removed from the right to the left*)
+                    buildFeasibleTab sx.obj sx';
                     copy_in sx' sx;
                     true
                 end
