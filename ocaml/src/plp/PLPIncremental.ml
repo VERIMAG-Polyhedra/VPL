@@ -139,6 +139,15 @@ let add_column_to_region : 'c Factory.t -> 'c Region.t -> 'c Cons.t -> ('c Regio
         Some ({reg with sx = sx'}, [])
     end
 
+(* Number of deleted regions after assume_back *)
+let n_deleted : int ref = ref 0
+(* Number of updated regions after assume_back *)
+let n_updated : int ref = ref 0
+(* Number of new regions after assume_back *)
+let n_new : int ref = ref 0
+(* Total number of regions treated *)
+let n_total : int ref = ref 0
+
 let add_column : 'c Factory.t -> 'c config -> Cs.t list -> 'c Region.t list -> 'c Cons.t -> Vector.Symbolic.t
     -> ('c Region.t * 'c Cons.t) list * Vector.Symbolic.t
     = fun factory config ineqs regs cons old_point ->
@@ -149,17 +158,17 @@ let add_column : 'c Factory.t -> 'c config -> Cs.t list -> 'c Region.t list -> '
             new_point
         | None -> old_point
     in
-    let (regs', todo, n_update, n_deleted) =
-        List.fold_left (fun (regs, todo, n_update, n_deleted) reg ->
+    let (regs', todo) = List.fold_left (fun (regs, todo) reg ->
             match add_column_to_region factory reg cons with
-            | None -> (regs, todo, n_update, n_deleted+1)
-            | Some (reg', todo') -> (
-                reg' :: regs,
-                todo @ todo',
-                n_update + (if todo' = [] then 0 else 1),
-                n_deleted
-            )
-    ) ([],[], 0, 0) regs
+            | None -> begin
+                n_deleted := !n_deleted + 1;
+                (regs, todo)
+            end
+            | Some (reg', todo') -> begin
+                n_updated := !n_updated + (if todo' = [] then 0 else 1);
+                (reg' :: regs, todo @ todo')
+            end
+    ) ([],[]) regs
     in
     let (max_id, map) = List.fold_left (fun (max_id,map) reg ->
         let map' = MapV.add reg.Region.id reg map
@@ -173,11 +182,13 @@ let add_column : 'c Factory.t -> 'c config -> Cs.t list -> 'c Region.t list -> '
     } in
     let regs'' = exec config (List.hd regs').Region.sx plp
     |> get_results factory in
+    n_total := !n_total + List.length regs'';
+    n_new := !n_new + (List.length regs'') - (List.length regs) + !n_deleted;
     Printf.sprintf
-        "initial regions : %i, Regions modified : %i, new regions : %i, regions deleted : %i"
+        "initial regions : %i, Regions modified : %i, new regions : %i, regions deleted : %i, total : %i"
         (List.length regs)
-        n_update
+        !n_updated
         ((List.length regs'') - (List.length regs))
-        n_deleted
+        !n_deleted !n_total
         |> print_endline;
     (regs'', new_point)
