@@ -22,7 +22,7 @@ Extract Constant isIncl => "PedraQOracles.isIncl".
 Axiom add: forall {C}, (pedraCert C) * (list C) -> imp ((option t) * (list C)).
 Extract Constant add => "PedraQOracles.add".
 
-Axiom join: forall {C1 C2}, (pedraCert C1) * (pedraCert C2) -> imp (t * ((list C1) * (list C2))).
+Axiom join: forall {C1 C2 C3}, (pedraCert C1) * (pedraCert C2) * (C1 -> C2 -> C3) -> imp (t * (list C3)).
 Extract Constant join => "PedraQOracles.join".
 
 Axiom project: forall {C}, (pedraCert C) * PVar.t -> imp (t * (list C)).

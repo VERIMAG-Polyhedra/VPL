@@ -65,6 +65,8 @@ module BasicD :
 
   val isIncl : t -> t -> bool Core.Base.imp
 
+  val cstr_unify : Cs.cstr -> Cs.cstr -> Cs.cstr
+
   val join : t -> t -> t Core.Base.imp
 
   val meet : t -> t -> t Core.Base.imp
@@ -190,6 +192,8 @@ module AtomicD :
   val isBottom : t -> bool Core.Base.imp
 
   val isIncl : t -> t -> bool Core.Base.imp
+
+  val cstr_unify : Cs.cstr -> Cs.cstr -> Cs.cstr
 
   val join : t -> t -> t Core.Base.imp
 

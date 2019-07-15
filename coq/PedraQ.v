@@ -160,6 +160,17 @@ Module BasicD <: BasicDomain QNum.
   Hint Resolve isIncl_correct: vpl.
   Global Opaque isIncl.
 
+  Program Definition cstr_unify {mod1 mod2} (c1: Cs.cstr mod1) (c2: Cs.cstr mod2): (Cs.cstr (fun v => mod1 v \/ mod2 v)) 
+   := match (Cstr.isEq (Cs.rep c1) (Cs.rep c2)) with
+      | true => {| Cs.rep := Cs.rep c2 |}
+      | _ => (failwith CERT "cstr_unify: constraints differs" (Cs.m_top _))
+      end.
+  Obligation 1.
+   intuition eauto with pedraQ.
+   generalize (Cstr.isEq_correct (Cs.rep c1) (Cs.rep c2)). 
+   rewrite <- Heq_anonymous.
+   unfold Cstr.Incl; simpl. eauto with pedraQ.
+  Qed.
 
   Definition join (p1 p2:t) : imp t := 
     match p1, p2 with
@@ -167,11 +178,11 @@ Module BasicD <: BasicDomain QNum.
       | None, pol
       | pol, None => pure pol
       | Some pol1, Some pol2 =>
-        BIND join <- PedraQBackend.join (wrap pol1, wrap pol2) -;
+        BIND join <- PedraQBackend.join (wrap pol1, wrap pol2, cstr_unify) -;
         pure 
           match join with
-          | (shadow, (cert1, cert2)) =>
-            Some (mk (Cs.join (cons pol1) (cons pol2) cert1 cert2) shadow)
+          | (shadow, cert) =>
+            Some (mk (Cs.unwrap cert) shadow)
           end
     end.
 
@@ -180,6 +191,7 @@ Module BasicD <: BasicDomain QNum.
     unfold join; xasimplify ltac:(intuition eauto with pedraQ).
   Qed.
   Global Hint Resolve join_correct: vpl.
+
 
   Definition meet (p1 p2:t): imp t :=
     SOME p1' <- p1 -;

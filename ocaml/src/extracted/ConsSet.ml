@@ -119,17 +119,6 @@ module Cs =
   let unwrap l =
     x_unwrap l []
 
-  (** val join : t -> t -> cstr list -> cstr list -> t **)
-
-  let join _ _ cert1 cert2 =
-    let res = unwrap cert1 in
-    if isEq (unwrap cert2) res
-    then res
-    else (fun st mesg _ -> raise (CertcheckerConfig.CertCheckerFailure (st, (CoqPr.charListTr mesg))))
-           CERT
-           ('j'::('o'::('i'::('n'::(':'::(' '::('b'::('o'::('t'::('h'::(' '::('s'::('i'::('d'::('e'::('s'::(' '::('d'::('o'::(' '::('n'::('o'::('t'::(' '::('m'::('a'::('t'::('c'::('h'::[])))))))))))))))))))))))))))))
-           []
-
   (** val x_wrap : t -> cstr list -> cstr list **)
 
   let rec x_wrap l acc =

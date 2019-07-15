@@ -27,7 +27,8 @@ let isIncl = PedraQOracles.isIncl
 let add = PedraQOracles.add
 
 (** val join :
-    ('a1 pedraCert*'a2 pedraCert) -> (t*('a1 list*'a2 list)) Core.Base.imp **)
+    (('a1 pedraCert*'a2 pedraCert)*('a1 -> 'a2 -> 'a3)) -> (t*'a3 list)
+    Core.Base.imp **)
 
 let join = PedraQOracles.join
 

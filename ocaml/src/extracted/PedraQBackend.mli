@@ -18,7 +18,8 @@ val isIncl : ('a1 pedraCert*t) -> (bool*'a1 list) option Core.Base.imp
 val add : ('a1 pedraCert*'a1 list) -> (t option*'a1 list) Core.Base.imp
 
 val join :
-  ('a1 pedraCert*'a2 pedraCert) -> (t*('a1 list*'a2 list)) Core.Base.imp
+  (('a1 pedraCert*'a2 pedraCert)*('a1 -> 'a2 -> 'a3)) -> (t*'a3 list)
+  Core.Base.imp
 
 val project : ('a1 pedraCert*PVar.t) -> (t*'a1 list) Core.Base.imp
 

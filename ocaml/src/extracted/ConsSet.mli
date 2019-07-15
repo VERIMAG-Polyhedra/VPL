@@ -47,8 +47,6 @@ module Cs :
 
   val unwrap : cstr list -> t
 
-  val join : t -> t -> cstr list -> cstr list -> t
-
   val x_wrap : t -> cstr list -> cstr list
 
   val wrap : t -> cstr list

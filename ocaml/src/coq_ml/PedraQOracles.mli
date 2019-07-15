@@ -39,7 +39,7 @@ val top: t
 val isEmpty: ('c pedraCert) -> ('c option)
 val isIncl: ('c pedraCert) * t -> (bool * ('c list)) option
 val add: ('c pedraCert) * ('c list) -> (t option) * ('c list)
-val join: ('c1 pedraCert) * ('c2 pedraCert) -> (t * (('c1 list) * ('c2 list)))
+val join: (('c1 pedraCert) * ('c2 pedraCert)) * ('c1 -> 'c2 -> 'c3) -> (t * ('c3 list))
 val meet: ('c pedraCert) * (t * 'c list) -> (t option) * ('c list)
 val project: ('c pedraCert) * ProgVar.PVar.t -> t * ('c list)
 val rename: (ProgVar.PVar.t * ProgVar.PVar.t) * t -> t

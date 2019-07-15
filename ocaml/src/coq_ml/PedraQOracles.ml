@@ -341,13 +341,9 @@ let meet: ('c pedraCert) * (t * 'c list) -> (t option) * ('c list)
   | Pol.Contrad ce ->
      (None, [ce])
 
-(* [join p1 p2] returns [(p,(l1,l2))]
- such that [p] contains both [p1] and [p2] (e.g. their convex hull)
- and such that both [l1] and [l2] are list of certificates corresponding to [p].
- The frontend tests that [l1] and [l2] are syntactically equals: see [Cs.join] in ConsSet.v.
-*)
-let join: ('c1 pedraCert) * ('c2 pedraCert) -> (t * (('c1 list) * ('c2 list)))
-= fun (p1, p2) ->
+(* [join ((p1,p2),unify)] returns [(p,l)] *)
+let join: (('c1 pedraCert) * ('c2 pedraCert)) * ('c1 -> 'c2 -> 'c3) -> (t * ('c3 list))
+= fun ((p1, p2), unify) ->
   let lcf1 = cstrLCF_from_frontend p1.lcf in
   let lcf2 = cstrLCF_from_frontend p2.lcf in
   let ip1 =  import lcf1 p1.backend p1.cert in
@@ -355,9 +351,10 @@ let join: ('c1 pedraCert) * ('c2 pedraCert) -> (t * (('c1 list) * ('c2 list)))
   let (p1, p2) = Pol.join lcf1 lcf2 ip1 ip2 in
   let (p, ce1) = export p1 in
   let (_, ce2) = export p2 in
-  (p, (ce1, ce2))
+  let ce = List.rev_map2 unify ce1 ce2 in 
+  (p,List.rev_append ce [])
 
-
+  
 (* [project p x] returns [(p,l)]
  such that [p] contains [p] but has no occurrence of [x]
  and such that [l] is a list of certificates corresponding to [p].

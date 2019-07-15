@@ -161,6 +161,17 @@ module BasicD =
           | None -> false))
     | None -> true
 
+  (** val cstr_unify : Cs.cstr -> Cs.cstr -> Cs.cstr **)
+
+  let cstr_unify c1 c2 =
+    let filtered_var = Cstr.isEq (Cs.rep c1) (Cs.rep c2) in
+    if filtered_var
+    then Cs.rep c2
+    else (fun st mesg _ -> raise (CertcheckerConfig.CertCheckerFailure (st, (CoqPr.charListTr mesg))))
+           CERT
+           ('c'::('s'::('t'::('r'::('_'::('u'::('n'::('i'::('f'::('y'::(':'::(' '::('c'::('o'::('n'::('s'::('t'::('r'::('a'::('i'::('n'::('t'::('s'::(' '::('d'::('i'::('f'::('f'::('e'::('r'::('s'::[])))))))))))))))))))))))))))))))
+           Cs.m_top
+
   (** val join : t -> t -> t Core.Base.imp **)
 
   let join p1 p2 =
@@ -168,10 +179,8 @@ module BasicD =
     | Some pol1 ->
       (match p2 with
        | Some pol2 ->
-         let shadow,p = join ((wrap pol1),(wrap pol2)) in
-         let cert1,cert2 = p in
-         Some { cons = (Cs.join pol1.cons pol2.cons cert1 cert2); ml =
-         shadow }
+         let shadow,cert0 = join (((wrap pol1),(wrap pol2)),cstr_unify) in
+         Some { cons = (Cs.unwrap cert0); ml = shadow }
        | None -> p1)
     | None -> (match p2 with
                | Some _ -> p2
@@ -646,6 +655,17 @@ module AtomicD =
           | None -> false))
     | None -> true
 
+  (** val cstr_unify : Cs.cstr -> Cs.cstr -> Cs.cstr **)
+
+  let cstr_unify c1 c2 =
+    let filtered_var = Cstr.isEq (Cs.rep c1) (Cs.rep c2) in
+    if filtered_var
+    then Cs.rep c2
+    else (fun st mesg _ -> raise (CertcheckerConfig.CertCheckerFailure (st, (CoqPr.charListTr mesg))))
+           CERT
+           ('c'::('s'::('t'::('r'::('_'::('u'::('n'::('i'::('f'::('y'::(':'::(' '::('c'::('o'::('n'::('s'::('t'::('r'::('a'::('i'::('n'::('t'::('s'::(' '::('d'::('i'::('f'::('f'::('e'::('r'::('s'::[])))))))))))))))))))))))))))))))
+           Cs.m_top
+
   (** val join : t -> t -> t Core.Base.imp **)
 
   let join p1 p2 =
@@ -653,10 +673,8 @@ module AtomicD =
     | Some pol1 ->
       (match p2 with
        | Some pol2 ->
-         let shadow,p = join ((wrap pol1),(wrap pol2)) in
-         let cert1,cert2 = p in
-         Some { cons = (Cs.join pol1.cons pol2.cons cert1 cert2); ml =
-         shadow }
+         let shadow,cert0 = join (((wrap pol1),(wrap pol2)),cstr_unify) in
+         Some { cons = (Cs.unwrap cert0); ml = shadow }
        | None -> p1)
     | None -> (match p2 with
                | Some _ -> p2

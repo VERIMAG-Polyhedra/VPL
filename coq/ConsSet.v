@@ -200,24 +200,6 @@ Module CsImpl(Cstr: CstrSig).
   Arguments unwrap [mod].
   Hint Resolve unwrap_correct: pedraQ.
 
-  Definition join (l1 l2: t) (cert1: list (cstr (sat l1))) (cert2: list (cstr (sat l2))): t :=
-  let res := unwrap cert1 in
-  if isEq (unwrap cert2) res  
-  then res
-  else failwith CERT "join: both sides do not match" nil.
-
-  Lemma join_correct1 l1 l2 cert1 cert2: forall m, sat l1 m -> sat (join l1 l2 cert1 cert2) m.
-  Proof.
-    unfold join; PedraQsimplify.
-  Qed.
-  Hint Resolve join_correct1: pedraQ.
-
-  Lemma join_correct2 l1 l2 cert1 cert2: forall m, sat l2 m -> sat (join l1 l2 cert1 cert2) m.
-  Proof.
-    unfold join.  PedraQsimplify.
-  Qed.
-  Hint Resolve join_correct2: pedraQ.
-
   Program Fixpoint x_wrap (l: t) (mod: Mem.t QNum.t -> Prop) (H:forall m, mod m -> sat l m) (acc: list (cstr mod)): list (cstr mod) :=
   match l with
   | nil => acc
