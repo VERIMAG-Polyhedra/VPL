@@ -263,6 +263,28 @@ let export: 'c Pol.t -> (unit Pol.t) * ('c list)
   let (eqs, l2) = eqs_export p.Pol.eqs [] l1 in
   ({Pol.eqs = eqs; Pol.ineqs = ineqs}, l2)
 
+(* a join export *)
+let rec join_ineqs_export: ('c1 -> 'c2 -> 'c3) -> ('c1 Cons.t) list -> ('c2 Cons.t) list -> (unit Cons.t) list -> 'c3 list -> ((unit Cons.t) list) * ('c3 list)
+= fun unify p1 p2 acc1 acc2 ->
+  match p1, p2 with
+  | [], [] -> (acc1, acc2)
+  | (c, ce1)::p1', (_,ce2)::p2' ->
+     join_ineqs_export unify p1' p2' ((c,())::acc1) ((unify ce1 ce2)::acc2)
+  | _, _ -> failwith "join_ineqs_export: lists of constraints of incompatible size"
+  
+let rec join_eqs_export: ('c1 -> 'c2 -> 'c3) -> ('a * 'c1 Cons.t) list -> ('b*'c2 Cons.t) list -> ('a*unit Cons.t) list -> 'c3 list -> (('a * unit Cons.t) list) * ('c3 list)
+= fun unify p1 p2 acc1 acc2 ->
+  match p1, p2 with
+  | [], [] -> (acc1, acc2)
+  | (a, (c, ce1))::p1', (_,(_,ce2))::p2' ->
+     join_eqs_export unify p1' p2' ((a, (c,()))::acc1) ((unify ce1 ce2)::acc2)
+  | _, _ -> failwith "join_eqs_export: lists of constraints of incompatible size"
+
+let join_export: ('c1 -> 'c2 -> 'c3) -> 'c1 Pol.t -> 'c2 Pol.t -> (unit Pol.t) * ('c3 list)
+= fun unify p1 p2 ->
+  let (ineqs, l1) = join_ineqs_export unify p1.Pol.ineqs p2.Pol.ineqs [] [] in
+  let (eqs, l2) = join_eqs_export unify p1.Pol.eqs p2.Pol.eqs [] l1 in
+  ({Pol.eqs = eqs; Pol.ineqs = ineqs}, l2)
 
 (**********************************************)
 (* Actual beginning of the API implementation *)
@@ -349,10 +371,7 @@ let join: (('c1 pedraCert) * ('c2 pedraCert)) * ('c1 -> 'c2 -> 'c3) -> (t * ('c3
   let ip1 =  import lcf1 p1.backend p1.cert in
   let ip2 =  import lcf2 p2.backend p2.cert in
   let (p1, p2) = Pol.join lcf1 lcf2 ip1 ip2 in
-  let (p, ce1) = export p1 in
-  let (_, ce2) = export p2 in
-  let ce = List.rev_map2 unify ce1 ce2 in 
-  (p,List.rev_append ce [])
+  join_export unify p1 p2
 
   
 (* [project p x] returns [(p,l)]
