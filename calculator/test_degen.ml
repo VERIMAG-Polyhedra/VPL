@@ -63,5 +63,6 @@ PSplx.to_string sx |> print_endline;;
 
 Debugger.print_enable();;
 Debugger.set_colors();;
+PSplx.Debug.enable_all();;
 PLP.Debug.enable_all();;
 let res = PLP.run_classic F.factory sx;;
