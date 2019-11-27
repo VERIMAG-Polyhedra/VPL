@@ -35,10 +35,13 @@ let ineq = UserInterface.Atom (mk_poly "x + y", LE, mk_poly "3");;
 let p4 = VPL.assume_back ineq p3;;
 *)
 
+
 (* Exemple papier : *)
 let p1 = parse "x >= 0, x <= 2";;
 let p2 = parse "x >= y, y >= 1";;
 let p_join = p1 || (p2 |- "y");;
+
+let point =
 
 let get_res = function  | Some x -> x | None -> failwith "None";;
 

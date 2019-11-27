@@ -29,5 +29,5 @@ Document doc
   Type: ocamlbuild (0.4)
   BuildTools: ocamldoc, ocamlbuild
   XOCamlbuildPath: src
-  XOCamlbuildModules:  datatypes/Scalar_type, datatypes/Scalar, datatypes/Var, datatypes/Rtree, datatypes/Vector_type, datatypes/Vector, datatypes/Cstr_type, datatypes/Cstr, lin/poly/Poly_type, lin/poly/Poly, lin/oracle/OraclePattern, lin/oracle/IntervalizationOracle, lin/oracle/IOtypes, plp/PSplx, plp/PSplxBuild, plp/PSplxExec, interface/AbstractDomain
+  XOCamlbuildModules:  datatypes/Scalar_type, datatypes/Scalar, datatypes/Var, datatypes/Rtree, datatypes/Vector_type, datatypes/Vector, datatypes/Cstr_type, datatypes/Cstr, lin/poly/Poly_type, lin/poly/Poly, lin/oracle/OraclePattern, lin/oracle/IntervalizationOracle, lin/oracle/IOtypes, plp/PSplx, plp/PSplxBuild, plp/PSplxExec, interface/AbstractDomain, interface/UserInterface, interface/Domains
   XOCamlbuildExtraArgs: "-docflags '-html -hide-warnings'"

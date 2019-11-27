@@ -1251,6 +1251,9 @@ let get_regions_from_point : 'c Factory.t -> 'c t -> Vec.t -> 'c t list
 
 let set_point : Vec.t -> 'c t -> 'c t
     = fun point p ->
+	Printf.sprintf "setting point %s"
+		(Vec.to_string Var.to_string point)
+	|> print_endline;
     List.iter
         (fun cstr ->
             let cstr' = { cstr with
