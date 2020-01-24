@@ -3,9 +3,9 @@
 module Debug = DebugTypes.Debug(struct let name = "Oracle" end)
 
 (** Interface of linearization Oracles.
-    An Oracle has a modular design: strategies are encoded within Prayers, that are ordered.
+    An Oracle has a modular design: strategies are encoded within Prayers, that are ordered in a list (prayers).
     Starting from a polynomial to treat, each prayer is tried one after the other.
-    If it can be applied, the prayer updates the polynomial until it begins 0.*)
+    If it can be applied, the prayer updates the polynomial until it is 0.*)
 module type OracleType = sig
 
     (** Module of polynomials *)

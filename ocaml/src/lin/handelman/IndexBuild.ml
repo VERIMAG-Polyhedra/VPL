@@ -1,100 +1,87 @@
-module Liste = struct
+(** Type for lists of integer indexes *)
+module IndexList = struct
 
+	(** Type of a list of indexes *)
 	type t = Index.Int.t list
 
-	let (check_len : t -> bool)
+	(** Checks that all indexes of the list have the same length *)
+	let check_len : t -> bool
 		= fun il ->
 		try let len = Index.Int.len (List.hd il) in
 			List.for_all (fun i -> Index.Int.len i = len) il
 		with Failure _ -> true
 
-	let (to_string : t -> string)
+	let to_string : t -> string
 		= fun il ->
 		Misc.list_to_string Index.Int.to_string il " ; "
 
-	let (equal : t -> t -> bool)
+	(** Equality test between two lists of *)
+	let equal : t -> t -> bool
 		= fun il1 il2 ->
-		List.for_all (fun i -> List.exists (fun j -> Index.Int.compare i j = 0) il2) il1 &&
-		List.for_all (fun i -> List.exists (fun j -> Index.Int.compare i j = 0) il1) il2
-
-	(** [max il] takes a list of {!(Index.Int.t * float) option} and returns the greatest element of this list {i w.r.t} their second component. *)
-	let rec (max : ((Index.Int.t * float) option) list -> (Index.Int.t * float) option)
-		= fun il ->
-		match il with
-		| [] -> Pervasives.failwith "max : empty list"
-		| [x] -> x
-		| None :: tl -> max tl
-		| (Some (i,f)) :: tl -> match max tl with
-			| Some (i',f') -> if f < f' then Some (i',f') else Some (i,f)
-			| None -> Some (i,f)
+		Misc.list_eq2 (fun i j -> Index.Int.compare i j = 0) il1 il2
 
 	(** [get_min dim il] returns an index [ind] such that [ind(i)] = min_j il(j)(i). *)
-	let (get_min : int -> t -> Index.Int.t)
+	let get_min : int -> t -> Index.Int.t
 		= fun dim il ->
-		List.map
-			(fun i -> Misc.min Pervasives.compare (List.map (fun j -> Index.Int.get j i) il))
-			(Misc.range 0 dim)
+		List.init dim (fun i ->
+			Misc.min Pervasives.compare (List.map (fun j -> Index.Int.get j i) il)
+		)
 		|> Index.Int.mk
 
-	(* Hypothesis : il <> [] *)
-	let (get_next : int -> t -> Index.Int.t)
-		= let rec(get_next_rec : t -> int -> Index.Int.t -> int -> (Index.Int.t * float) option)
-			= fun il dim ind min_size ->
-			let il' = List.filter (fun i -> Index.Int.is_pred ind i) il in
-			if List.length il' < min_size
-			then None
-			else let ind = get_min dim il' in
-				if List.length il' = min_size
-				then Some (ind, Index.Int.value ind)
-				else let max_ind =
-					List.map
-						(fun j -> get_next_rec il' dim (Index.Int.incr ind j) min_size)
-						(Misc.range 0 dim)
-					|> max
-				in
-				match max_ind with
-					| None -> Some (ind, Index.Int.value ind)
-					| Some (i,f) -> Some (i,f)
+	let get_next : int -> t -> Index.Int.t
+		= fun dim il ->
+		let il_length = List.length il in
+		let n_pred_min = Pervasives.max 2 (il_length/2) in
+		let rec get_next_rec : Index.Int.t * t * int -> Index.Int.t * t * int
+			= fun (ind, il, n_pred) ->
+			if n_pred <= n_pred_min
+			then (ind, il, n_pred)
+			else
+			 	let l = List.init dim (fun i ->
+					let ind' = Index.Int.incr ind i in (* Index incremented at cell i *)
+					let il' = List.filter (Index.Int.le ind') il in
+					let n_pred = List.length il' in
+					let value = Index.Int.value ind' in
+					(ind', il', n_pred, value)
+				) in
+				(* Computing the maximum n_pred that was found *)
+				let (_,_,max_n_pred,_) = Misc.max (fun (ind,_,n_pred1,_) (_,_,n_pred2,_) ->
+					Pervasives.compare n_pred1 n_pred2
+				) l in
+				(* Filters indexes with this maximum n_pred *)
+				let (ind',il',n_pred',_) = List.filter (fun (_,_,n_pred,_) ->
+					n_pred = max_n_pred
+				) l
+				(* Take maximum value *)
+				|> Misc.max (fun (_,_,_,v1) (_,_,_,v2) ->
+					Pervasives.compare v1 v2
+				) in
+				get_next_rec (ind',il',n_pred')
 		in
-		fun dim il ->
-		if List.length il = 1
-		then Index.Int.init dim
-		else
-		let ind = Index.Int.init dim in
-			match get_next_rec il dim ind (Pervasives.max 2 ((List.length il)/2)) with
-			| Some (i,_) -> i
-			| None -> Pervasives.failwith "List.get_next : no next element"
+		let ind = get_min dim il in
+		let (ind_res,_,_) = get_next_rec (ind, il, il_length) in
+		ind_res
 
-    (*
-	let (components : Index.Int.t -> t)
-		= fun ind ->
-		let dim = Index.Int.len ind in
-		let (_,_,res) =
-		List.fold_left
-			(fun (i,init,res) v ->
-				(i+1,
-				 init,
-				 (if v <> 0
-				  then (Index.Int.set init i v) :: res
-				  else res)))
-			(0, Index.Int.init dim, [])
-			(Index.Int.data ind)
-		in
-		res
-        *)
-
-    let (components : Index.Int.t -> t)
+    let components : Index.Int.t -> t
 		= fun ind ->
 		let dim = Index.Int.len ind in
         let init = Index.Int.init dim in
-		Misc.fold_left_i
-			(fun i res v ->
+		Misc.fold_left_i (fun i res v ->
                 if v <> 0
                 then let id = Index.Int.set init i 1 in
                 (List.map (fun _ -> id) (Misc.range 0 v)) @ res
                 else res
-            )
-			[] (Index.Int.data ind)
+            ) [] ind
+
+	let components_one_nneg : Index.Int.t -> t
+		= fun ind ->
+		let dim = Index.Int.len ind in
+        let init = Index.Int.init dim in
+		Misc.fold_left_i (fun i acc v ->
+                if v <> 0
+                then let id = Index.Int.set init i v in id :: acc
+                else acc
+            ) [] ind
 
 	(** computes the list of indexes that are strictly smaller than a given one {i w.r.t} element-wise comparison *)
 	let get_preds : Index.Int.t -> t
@@ -166,6 +153,9 @@ module MapI = struct
 			map
 			keys
 
+	(** Adds elements of a list into a map.
+		@param 	cond 	condition for elements to be added
+		@param	f		function applied on elements before they are added *)
 	let addMapCond2 : (key -> 'b -> bool) -> (key -> 'b -> 'a) -> key list -> 'b list -> 'a t -> 'a t
 		= fun cond f keys elems map ->
 		List.fold_left2
@@ -185,33 +175,75 @@ module MapI = struct
 			map
 			keys
 			elems
+
+	let addComponentsOf : Index.Int.t -> 'a t -> IndexList.t * 'a t
+		= fun ind map ->
+		let decomposition = IndexList.components_one_nneg ind in
+		let map' = add ind decomposition map in
+		(decomposition, map')
+
 end
 
-module Map =
-	struct
+module Map = struct
 
-	type t = Liste.t MapI.t
+	type t = IndexList.t MapI.t
 
-	let (to_string : t -> string)
-		= let (to_string2 : Index.Int.t * Liste.t -> string)
-			= fun (i,il) ->
-			Printf.sprintf "%s -> %s" (Index.Int.to_string i) (Liste.to_string il) in
-		fun m ->
-		Misc.list_to_string to_string2(MapI.bindings m) "\n"
+	let to_string : t -> string
+		= let to_string2 (i,il) =
+			Printf.sprintf "%s -> %s"
+			(Index.Int.to_string i) (IndexList.to_string il)
+		in fun m ->
+		Misc.list_to_string to_string2 (MapI.bindings m) "\n"
+
+	let get_next : Index.Int.t -> t -> Index.Int.t
+		= fun ind map ->
+		let l = MapI.fold (fun ind' decomposition acc ->
+		 	let i = Index.Int.sub ind ind' in
+			if Index.Int.is_nonnegative i
+			then (i, Index.Int.value i) :: acc
+			else acc
+		) map []
+		in
+		if List.length l = 0
+		then Pervasives.raise Not_found
+		else Misc.max (fun (_,v1) (_,v2) -> if v1 > v2 then -1 else 1) l (* on cherche le min des valeurs*)
+		|> Pervasives.fst
+
+	let rec compute_from_map : Index.Int.t -> t -> IndexList.t * t
+		= fun i map ->
+		try
+			(MapI.find i map, map)
+		with Not_found ->
+			if Index.Int.is_unitary i
+			then ([], map)
+			else
+			try
+				let ind = get_next i map in
+				let i' = Index.Int.sub i ind in
+				let (_,map') = (compute_from_map ind map) in
+				let il' = ind :: (if Index.Int.is_null i' then [] else [i']) in
+				(il', MapI.add i il' map')
+			with Not_found ->
+				let (decomposition, map') = MapI.addComponentsOf i map in
+				let map' = List.fold_left (fun map ind ->
+					let (_,map') = compute_from_map ind map in map'
+				) map' decomposition in
+				(decomposition, map')
+
 
 	(* Hypothesis : il <> [] *)
-	let rec (compute_rec : int -> Liste.t -> t)
+	let rec compute_rec : int -> IndexList.t -> t
 		= fun dim il ->
-		let next_ind = Liste.get_next dim il in
+		let next_ind = IndexList.get_next dim il in
 		if Index.Int.is_null next_ind
 		then MapI.addMapCond
 			(fun i -> not (Index.Int.is_unitary i))
-			Liste.components
+			IndexList.components
 			il MapI.empty
 		else begin
 			(* rem : indexes for which next_ind is a predecessor
 			   keep : others *)
-			let (rem,keep) = List.partition (Index.Int.is_pred next_ind) il in
+			let (rem,keep) = List.partition (Index.Int.le next_ind) il in
 			let subs = List.map (fun j -> Index.Int.sub j next_ind) rem in (* différences de rem avec next_ind*)
 			let keep' =
 				(if Index.Int.is_unitary next_ind then [] else [next_ind])
@@ -227,83 +259,19 @@ module Map =
 				rem subs map
 		end
 
-	let (compute : Liste.t -> t)
+	let compute : IndexList.t -> t
 		= fun il ->
 		if List.length il = 0
 		then Pervasives.invalid_arg "IndexBuild.Map.compute : empty input list"
 		else
-
             let dim = Index.Int.len (List.hd il) in
             Misc.rem_dupl Index.Int.equal il
             |> compute_rec dim
 
-	(* Hypothesis : il <> [] *)
-	let rec (compute_list_from_map_rec : int -> Liste.t -> t -> t)
-		= fun dim il map ->
-		let next_ind = Liste.get_next dim il in
-		if Index.Int.is_null next_ind
-		then MapI.addMapCond'
-			(fun i m -> not (MapI.mem i m || Index.Int.one_coeff_nn i))
-			Liste.components
-			il map
-		else begin
-			(* rem : indexes for which next_ind is a predecessor
-			   keep : others *)
-			let (rem,keep) = List.partition (fun x -> Index.Int.is_pred next_ind x) il in
-			let subs = (List.map (fun j -> Index.Int.sub j next_ind) rem) in
-			let keep' =
-				(if Index.Int.one_coeff_nn next_ind then [] else [next_ind])
-			  @
-			  	(List.filter (fun i -> not (Index.Int.is_null i)) subs)
-			  @
-			  	keep
-			in
-			let map' = (compute_list_from_map_rec dim keep' map) in
-			MapI.addMapCond2'
-				(fun i m -> not (Index.Int.one_coeff_nn i || MapI.mem i m))
-				(fun _ sub -> next_ind ::
-					(if Index.Int.is_null sub
-					 then []
-					 else [sub]))
-				rem subs map'
-		end
-
-	let (compute_list_from_map : Liste.t -> t -> t)
+	let compute_list_from_map : IndexList.t -> t -> t
 		= fun il map ->
-		if List.length il = 0
-		then Pervasives.invalid_arg "IndexBuild.Map.compute_list_from_map : empty input list"
-		else let dim = Index.Int.len (List.hd il) in
-			compute_list_from_map_rec dim il map
-
-
-	let get_next : Index.Int.t -> t -> Index.Int.t
-		= fun i map ->
-		let init = Index.Int.init (Index.Int.len i) in
-			 (MapI.bindings map)
-			|> List.map Pervasives.fst
-			|> List.map (fun j -> Index.Int.sub i j)
-			|> List.filter (fun j -> Index.Int.is_nonnegative j)
-			|> List.map (fun j -> (j, Index.Int.value j))
-			|> fun l -> if List.length l = 0
-				then init
-				else Misc.max (fun (_,v1) (_,v2) -> if v1 > v2 then -1 else 1) l (* on cherche le min des valeurs*)
-				|> Pervasives.fst
-
-	let rec (compute_from_map : Index.Int.t -> t -> (Liste.t * t))
-		= fun i map ->
-		try
-			(MapI.find i map, map)
-		with Not_found ->
-			if Index.Int.one_coeff_nn i
-			then ([], map)
-			else
-				let ind = get_next i map in
-				if Index.Int.is_null ind
-				then let il = Liste.components i in
-					(il, MapI.add i il map)
-				else let i' = Index.Int.sub i ind in
-					let (_,map') = (compute_from_map ind map) in
-					let il' = ind :: (if Index.Int.is_null i' then [] else [i']) in
-					(il', MapI.add i il' map')
-
+		List.stable_sort Index.Int.compare il
+		|> List.fold_left (fun map ind ->
+			let (_,map') = compute_from_map ind map in map'
+		) map
 end

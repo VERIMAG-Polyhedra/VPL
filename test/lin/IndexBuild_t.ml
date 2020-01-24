@@ -3,16 +3,16 @@ open Vpl
 let mk = Index.Int.mk
 let mkl l = List.map Index.Int.mk l
 
-module Liste = struct
+module IndexList = struct
 
 	let components_ts : Test.t
 		= fun () ->
-        let chk : string * Index.Int.t * IndexBuild.Liste.t -> (Test.stateT -> Test.stateT)
+        let chk : string * Index.Int.t * IndexBuild.IndexList.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, ind, eil) state ->
-		let ail = IndexBuild.Liste.components ind in
-		Test.equals nm IndexBuild.Liste.to_string IndexBuild.Liste.equal eil ail state
+		let ail = IndexBuild.IndexList.components ind in
+		Test.equals nm IndexBuild.IndexList.to_string IndexBuild.IndexList.equal eil ail state
 		   in
-		   let tcs : (string * Index.Int.t * IndexBuild.Liste.t) list
+		   let tcs : (string * Index.Int.t * IndexBuild.IndexList.t) list
 		= [
 			 "empty", mk [], [] ;
 			 "singleton", mk [7], mkl [[1];[1];[1];[1];[1];[1];[1]] ;
@@ -24,12 +24,12 @@ module Liste = struct
 
 	let get_preds_ts : Test.t
 		= fun () ->
-        let chk : string * Index.Int.t * IndexBuild.Liste.t -> (Test.stateT -> Test.stateT)
+        let chk : string * Index.Int.t * IndexBuild.IndexList.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, ind, eil) state ->
-		let ail = IndexBuild.Liste.get_preds ind in
-		Test.equals nm IndexBuild.Liste.to_string IndexBuild.Liste.equal eil ail state
+		let ail = IndexBuild.IndexList.get_preds ind in
+		Test.equals nm IndexBuild.IndexList.to_string IndexBuild.IndexList.equal eil ail state
 		   in
-		   let tcs : (string * Index.Int.t * IndexBuild.Liste.t) list
+		   let tcs : (string * Index.Int.t * IndexBuild.IndexList.t) list
 		= [
 			 "empty", mk [], [] ;
 			 "singleton", mk [7], mkl [[6];[5];[4];[3];[2];[1]] ;
@@ -42,12 +42,12 @@ module Liste = struct
 
 	let le_ts : Test.t
 		= fun () ->
-        let chk : string * int * int * IndexBuild.Liste.t -> (Test.stateT -> Test.stateT)
+        let chk : string * int * int * IndexBuild.IndexList.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, dim, val_max, eil) state ->
-		let ail = IndexBuild.Liste.le dim val_max in
-		Test.equals nm IndexBuild.Liste.to_string IndexBuild.Liste.equal eil ail state
+		let ail = IndexBuild.IndexList.le dim val_max in
+		Test.equals nm IndexBuild.IndexList.to_string IndexBuild.IndexList.equal eil ail state
 		   in
-		   let tcs : (string * int * int * IndexBuild.Liste.t) list
+		   let tcs : (string * int * int * IndexBuild.IndexList.t) list
 		= [
 			 "dim null", 0, 12, [] ;
 			 "val null", 5, 0, [] ;
@@ -66,7 +66,7 @@ end
 
 module Map = struct
 
-	let check_map : IndexBuild.Map.t -> IndexBuild.Liste.t -> bool
+	let check_map : IndexBuild.Map.t -> IndexBuild.IndexList.t -> bool
 		= fun map il ->
 		List.for_all
 			(fun i ->
@@ -81,16 +81,16 @@ module Map = struct
 			il
 	let compute_ts : Test.t
 		= fun () ->
-        let chk : string * IndexBuild.Liste.t -> (Test.stateT -> Test.stateT)
+        let chk : string * IndexBuild.IndexList.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, il) state ->
 		let map = IndexBuild.Map.compute il in
 			if check_map map il
 			then Test.succeed state
 			else Test.fail nm (Printf.sprintf "map check failed : from index list %s\nmap : %s\n"
-				(IndexBuild.Liste.to_string il)
+				(IndexBuild.IndexList.to_string il)
 				(IndexBuild.Map.to_string map)) state
 		   in
-		   let tcs : (string * IndexBuild.Liste.t) list
+		   let tcs : (string * IndexBuild.IndexList.t) list
 		= [
 		  	 "one value", mkl [[2]] ;
 		  	 "one nonnull coeff", mkl [[0;2;0;0]] ;
@@ -106,16 +106,16 @@ module Map = struct
 
 	let compute_list_from_map_ts : Test.t
 		= fun () ->
-        let chk : string * IndexBuild.Liste.t * IndexBuild.Map.t -> (Test.stateT -> Test.stateT)
+        let chk : string * IndexBuild.IndexList.t * IndexBuild.Map.t -> (Test.stateT -> Test.stateT)
 		= fun (nm, il, map) state ->
 		let map = IndexBuild.Map.compute_list_from_map il map in
 			if check_map map il
 			then Test.succeed state
 			else Test.fail nm (Printf.sprintf "map check failed : from index list %s\nmap : %s\n"
-				(IndexBuild.Liste.to_string il)
+				(IndexBuild.IndexList.to_string il)
 				(IndexBuild.Map.to_string map)) state
 		   in
-		   let tcs : (string * IndexBuild.Liste.t * IndexBuild.Map.t) list
+		   let tcs : (string * IndexBuild.IndexList.t * IndexBuild.Map.t) list
 		= [
 		  	 "one value", mkl [[2]], init_map ;
 		  	 "one nonnull coeff", mkl [[0;2;0;0]], init_map ;
@@ -158,6 +158,6 @@ end
 
 let ts : Test.t
 		= fun () -> [
-		 Liste.ts();
+		 IndexList.ts();
 		 Map.ts()
 	  	] |> Test.suite "IndexBuild"
