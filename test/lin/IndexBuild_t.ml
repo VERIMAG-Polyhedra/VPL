@@ -1,7 +1,7 @@
 open Vpl
 
-let mk = Index.Int.mk
-let mkl l = List.map Index.Int.mk l
+let mk = Index.Int.mk ;;
+let mkl l = List.map Index.Int.mk l;;
 
 module IndexList = struct
 
@@ -79,6 +79,7 @@ module Map = struct
 					(Index.Int.sumI (IndexBuild.MapI.find i map))))
 			)
 			il
+
 	let compute_ts : Test.t
 		= fun () ->
         let chk : string * IndexBuild.IndexList.t -> (Test.stateT -> Test.stateT)
@@ -102,32 +103,6 @@ module Map = struct
 		  ] in
 		   Test.suite "compute" (List.map chk tcs)
 
-	let init_map = IndexBuild.Map.compute (mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]])
-
-	let compute_list_from_map_ts : Test.t
-		= fun () ->
-        let chk : string * IndexBuild.IndexList.t * IndexBuild.Map.t -> (Test.stateT -> Test.stateT)
-		= fun (nm, il, map) state ->
-		let map = IndexBuild.Map.compute_list_from_map il map in
-			if check_map map il
-			then Test.succeed state
-			else Test.fail nm (Printf.sprintf "map check failed : from index list %s\nmap : %s\n"
-				(IndexBuild.IndexList.to_string il)
-				(IndexBuild.Map.to_string map)) state
-		   in
-		   let tcs : (string * IndexBuild.IndexList.t * IndexBuild.Map.t) list
-		= [
-		  	 "one value", mkl [[2]], init_map ;
-		  	 "one nonnull coeff", mkl [[0;2;0;0]], init_map ;
-			 "singleton", mkl [[7;1]], init_map ;
-			 "included", mkl [[7;12;1] ; [6;10;0]], init_map ;
-			 "disjoint", mkl [[7;1;0;2;0] ; [0;0;3;0;2]], init_map ;
-			 "redundancy", mkl [[7;1;0;2;0] ; [0;0;3;0;2] ; [7;1;0;2;0]], init_map ;
-			 "longer", mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]], init_map ;
-			 "no map", mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]], IndexBuild.MapI.empty
-		  ] in
-		   Test.suite "compute_list_from_map" (List.map chk tcs)
-
 	let compute_from_map_ts : Test.t
 		= fun () ->
         let chk : string * Index.Int.t * IndexBuild.Map.t -> (Test.stateT -> Test.stateT)
@@ -139,6 +114,7 @@ module Map = struct
 				(Index.Int.to_string ind)
 				(IndexBuild.Map.to_string map)) state
 		   in
+		   let init_map = IndexBuild.Map.compute (mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]]) in
 		   let tcs : (string * Index.Int.t * IndexBuild.Map.t) list
 		= [
 		  	 "one value", mk [2;1;2], init_map ;
@@ -148,12 +124,39 @@ module Map = struct
 		  ] in
 		   Test.suite "compute_from_map" (List.map chk tcs)
 
+   let compute_list_from_map_ts : Test.t
+		= fun () ->
+       let chk : string * IndexBuild.IndexList.t * IndexBuild.Map.t -> (Test.stateT -> Test.stateT)
+		= fun (nm, il, map) state ->
+		let map = IndexBuild.Map.compute_list_from_map il map in
+			if check_map map il
+			then Test.succeed state
+			else Test.fail nm (Printf.sprintf "map check failed : from index list %s\nmap : %s\n"
+				(IndexBuild.IndexList.to_string il)
+				(IndexBuild.Map.to_string map)) state
+		   in
+		   let init_map = IndexBuild.Map.compute (mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]]) in
+		   let tcs : (string * IndexBuild.IndexList.t * IndexBuild.Map.t) list
+		= [
+			 "singleton", mkl [[5;1;0]], init_map ;
+		  	 "one nonnull coeff", mkl [[0;5;0]], init_map ;
+			 "included", mkl [[7;12;1] ; [6;10;0]], init_map ;
+			 "already_in", mkl [[6;2;0]], init_map ;
+			 "disjoint", mkl [[7;0;3] ; [0;3;0]], init_map ;
+			 "redundancy", mkl [[7;1;0] ; [3;0;2] ; [7;1;0]], init_map ;
+			 "longer", mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]], init_map ;
+			 "no map", mkl [[4;1;2] ; [2;1;4] ; [3;1;6] ; [5;1;2] ; [6;2;0] ; [1;2;3] ; [2;1;4]], IndexBuild.MapI.empty
+		  ] in
+		   Test.suite "compute_list_from_map" (List.map chk tcs)
+
+
 	let ts : Test.t
 		= fun () -> [
 	   	 compute_ts();
-	   	 compute_list_from_map_ts();
-	   	 compute_from_map_ts()
+	   	 compute_from_map_ts();
+		 compute_list_from_map_ts();
 	  	] |> Test.suite "Map"
+
 end
 
 let ts : Test.t

@@ -107,13 +107,13 @@ let ccheck : Splx.t -> invChkT
 
 let ccheckFromAdd : Splx.t Splx.mayUnsatT -> invChkT
 = function
-	| Splx.IsUnsat _ -> Pervasives.invalid_arg "Splx_t.ccheckFromAdd"
+	| Splx.IsUnsat _ -> Stdlib.invalid_arg "Splx_t.ccheckFromAdd"
 	| Splx.IsOk sx -> ccheck sx
 
 
 let asgEquiv : Scalar.Symbolic.t Rtree.t -> (Var.t * Scalar.Symbolic.t) list -> bool
   = fun t l ->
-  let xs = List.map Pervasives.fst l |> Var.Set.of_list in
+  let xs = List.map Stdlib.fst l |> Var.Set.of_list in
   if not
 	   (List.fold_left
 	  (fun b (x, a) ->
@@ -524,7 +524,7 @@ let chk : string * int * Cs.t * Splx.t Splx.mayUnsatT
 let addUnsatTs: Test.t
 = fun () ->
 	let witnessEq : Splx.witness_t -> Splx.witness_t -> bool
-	=	let sort = List.sort (fun (i, _) (i', _) -> Pervasives.compare i i') in
+	=	let sort = List.sort (fun (i, _) (i', _) -> Stdlib.compare i i') in
 		let coefEq = fun (i, n) (i', n') -> i = i' && Vec.Coeff.cmp n n' = 0 in
 		fun w w' -> List.for_all2 coefEq (sort w) (sort w')
 	in
@@ -1012,7 +1012,7 @@ let chkInv : string * Var.t * Cs.Vec.t * Splx.t -> Test.stateT -> Test.stateT
   in
   let out : Splx.t Splx.mayUnsatT -> Splx.t
 	= function
-	| Splx.IsUnsat _ -> Pervasives.failwith "Splx_t.insertBackTs"
+	| Splx.IsUnsat _ -> Stdlib.failwith "Splx_t.insertBackTs"
 	| Splx.IsOk sx -> sx
   in
   [
@@ -1333,7 +1333,7 @@ let strictenInvalTs: Test.t
 let strictenUnsatTs: Test.t
 	= fun () ->
     let cmp (i1,_) (i2,_) =
-		match Pervasives.compare i1 i2 with
+		match Stdlib.compare i1 i2 with
 		| 0 -> invalid_arg "Cert.cmp"
 		| n -> n
 	in

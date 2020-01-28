@@ -34,7 +34,7 @@ module IndexList = struct
 		let n_pred_min = Stdlib.max 2 (il_length/2) in
 		let rec get_next_rec : Index.Int.t * t * int -> Index.Int.t * t * int
 			= fun (ind, il, n_pred) ->
-			if n_pred <= n_pred_min
+			if List.length il <= 1
 			then (ind, il, n_pred)
 			else
 			 	let l = List.init dim (fun i ->
@@ -56,7 +56,9 @@ module IndexList = struct
 				|> Misc.max (fun (_,_,_,v1) (_,_,_,v2) ->
 					Stdlib.compare v1 v2
 				) in
-				get_next_rec (ind',il',n_pred')
+				if n_pred' < n_pred_min
+				then (ind, il, n_pred)
+				else get_next_rec (ind',il',n_pred')
 		in
 		let ind = get_min dim il in
 		let (ind_res,_,_) = get_next_rec (ind, il, il_length) in
@@ -176,11 +178,20 @@ module MapI = struct
 			keys
 			elems
 
-	let addComponentsOf : Index.Int.t -> 'a t -> IndexList.t * 'a t
-		= fun ind map ->
-		let decomposition = IndexList.components_one_nneg ind in
-		let map' = add ind decomposition map in
-		(decomposition, map')
+	let rec addComponentsOf : 'a t -> Index.Int.t -> IndexList.t * 'a t
+		= fun map ind ->
+		if Index.Int.is_unitary ind
+		then ([], map)
+		else if Index.Int.one_coeff_nn ind
+		then let decomposition = IndexList.components ind in
+			let map' = add ind decomposition map in
+			(decomposition, map')
+		else let decomposition = IndexList.components_one_nneg ind in
+			let map' = add ind decomposition map in
+			let map' = List.fold_left (fun map ind' ->
+				addComponentsOf map ind' |> snd
+			) map' decomposition in
+			(decomposition, map')
 
 end
 
@@ -224,40 +235,39 @@ module Map = struct
 				let il' = ind :: (if Index.Int.is_null i' then [] else [i']) in
 				(il', MapI.add i il' map')
 			with Not_found ->
-				let (decomposition, map') = MapI.addComponentsOf i map in
+				let (decomposition, map') = MapI.addComponentsOf map i in
 				let map' = List.fold_left (fun map ind ->
 					let (_,map') = compute_from_map ind map in map'
 				) map' decomposition in
 				(decomposition, map')
 
-
 	(* Hypothesis : il <> [] *)
 	let rec compute_rec : int -> IndexList.t -> t
 		= fun dim il ->
-		let next_ind = IndexList.get_next dim il in
-		if Index.Int.is_null next_ind
-		then MapI.addMapCond
-			(fun i -> not (Index.Int.is_unitary i))
-			IndexList.components
-			il MapI.empty
-		else begin
-			(* rem : indexes for which next_ind is a predecessor
-			   keep : others *)
-			let (rem,keep) = List.partition (Index.Int.le next_ind) il in
-			let subs = List.map (fun j -> Index.Int.sub j next_ind) rem in (* différences de rem avec next_ind*)
-			let keep' =
-				(if Index.Int.is_unitary next_ind then [] else [next_ind])
-			  @
-				(List.filter (fun i -> not (Index.Int.is_null i)) subs)
-			  @
-			  	keep
-			in
-			let map = (compute_rec dim keep') in
-			MapI.addMapCond2
-				(fun i sub -> not (Index.Int.is_unitary i || Index.Int.is_null sub))
-				(fun _ sub -> [next_ind ; sub])
-				rem subs map
-		end
+		if List.length il = 0
+		then MapI.empty
+		else if List.length il = 1
+		then MapI.addComponentsOf MapI.empty (List.hd il) |> snd
+		else
+			let next_ind = IndexList.get_next dim il in
+			if Index.Int.is_null next_ind
+			then MapI.addMapCond
+				(fun i -> not (Index.Int.is_unitary i))
+				IndexList.components il MapI.empty
+			else begin
+				(* rem : indexes for which next_ind is a predecessor
+				   keep : others *)
+				let (rem,keep) = List.partition (Index.Int.le next_ind) il in
+				let subs = List.map (fun j -> Index.Int.sub j next_ind) rem in (* différences de rem avec next_ind*)
+				let keep' = List.filter (fun ind ->
+					not (Index.Int.is_null ind || Index.Int.is_unitary ind)
+				) (next_ind :: subs @ keep) in
+				let map = (compute_rec dim keep') in
+				MapI.addMapCond2
+					(fun i sub -> not (Index.Int.is_unitary i || Index.Int.is_null sub))
+					(fun _ sub -> [next_ind ; sub])
+					rem subs map
+			end
 
 	let compute : IndexList.t -> t
 		= fun il ->
@@ -270,8 +280,14 @@ module Map = struct
 
 	let compute_list_from_map : IndexList.t -> t -> t
 		= fun il map ->
-		List.stable_sort Index.Int.compare il
+		Printf.sprintf "compute %s\nfrom %s"
+			(IndexList.to_string il)
+			(to_string map)
+		|> print_endline;
+		let map' = List.stable_sort Index.Int.compare il
 		|> List.fold_left (fun map ind ->
 			let (_,map') = compute_from_map ind map in map'
-		) map
+		) map in
+		print_endline (to_string map');
+		map'
 end

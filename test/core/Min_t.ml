@@ -45,7 +45,7 @@ module Make_Tests (Min : Min.Type) = struct
 					state
 			with Not_found ->
 			try
-			 	let all_cstrs = List.split cstrs |> Pervasives.fst in
+			 	let all_cstrs = List.split cstrs |> Stdlib.fst in
 				let (cstr,point) = List.find
 					(fun (cstr,point) ->
 						let point' = Vec.toRat point in
@@ -64,7 +64,7 @@ module Make_Tests (Min : Min.Type) = struct
 		in
 		let check_cstrs
 			= fun (name, cstrs, ecstrs, _) state ->
-			let acstrs = List.split cstrs |> Pervasives.fst in
+			let acstrs = List.split cstrs |> Stdlib.fst in
 			Test.equals
 				name
 				(fun l -> Misc.list_to_string (Cs.to_string Var.to_string) l " ; ")
