@@ -21,7 +21,7 @@ let findi : ('a -> bool) -> 'a list -> int
 	= let rec(findi_rec : ('a -> bool) -> 'a list -> int -> int)
 		= fun prop l k ->
 		match l with
-		| [] -> Pervasives.raise Not_found
+		| [] -> Stdlib.raise Not_found
 		| v :: tail -> if prop v then k else findi_rec prop tail (k+1)
 in fun prop l ->
 findi_rec prop l 0
@@ -40,7 +40,7 @@ let array_findi : (int -> 'a -> bool) -> 'a array -> int
 let rec find_res : ('a -> (bool * 'a)) -> 'a list -> 'a
 	= fun prop l ->
 	match l with
-	| [] -> Pervasives.raise Not_found
+	| [] -> Stdlib.raise Not_found
 	| v :: tail -> let (b,v') = prop v in
 		if b then v' else find_res prop tail
 
@@ -98,7 +98,7 @@ let max : ('a -> 'a -> int) -> 'a list -> 'a
 	(fun i j -> if cmp i j > 0 then i else j)
 	(List.hd l)
 	(sublist l 1 (List.length l))
-	with Failure _ -> Pervasives.invalid_arg "Misc.max : empty input list"
+	with Failure _ -> Stdlib.invalid_arg "Misc.max : empty input list"
 
 let maxi :  ('a -> 'a -> int) -> 'a list -> int
 	= let rec (maxi_rec : ('a -> 'a -> int) -> 'a list -> 'a -> int -> int -> int)
@@ -108,7 +108,7 @@ let maxi :  ('a -> 'a -> int) -> 'a list -> int
 		| x::tl -> if cmp x max > 0 then maxi_rec cmp tl x i (i+1) else maxi_rec cmp tl max maxi (i+1) in
 	fun cmp l ->
 	try maxi_rec cmp (List.tl l) (List.hd l) 0 1
-	with Failure _ -> Pervasives.invalid_arg "Misc.maxi : empty input list"
+	with Failure _ -> Stdlib.invalid_arg "Misc.maxi : empty input list"
 
 let min : ('a -> 'a -> int) -> 'a list -> 'a
 	= fun cmp l ->
@@ -116,7 +116,7 @@ let min : ('a -> 'a -> int) -> 'a list -> 'a
 	(fun i j -> if cmp i j < 0 then i else j)
 	(List.hd l)
 	(sublist l 1 (List.length l))
-	with Failure _ -> Pervasives.invalid_arg "Misc.min : empty input list"
+	with Failure _ -> Stdlib.invalid_arg "Misc.min : empty input list"
 
 let rec rem_dupl : ('a -> 'a -> bool) -> 'a list -> 'a list
 	= fun eq l ->

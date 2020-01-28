@@ -24,14 +24,14 @@ module IndexList = struct
 	let get_min : int -> t -> Index.Int.t
 		= fun dim il ->
 		List.init dim (fun i ->
-			Misc.min Pervasives.compare (List.map (fun j -> Index.Int.get j i) il)
+			Misc.min Stdlib.compare (List.map (fun j -> Index.Int.get j i) il)
 		)
 		|> Index.Int.mk
 
 	let get_next : int -> t -> Index.Int.t
 		= fun dim il ->
 		let il_length = List.length il in
-		let n_pred_min = Pervasives.max 2 (il_length/2) in
+		let n_pred_min = Stdlib.max 2 (il_length/2) in
 		let rec get_next_rec : Index.Int.t * t * int -> Index.Int.t * t * int
 			= fun (ind, il, n_pred) ->
 			if n_pred <= n_pred_min
@@ -46,7 +46,7 @@ module IndexList = struct
 				) in
 				(* Computing the maximum n_pred that was found *)
 				let (_,_,max_n_pred,_) = Misc.max (fun (ind,_,n_pred1,_) (_,_,n_pred2,_) ->
-					Pervasives.compare n_pred1 n_pred2
+					Stdlib.compare n_pred1 n_pred2
 				) l in
 				(* Filters indexes with this maximum n_pred *)
 				let (ind',il',n_pred',_) = List.filter (fun (_,_,n_pred,_) ->
@@ -54,7 +54,7 @@ module IndexList = struct
 				) l
 				(* Take maximum value *)
 				|> Misc.max (fun (_,_,_,v1) (_,_,_,v2) ->
-					Pervasives.compare v1 v2
+					Stdlib.compare v1 v2
 				) in
 				get_next_rec (ind',il',n_pred')
 		in
@@ -205,9 +205,9 @@ module Map = struct
 		) map []
 		in
 		if List.length l = 0
-		then Pervasives.raise Not_found
+		then Stdlib.raise Not_found
 		else Misc.max (fun (_,v1) (_,v2) -> if v1 > v2 then -1 else 1) l (* on cherche le min des valeurs*)
-		|> Pervasives.fst
+		|> Stdlib.fst
 
 	let rec compute_from_map : Index.Int.t -> t -> IndexList.t * t
 		= fun i map ->
@@ -262,7 +262,7 @@ module Map = struct
 	let compute : IndexList.t -> t
 		= fun il ->
 		if List.length il = 0
-		then Pervasives.invalid_arg "IndexBuild.Map.compute : empty input list"
+		then Stdlib.invalid_arg "IndexBuild.Map.compute : empty input list"
 		else
             let dim = Index.Int.len (List.hd il) in
             Misc.rem_dupl Index.Int.equal il

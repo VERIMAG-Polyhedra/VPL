@@ -22,7 +22,7 @@ let handle : 'a Lazy.t -> 'a
     try Lazy.force a with
     | e -> begin
         report e;
-        Pervasives.raise e
+        Stdlib.raise e
     end
 
 type 'a named_of = {

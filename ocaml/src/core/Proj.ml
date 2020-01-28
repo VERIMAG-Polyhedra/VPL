@@ -9,7 +9,7 @@ let regsToCs : ('c PLP.Region.t * 'c Cons.t) list -> 'c Cons.t list
                 (fun (reg,sol) -> Printf.sprintf "%s --> %s"
                     (Cons.to_string Var.to_string sol)
                     (PLP.Region.to_string reg)) regs "\n")));
-    Cons.clean (List.split regs |> Pervasives.snd)
+    Cons.clean (List.split regs |> Stdlib.snd)
 
 let explore : 'c Factory.t -> 'c PSplx.t -> 'c Cons.t list
     = fun factory tab ->

@@ -38,7 +38,7 @@ module Float = struct
 	let neg = mul negU
 	let abs x = if x > z then x else mul negU x
 	let inv x = div u x
-	let cmp = Pervasives.compare
+	let cmp = Stdlib.compare
 	let le  = (<=)
 	let lt = (<)
 	let cmpz = cmp z
@@ -267,7 +267,7 @@ module Int = struct
 
 	let abs = Z.abs
 	let neg = Z.neg
-	let inv _ = Pervasives.failwith "Scalar.Int.inv"
+	let inv _ = Stdlib.failwith "Scalar.Int.inv"
 
 	let add = Z.add
 	let sub = Z.sub
@@ -282,7 +282,7 @@ module Int = struct
 		in
 		pow_rec u 0
 
-	let ofQ _ = Pervasives.failwith "Scalar.Int.ofQ"
+	let ofQ _ = Stdlib.failwith "Scalar.Int.ofQ"
 	let toQ n = Rat.ofZ n u
 
     let gcd _ _ = failwith "unimplemented"
@@ -336,11 +336,11 @@ module Int = struct
 	(** Multiplication by a rational. *)
 	let mulr : Q.t -> t -> t
 		= fun _ _ ->
-		Pervasives.failwith "Scalar.Int.mulr"
+		Stdlib.failwith "Scalar.Int.mulr"
 
 	let divr : t -> Q.t -> t
 		= fun _ _ ->
-		Pervasives.failwith "Scalar.Int.divr"
+		Stdlib.failwith "Scalar.Int.divr"
 end
 
 type symbolic = { v: Q.t; d: Q.t }
@@ -516,7 +516,7 @@ module Symbolic = struct
 
 	let of_string _ = print_endline "Scalar.Val.of_string : not implemented" ; z
 
-	let to_int _ _ = Pervasives.failwith "Scalar.Symbolic.to_int : not implemented"
+	let to_int _ _ = Stdlib.failwith "Scalar.Symbolic.to_int : not implemented"
 
     let gcd _ _ = failwith "unimplemented"
     let toZ _ = failwith "unimplemented"
@@ -533,7 +533,7 @@ module MachineInt = struct
 	let u = 1
 	let negU = -1
 
-	let cmp = Pervasives.compare
+	let cmp = Stdlib.compare
 	let le = (<=)
 	let lt = (<)
 	let cmpz q = cmp z q
@@ -558,7 +558,7 @@ module MachineInt = struct
 		in
 		pow_rec u 0
 
-	let ofQ _ = Pervasives.failwith "Scalar.Int.ofQ"
+	let ofQ _ = Stdlib.failwith "Scalar.Int.ofQ"
 	let toQ = Q.of_int
 
 	let of_int n = n
@@ -592,11 +592,11 @@ module MachineInt = struct
 
 	let mulr : Q.t -> t -> t
 		= fun _ _ ->
-		Pervasives.failwith "Scalar.MachineInt.mulr"
+		Stdlib.failwith "Scalar.MachineInt.mulr"
 
 	let divr : t -> Q.t -> t
 		= fun _ _ ->
-		Pervasives.failwith "Scalar.MachineInt.divr"
+		Stdlib.failwith "Scalar.MachineInt.divr"
 
     let gcd _ _ = failwith "unimplemented"
     let toZ _ = failwith "unimplemented"

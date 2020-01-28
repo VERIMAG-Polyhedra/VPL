@@ -64,7 +64,7 @@ module Cstr = struct
 			 	(Cstr_type.(match cmp with | Le -> "<=" | Lt -> "<" | Eq -> "="))
 				(Scalar.Rat.to_string n)
 				|> print_endline;
-				Pervasives.failwith "Factory.Cstr.triv")
+				Stdlib.failwith "Factory.Cstr.triv")
 			;
 			Cs.mk cmp [] n);
 		Factory.add = Cs.add;

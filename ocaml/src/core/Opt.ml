@@ -226,7 +226,7 @@ let getAsg_and_value : Var.t -> (int * Cs.t) list -> (Vector.Symbolic.t * Scalar
 		= fun horizon cstrs ->
 			let epsilon = horizon in
 			let obj = Cs.Vec.mk [Cs.Vec.Coeff.u, epsilon] in
-            let id = (List.fold_left (fun r (i,_) -> Pervasives.max r i) 0 cstrs) + 1 in
+            let id = (List.fold_left (fun r (i,_) -> Stdlib.max r i) 0 cstrs) + 1 in
 			let cstrs' =
 				(id, Cs.le [Scalar.Rat.u, epsilon] (Scalar.Rat.of_float max_float)):: (* TODO : changer ça! *)
 				(List.map

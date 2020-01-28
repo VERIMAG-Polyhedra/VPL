@@ -19,7 +19,7 @@ module PLP_MODIF = struct
 		then
 			let horizon = HPol.horizon ph in
 			match Region.getPointInside config.reg_t horizon (HPol.get_ineqs ph) with
-			| None -> Pervasives.failwith "Handelman.PLP.init : unexpected empty input polyhedron"
+			| None -> Stdlib.failwith "Handelman.PLP.init : unexpected empty input polyhedron"
 			| Some point ->
 				(point, {config with points = [ExplorationPoint.Point point]})
 		else
@@ -62,7 +62,7 @@ module PLP_MODIF = struct
 		let horizon = HPol.horizon ph in
 		List.mapi (fun id ineq ->
 			match Region.getPointInside region_type horizon [ineq], Region.getPointInside region_type horizon [Cs.compl ineq] with
-			| None,_ | _,None -> Pervasives.failwith "Handelman.PLP.init_region : unexpected empty region"
+			| None,_ | _,None -> Stdlib.failwith "Handelman.PLP.init_region : unexpected empty region"
 			| Some pInside, Some pOutside -> let boundary = (Cs.compl ineq, pInside) in
 				{  id = id;
 					Region.r = [boundary, None];
@@ -85,10 +85,10 @@ module Build = struct
 	let from_poly : Var.t list -> Poly.t list -> 'c PLP.PSplx.t
 	  = fun vars ineqs eqs obj normalization ->
 	  if List.length vars + List.length ineqs < List.length ineqs + List.length eqs
-	  then Pervasives.invalid_arg "PSplx.Build.from_poly: variables"
+	  then Stdlib.invalid_arg "PSplx.Build.from_poly: variables"
 	  else
 		 if List.exists Poly.isZ ineqs || List.exists Poly.isZ eqs
-		 then Pervasives.invalid_arg "PSplx.Build.from_poly: constraints"
+		 then Stdlib.invalid_arg "PSplx.Build.from_poly: constraints"
 		 else
 			let (o, nm) = obj_of_poly obj vars in
 			PLP.PSplx.mk o
@@ -104,7 +104,7 @@ module Build = struct
 		 let gatherParams1 : Poly.t -> VSet.t
 			= fun p ->
 			Poly.to_list_expanded p
-			|> List.map Pervasives.fst
+			|> List.map Stdlib.fst
 			|> List.concat
 			|> List.fold_left (fun s x -> VSet.add x s) VSet.empty
 			(*|> VSet.remove Var.null*)
@@ -118,7 +118,7 @@ module Build = struct
 		 in
 		 fun lin cst ->
 		 if not (List.for_all Poly.is_linear lin && Poly.is_linear cst)
-		 then Pervasives.invalid_arg "Obj._buildOfPoly"
+		 then Stdlib.invalid_arg "Obj._buildOfPoly"
 		 else
 			let l = gatherParams (cst :: lin) in
 			let nm =
@@ -132,7 +132,7 @@ module Build = struct
 
 	let obj_of_polyList : Poly.t list -> Obj.t * Naming.t
 	  = fun l ->
-	  if List.length l < 1 then Pervasives.invalid_arg "Obj.of_polyList"
+	  if List.length l < 1 then Stdlib.invalid_arg "Obj.of_polyList"
 	  else
 		 let l' = List.rev l in
 		 obj_buildOfPoly (List.tl l' |> List.rev) (List.hd l')
@@ -143,12 +143,12 @@ module Build = struct
 			function
 			| [] -> if i < n then Poly.z :: fill n (i + 1) [] else []
 			| ((x, a) :: l') as l ->
-		 if n <= i || x < i then Pervasives.invalid_arg "Obj.of_polySparseList"
+		 if n <= i || x < i then Stdlib.invalid_arg "Obj.of_polySparseList"
 		 else if x = i then a :: fill n (i + 1) l'
 		 else Poly.z :: fill n (i + 1) l
 		 in
 		 fun n l a ->
-		 obj_buildOfPoly (List.sort (fun (i, _) (i', _) -> Pervasives.compare i i') l |> fill n 0) a
+		 obj_buildOfPoly (List.sort (fun (i, _) (i', _) -> Stdlib.compare i i') l |> fill n 0) a
 
 	let obj_of_poly : Poly.t -> Var.t list -> Obj.t * Naming.t
 	  = fun p l ->
@@ -176,10 +176,10 @@ module Build = struct
 	let from_poly : Var.t list -> Poly.t list -> Poly.t list -> Poly.t -> Poly.t option -> PLP.PSplx.t
 	  = fun vars ineqs eqs obj normalization ->
 	  if List.length vars + List.length ineqs < List.length ineqs + List.length eqs
-	  then Pervasives.invalid_arg "PSplx.Build.from_poly: variables"
+	  then Stdlib.invalid_arg "PSplx.Build.from_poly: variables"
 	  else
 		 if List.exists Poly.isZ ineqs || List.exists Poly.isZ eqs
-		 then Pervasives.invalid_arg "PSplx.Build.from_poly: constraints"
+		 then Stdlib.invalid_arg "PSplx.Build.from_poly: constraints"
 		 else
 			let (o, nm) = obj_of_poly obj vars in
             PLP.PSplx.mk o
@@ -258,7 +258,7 @@ module Norm = struct
 				Poly.sub p (Poly.get_linear_part p variables)
 				|> Poly.data
 				|> List.map Poly.Monomial.data
-				|> List.map Pervasives.fst)
+				|> List.map Stdlib.fst)
 			(f :: his_p)
 			|> List.concat
 			|> Misc.rem_dupl Poly.MonomialBasis.equal
@@ -274,7 +274,7 @@ module Norm = struct
 				 Var.next horizon))
 			((fun _ -> None), horizon)
 			non_linear_monomials
-			|> Pervasives.fst
+			|> Stdlib.fst
 		in
 		let his_p' = List.map (Poly.change_variable change_of_vars) (f :: his_p) in
 		Debug.log DebugTypes.Detail (lazy(Printf.sprintf "Change_of_var : %s"
@@ -296,8 +296,8 @@ module Norm = struct
 				in
 				Proj.proj FactoryUnit.factory vars_to_project
 					(List.map FactoryUnit.mkCons ineqs)
-				|> Pervasives.fst
-				|> List.map Pervasives.fst
+				|> Stdlib.fst
+				|> List.map Stdlib.fst
 				|> List.map Cs.canon
 				|> Cs.list_to_string)))
 		;
@@ -410,7 +410,7 @@ let compute_certs : Hi.t list -> int -> Var.t list -> (PLP.Region.t * 'c Cons.t)
 					let value = PLP.PSplx.getCurVal sx in
 					let cert = compute_cert value in
 					(cp, cert)
-				| None -> Pervasives.failwith "Handelman.compute_certs")
+				| None -> Stdlib.failwith "Handelman.compute_certs")
 		regs
 
 let run : 'c HPol.t -> Hi.t list -> Poly.t list -> Poly.t -> (CP.t * Hi.Cert.schweighofer list) list option
@@ -429,7 +429,7 @@ let run : 'c HPol.t -> Hi.t list -> Poly.t list -> Poly.t -> (CP.t * Hi.Cert.sch
 		let n_cstrs = List.length ph.poly_rep in
 		let res = compute_certs his n_cstrs vars regs in
 		Debug.log DebugTypes.MOutput
-			(lazy(Misc.list_to_string CP.to_string (List.map Pervasives.fst res) "\n "))
+			(lazy(Misc.list_to_string CP.to_string (List.map Stdlib.fst res) "\n "))
         ;
 		Debug.log DebugTypes.MOutput
 			(lazy(Printf.sprintf "Handelman certificates : %s"
@@ -462,8 +462,8 @@ end
 
 module Pb : Type = struct
 
-  	let running_time : float Pervasives.ref
-  		= Pervasives.ref 0.0
+  	let running_time : float Stdlib.ref
+  		= Stdlib.ref 0.0
 
 	type t =
 		{ph : FactoryUnit.cert HPol.t ;
@@ -489,7 +489,7 @@ module Pb : Type = struct
 		| Some result ->
 			let p = result
 				|> List.split
-				|> Pervasives.fst
+				|> Stdlib.fst
 				|> List.map (fun cp -> (cp, FactoryUnit.factory.top))
 			in
 			let ph' = HPol.addM FactoryUnit.factory p pb.ph in
@@ -587,7 +587,7 @@ module Pb : Type = struct
 
 	let timeout : int -> unit
 		= fun i -> match i with
-		| j when j = Sys.sigalrm -> Pervasives.raise Timeout
+		| j when j = Sys.sigalrm -> Stdlib.raise Timeout
 		| _ -> ()
 
 	let remove_timeout : _ -> unit
@@ -619,7 +619,7 @@ module Pb : Type = struct
 		| [g] -> let ph_omg = HPol.mkPol phPol in
 			let (his,his_poly) = HandelmanOracle.oracle_hi g ph_omg in
 			run ph his his_poly g
-		| _ -> Pervasives.failwith "Handelman.pb.run_oracle"
+		| _ -> Stdlib.failwith "Handelman.pb.run_oracle"
 
 	let (run : 'c Pol.t -> CP.t list -> t)
 		= fun phPol pl ->
@@ -653,7 +653,7 @@ module Pb : Type = struct
 		in
 		Sys.set_signal Sys.sigalrm (Sys.Signal_handle remove_timeout);
 		match res with
-		| [] -> Pervasives.failwith "Handelman.run: no output produced"
+		| [] -> Stdlib.failwith "Handelman.run: no output produced"
 		| _ -> List.nth res ((List.length res)-1)
 
 	end

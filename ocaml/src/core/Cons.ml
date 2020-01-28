@@ -71,7 +71,7 @@ let linear_combination_cert : 'c Factory. t -> 'c t list -> (int * Scalar.Rat.t)
 					(factory.Factory.mul n cert))
 			factory.Factory.top
 			witness
-  with _ -> Pervasives.invalid_arg "Cons.linear_combination"
+  with _ -> Stdlib.invalid_arg "Cons.linear_combination"
 
 let add : 'c Factory.t -> 'c t -> 'c t -> 'c t
 	= fun factory (c1,cert1) (c2,cert2)->
@@ -84,7 +84,7 @@ let mul : 'c Factory.t -> Scalar.Rat.t -> 'c t -> 'c t
 let split : 'c Factory.t -> 'c t -> 'c t * 'c t
 	= fun factory eq ->
 	match get_c eq |> Cs.get_typ with
-	| Cstr_type.Le | Cstr_type.Lt -> Pervasives.invalid_arg "Cons.split"
+	| Cstr_type.Le | Cstr_type.Lt -> Stdlib.invalid_arg "Cons.split"
 	| Cstr_type.Eq ->
 		let triv = mkTriv factory Cstr_type.Le Scalar.Rat.z in
 		let up = add factory eq triv in
@@ -197,4 +197,4 @@ let adjust_cert_constant : 'c Factory.t -> 'c t -> Cs.t -> 'c
 		| Cstr_type.Lt, Cstr_type.Le -> factory.Factory.to_le cert
 		| _,_ -> cert
 		end
-	| None -> Pervasives.invalid_arg "Inclusion does not hold"
+	| None -> Stdlib.invalid_arg "Inclusion does not hold"

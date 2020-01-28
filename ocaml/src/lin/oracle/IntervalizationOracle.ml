@@ -139,11 +139,11 @@ module Oracle (T : IOtypes.Type) = struct
                     List.map
                         (fun v -> (v,get_multiplicity v p'))
                         (P.get_vars p' |> Var.Set.elements)
-                    |> List.fast_sort (fun (_,i1) (_,i2) -> Pervasives.compare i1 i2)
+                    |> List.fast_sort (fun (_,i1) (_,i2) -> Stdlib.compare i1 i2)
                     |> List.rev
                     |> fun l -> match l with
-                        | [] | [_] -> Pervasives.raise Not_found
-                        | (v1,i1) :: (_,i2) :: _ -> if i1 > i2 then v1 else Pervasives.raise Not_found
+                        | [] | [_] -> Stdlib.raise Not_found
+                        | (v1,i1) :: (_,i2) :: _ -> if i1 > i2 then v1 else Stdlib.raise Not_found
                 in
                 let l = List.map
                     (fun (mb,_) ->
@@ -372,7 +372,7 @@ module Oracle (T : IOtypes.Type) = struct
                 | Some var -> var
                 | None -> update_monomial mb pr
                     |> List.hd
-                    |> Pervasives.fst
+                    |> Stdlib.fst
                 in
                 let aff = D.BasicTerm.annotAFFINE
                     (Term.of_monomial (M.mk_list [var_to_keep,1] c)) in
@@ -405,7 +405,7 @@ module Oracle (T : IOtypes.Type) = struct
             let var_to_keep = match get_var_to_keep mb pr with
                 | Some var -> var
                 | None -> List.hd current_mb
-                    |> Pervasives.fst
+                    |> Stdlib.fst
             in
             let vars = MB.remove_var_exp var_to_keep 1 current_mb
                 |> MB.get_vars
@@ -521,7 +521,7 @@ module Make (T : IOtypes.Type) = struct
                         | None ->
                             if D.BasicTerm.isCte t
                             then t
-                            else Pervasives.failwith (Printf.sprintf "factorisation : %s -> non-constant term with no affine part" (Term.to_string t))
+                            else Stdlib.failwith (Printf.sprintf "factorisation : %s -> non-constant term with no affine part" (Term.to_string t))
                     ) l1
             		|> List.fold_left D.BasicTerm.smartAdd Term.zero
                 in

@@ -6,9 +6,9 @@ type t =
 let toInt: t -> int
 = fun p0 ->
 	let inc i =
-		let msb = Pervasives.max_int - (Pervasives.max_int lsr 1) in
+		let msb = Stdlib.max_int - (Stdlib.max_int lsr 1) in
 		if i = msb then (* overflow *)
-			Pervasives.invalid_arg "Var.toInt"
+			Stdlib.invalid_arg "Var.toInt"
 		else
 			i lsl 1
 	in
@@ -35,10 +35,10 @@ let fromInt: int -> t
 	if i0 > 0 then
 		_fromInt i0
 	else
-		Pervasives.invalid_arg "Var.fromInt"
+		Stdlib.invalid_arg "Var.fromInt"
 
 let to_string': string -> t -> string
-	= fun s p -> s ^ (Pervasives.string_of_int (toInt p))
+	= fun s p -> s ^ (Stdlib.string_of_int (toInt p))
 
 let to_string : t -> string
 	= to_string' "v"
@@ -106,7 +106,7 @@ let of_prefixed_string : string -> t
   try of_string s'
   with Failure _ ->
 	 let e = Printf.sprintf "SxPoly.VariablesInt.of_prefixed_string: s = %s; s' = %s" s s' in
-	 Pervasives.invalid_arg e
+	 Stdlib.invalid_arg e
 
 let max : t list -> t
 	= fun l ->

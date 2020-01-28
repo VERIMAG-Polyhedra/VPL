@@ -44,8 +44,8 @@ module type Type = sig
 	val exec : 'a -> levelT -> string Lazy.t -> 'a
 end
 
-let trace : string list Pervasives.ref
-  = Pervasives.ref []
+let trace : string list Stdlib.ref
+  = Stdlib.ref []
 
 module Debug (D : sig val name : string end) = struct
 	module D = D
@@ -64,11 +64,11 @@ module Debug (D : sig val name : string end) = struct
         | Some c -> c
         | None -> Black
 
-	let enabled : (levelT -> bool) Pervasives.ref
-	  = Pervasives.ref (function _ -> false)
+	let enabled : (levelT -> bool) Stdlib.ref
+	  = Stdlib.ref (function _ -> false)
 
-	let print_on_fly : bool Pervasives.ref
-	  = Pervasives.ref false
+	let print_on_fly : bool Stdlib.ref
+	  = Stdlib.ref false
 
 	let is_enabled : levelT -> bool
 	  = fun lvl -> !enabled lvl
@@ -105,7 +105,7 @@ module Debug (D : sig val name : string end) = struct
 		if !print_on_fly
 		then begin
 			let _ = Unix.system ("setterm -term linux " ^ (get_str_color())) in
-			Pervasives.prerr_endline s';
+			Stdlib.prerr_endline s';
 			default()
 		end
 		else trace := s' :: !trace
@@ -116,7 +116,7 @@ module Debug (D : sig val name : string end) = struct
 		if !print_on_fly
 		then begin
 			let _ = Unix.system ("setterm -term linux " ^ (get_str_color())) in
-			Pervasives.prerr_endline s';
+			Stdlib.prerr_endline s';
 			default()
 		end
 		else trace := s' :: !trace
@@ -128,9 +128,9 @@ module Debug (D : sig val name : string end) = struct
 		if !print_on_fly
 		then begin
 			let _ = Unix.system ("setterm -term linux " ^ (get_str_color()) ^ " -bold on") in
-			Pervasives.prerr_endline "Module Input :";
+			Stdlib.prerr_endline "Module Input :";
 			let _ = Unix.system ("setterm -term linux -bold off") in
-			Pervasives.prerr_endline s';
+			Stdlib.prerr_endline s';
 			default()
 		end
 		else trace := ("Module Input : \n" ^ s') :: !trace
@@ -142,9 +142,9 @@ module Debug (D : sig val name : string end) = struct
 		if !print_on_fly
 		then begin
 			let _ = Unix.system ("setterm -term linux " ^ (get_str_color()) ^ " -bold on") in
-			Pervasives.prerr_endline "\nModule Output :";
+			Stdlib.prerr_endline "\nModule Output :";
 			let _ = Unix.system ("setterm -term linux -bold off") in
-			Pervasives.prerr_endline (s' ^ "\n");
+			Stdlib.prerr_endline (s' ^ "\n");
 			default()
 		end
 		else trace := ("\nModule Output : \n" ^ s') :: !trace
@@ -166,7 +166,7 @@ module Debug (D : sig val name : string end) = struct
 		if !print_on_fly
 		then begin
 			let _ = Unix.system ("setterm -term linux " ^ (get_str_color()) ^ " -bold on") in
-			Pervasives.prerr_endline s';
+			Stdlib.prerr_endline s';
 			default()
 		end
 		else trace := s' :: !trace
@@ -202,7 +202,7 @@ module Debug (D : sig val name : string end) = struct
 		e
 
 	module Check = struct
-		let enabled : bool Pervasives.ref = Pervasives.ref false
+		let enabled : bool Stdlib.ref = Stdlib.ref false
 
 		let enable : unit -> unit = fun () -> enabled := true
 
@@ -212,6 +212,6 @@ module Debug (D : sig val name : string end) = struct
 			= fun test s ->
 			if !enabled
 			then if not (Lazy.force test)
-				then Pervasives.failwith ("Check error : " ^ (Lazy.force s))
+				then Stdlib.failwith ("Check error : " ^ (Lazy.force s))
 	end
 end

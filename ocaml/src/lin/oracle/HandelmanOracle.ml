@@ -111,7 +111,7 @@ module OracleCore = struct
                 if MapPolyHi.memMonom mb pr.mapP
                 then pray p' pr
                     else let id = MapIndexP.poly_to_deg_max [m] pr.vl in
-        			if Misc.max Pervasives.compare (Index.Int.data id) > 1
+        			if Misc.max Stdlib.compare (Index.Int.data id) > 1
         			then Some (m, id)
         			else pray p' pr
 
@@ -171,7 +171,7 @@ module OracleCore = struct
                     Hi.VarBounds(Index.Int.add vI id, bIl) :: (updateHi l id)
 				| Hi.Ci (ci) :: l ->
                     Hi.VarCi(id,ci) :: (updateHi l id)
-				| _ -> Pervasives.failwith "HHeuristic.extractEvenPowers.updateHi"
+				| _ -> Stdlib.failwith "HHeuristic.extractEvenPowers.updateHi"
 
         let inhale p pr ((mb,c),id) =
             let (id,idm') = extract id in
@@ -238,7 +238,7 @@ module OracleCore = struct
         let inhale p pr ((mb,c) as m) =
             let (bI,bounds) = match HLP.run pr.lp pr.ph pr.sx pr.vl m with
                 | (Some bI, bounds) -> (bI,bounds)
-                | (None,_) -> Pervasives.raise Not_found
+                | (None,_) -> Stdlib.raise Not_found
             in
             Debug.log DebugTypes.Detail (lazy(
                 Printf.sprintf "Result LP = %s"
@@ -305,7 +305,7 @@ let init : P.t -> 'c HPol.t -> P.t * prophecy
             lp = LPMaps.init cl ph.vars;
         } in
         (P.neg p, pr)
-	| Splx.IsUnsat _ -> Pervasives.failwith "Handelamn Oracle init : empty polyhedron"
+	| Splx.IsUnsat _ -> Stdlib.failwith "Handelamn Oracle init : empty polyhedron"
 
 let oracle_hi: Poly.t -> 'c HPol.t -> Hi.t list * Poly.t list
 	= fun p ph ->

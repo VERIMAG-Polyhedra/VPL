@@ -400,7 +400,7 @@ let rec extract_implicit_eqs' : 'c Factory.t -> Var.t -> 'c logT -> (('c logT, '
 		List.fold_left
 			(fun res (i, coeff) ->
 				let cons = Cons.mul factory coeff (List.nth conss i)
-					|> Cons.add factory (List.hd res |> Pervasives.snd)
+					|> Cons.add factory (List.hd res |> Stdlib.snd)
 				in
 				(i,cons) :: res)
 			[(i0, Cons.mul factory coeff0 (List.nth conss i0))]
@@ -412,14 +412,14 @@ let rec extract_implicit_eqs' : 'c Factory.t -> Var.t -> 'c logT -> (('c logT, '
 			= fun i ->
 			let n = Misc.findi (fun (j,_) -> i = j) wit in
 			List.nth wit (n-1)
-			|> Pervasives.fst
+			|> Stdlib.fst
 		in
 		let len = (List.length wit)-1 in
 		let (i_n, coeff_n) = List.nth wit len in
 		List.fold_right
 			(fun (i, coeff) res ->
 				let cert = factory.Factory.mul coeff (List.nth conss i |> Cons.get_cert)
-					|> factory.Factory.add (List.hd res |> Pervasives.snd)
+					|> factory.Factory.add (List.hd res |> Stdlib.snd)
 				in
 				(compute_index i,cert) :: res)
 			(Misc.sublist wit 1 len)
@@ -524,7 +524,7 @@ let addAux': 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
 		| Ok lp ->
 			match extract_implicit_eqs factory nvar lp with
 			| Bot f, _ -> Bot f
-			| Ok _, None -> Pervasives.failwith "Pol.addAux"
+			| Ok _, None -> Stdlib.failwith "Pol.addAux"
 			| Ok lp, Some point -> logIneqSetAddM nvar point lp)
 
 let addAux: 'c Factory.t -> Var.t -> 'c t -> 'c Cons.t list -> 'c meetT
@@ -621,7 +621,7 @@ let projectSub: 'c Factory.t -> Var.t -> 'c t -> Var.t list -> 'c t
     	| Flags.PHeuristic -> match Heuristic.proj (List.map Cons.get_c p.ineqs.ineqs) with
     		| Flags.Proj_PLP _ -> projectSubPLP factory nxt p l
     		| Flags.FM -> projectSubFM factory nxt p l
-    		| Flags.PHeuristic -> Pervasives.invalid_arg "Pol.projectSub"
+    		| Flags.PHeuristic -> Stdlib.invalid_arg "Pol.projectSub"
 
 (* note: x = y1 + y2 and alpha1 + alpha2 = 1 are substituted on the fly *)
 let joinSetup: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t
@@ -742,7 +742,7 @@ module Join_PLP = struct
 	(* Version spéciale pour extract_implicit_eq*)
 	let logOut: ('c logT * Vector.Symbolic.t option, 'c) mayBotT -> 'c t
 		= function
-			| Bot _ -> Pervasives.failwith "Pol.join:extract_implicit_eq"
+			| Bot _ -> Stdlib.failwith "Pol.join:extract_implicit_eq"
 			| Ok (lp, point) -> begin
 				match lp.iset with
 				| IRed _ | IRw _ | IAdd (_, _) | IAddRw (_, _) -> assert false
@@ -761,7 +761,7 @@ module Join_PLP = struct
 			| Ok lp ->
 				match extract_implicit_eqs factory nxtVar lp with
 				| Bot f, _ -> Bot f
-				| Ok _, None -> Pervasives.failwith "Pol.join:extract_implicit_eq"
+				| Ok _, None -> Stdlib.failwith "Pol.join:extract_implicit_eq"
 				| Ok lp, Some point -> logIneqSetAddM nxtVar point lp)
 
 	let filter_trivial : 'c Cons.t list -> 'c Cons.t list
@@ -907,7 +907,7 @@ let joinSub: 'c1 Factory.t -> 'c2 Factory.t -> Var.t -> 'c1 t -> 'c2 t -> 'c1 t 
     				| Flags.Baryc -> joinSub_classic factory1 factory2 nxtVar p1 p2
     				| Flags.Join_PLP scalar_type -> Join_PLP.joinSub factory1 factory2 nxtVar p1 p2
     				| Flags.Join_fromRegions -> Join_PLP.joinSub factory1 factory2 nxtVar p1 p2
-    				| Flags.JHeuristic -> Pervasives.invalid_arg "Pol.joinSub"
+    				| Flags.JHeuristic -> Stdlib.invalid_arg "Pol.joinSub"
     		end
 
 let widen : 'c Factory.t -> 'c t -> 'c t -> 'c t
@@ -944,7 +944,7 @@ let opt2itv: (Scalar.Rat.t -> Scalar.Rat.t) -> 'c Factory.t -> 'c Cons.t list ->
 let getUpperBoundImpl : 'c Factory.t -> 'c Cons.t list -> Vec.t -> Splx.t Splx.mayUnsatT -> bndT * 'c option
   = fun factory conss v sx ->
   match Opt.max' sx v with
-  | Splx.IsUnsat _ -> Pervasives.failwith "Pol.getUpperBoundSub"
+  | Splx.IsUnsat _ -> Stdlib.failwith "Pol.getUpperBoundSub"
   | Splx.IsOk u -> opt2itv (fun n -> n) factory conss u
 
 let getUpperBoundSub : 'c Factory.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
@@ -957,7 +957,7 @@ let getUpperBoundSub : 'c Factory.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c optio
 let getLowerBoundImpl : 'c Factory.t -> 'c Cons.t list -> Vec.t -> Splx.t Splx.mayUnsatT -> bndT * 'c option
   = fun factory conss v sx ->
   match Opt.max' sx (Vec.neg v) with
-  | Splx.IsUnsat _ -> Pervasives.failwith "Pol.getLowerBoundSub"
+  | Splx.IsUnsat _ -> Stdlib.failwith "Pol.getLowerBoundSub"
   | Splx.IsOk l -> opt2itv Scalar.Rat.neg factory conss l
 
 let getLowerBoundSub : 'c Factory.t -> Var.t -> 'c t -> Vec.t -> bndT * 'c option
@@ -1015,7 +1015,7 @@ let meet: 'c Factory.t -> 'c t -> 'c t -> 'c meetT
 
 let mk: 'c Factory.t -> 'c Cons.t list -> 'c t option
 	= fun factory l ->
-	mkSub factory (List.map Pervasives.fst l |> Cs.getVars |> Var.horizon) l
+	mkSub factory (List.map Stdlib.fst l |> Cs.getVars |> Var.horizon) l
 
 let project: 'c Factory.t -> 'c t -> Var.t list -> 'c t
 	= fun factory p l ->
@@ -1260,7 +1260,7 @@ let set_point : Vec.t -> 'c t -> 'c t
                 Cs.typ = (match Cs.get_typ cstr with | Cstr_type.Le -> Cstr_type.Lt | typ -> typ);
             } in
             if not (Cs.satisfy point cstr')
-            then Pervasives.invalid_arg (Printf.sprintf "Pol.set_point: point %s does not satisfy constraint %s"
+            then Stdlib.invalid_arg (Printf.sprintf "Pol.set_point: point %s does not satisfy constraint %s"
                 (Vec.to_string Var.to_string point)
                 (Cs.to_string Var.to_string cstr))
         )
@@ -1331,7 +1331,7 @@ let split_in_half : 'c Factory.t -> 'c t -> Cs.t option
     | None -> (Profile.stop "split_in_half"; None)
     | Some length -> begin
         let cste = match get_low max_itv with
-        | Infty -> Pervasives.failwith "split_in_half: unexpected unbounded lower bound"
+        | Infty -> Stdlib.failwith "split_in_half: unexpected unbounded lower bound"
         | Closed r | Open r -> Scalar.Rat.add r (Scalar.Rat.divr length (Scalar.Rat.of_int 2))
         in
         Profile.stop "split_in_half";

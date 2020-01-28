@@ -85,7 +85,7 @@ let addM : 'c Factory.t -> (CP.t * 'c) list -> 'c t -> 'c t
 	match p.vpl_rep with
 	| None -> empty
 	| Some vpl_rep ->
-		let variables = add_vars p.vars (List.map Pervasives.fst l) in
+		let variables = add_vars p.vars (List.map Stdlib.fst l) in
 		let conss = List.map (fun (cp,cert) -> (CP.toCstr cp, cert)) l in
     	match Pol.addM factory vpl_rep conss with
     		| Pol.Contrad _ -> empty

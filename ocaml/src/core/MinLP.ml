@@ -70,7 +70,7 @@ module Splx (CsUser : Cstr.Type) = struct
 
 	module Integer = struct
 		type t = int
-		let compare = Pervasives.compare
+		let compare = Stdlib.compare
 	end
 
 	module MapI = Map.Make(Integer)

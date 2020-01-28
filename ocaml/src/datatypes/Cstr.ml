@@ -62,7 +62,7 @@ module Make (Vec : Vector.Type) = struct
 	let mulc : Coeff.t -> t -> t
 		= fun c cstr ->
 		if cstr.typ <> Eq && Coeff.le c Coeff.z
-		then Pervasives.raise BadMult
+		then Stdlib.raise BadMult
 		else { cstr with v = Vec.mulc c cstr.v; c = Coeff.mul c cstr.c }
 
 

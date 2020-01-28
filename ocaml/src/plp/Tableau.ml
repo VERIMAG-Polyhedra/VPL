@@ -46,7 +46,7 @@ let pivot : int -> int -> t -> unit
 	= fun i_row i_col tab ->
 	let pivot_coeff = tab.(i_row).(i_col) in
 	if Scalar.Rat.isZ pivot_coeff
-	then Pervasives.raise Invalid_Pivot
+	then Stdlib.raise Invalid_Pivot
 	else
 		Array.iteri (fun i_col coeff ->
 			Scalar.Rat.div coeff pivot_coeff

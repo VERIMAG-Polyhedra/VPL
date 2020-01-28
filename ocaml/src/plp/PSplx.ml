@@ -5,7 +5,7 @@ module Debug = DebugTypes.Debug(struct let name = "PSplx" end)
 type decision_variable = int
 type var_set = int
 
-module VarMap = Map.Make (struct type t = decision_variable let compare = Pervasives.compare end)
+module VarMap = Map.Make (struct type t = decision_variable let compare = Stdlib.compare end)
 
 type pivotT = Cs.t * int * Tableau.t -> Cs.t
 
@@ -117,14 +117,14 @@ let t_get_width_column_vector : 'c t -> int list
         |> String.length
     ) sx.cstrs
     @ [0]
-    |> List.map2 Pervasives.max
+    |> List.map2 Stdlib.max
         (Tableau.get_width_column_vector sx.tab)
-    |>  List.map2 Pervasives.max
+    |>  List.map2 Stdlib.max
         (Objective.getColumnsWidth Var.to_string sx.obj)
     in
     List.mapi (fun i n ->
         let n' = var_to_string i |> String.length in
-        Pervasives.max n n'
+        Stdlib.max n n'
     ) (Misc.sublist l 0 (List.length l - 1))
     @ [List.nth l (List.length l - 1)]
 
@@ -132,7 +132,7 @@ let to_string : 'c t -> string
     = fun sx0 ->
     let sx =
         let l = (nRows sx0) - (sx0.basis |> List.length) in
-        if l < 0 then Pervasives.failwith "PSplx.to_string"
+        if l < 0 then Stdlib.failwith "PSplx.to_string"
         else
             let rec gen : int -> int list
                 = fun i -> if i = 0 then [] else -1 :: gen (i - 1)
@@ -184,7 +184,7 @@ let to_string : 'c t -> string
 let print : 'c t -> unit
     = fun sx ->
     to_string sx
-    |> Pervasives.print_endline
+    |> Stdlib.print_endline
 
 let remCol : int -> 'c t -> 'c t
     = fun i_col sx -> {sx with

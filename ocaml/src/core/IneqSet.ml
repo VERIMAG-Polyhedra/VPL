@@ -103,7 +103,7 @@ let mkCert : 'c Factory.t -> 'c Cons.t list -> Cs.t -> (int * Scalar.Rat.t) list
 		in
 		Cons.adjust_cert_constant factory cons cstr
 	with
-		Not_found -> Pervasives.failwith "IneqSet.mkCert"
+		Not_found -> Stdlib.failwith "IneqSet.mkCert"
 
 type 'c rel_t =
 | NoIncl
@@ -228,8 +228,8 @@ let trimSet : Var.t -> 'c Cons.t list -> 'c Cons.t list
 	= fun nxt s ->
 	let cl = List.mapi (fun i c -> i, Cons.get_c c) s in
 	match Splx.checkFromAdd (Splx.mk nxt cl) with
-	| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.trimSet"
-	| Splx.IsOk sx -> Pervasives.fst (trim s sx)
+	| Splx.IsUnsat _ -> Stdlib.failwith "IneqSet.trimSet"
+	| Splx.IsOk sx -> Stdlib.fst (trim s sx)
 
 (* XXX: À revoir?
 Cette fonction n'est utilisée que dans la projection?
@@ -383,7 +383,7 @@ module RmRedAux = struct
 			else (sx, cons::s)
 		in
 		let ineqs' = List.fold_left classic (sx, []) conss
-		|> Pervasives.snd in {
+		|> Stdlib.snd in {
             ineqs = ineqs';
             regions = None;
         }
@@ -407,7 +407,7 @@ let rmRedAux : 'c t -> Splx.t -> Scalar.Symbolic.t Rtree.t -> 'c t
 			| Flags.Classic ->
                 let conss = List.mapi (fun i c -> (i,c)) s.ineqs in
 				RmRedAux.classic sx conss
-			| _ -> Pervasives.invalid_arg "IneqSet.rmRedAux"
+			| _ -> Stdlib.invalid_arg "IneqSet.rmRedAux"
 	in
 	fun s sx ->
 	Heuristic.apply_min
@@ -446,7 +446,7 @@ let assume: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 	else
 		let ilist = List.mapi (fun i c -> (i, Cons.get_c c)) s2.ineqs in
 		match Splx.checkFromAdd (Splx.mk nvar ilist) with
-		| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.addM: unexpected unsat set"
+		| Splx.IsUnsat _ -> Stdlib.failwith "IneqSet.addM: unexpected unsat set"
 		| Splx.IsOk sx -> rmRedAux s2 sx point
 
 let assume_back : 'c Factory.t -> 'c t -> 'c Cons.t -> Vector.Symbolic.t -> ('c t * Vector.Symbolic.t) option
@@ -483,14 +483,14 @@ let addM: Var.t -> 'c t -> 'c Cons.t list -> Scalar.Symbolic.t Rtree.t -> 'c t
 				let s2 = rmRedSyn s conss in
 				let ilist = List.mapi (fun i c -> (i, Cons.get_c c)) s2 in
 				match Splx.checkFromAdd (Splx.mk nvar ilist) with
-				| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet.addM: unexpected unsat set"
+				| Splx.IsUnsat _ -> Stdlib.failwith "IneqSet.addM: unexpected unsat set"
 				| Splx.IsOk sx -> begin
 					Stat.base_n_cstr := List.length s2;
 					let conss = List.mapi (fun i c -> (i,c)) s2 in
 					RmRedAux.classic sx conss
 					end
 				end
-			| _ -> Pervasives.invalid_arg "IneqSet.rmRedAux"
+			| _ -> Stdlib.invalid_arg "IneqSet.rmRedAux"
 	in
 	match !Flags.min with
 	| Flags.MHeuristic -> apply (Heuristic.min (List.map Cons.get_c (s @ conss)))

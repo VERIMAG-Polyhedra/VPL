@@ -51,7 +51,7 @@ module Make (Coeff : Scalar) = struct
 	let mk : coeff list -> t
 		= fun l ->
 		if is_nonnegative l then l
-		else Pervasives.invalid_arg "IndexC.mk : coefficients are not nonnegative"
+		else Stdlib.invalid_arg "IndexC.mk : coefficients are not nonnegative"
 
 	(** [unitary i len] returns an index of length [len], whose value is 1 at index [i] and 0 otherwise. *)
 	let unitary : int -> int -> t
@@ -96,7 +96,7 @@ module Make (Coeff : Scalar) = struct
 		try
 			let dim = len (List.hd il) in
 			List.fold_left add (init dim) il
-		with _ -> Pervasives.invalid_arg "Index.sum : empty input list"
+		with _ -> Stdlib.invalid_arg "Index.sum : empty input list"
 
 	(** [sub ind1 ind2] returns an index such that the ith coefficient equals to [ind1(i)] - [ind2(i)]. *)
 	let sub : t -> t -> t
@@ -120,7 +120,7 @@ module Make (Coeff : Scalar) = struct
 	let first_positive : t -> int
 		= fun id ->
 		let rec f i = function
-		| [] -> Pervasives.raise Not_found
+		| [] -> Stdlib.raise Not_found
 		| x :: l ->
 			if Coeff.lt Coeff.z x
 			then i
@@ -140,7 +140,7 @@ module Make (Coeff : Scalar) = struct
 			| ([],[]) -> 0
 			| (_,[]) -> 1
 			| ([],_) -> -1
-			| (j1::tl1, j2::tl2) -> let x = Pervasives.compare j1 j2 in
+			| (j1::tl1, j2::tl2) -> let x = Stdlib.compare j1 j2 in
 			match x with
 				| 0 -> compare tl1 tl2
 				| _ -> x

@@ -90,7 +90,7 @@ module Profile (D : sig val name : string end) = struct
 			(fun name e (max_name, max) ->
 				if e.start <> None && not (Misc.string_equal name s)
 				then match e.start, max.start with
-					| None,_ | _,None -> Pervasives.failwith "Profile.get_prefix"
+					| None,_ | _,None -> Stdlib.failwith "Profile.get_prefix"
 					| Some e_start, Some max_start ->
 						if e_start >= max_start
 						then (name, e)
@@ -127,7 +127,7 @@ module Profile (D : sig val name : string end) = struct
 				then
 					let start_time =  Unix.gettimeofday() in
 					map := MapPro.add name {e with start = Some start_time} !map
-				else Pervasives.raise (Already_started name)
+				else Stdlib.raise (Already_started name)
 			with Not_found ->
 				let start_time =  Unix.gettimeofday() in
 				map := MapPro.add name {e0 with start = Some start_time} !map
@@ -141,11 +141,11 @@ module Profile (D : sig val name : string end) = struct
 			try
 				let e = MapPro.find name !map in
 				match e.start with
-				| None -> Pervasives.raise (Not_started name)
+				| None -> Stdlib.raise (Not_started name)
 				| Some start_time ->
 					let time' = Unix.gettimeofday() -. start_time in
 					map := MapPro.add name {start = None ; time = time'+.  e.time} !map
-			with Not_found -> Pervasives.raise (Not_started name)
+			with Not_found -> Stdlib.raise (Not_started name)
 		end
 
 end
@@ -237,12 +237,12 @@ module Report = struct
 			(fun tree e ->
 				let (tree',b) = add e tree in
 				if b then tree'
-				else Pervasives.failwith "build")
+				else Stdlib.failwith "build")
 			(init_tree()) l
 
 	let sort_tree_list : tree list -> tree list
 		= List.fast_sort
-			(fun (Node((_,t1),_)) (Node((_,t2),_)) -> Pervasives.compare t1 t2)
+			(fun (Node((_,t1),_)) (Node((_,t2),_)) -> Stdlib.compare t1 t2)
 
 	let rec sort_tree : tree -> tree
 		= function
