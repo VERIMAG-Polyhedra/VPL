@@ -25,10 +25,12 @@ module Float = struct
 	let mul = ( *. )
 	let pow : t -> int -> t
 		= fun x exp ->
-		List.fold_left
-			(fun res _ -> mul res x)
-			u
-			(Misc.range 0 exp)
+		let rec pow_rec r i =
+			if i >= exp
+			then r
+			else pow_rec (mul r x) (i+1)
+		in
+		pow_rec u 0
 
 	let div  = ( /. )
 	let add = ( +. )
@@ -115,10 +117,12 @@ module Rat = struct
 	let div = Q.div
 	let pow : t -> int -> t
 		= fun x exp ->
-		List.fold_left
-			(fun res _ -> mul res x)
-			u
-			(Misc.range 0 exp)
+		let rec pow_rec r i =
+			if i >= exp
+			then r
+			else pow_rec (mul r x) (i+1)
+		in
+		pow_rec u 0
 
 	let ofQ : Q.t -> t = fun n -> n
 	let toQ : Q.t -> t = fun n -> n
@@ -271,10 +275,12 @@ module Int = struct
 	let div = Z.div
 	let pow : t -> int -> t
 		= fun x exp ->
-		List.fold_left
-			(fun res _ -> mul res x)
-			u
-			(Misc.range 0 exp)
+		let rec pow_rec r i =
+			if i >= exp
+			then r
+			else pow_rec (mul r x) (i+1)
+		in
+		pow_rec u 0
 
 	let ofQ _ = Pervasives.failwith "Scalar.Int.ofQ"
 	let toQ n = Rat.ofZ n u
@@ -439,10 +445,12 @@ module Symbolic = struct
 
 	let pow : t -> int -> t
 		= fun x exp ->
-		List.fold_left
-			(fun res _ -> mul res x)
-			u
-			(Misc.range 0 exp)
+		let rec pow_rec r i =
+			if i >= exp
+			then r
+			else pow_rec (mul r x) (i+1)
+		in
+		pow_rec u 0
 
 	(* On triche en négligeant les delta^2 *)
 	let div : t -> t -> t
@@ -543,10 +551,12 @@ module MachineInt = struct
 	let div = (/)
 	let pow : t -> int -> t
 		= fun x exp ->
-		List.fold_left
-			(fun res _ -> mul res x)
-			u
-			(Misc.range 0 exp)
+		let rec pow_rec r i =
+			if i >= exp
+			then r
+			else pow_rec (mul r x) (i+1)
+		in
+		pow_rec u 0
 
 	let ofQ _ = Pervasives.failwith "Scalar.Int.ofQ"
 	let toQ = Q.of_int

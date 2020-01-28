@@ -89,15 +89,10 @@ let list_eq2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 	List.for_all (fun e2 -> List.exists (fun e1 -> eq e1 e2) l1) l2
 
 let rec range : int -> int -> int list
-	= fun i j->
+	= fun i j ->
 	if i >= j then [] else i :: (range (i+1) j)
 
-(** [range a len] returns the list [a;a+1;a+2;...;a+len] *)
-let range_len : int -> int -> int list
-	= fun i j ->
-	if j = 0 then [] else i :: (range (i+1) (j-1))
-
-let (max : ('a -> 'a -> int) -> 'a list -> 'a)
+let max : ('a -> 'a -> int) -> 'a list -> 'a
 	= fun cmp l ->
 	try List.fold_left
 	(fun i j -> if cmp i j > 0 then i else j)
@@ -170,17 +165,19 @@ let add_tab : int -> string -> string
 
 let fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 	= fun f a0 bs ->
-	List.fold_left
-		(fun a i -> f i a (List.nth bs i))
-		a0
-		(range 0 (List.length bs))
+	let rec fold_rec i acc = function
+		| [] -> acc
+		| x :: l -> fold_rec (i+1) (f i acc x) l
+	in
+	fold_rec 0 a0 bs
 
 let fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 	= fun f a_s b0 ->
-	List.fold_right
-		(fun i b -> f i (List.nth a_s i) b)
-		(range 0 (List.length a_s))
-		b0
+	let rec fold_rec i acc = function
+		| [] -> acc
+		| x :: l -> f i x (fold_rec (i+1) acc l)
+	in
+	fold_rec 0 b0 a_s
 
 let array_fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 	= fun f a0 bs ->

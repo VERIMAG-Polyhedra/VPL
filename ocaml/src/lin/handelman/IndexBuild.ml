@@ -69,7 +69,7 @@ module IndexList = struct
 		Misc.fold_left_i (fun i res v ->
                 if v <> 0
                 then let id = Index.Int.set init i 1 in
-                (List.map (fun _ -> id) (Misc.range 0 v)) @ res
+                (List.init v (fun _ -> id)) @ res
                 else res
             ) [] ind
 

@@ -57,11 +57,13 @@ module Init = struct
 
     let init_var_set : 'c t -> unit
         = fun sx ->
-        let var_set = List.fold_left (fun map i ->
-            VarMap.add i 1 map
-        ) VarMap.empty (Misc.range 0 (List.length sx.cstrs)) in
-        sx.get_set <- var_set
-
+        let n = List.length sx.cstrs in
+        let rec init_var_set_rec i map =
+            if i = n
+            then map
+            else init_var_set_rec (i+1) (VarMap.add i 1 map)
+        in
+        sx.get_set <- init_var_set_rec 0 VarMap.empty
 end
 
 let init : 'c Cons.t list -> int -> int list -> Cs.Vec.t -> 'c t
