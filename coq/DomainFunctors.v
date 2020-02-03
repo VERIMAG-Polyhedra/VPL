@@ -1,3 +1,4 @@
+Require Import String.
 Require Import AssignD.
 Require Import ASAtomicCond.
 

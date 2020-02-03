@@ -419,6 +419,7 @@ Example of use:
   Notation "'If' k 'THEN' R" := (wlp k (fun b => ifprop b R True))
     (at level 73, R at level 100, right associativity): impure_scope.
 
+
 End ImpureMonadTheory.
 
 
@@ -608,7 +609,9 @@ Module AlarmImpureMonad(Import M: FullImpureMonad) <: FullAlarmedMonad.
 
   End Base.
 
+  Set Warnings "-notation-overridden".
   Include ImpureMonadTheory Base.
+  Set Warnings "default".
 
   Definition alarm {A:Type} (msg: string) (a:A) := 
      let a:=trace INFO msg a in

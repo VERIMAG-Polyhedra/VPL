@@ -1,7 +1,9 @@
+
 (** Version of the main interfaces in VPL hierarchy 
     where the backend is not trusted to be pure.
 *)
 
+Set Warnings "-notation-overridden".
 Require Export NumC.
 Require Export ProgVar.
 Require Export Debugging.
@@ -16,7 +18,6 @@ Ltac VPLAsimplify :=
   xasimplify ltac:(eauto with vpl).
 
 (* TODO: cut BasicDomain in smaller pieces ? *)
-
 Module Type BasicDomainG (Import Imp: FullImpureMonad) (N: NumSig).
 
   Parameter t: Type.
@@ -115,7 +116,7 @@ Module Type ItvSig(N:NumSig).
 End ItvSig.
 
 Module Type TermSig(N:NumSig).
-  
+
   Parameter t: Type.
   Parameter eval: t -> Mem.t N.t -> N.t.
 
@@ -157,12 +158,11 @@ End HasGetItvMode.
 (** Assume/Require of conditions  *)
 
 Module Type CondSig(N:NumSig).
-  
+
   Parameter t: Type.
   Parameter sat: t -> Mem.t N.t -> Prop.
 
 End CondSig.
-
 
 Module Type HasAssumeG (Import Imp: FullImpureMonad) (N: NumSig) (Cond: CondSig N) (D:BasicDomainG Imp N).
 
@@ -181,7 +181,7 @@ Module Type HasAssume (N: NumSig) (Cond: CondSig N) (D:BasicDomain N).
 End HasAssume.
 
 Module Type HasAssertG (Import Imp: FullImpureMonad) (N: NumSig) (Cond: CondSig N) (D:BasicDomainG Imp N).
-  
+
   Import Cond.
   Import D.
 
@@ -217,7 +217,7 @@ End AbstractDomain.
 
 (* Assignement *)
 Module Type XCondSig(N:NumSig).
-  
+
   Declare Module Term: TermSig N.
   Include CondSig N.
 
@@ -232,7 +232,7 @@ End XCondSig.
 
 
 Module Type HasAssignG (Import Imp: FullImpureMonad) (N: NumSig) (Cond: XCondSig N) (D: BasicDomainG Imp N).
-  
+
   Import Cond.Term.
   Import Cond.
   Import D.
@@ -262,3 +262,5 @@ Module Type FullAbstractDomain (N: NumSig) (Cond: XCondSig N) := AbstractDomain 
 
 Module Type FullItvAbstractDomain (N: NumSig) (Cond: XCondSig N) (I: ItvSig N)
   := FullAbstractDomain N Cond <+ HasGetItvMode N Cond.Term I <+ HasSimplePrinting N.
+
+Set Warnings "default".

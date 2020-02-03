@@ -1,3 +1,4 @@
+Require Import String.
 Require Import Ring_polynom_AddOnQ.
 Require Import NArith.
 Require Import QArith.
@@ -153,14 +154,14 @@ Module MapPoly.
   Definition map_pos (P : Cs.t) (m:t) : Prop :=
   forall k:M.key, forall d:Cstr.t, forall p:PExpr, forall mem: Mem.t QNum.t,
   Cs.sat P mem -> M.MapsTo k p m -> 0%Q <= PEsem p (Cs.mem_compat mem).
-  
+
   Lemma find_or_1_pos : forall P : Cs.t, forall i:CIndex.NatIndex.t, forall d:Cstr.t, forall mem: Mem.t QNum.t,
   forall m:t, map_pos P m -> Cs.sat P mem -> 0%Q <= PEsem (find_or_1 i m) (Cs.mem_compat mem).
   Proof.
     intros P i d mem m pos sat.
     unfold find_or_1.
     elimtype (exists o, o=M.find (elt:=PExpr) i m); eauto.
-    intros o H; rewrite <- H; destruct o as [x|y].
+    intros o H; rewrite <- H; destruct o as [x|].
     apply (pos i d x mem).
     assumption.
     apply M.find_2.

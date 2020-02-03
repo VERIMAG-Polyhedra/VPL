@@ -1,3 +1,4 @@
+Set Warnings "-notation-overridden".
 Require Import String.
 Require Import Impure.
 Require Import PredTrans.
@@ -355,3 +356,5 @@ Module FullAlarmGCL (N: NumSig) (Cond: XCondSig N) (D: FullAbstractDomain N Cond
   End DAlarm.
   Include GeneralizedFullGCL CoreAlarm N Cond DAlarm.
 End FullAlarmGCL.
+
+Set Warnings "default".

@@ -38,8 +38,6 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
       opam install coq-vpltactic
       ```
 
-  In case of trouble with this `opam` install, you should read [this](https://github.com/VERIMAG-Polyhedra/opam-vpl/blob/master/README.md#using-the-vpl-on-a-vagrantvirtualbox-virtual-machine).
-
 2. __From sources__
 
     The VPL can use a C++ parallel algorithm to minimize the representation of polyhedra.
@@ -106,7 +104,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
            * [coq](https://coq.inria.fr/)
               (mandatory only if you want to re-extract files from Coq)
               _available in OPAM_
-              __required version 8.7__ (use coq-vpl.0.2 for coq 8.6)
+              __required version 8.9__ (use older opam packages of coq-vpl for previous versions of coq)
 
               __NB__ the `ocaml/src/extracted/` directory already contains extracted files from Coq.
 
