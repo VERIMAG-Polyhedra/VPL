@@ -52,7 +52,7 @@ module Factory = struct
 			 	(Cstr_type.(match cmp with | Le -> "<=" | Lt -> "<" | Eq -> "="))
 				(Scalar.Rat.to_string n)
 				|> print_endline;
-				Pervasives.failwith "Factory.Cstr.triv")
+				Stdlib.failwith "Factory.Cstr.triv")
 			;
 			Cs.mk cmp [] n);
 		Factory.add = Cs.add;
@@ -1285,7 +1285,7 @@ module Make_Tests (F : sig
 	  = fun () ->
       let chk : string * Vec.t * Pol.itvT * Cs.t Pol.t -> Test.stateT -> Test.stateT
 		   = fun (nm, v, i, p) st ->
-		   let b = Pol.getUpperBound factory p v |> Pervasives.fst in
+		   let b = Pol.getUpperBound factory p v |> Stdlib.fst in
 		   if eqBnd (Pol.get_up i) b
 		   then Test.succeed st
 		   else Test.fail nm "not equal" st
@@ -1297,7 +1297,7 @@ module Make_Tests (F : sig
 	  = fun () ->
       let chk : string * Vec.t * Pol.itvT * Cs.t Pol.t -> Test.stateT -> Test.stateT
 		   = fun (nm, v, i, p) st ->
-		   let b = Pol.getLowerBound factory p v |> Pervasives.fst in
+		   let b = Pol.getLowerBound factory p v |> Stdlib.fst in
 		   if eqBnd (Pol.get_low i) b
 		   then Test.succeed st
 		   else Test.fail nm "not equal" st

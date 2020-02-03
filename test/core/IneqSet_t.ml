@@ -77,7 +77,7 @@ let iset: Cs.t list -> Cs.t IneqSet.t
 	= fun l ->
 	let l_stricten = List.mapi (fun i c -> i,{c with Cs.typ = Cstr_type.Lt}) l in
 	match Splx.checkFromAdd (Splx.mk nxt l_stricten) with
-	| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet_t.iset: unexpected empty interior"
+	| Splx.IsUnsat _ -> Stdlib.failwith "IneqSet_t.iset: unexpected empty interior"
 	| Splx.IsOk sx_strict ->
 		let conss = List.map (fun c -> c,c) l in
 		IneqSet.assume nxt IneqSet.top conss (Splx.getAsg sx_strict)
@@ -184,11 +184,11 @@ let addMTs: Test.t
 = fun () ->
 let chk (nm, s, l, r)
 	= fun st ->
-		let ilist = List.mapi (fun i cs -> i, cs) (l @ (List.map Pervasives.fst s.IneqSet.ineqs))
+		let ilist = List.mapi (fun i cs -> i, cs) (l @ (List.map Stdlib.fst s.IneqSet.ineqs))
 		in
 		let l_stricten = List.map (fun (i,c) -> i, {c with Cs.typ = Cstr_type.Lt}) ilist in
 		match Splx.checkFromAdd (Splx.mk nxt l_stricten) with
-		| Splx.IsUnsat _ -> Pervasives.failwith "IneqSet_t.iset: unexpected empty interior"
+		| Splx.IsUnsat _ -> Stdlib.failwith "IneqSet_t.iset: unexpected empty interior"
 		| Splx.IsOk sx_strict ->
 			let conss = List.map mkCons l in
 			let s' = IneqSet.assume nxt s conss (Splx.getAsg sx_strict) in

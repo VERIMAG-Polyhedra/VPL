@@ -23,7 +23,7 @@ let mkc t v c =
 let sxLift : Splx.t Splx.mayUnsatT -> Splx.t
 = function
 	| Splx.IsOk sx -> sx
-	| Splx.IsUnsat _ -> Pervasives.invalid_arg "Opt_t.sxLift"
+	| Splx.IsUnsat _ -> Stdlib.invalid_arg "Opt_t.sxLift"
 
 let eq = mkc Cstr_type.Eq
 let le = mkc Cstr_type.Le
@@ -358,7 +358,7 @@ let maxTs: Test.t
 	let tcs
 	  = let dummySx
 	      = match Splx.mk Var.XH [] with
-	      | Splx.IsUnsat _ -> Pervasives.failwith "Opt_t.maxTs"
+	      | Splx.IsUnsat _ -> Stdlib.failwith "Opt_t.maxTs"
 	      | Splx.IsOk sx -> sx
 	    in
 	    [

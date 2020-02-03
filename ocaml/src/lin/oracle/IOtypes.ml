@@ -361,7 +361,7 @@ module Lift (D : Domain_T) = struct
       		| Annot (ASTerm.TopLevelAnnot.STATIC, x) -> Printf.sprintf "STATIC(%s)" (to_string x)
       		| Annot (ASTerm.TopLevelAnnot.AFFINE, x) -> Printf.sprintf "AFFINE(%s)" (to_string x)
       		| Annot (ASTerm.TopLevelAnnot.INTERV, x) -> Printf.sprintf "INTERV(%s)" (to_string x)
-    		| _ -> Pervasives.invalid_arg "IOtypes.to_string"
+    		| _ -> Stdlib.invalid_arg "IOtypes.to_string"
             )
 
     	let of_cte : D.Poly.Coeff.t -> t
@@ -448,7 +448,7 @@ module Lift (D : Domain_T) = struct
     		= fun t ->
          	match get_affine_part_opt t with
       		| Some x -> x
-      		| None -> Pervasives.raise Not_found
+      		| None -> Stdlib.raise Not_found
 
         (* remarque : retire les annotations interv*)
     	let rec get_interv_part_opt : t -> t option
@@ -549,7 +549,7 @@ module Lift (D : Domain_T) = struct
                 let max = Misc.max (fun (var1,r1) (var2,r2) ->
                     D.Poly.Coeff.cmp r1 r2
                 ) ranges
-        		|> Pervasives.fst
+        		|> Stdlib.fst
                 in Some max
 
         (* TODO: le -> lt ?*)
@@ -574,7 +574,7 @@ module Lift (D : Domain_T) = struct
     			| (Some x1, Some x2) ->
     				let b = D.Poly.n_to_coeff x2 in
     				if D.Poly.Coeff.lt b (D.Poly.Coeff.z) then x2 else x1
-    			| _ -> Pervasives.failwith "Itv.get_translation_bound"
+    			| _ -> Stdlib.failwith "Itv.get_translation_bound"
     end
 end
 

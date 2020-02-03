@@ -5,18 +5,18 @@ module Make (D: AbstractDomain.Type) = struct
         let file = Config.log_file
 
         let () =
-            let out_channel = Pervasives.open_out_gen [Open_creat; Open_wronly; Open_trunc] 0o640 !file in
+            let out_channel = Stdlib.open_out_gen [Open_creat; Open_wronly; Open_trunc] 0o640 !file in
             "typedef int abs_value;\ntypedef int var;\nvoid main(){\n"
-            |> Pervasives.output_string out_channel;
-            Pervasives.close_out(out_channel)
+            |> Stdlib.output_string out_channel;
+            Stdlib.close_out(out_channel)
 
         let track : string -> unit
             = fun s ->
             if !Flags.log_trace
             then begin
-                let out_channel = Pervasives.open_out_gen [Open_wronly ; Open_append] 0o640 !file in
-                Pervasives.output_string out_channel ("\t" ^ s ^ "\n");
-                Pervasives.close_out(out_channel)
+                let out_channel = Stdlib.open_out_gen [Open_wronly ; Open_append] 0o640 !file in
+                Stdlib.output_string out_channel ("\t" ^ s ^ "\n");
+                Stdlib.close_out(out_channel)
             end
 
         let unary : string -> (t -> t) -> (t -> t)
@@ -148,7 +148,7 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
         let size p =
             let rep = match backend_rep p with
                 | Some (p',_) -> p'
-                | _ -> Pervasives.failwith "size"
+                | _ -> Stdlib.failwith "size"
             in
             Pol.size rep
 
@@ -159,11 +159,11 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
                 | Some (p',(ofVar, toVar)) ->
                     let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
                     (p', toVar')
-                | _ -> Pervasives.failwith "split_in_half"
+                | _ -> Stdlib.failwith "split_in_half"
             in
             let rep_unit = FactoryUnit.convert rep in
             match Pol.split_in_half FactoryUnit.factory rep_unit with
-            | None -> Pervasives.failwith "split_in_half: unbounded polyhedron"
+            | None -> Stdlib.failwith "split_in_half: unbounded polyhedron"
             | Some cstr ->
                 let cond1 = [Pol.Cs.rename_f toVar cstr]
                     |> Cond.of_cstrs
@@ -185,7 +185,7 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
                     let (_,_,toVar2') = PedraQOracles.export_backend_rep (p2',(ofVar2,toVar2))
                     in
                     (p1',p2', toVar2')
-                | _, _ -> Pervasives.failwith "diff"
+                | _, _ -> Stdlib.failwith "diff"
             in
             let p2_ineqs = Pol.get_ineqs rep2
                 |> List.map (fun (cstr,_) -> Pol.Cs.rename_f toVar2 cstr)
@@ -203,7 +203,7 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
                         (assume (Cond.of_cstrs [compl ineq]) pol_cont :: res,
                          assume (Cond.of_cstrs [ineq]) pol_cont :: cont))
                     ([fst_res],[fst_cont]) (List.tl p2_ineqs)
-                |> Pervasives.fst
+                |> Stdlib.fst
 
         let get_cstrs : t -> Cstr.Rat.t list
     		= fun p ->
@@ -211,7 +211,7 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
                 | Some (p',(ofVar, toVar)) ->
                     let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
                     (p', toVar')
-                | _ -> Pervasives.failwith "get_cond"
+                | _ -> Stdlib.failwith "get_cond"
             in
             Pol.get_cstr rep
             |> List.map (fun cstr -> Pol.Cs.rename_f toVar cstr)
@@ -222,7 +222,7 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
                 | Some (p',(ofVar, toVar)) ->
                     let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
                     (p', toVar')
-                | _ -> Pervasives.failwith "get_cond"
+                | _ -> Stdlib.failwith "get_cond"
             in
             Pol.get_cstr rep
             |> List.map (fun cstr -> Pol.Cs.rename_f toVar cstr)
@@ -234,7 +234,7 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
                 | Some (p',(ofVar,toVar)) ->
                     let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
                     (p', toVar')
-                | _ -> Pervasives.failwith "get_vars"
+                | _ -> Stdlib.failwith "get_vars"
             in
             Pol.varSet rep
             |> Var.Set.elements
@@ -245,7 +245,7 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
                 | Some (p',(ofVar,toVar)) ->
                     let (_,ofVar',_) = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
                     (p', ofVar')
-                | _ -> Pervasives.failwith "get_vars"
+                | _ -> Stdlib.failwith "get_vars"
             in
             FactoryUnit.convert rep
             |> Pol.spawn FactoryUnit.factory
@@ -257,7 +257,7 @@ module MakeAbstractDomain (Coeff: Scalar.Type) = struct
                 | Some (p',(ofVar,toVar)) ->
                     let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
                     (p', toVar')
-                | _ -> Pervasives.failwith "get_vars"
+                | _ -> Stdlib.failwith "get_vars"
             in
             Vec.rename_f toVar point
             |> Pol.satisfy rep

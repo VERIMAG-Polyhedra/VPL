@@ -67,7 +67,7 @@ let get_row_pivot_ts : Test.t
 	   	let pr : int option -> string
 		  = function
 		  | None -> "None"
-		  | Some i -> "Some " ^ Pervasives.string_of_int i
+		  | Some i -> "Some " ^ Stdlib.string_of_int i
 		in
 		Printf.printf "%s: expected %s but got %s\n" nm (pr er) (pr ar);
 		st
@@ -272,7 +272,7 @@ module Init
      let chk : string * int * int * PSplx.t -> (Test.stateT -> Test.stateT)
 	= fun (nm, col, r, sx) st ->
 	let i = PSplx.Explore.Init.getReplacementForA sx col in
-	Test.equals nm Pervasives.string_of_int (=) r i st
+	Test.equals nm Stdlib.string_of_int (=) r i st
 	   in
 	   [
 	"selectionBug", 0, 1,
@@ -303,7 +303,7 @@ module Init
 	  let e = Printf.sprintf "\n%s: tableau is not in canonical form\n%s"
 				 nm (PSplx.to_string sx')
 	  in
-	  Pervasives.print_endline e;
+	  Stdlib.print_endline e;
 	  st
 	   in
 	   let v = List.map Q.of_int in

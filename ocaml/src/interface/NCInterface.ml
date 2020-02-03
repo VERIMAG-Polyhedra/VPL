@@ -117,25 +117,25 @@ module Lift (P : PolyhedronDomain)  = struct
 			let p = Term.to_poly term in
 			if Polynomial.is_linear p
 			then Some (Polynomial.toCstr p
-				|> Pervasives.fst)
+				|> Stdlib.fst)
 			else None
 
 		let getUpperBound : t -> Term.t -> Pol.bndT option
 			= fun pol term ->
 			match extract_vec term with
-			| None -> Pervasives.invalid_arg "getUpperBound : nonlinear expression"
+			| None -> Stdlib.invalid_arg "getUpperBound : nonlinear expression"
 			| Some vec -> P.getUpperBound pol vec
 
 		let getLowerBound : t -> Term.t -> Pol.bndT option
 			= fun pol term ->
 			match extract_vec term with
-			| None -> Pervasives.invalid_arg "getLowerBound : nonlinear expression"
+			| None -> Stdlib.invalid_arg "getLowerBound : nonlinear expression"
 			| Some vec -> P.getLowerBound pol vec
 
 		let itvize : t -> Term.t -> Pol.itvT
 			= fun pol term ->
 			match extract_vec term with
-			| None -> Pervasives.invalid_arg "itvize : nonlinear expression"
+			| None -> Stdlib.invalid_arg "itvize : nonlinear expression"
 			| Some vec -> P.itvize pol vec
 
 		let backend_rep : t -> (rep * ((ProgVar.PVar.t -> ProgVar.PVar.t) * (ProgVar.PVar.t -> ProgVar.PVar.t))) option

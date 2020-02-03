@@ -125,7 +125,7 @@ module Interface (Coeff: Scalar.Type) = struct
 			| LT -> (Lt, Polynomial.neg p)
 			| GE -> (Le, p)
 			| GT -> (Lt, p)
-			| NEQ -> Pervasives.failwith "VPLInterface.Term.to_cp: NEQ unimplemented")
+			| NEQ -> Stdlib.failwith "VPLInterface.Term.to_cp: NEQ unimplemented")
 			in
 			CP.mk cmp' p'
 
@@ -352,7 +352,7 @@ let rec import_QTerm: QTerm.t -> CQTerm.t
   | QTerm.Opp t -> CQTerm.Opp (import_QTerm t)
   | QTerm.Mul (t1, t2) -> CQTerm.Mul (import_QTerm t1, import_QTerm t2)
   | QTerm.Prod l -> import_bin_assoc import_QTerm (CQTerm.Cte CQNum.u) (fun t1 t2 -> CQTerm.Mul (t1,t2)) l
-  | QTerm.Div (_,_) | QTerm.Poly _ -> Pervasives.failwith "import_QTerm: unimplemented"
+  | QTerm.Div (_,_) | QTerm.Poly _ -> Stdlib.failwith "import_QTerm: unimplemented"
   | QTerm.Annot (a, t) ->
      (match import_annot a with
      | Some a -> CQTerm.Annot (a, import_QTerm t)
@@ -400,7 +400,7 @@ let rec import_ZTerm: ZTerm.t -> CZTerm.t
   | ZTerm.Opp t -> CZTerm.Opp (import_ZTerm t)
   | ZTerm.Mul (t1, t2) -> CZTerm.Mul (import_ZTerm t1, import_ZTerm t2)
   | ZTerm.Prod l -> import_bin_assoc import_ZTerm (CZTerm.Cte CZNum.u) (fun t1 t2 -> CZTerm.Mul (t1,t2)) l
-  | ZTerm.Div (_,_) | ZTerm.Poly _ -> Pervasives.failwith "import_ZTerm: unimplemented"
+  | ZTerm.Div (_,_) | ZTerm.Poly _ -> Stdlib.failwith "import_ZTerm: unimplemented"
   | ZTerm.Annot (a, t) ->
      (match import_annot a with
      | Some a -> CZTerm.Annot (a, import_ZTerm t)
@@ -440,7 +440,7 @@ module QAffTerm = struct
 		| LT -> (Lt, Polynomial.neg p)
 		| GE -> (Le, p)
 		| GT -> (Lt, p)
-		| NEQ -> Pervasives.failwith "VPLInterface.Term.to_cp: NEQ unimplemented")
+		| NEQ -> Stdlib.failwith "VPLInterface.Term.to_cp: NEQ unimplemented")
 		in
 		CP.mk cmp' p'
 end

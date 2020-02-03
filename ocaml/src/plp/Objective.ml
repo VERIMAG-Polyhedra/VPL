@@ -72,7 +72,7 @@ let get : int -> t -> Cs.t
     = fun i o ->
     if 0 <= i && i < List.length o.lin
     then List.nth o.lin i
-    else Pervasives.invalid_arg "Tableau.get"
+    else Stdlib.invalid_arg "Tableau.get"
 
 (* The constant part of the objective is the opposite of the objective value. *)
 let value : t -> Cs.t
@@ -90,7 +90,7 @@ let mk : Cs.t list -> Cs.t -> t
 let elim : Tableau.t -> int -> int -> t -> t
     = fun tab i_row i_col obj  ->
     if not (Scalar.Rat.equal Scalar.Rat.u tab.(i_row).(i_col))
-    then Pervasives.invalid_arg "elim"
+    then Stdlib.invalid_arg "elim"
     else
         let coeff = Cs.mulc_no_exc Scalar.Rat.negU (List.nth obj.lin i_col) in
         let lin  = List.mapi (fun i_col' pcoeff ->
@@ -109,7 +109,7 @@ let foldi : (int -> Cs.t -> 'a -> 'a) -> t -> 'a -> 'a
     List.fold_left (fun (i, a') c ->
         (i + 1, f i c a')
     ) (0, a) o.lin
-    |> Pervasives.snd
+    |> Stdlib.snd
 
 let add_col : t -> Cs.t -> int -> t
     = fun o c i ->
@@ -117,7 +117,7 @@ let add_col : t -> Cs.t -> int -> t
     then {o with
         lin = Misc.sublist o.lin 0 i @ c :: Misc.sublist o.lin i (nVars o)
     }
-    else Pervasives.invalid_arg "add_col"
+    else Stdlib.invalid_arg "add_col"
 
 let getPivotCol : Cs.Vec.t -> t -> choiceT
 	= fun point obj ->

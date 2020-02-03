@@ -18,14 +18,14 @@ defined by the head of the list can appear in the definitions after it. *)
 	List.fold_right (fun (x', xdef') v' -> Vec.elim x' xdef' v') d v
       in
       if Vec.equal Vec.nil v'
-      then Pervasives.failwith "Splx.Defs.add"
+      then Stdlib.failwith "Splx.Defs.add"
       else (x, v') :: d
 
     let rm : Var.t -> t -> t
       = fun x l -> List.filter (fun (x', _) -> Var.cmp x x' <> 0) l
 
     let getVars : t -> Var.Set.t
-      = fun d -> List.map Pervasives.fst d |> Var.Set.of_list
+      = fun d -> List.map Stdlib.fst d |> Var.Set.of_list
 
     let getDef : t -> Var.t -> Vec.t option
       = fun d x ->
@@ -96,7 +96,7 @@ module Witness = struct
 			String.concat " + " (List.map pr l)
 
 	let cmp (i1,_) (i2,_) =
-		match Pervasives.compare i1 i2 with
+		match Stdlib.compare i1 i2 with
 		| 0 -> invalid_arg "Cert.cmp"
 		| n -> n
 
@@ -183,7 +183,7 @@ let elimBasicVars : t -> Vec.t -> Vec.t
     Var.Set.fold
       (fun x v' ->
        match Rtree.get None sx.mat x with
-       | None -> Pervasives.failwith "Splx.elimBasicVars"
+       | None -> Stdlib.failwith "Splx.elimBasicVars"
        | Some vx -> Vec.elim x vx v'
       )
       (getBasicVars sx) v
@@ -347,7 +347,7 @@ let add : t -> int * Cs.t -> t mayUnsatT
 		match Cs.tellProp c with
 		| Cs.Trivial -> IsOk sx
 		| Cs.Contrad -> IsUnsat [i, Cs.Vec.Coeff.u]
-		| Cs.Nothing -> Pervasives.failwith "Splx.add"
+		| Cs.Nothing -> Stdlib.failwith "Splx.add"
 	in
 	fun s (id, c) ->
 	let xs = Cs.getVars [c] in
@@ -512,7 +512,7 @@ module Steep : Strategy
 			match _in_bound c.st with
 			| KoL l -> Scalar.Symbolic.sub l c.st.v
 			| KoU u -> Scalar.Symbolic.sub c.st.v u
-			| Ok -> Pervasives.failwith "Splx.pickbasic_steep.score"
+			| Ok -> Stdlib.failwith "Splx.pickbasic_steep.score"
 		in
 		let choose : choiceT option -> choiceT option -> choiceT option
 		= function
@@ -603,7 +603,7 @@ module Steep : Strategy
 			fun d v st ->
 				match v, st with
 				| Rtree.Nil, _ -> []
-				| _, Rtree.Nil -> Pervasives.invalid_arg "Splx.picknbasic_steep"
+				| _, Rtree.Nil -> Stdlib.invalid_arg "Splx.picknbasic_steep"
 				| Rtree.Sub (l1, a, r1), Rtree.Sub (l2, s, r2) ->
 					let wl : witness_t = witness d l1 l2 in
 					let wr : witness_t = witness d r1 r2 in
@@ -652,7 +652,7 @@ let step : strategyT -> t -> stepT
 	| Some ch ->
 		let (whatNext, xival) =
 			match _in_bound ch.st with
-			| Ok -> Pervasives.failwith "step"
+			| Ok -> Stdlib.failwith "step"
 			| KoL l -> pickNBasic strgy sx HasToIncr ch.vec, l
 			| KoU u -> pickNBasic strgy sx HasToDecr ch.vec, u
 		in
@@ -713,7 +713,7 @@ module Preprocessing
 	defs =
 	  Defs.add
 	    x (match Rtree.get None m x with
-	       | None -> Pervasives.failwith "Splx.Preprocessing.elim"
+	       | None -> Stdlib.failwith "Splx.Preprocessing.elim"
 	       | Some v -> v) sx.defs
       }
 
@@ -826,7 +826,7 @@ let stricten : t -> int -> t mayUnsatT
 	in
 	fun sx id ->
 		match Rtree.find (pred id) sx.state with
-		| None -> Pervasives.invalid_arg "Splx.stricten"
+		| None -> Stdlib.invalid_arg "Splx.stricten"
 		| Some (x, st) ->
 			let st' = {st with
 				low = tryStrictenLow id st.low;

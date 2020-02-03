@@ -16,7 +16,7 @@ module type Type = sig
 end
 
 module Check = struct
-	let enabled : bool Pervasives.ref = Pervasives.ref false
+	let enabled : bool Stdlib.ref = Stdlib.ref false
 
 	let enable : unit -> unit = fun () -> enabled := true
 
@@ -26,7 +26,7 @@ module Check = struct
 		= fun test s ->
 		if !enabled
 		then if not (Lazy.force test)
-			then Pervasives.failwith ("Check error : " ^ (Lazy.force s))
+			then Stdlib.failwith ("Check error : " ^ (Lazy.force s))
 end
 
 module Classic (Vec : Vector.Type) = struct
@@ -57,8 +57,8 @@ module Classic (Vec : Vector.Type) = struct
 			if Cs.get_typ cstr0 = Cstr_type.Le
 			then Some (ofSymbolic (Splx.getAsg sx))
 			else
-				let max_id = Misc.max (fun (i1,_) (i2,_) -> Pervasives.compare i1 i2) cstrs
-					|> Pervasives.fst
+				let max_id = Misc.max (fun (i1,_) (i2,_) -> Stdlib.compare i1 i2) cstrs
+					|> Stdlib.fst
 				in
 				match Splx.add sx (max_id + 1, strict_comp cstr0)
 					|> Splx.checkFromAdd
@@ -80,7 +80,7 @@ module Classic (Vec : Vector.Type) = struct
 		List.map
 			(fun cstr ->
 				let cstrs = Misc.pop (fun ((i1,_),_) ((i2,_),_) -> i1 = i2) cstrs cstr in
-				correct_point horizon cstr (List.split cstrs |> Pervasives.fst))
+				correct_point horizon cstr (List.split cstrs |> Stdlib.fst))
 			cstrs
 
 	let minimize' : Cs.t list -> (Cs.t * Vec.t) list
@@ -95,7 +95,7 @@ module Classic (Vec : Vector.Type) = struct
 				| Some point -> (((i0,cstr0),point)::res, cstrs))
 			([],cstrs)
 			cstrs
-		|> Pervasives.fst
+		|> Stdlib.fst
 		|> correct_points horizon
 
 	let minimize : Vec.t -> Cs.t list -> (Cs.t * Vec.t) list
@@ -139,7 +139,7 @@ module Classic (Vec : Vector.Type) = struct
 				| Some point -> ((cstr0,point)::res, cstrs))
 			([],cstrs)
 			cstrs
-		|> Pervasives.fst
+		|> Stdlib.fst
 
 	let minimize_cone : Vec.t -> Cs.t list -> (Cs.t * Vec.t) list
 		= fun _ cstrs ->
@@ -314,8 +314,8 @@ module Make
 		The first element of each list is a true boundary, if it is a singleton. *)
 		let getTrue : eval -> frontier option
 			= function
-			| [] -> Pervasives.failwith "Min.getTrue : unexpected empty list"
-			| []::_ -> Pervasives.failwith "Min.getTrue : unexpected empty element"
+			| [] -> Stdlib.failwith "Min.getTrue : unexpected empty list"
+			| []::_ -> Stdlib.failwith "Min.getTrue : unexpected empty element"
 			| [(cstr,(dir,v))] :: [] ->
 				let v' = Cs.Vec.Coeff.mul (Cs.Vec.Coeff.of_float 2.) v in
 				let x = getPoint cstr (dir,v') in
@@ -395,7 +395,7 @@ module Make
 			if List.exists (fun (c,_) -> Cs.equalSyn c cstr) paquet
 			then pred @ Misc.sublist others 0 length_succ
 			else match others with
-				| [] -> Pervasives.failwith "Min.heuristique_zarbi"
+				| [] -> Stdlib.failwith "Min.heuristique_zarbi"
 				| paquet' :: others' -> heuristique_zarbi (add paquet pred) paquet' cstr others'
 
 		let updateMap'_v3 : map_t -> Cs.t -> eval -> map_t
@@ -448,7 +448,7 @@ module Make
 			 then updateMap_v2
 			 else if String.compare LP.name "Splx" = 0
 			 	then updateMap_v2
-			 	else Pervasives.invalid_arg "Min.updateMap: name"
+			 	else Stdlib.invalid_arg "Min.updateMap: name"
 
 		(* Evalue chaque contrainte dans la direction de la normale de cstr.
 			Trie les résultats et accumule les égalités. *)
@@ -505,7 +505,7 @@ module Make
 		let init : Vec.t -> Cs.t list -> frontier list * map_t
 			= fun x0 cstrs ->
 			if cstrs = []
-			then Pervasives.failwith "omg"
+			then Stdlib.failwith "omg"
 			else
 			let evals = List.map
 				(fun cstr -> (cstr,init_one x0 cstrs cstr))
@@ -540,7 +540,7 @@ module Make
 		| Some lp -> lp
 		| None -> match LP.mk [Cs.compl cstr] vars with
 			| LP.IsOk lp -> lp
-			| LP.IsUnsat -> Pervasives.failwith "Min.init_lp"
+			| LP.IsUnsat -> Stdlib.failwith "Min.init_lp"
 	(*
 	(** [runlp vars cstr cstrs lp] runs a LP to find a point that violates [cstr] and satisfies each constraint of [cstrs].
 		It starts from the LP [lp] if it exists. *)
@@ -590,7 +590,7 @@ module Make
 			in
 			match LP.mk [cstr'] vars with
 			| LP.IsOk lp -> lp
-			| LP.IsUnsat -> Pervasives.failwith "Min.init_lp"
+			| LP.IsUnsat -> Stdlib.failwith "Min.init_lp"
 
 	(** [runlp vars cstr cstrs lp] runs a LP to find a point that violates [cstr] and satisfies each constraint of [cstrs].
 	It starts from the LP [lp] if it exists. *)
@@ -641,7 +641,7 @@ module Make
 		match l with
 		| [] -> []
 		| (cstr,l') :: tl ->
-(*			(if l' = [] then Pervasives.failwith "run_rec : empty list");*)
+(*			(if l' = [] then Stdlib.failwith "run_rec : empty list");*)
 			let lpOpt = try
 				Some (LP.MapC.find cstr !mapLP)
 			with
@@ -735,7 +735,7 @@ module Make
 			l
 		in
 		Debug.log DebugTypes.Detail (lazy(Printf.sprintf "evals = %s"
-				(Misc.list_to_string Sort.eval_to_string (List.split evals |> Pervasives.snd) "\n")));
+				(Misc.list_to_string Sort.eval_to_string (List.split evals |> Stdlib.snd) "\n")));
 		let frontiers =
 			previous_frontiers
 			@ (Sort.getFrontiers evals)
@@ -932,11 +932,11 @@ module Heuristic(Vec : Vector.Type) = struct
 		match Heuristic.min constraints with
 		| Flags.Raytracing -> Glpk.minimize point constraints
 		| Flags.Classic -> Classic.minimize point constraints
-		| _ -> Pervasives.invalid_arg "Min.Heuristic.minimize"
+		| _ -> Stdlib.invalid_arg "Min.Heuristic.minimize"
 
 	let minimize_cone point constraints =
 		match Heuristic.min constraints with
 		| Flags.Raytracing -> Glpk.minimize_cone point constraints
 		| Flags.Classic -> Classic.minimize_cone point constraints
-		| _ -> Pervasives.invalid_arg "Min.Heuristic.minimize_cone"
+		| _ -> Stdlib.invalid_arg "Min.Heuristic.minimize_cone"
 end

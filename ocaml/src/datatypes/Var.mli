@@ -15,7 +15,7 @@ type t =
 val u : t
 
 (** [cmp x1 x2] compares [x1] and [x2] with "less" meaning "comes before in a breadth-first search".
-The result follows the same convention as [Pervasives.compare]. *)
+The result follows the same convention as [Stdlib.compare]. *)
 val cmp: t -> t -> int
 
 (** Equality test between two variables. *)

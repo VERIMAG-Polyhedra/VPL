@@ -23,7 +23,7 @@ rule token
    |"(" {PolyParser.PARBEG}
    |")" {PolyParser.PAREND}
    |":=" {PolyParser.ASSIGN}
-   | _ as c {Pervasives.failwith ("PolyLexer: " ^ String.make 1 c)}
+   | _ as c {Stdlib.failwith ("PolyLexer: " ^ String.make 1 c)}
 and
 token2 = parse
    | [' ' '\t'] {token2 lexbuf}
@@ -33,4 +33,4 @@ token2 = parse
    | '*' {PolyParser.TIMES}
    | '/' {PolyParser.SLASH}
    | eof {PolyParser.EOF}
-   | _ as c {Pervasives.failwith ("PolyLexer: " ^ String.make 1 c)}
+   | _ as c {Stdlib.failwith ("PolyLexer: " ^ String.make 1 c)}

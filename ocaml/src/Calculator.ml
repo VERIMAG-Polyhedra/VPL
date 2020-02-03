@@ -17,13 +17,13 @@ let  oneOccListe (sl:string list):string list
 
 let rec getStringVar (p:PolyParserBuild.poly) : string list
 	= match p with
-	|PolyParserBuild.Leaf(ss,_) -> List.map Pervasives.fst ss
+	|PolyParserBuild.Leaf(ss,_) -> List.map Stdlib.fst ss
 	|PolyParserBuild.Add(p1,p2) |PolyParserBuild.Mul(p1,p2) |PolyParserBuild.Sub(p1,p2) -> (getStringVar p1) @ (getStringVar p2)
 
 
 module Ident = UserInterface.Lift_Ident (struct
     type t = string
-    let compare = Pervasives.compare
+    let compare = Stdlib.compare
     let to_string s = s
     end)
 
@@ -34,7 +34,7 @@ module Expr = struct
 	let rec poly_to_pol_rec : PolyParserBuild.poly -> Poly.t
 		= fun p ->
 			match p with
-			|PolyParserBuild.Leaf(l,coeff) -> [(List.map (fun el -> (Ident.toVar (Pervasives.fst el), Pervasives.snd el)) l,coeff)] |> Poly.mk_list
+			|PolyParserBuild.Leaf(l,coeff) -> [(List.map (fun el -> (Ident.toVar (Stdlib.fst el), Stdlib.snd el)) l,coeff)] |> Poly.mk_list
 			|PolyParserBuild.Add(p1,p2) -> Poly.add (poly_to_pol_rec p1) (poly_to_pol_rec p2)
 			|PolyParserBuild.Sub(p1,p2) -> Poly.sub (poly_to_pol_rec p1) (poly_to_pol_rec p2)
 			|PolyParserBuild.Mul(p1,p2) -> Poly.mul (poly_to_pol_rec p1) (poly_to_pol_rec p2)

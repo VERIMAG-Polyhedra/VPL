@@ -237,7 +237,7 @@ module Make (Coeff : Scalar.Type) = struct
 
 	let ofSymbolic : Scalar.Symbolic.t -> Coeff.t
 		= fun _ ->
-		Pervasives.failwith "Vector.ofSymbolic : not implemented"
+		Stdlib.failwith "Vector.ofSymbolic : not implemented"
 
 	let rec dot_productr : Scalar.Rat.t Rtree.t -> t -> Coeff.t
 		= fun q v ->
@@ -330,5 +330,5 @@ module Int = struct
 
 	let ofSymbolic : Scalar.Symbolic.t -> Scalar.Int.t
 		= fun _ ->
-		Pervasives.failwith "Vector.Int.ofSymbolic"
+		Stdlib.failwith "Vector.Int.ofSymbolic"
 end

@@ -56,9 +56,9 @@ module Make (Vec: Vector.Type) = struct
      		   	let i = Var.cmp x1 x2 in
      		    	if i = 0
      		    	then
-     		    		let j = Pervasives.compare e1 e2 in
+     		    		let j = Stdlib.compare e1 e2 in
      		    		if j = 0
-    		     		then compare m1' m2'
+    		     		then Stdlib.compare m1' m2'
     		     		else j
     		     	else i
 
@@ -110,7 +110,7 @@ module Make (Vec: Vector.Type) = struct
                         then (v, e+e') :: m'
                         else (v,e) :: m
                 ) m []
-			else Pervasives.invalid_arg ("SxPoly.Poly.MonomialBasis.mk")
+			else invalid_arg ("SxPoly.Poly.MonomialBasis.mk")
 
         let rec add_var : (Var.t * exp) -> t -> t
             = fun (v,e) -> function
@@ -163,21 +163,18 @@ module Make (Vec: Vector.Type) = struct
     			in
                 if well_formed res
     			then res
-    			else Pervasives.invalid_arg ("SxPoly.Poly.MonomialBasis.mk_list")
+    			else invalid_arg ("SxPoly.Poly.MonomialBasis.mk_list")
 
 		let to_list : t -> (Var.t * exp) list
 			= fun m -> m
 
 		let to_list_expanded : t -> Var.t list
 			= fun m ->
-			List.fold_left
-				(fun res (v,e) ->
-					res
-					@
-					List.map
-						(fun _ -> v)
-						(Misc.range 0 e))
-				[] m
+			List.fold_left (fun res (v,e) ->
+				res
+				@
+				List.init e	(fun _ -> v)
+            ) [] m
 
         let change_variable : (t -> t option) -> t -> t
 			= fun ch m ->
@@ -218,7 +215,7 @@ module Make (Vec: Vector.Type) = struct
 
         let get_vars : t -> Var.Set.t
             = fun m ->
-            List.map Pervasives.fst m
+            List.map fst m
             |> Var.Set.of_list
 	end
 
@@ -264,7 +261,7 @@ module Make (Vec: Vector.Type) = struct
 		  = fun m ->
 		  match canonO m with
 		  | Some m' -> m'
-		  | None -> Pervasives.invalid_arg ("SxPoly.SxPoly.Monomial.canon : " ^ (to_string m))
+		  | None -> invalid_arg ("SxPoly.SxPoly.Monomial.canon : " ^ (to_string m))
 
 		let mk : MonomialBasis.t -> Coeff.t -> t
 	  		= fun m a -> canon (m, a)
@@ -366,7 +363,7 @@ module Make (Vec: Vector.Type) = struct
                 let (mb,_) = m
                 and (mb',_) = m' in
 	 			if MonomialBasis.compare mb mb' = 0
-	 			then collapseDups ((Pervasives.fst m, Coeff.add (Pervasives.snd m) (Pervasives.snd m')) :: p')
+	 			then collapseDups ((fst m, Coeff.add (snd m) (snd m')) :: p')
 	 			else m :: collapseDups p
     		in
     		let fixConstant
@@ -383,7 +380,7 @@ module Make (Vec: Vector.Type) = struct
 				| None ->
 					to_string p
 					|> Printf.sprintf "SxPoly.canon: Monomial.canon on %s"
-					|> Pervasives.failwith)
+					|> failwith)
     		|> List.sort Monomial.compare
     		|> collapseDups
     		|> List.filter (fun (_, a) ->
@@ -394,7 +391,7 @@ module Make (Vec: Vector.Type) = struct
 					else
 						to_string p
 						|> Printf.sprintf "SxPoly.canon: Coeff.well_formed_nonnull on %s"
-						|> Pervasives.failwith)
+						|> failwith)
 			|> function _ :: _ as p' -> p' | [] -> [[], Coeff.z]
 
 
@@ -458,7 +455,7 @@ module Make (Vec: Vector.Type) = struct
     let get_max_exponent : Var.t -> t -> int
         = fun var p ->
         List.map (Monomial.get_exponent var) p
-        |> Misc.max Pervasives.compare
+        |> Misc.max Stdlib.compare
 
     let change_variable : (MonomialBasis.t -> MonomialBasis.t option) -> t -> t
         = fun ch l ->
@@ -509,7 +506,7 @@ module Make (Vec: Vector.Type) = struct
             let (_,c) = List.hd p2 in
             mulc p1 (Coeff.div Coeff.u c)
         else
-            Pervasives.raise Div_by_non_constant
+            raise Div_by_non_constant
 
 	let neg : t -> t
 		= fun p ->
@@ -530,7 +527,7 @@ module Make (Vec: Vector.Type) = struct
 
 	let pow : t -> int -> t
 		= fun p i ->
-		List.map (fun _ -> p) (Misc.range 0 i) |> prod
+		List.init i (fun _ -> p) |> prod
 
 	let equal : t -> t -> bool
 		= fun p1 p2 ->
@@ -638,14 +635,14 @@ module Make (Vec: Vector.Type) = struct
 		then
 			let vec = List.fold_left (fun l (m,c) ->
         			if not (MonomialBasis.is_null m)
-        			then (c, List.hd m |> Pervasives.fst) :: l
+        			then (c, List.hd m |> fst) :: l
         			else l
                 ) [] (List.map Monomial.data (data p))
 				|> Vec.mk
 			and cste = get_constant p
 			in
 			(vec,cste)
-		else Pervasives.invalid_arg "handelman.polyToCstr: not affine polynomial"
+		else invalid_arg "handelman.polyToCstr: not affine polynomial"
 
 	let ofCstr : Vec.t -> Coeff.t -> t
 		= fun vec cste ->
@@ -698,7 +695,7 @@ module Make (Vec: Vector.Type) = struct
     		then p
 	 		|> to_string
 	 		|> Printf.sprintf "SxPoly.Invariant.checkOrFail: %s"
-	 		|> Pervasives.failwith
+	 		|> failwith
 	end
 
 end

@@ -40,7 +40,7 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   let project_vars vars pol =
   match backend_rep pol with
-  | None -> Pervasives.failwith "project_vars"
+  | None -> Stdlib.failwith "project_vars"
   | Some (p,(ofVar,toVar)) ->
     let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
     let vars' = List.map ofVar' vars in
@@ -51,7 +51,7 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
           | Some (p',(ofVar,toVar)) ->
               let (_,_,toVar') = PedraQOracles.export_backend_rep (p',(ofVar,toVar)) in
               (p', toVar')
-          | _ -> Pervasives.failwith "get_vars"
+          | _ -> Stdlib.failwith "get_vars"
       in
       let point' = Vec.rename_f toVar point in
       auto_lifting (LHD.set_point point') p
@@ -67,7 +67,7 @@ module MakeHighLevel (LHD: QInterface.LowLevelDomain) : QInterface.HighLevelDoma
 
   let assume_back c p =
       match backend_rep p with
-      | None -> Pervasives.failwith "assume_back"
+      | None -> Stdlib.failwith "assume_back"
       | Some (pol,(ofVar,toVar)) ->
         let (_,ofVar',_) = PedraQOracles.export_backend_rep (pol,(ofVar,toVar)) in
         let rec to_term = function
@@ -248,7 +248,7 @@ module MakeZ (LHD: QLowLevelDomain) : ZInterface.HighLevelDomain with type rep =
 
   let project_vars vars pol =
   match backend_rep pol with
-  | None -> Pervasives.failwith "project_vars"
+  | None -> Stdlib.failwith "project_vars"
   | Some (p,(ofVar,toVar)) ->
     let (_,ofVar',_) = PedraQOracles.export_backend_rep (p,(ofVar,toVar)) in
     let vars' = List.map ofVar' vars in

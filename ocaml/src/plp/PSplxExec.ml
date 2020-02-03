@@ -95,7 +95,7 @@ module Explore = struct
                     else (i_row + 1, min)
             else (i_row + 1, min)
         ) (0, None) i_col (constant_index sx) sx.tab
-        |> Pervasives.snd
+        |> Stdlib.snd
         |> function
         | None -> raise Unbounded_problem
         | Some (i_min,_) -> i_min
@@ -134,7 +134,7 @@ module Init = struct
                 && not (Scalar.Rat.isZ coeff)
                 && set_row = VarMap.find i_col sx.get_set
             ) sx.tab.(i_row)
-        with Not_found -> Pervasives.failwith "t.a_still_in_basis"
+        with Not_found -> Stdlib.failwith "t.a_still_in_basis"
 
     let buildAuxiliaryPB : 'c Factory.t -> 'c t -> 'c t * (int list)
         = fun factory sx ->

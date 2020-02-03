@@ -21,7 +21,7 @@ let findi : ('a -> bool) -> 'a list -> int
 	= let rec(findi_rec : ('a -> bool) -> 'a list -> int -> int)
 		= fun prop l k ->
 		match l with
-		| [] -> Pervasives.raise Not_found
+		| [] -> Stdlib.raise Not_found
 		| v :: tail -> if prop v then k else findi_rec prop tail (k+1)
 in fun prop l ->
 findi_rec prop l 0
@@ -40,7 +40,7 @@ let array_findi : (int -> 'a -> bool) -> 'a array -> int
 let rec find_res : ('a -> (bool * 'a)) -> 'a list -> 'a
 	= fun prop l ->
 	match l with
-	| [] -> Pervasives.raise Not_found
+	| [] -> Stdlib.raise Not_found
 	| v :: tail -> let (b,v') = prop v in
 		if b then v' else find_res prop tail
 
@@ -89,21 +89,16 @@ let list_eq2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 	List.for_all (fun e2 -> List.exists (fun e1 -> eq e1 e2) l1) l2
 
 let rec range : int -> int -> int list
-	= fun i j->
+	= fun i j ->
 	if i >= j then [] else i :: (range (i+1) j)
 
-(** [range a len] returns the list [a;a+1;a+2;...;a+len] *)
-let range_len : int -> int -> int list
-	= fun i j ->
-	if j = 0 then [] else i :: (range (i+1) (j-1))
-
-let (max : ('a -> 'a -> int) -> 'a list -> 'a)
+let max : ('a -> 'a -> int) -> 'a list -> 'a
 	= fun cmp l ->
 	try List.fold_left
 	(fun i j -> if cmp i j > 0 then i else j)
 	(List.hd l)
 	(sublist l 1 (List.length l))
-	with Failure _ -> Pervasives.invalid_arg "Misc.max : empty input list"
+	with Failure _ -> Stdlib.invalid_arg "Misc.max : empty input list"
 
 let maxi :  ('a -> 'a -> int) -> 'a list -> int
 	= let rec (maxi_rec : ('a -> 'a -> int) -> 'a list -> 'a -> int -> int -> int)
@@ -113,7 +108,7 @@ let maxi :  ('a -> 'a -> int) -> 'a list -> int
 		| x::tl -> if cmp x max > 0 then maxi_rec cmp tl x i (i+1) else maxi_rec cmp tl max maxi (i+1) in
 	fun cmp l ->
 	try maxi_rec cmp (List.tl l) (List.hd l) 0 1
-	with Failure _ -> Pervasives.invalid_arg "Misc.maxi : empty input list"
+	with Failure _ -> Stdlib.invalid_arg "Misc.maxi : empty input list"
 
 let min : ('a -> 'a -> int) -> 'a list -> 'a
 	= fun cmp l ->
@@ -121,7 +116,7 @@ let min : ('a -> 'a -> int) -> 'a list -> 'a
 	(fun i j -> if cmp i j < 0 then i else j)
 	(List.hd l)
 	(sublist l 1 (List.length l))
-	with Failure _ -> Pervasives.invalid_arg "Misc.min : empty input list"
+	with Failure _ -> Stdlib.invalid_arg "Misc.min : empty input list"
 
 let rec rem_dupl : ('a -> 'a -> bool) -> 'a list -> 'a list
 	= fun eq l ->
@@ -170,17 +165,19 @@ let add_tab : int -> string -> string
 
 let fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 	= fun f a0 bs ->
-	List.fold_left
-		(fun a i -> f i a (List.nth bs i))
-		a0
-		(range 0 (List.length bs))
+	let rec fold_rec i acc = function
+		| [] -> acc
+		| x :: l -> fold_rec (i+1) (f i acc x) l
+	in
+	fold_rec 0 a0 bs
 
 let fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 	= fun f a_s b0 ->
-	List.fold_right
-		(fun i b -> f i (List.nth a_s i) b)
-		(range 0 (List.length a_s))
-		b0
+	let rec fold_rec i acc = function
+		| [] -> acc
+		| x :: l -> f i x (fold_rec (i+1) acc l)
+	in
+	fold_rec 0 b0 a_s
 
 let array_fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 	= fun f a0 bs ->

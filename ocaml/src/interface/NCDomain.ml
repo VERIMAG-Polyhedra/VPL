@@ -49,7 +49,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
 		| Bottom c -> Bottom c (* XXX : test the certificate *)
 		| NonBot p as ph -> if F.check p
 			then ph
-			else Pervasives.failwith (Printf.sprintf "VPL has failed: wrong certificate in polyhedron %s"
+			else Stdlib.failwith (Printf.sprintf "VPL has failed: wrong certificate in polyhedron %s"
 				(to_string Var.to_string ph))
 
 	let addM : t -> Cs.t list -> t
@@ -64,7 +64,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
 
 	let addNLM : t -> CP.t list -> t
 		= fun _ _ ->
-		Pervasives.failwith "VPL.addNLM: unimplemented"
+		Stdlib.failwith "VPL.addNLM: unimplemented"
 
     let assume_back : t -> Cs.t -> t option
 		= fun p cs ->
@@ -94,7 +94,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
 		| NonBot _, Bottom _ -> p1
 		| NonBot p1', NonBot p2' ->
 			let p' = Pol.join F.factory F.factory p1' p2'
-				|> Pervasives.fst
+				|> Stdlib.fst
 			in
 			check (NonBot p')
 
@@ -107,7 +107,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
 		| NonBot _, Bottom _ -> p1
 		| NonBot p1', NonBot p2' ->
 			let p' = Pol.minkowski F.factory F.factory p1' p2'
-				|> Pervasives.fst
+				|> Stdlib.fst
 			in
 			check (NonBot p')
 
@@ -135,7 +135,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
 		| Bottom _ -> ()
 		| NonBot p ->
 			if not (Misc.list_eq2 F.equal (Pol.get_cstr p) rel)
-			then Pervasives.failwith "VPL has failed: wrong certificate in inclusion"
+			then Stdlib.failwith "VPL has failed: wrong certificate in inclusion"
 
 	let incl : t -> t -> bool
 		= fun p1 p2 ->
@@ -156,7 +156,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
 		match (bnd,cert) with
 		| (Pol.Infty, None) -> Pol.Infty
 		| (_, None)
-		| (Pol.Infty, Some _) -> Pervasives.raise (Wrong_Certificate error_string)
+		| (Pol.Infty, Some _) -> Stdlib.raise (Wrong_Certificate error_string)
 		| (Pol.Open v, Some cert) ->
             let expected_cert = if upper
                 then (Cs.mk2 Cstr_type.Lt obj v)
@@ -164,7 +164,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
             in
 			if F.equal expected_cert cert
 			then Pol.Open v
-			else Pervasives.raise (Wrong_Certificate
+			else Stdlib.raise (Wrong_Certificate
                 (Printf.sprintf "%s -> cstr: %s; expected %s, got: %s"
                     error_string
                     (Pol.bnd_to_string bnd)
@@ -177,7 +177,7 @@ module MakePolyhedronDomain (FM : FactoryMaker.Type) = struct
             in
 			if F.equal expected_cert cert
 			then Pol.Closed v
-			else Pervasives.raise (Wrong_Certificate
+			else Stdlib.raise (Wrong_Certificate
                 (Printf.sprintf "%s -> cstr: %s; expected %s, got: %s"
                     error_string
                     (Pol.bnd_to_string bnd)

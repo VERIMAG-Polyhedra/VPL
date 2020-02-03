@@ -30,7 +30,7 @@ let to_plp : 'c Factory.t -> Vec.t -> 'c Cons.t list -> 'c regionsT
 	= fun factory normalization_point conss ->
 	let sx = build factory normalization_point conss in
 	match PLP.run_classic factory sx with
-	| None -> Pervasives.failwith "PoltoPLP.to_plp"
+	| None -> Stdlib.failwith "PoltoPLP.to_plp"
 	| Some regs -> {
 		mapping = regs;
 		interior_point = normalization_point;

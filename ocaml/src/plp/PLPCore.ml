@@ -8,7 +8,7 @@ module Minimization = Min.Classic(Vec)
 module Explore = PSplxExec.Explore
 module Coeff = Vec.Coeff
 
-module MapV = Map.Make(struct type t = int let compare = Pervasives.compare end)
+module MapV = Map.Make(struct type t = int let compare = Stdlib.compare end)
 
 type region_t = Cone | NCone
 
@@ -231,7 +231,7 @@ let to_string : 'c t -> string
 	= fun plp ->
 	let regs = MapV.bindings plp.regs
 		|> List.split
-		|> Pervasives.snd
+		|> Stdlib.snd
 	in
 	Printf.sprintf "Regions = %s\nTodo list : \n%s"
 		(Misc.list_to_string Region.to_string regs "\n")
@@ -506,7 +506,7 @@ module Next_Point = struct
 							| Cone -> (Misc.sublist evals 0 i) @ [[(id,cstr), (dir_type, v1)]] @ (Misc.sublist evals (i+1) (List.length evals))
 							| NCone -> evals
 						end
-						| Some id_adj -> Pervasives.raise (Adjacent id_adj) (* un des candidats était bien adjacent *)
+						| Some id_adj -> Stdlib.raise (Adjacent id_adj) (* un des candidats était bien adjacent *)
 					else evals
 				in
 				match compute_next_point cstr evals with
@@ -526,7 +526,7 @@ module Next_Point = struct
 						(lazy (Printf.sprintf "The next exploration point will be %s"
 							(Vec.to_string Var.to_string x)));
 					ExplorationPoint.Direction(id, (cstr, x))
-			with Not_found -> Pervasives.failwith "PLP.adjust"
+			with Not_found -> Stdlib.failwith "PLP.adjust"
 
 		let adjust' : region_t -> (int * Boundary.t) -> 'c mapRegs_t -> ExplorationPoint.t
 			= fun reg_t (id, (cstr, pointOtherSide)) regMap ->
@@ -686,7 +686,7 @@ module Next_Point = struct
 							| Cone -> (Misc.sublist evals 0 i) @ [[(id,cstr), (dir_type, v1)]] @ (Misc.sublist evals (i+1) (List.length evals))
 							| NCone -> evals
 						end
-						| Some id_adj -> Pervasives.raise (Adjacent id_adj) (* un des candidats était bien adjacent *)
+						| Some id_adj -> Stdlib.raise (Adjacent id_adj) (* un des candidats était bien adjacent *)
 					else evals
 				in
 				match compute_next_point cstr evals with
@@ -706,7 +706,7 @@ module Next_Point = struct
 						(lazy (Printf.sprintf "The next exploration point will be %s"
 							(Vec.to_string Var.to_string x)));
 					ExplorationPoint.Direction(id, (cstr, x))
-			with Not_found -> Pervasives.failwith "PLP.adjust"
+			with Not_found -> Stdlib.failwith "PLP.adjust"
 
 		let apply_adjacency : 'c t -> int -> Boundary.t -> int -> 'c t
 			= fun plp id_init boundary id_adj ->
@@ -862,7 +862,7 @@ module Exec = struct
 				(Vec.to_string Var.to_string p)));
 			Some p
 			end
-		| Some p -> Pervasives.failwith
+		| Some p -> Stdlib.failwith
 			(Printf.sprintf "Point correction returned %s, which is not in region %s"
 				(Vec.to_string Var.to_string p)
 				(Cs.list_to_string cstrs))
@@ -957,7 +957,7 @@ module Add_Region = struct
 		| Splx.IsOk _ -> true
 		| Splx.IsUnsat _ -> false (*match w with
 			| [i,_] -> Some (List.assoc i cstrs')
-			| _ -> Pervasives.failwith "PLP.has_interior"*)
+			| _ -> Stdlib.failwith "PLP.has_interior"*)
 
 	let remove_point : ExplorationPoint.t -> ExplorationPoint.t list -> ExplorationPoint.t list
 		= fun point points ->

@@ -1,4 +1,8 @@
-(** Entry point of the VPL. *)
+(** Entry point of the VPL.
+
+To use the VPL as a polyhedral abstract domain, instantiate the functor {!module:Make} with one domain from {!module:Domains}.
+
+*)
 
 open WrapperTraductors
 

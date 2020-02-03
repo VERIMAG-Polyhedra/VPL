@@ -13,14 +13,14 @@ let keep : 'a Factory.t -> Var.t -> 'b Cons.t -> 'a Cons.t list -> 'a Cons.t opt
     match IneqSet.incl factory next [] conss [cons] with
     | IneqSet.NoIncl -> None
     | IneqSet.Incl [cert] -> Some (Cons.get_c cons, cert)
-    | _ -> Pervasives.failwith "PoltoPLP:discard_constraints:keep"
+    | _ -> Stdlib.failwith "PoltoPLP:discard_constraints:keep"
 
 (* int list -> list of discarded regions indices *)
 let discard_constraints : 'c1 Factory.t -> 'c2 Factory.t -> 'c1 regionsT -> 'c2 regionsT
     -> ('c1 regionsT * 'c2 regionsT) * ('c1 Cons.t list * 'c2 Cons.t list) * PLP.ExplorationPoint.t list * int list
     = fun factory1 factory2 regs1 regs2 ->
-    let conss1 = List.split regs1.mapping |> Pervasives.snd
-    and conss2 = List.split regs2.mapping |> Pervasives.snd
+    let conss1 = List.split regs1.mapping |> Stdlib.snd
+    and conss2 = List.split regs2.mapping |> Stdlib.snd
     in
     let next = List.map Cons.get_c conss1 |> Cs.getVars
         |> Var.Set.union (List.map Cons.get_c conss2 |> Cs.getVars)
@@ -67,7 +67,7 @@ let get_join_cert : 'c1 Factory.t -> 'c2 Factory.t ->  'c1 regionsT  -> 'c2 regi
             (fun r_cert (col,q) -> try
                 match PLP.MapV.find col map with
                 | (_, C1 cert) -> factory1.Factory.add r_cert (factory1.Factory.mul q cert)
-                | (_,_) -> Pervasives.failwith "Join.get_join_Factory.get_cert_p1"
+                | (_,_) -> Stdlib.failwith "Join.get_join_Factory.get_cert_p1"
                 with Not_found -> r_cert)
             factory1.Factory.top
             basisValue
@@ -78,7 +78,7 @@ let get_join_cert : 'c1 Factory.t -> 'c2 Factory.t ->  'c1 regionsT  -> 'c2 regi
             (fun r_cert (col,q) -> try
                 match PLP.MapV.find col map with
                 | (_, C2 cert) -> factory2.Factory.add r_cert (factory2.Factory.mul q cert)
-                | (_,_) -> Pervasives.failwith "Join.get_join_Factory.get_cert_p1"
+                | (_,_) -> Stdlib.failwith "Join.get_join_Factory.get_cert_p1"
                 with Not_found -> r_cert)
             factory2.Factory.top
             basisValue
@@ -104,7 +104,7 @@ let get_join_cert : 'c1 Factory.t -> 'c2 Factory.t ->  'c1 regionsT  -> 'c2 regi
         (fun (reg, cons) ->
                 let cstr = Cons.get_c cons in
                 match reg.PLP.Region.sx with
-                | None -> Pervasives.failwith "Join.get_join_cert"
+                | None -> Stdlib.failwith "Join.get_join_cert"
                 | Some sx ->
                     let basisValue = PSplx.getCurVal sx in
                     let arg1 = List.filter (fun (i,q) -> p1_col_min <= i && i <= p1_col_max && Scalar.Rat.cmpz q < 0) basisValue
@@ -144,8 +144,8 @@ let init_regions : 'c1 regionsT -> 'c2 regionsT -> PLP.Region.t list
         (lazy (Printf.sprintf "Regions of initialization : \n%s\n%s"
         (regions_to_string regs1)
         (regions_to_string regs2)));
-    let regs1' = List.split regs1.mapping |> Pervasives.fst
-    and regs2' = List.split regs2.mapping |> Pervasives.fst
+    let regs1' = List.split regs1.mapping |> Stdlib.fst
+    and regs2' = List.split regs2.mapping |> Stdlib.fst
     in
     regs1' @ regs2'
 
@@ -212,8 +212,8 @@ let update_frontiers : int list -> 'c1 regionsT -> 'c2 regionsT -> ('c1 regionsT
 (** Both polyhedra are assumed to be normalized on the same point *)
 let join' : 'c1 Factory.t -> 'c2 Factory.t -> Var.t option -> 'c1 regionsT -> 'c2 regionsT -> 'c1 Cons.t list * 'c2 Cons.t list
     = fun factory1 factory2 epsilon_opt p1 p2 ->
-    let conss1 = List.split p1.mapping |> Pervasives.snd
-    and conss2 = List.split p2.mapping |> Pervasives.snd
+    let conss1 = List.split p1.mapping |> Stdlib.snd
+    and conss2 = List.split p2.mapping |> Stdlib.snd
     in
     let (p1',p2') = update_regions p1 p2 in
     let init_point = p1'.interior_point in

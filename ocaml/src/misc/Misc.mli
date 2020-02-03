@@ -42,9 +42,6 @@ val list_eq2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 (** [range a b] returns the list of consecutive integers from [a] to [b]-1 *)
 val range : int -> int -> int list
 
-(** [range a len] returns the list [a;a+1;a+2;...;a+len] *)
-val range_len : int -> int -> int list
-
 (** [max cmp l] returns the maximum element of [l] {i w.r.t} the comparison function [cmp]
 @raise Invalid_argument if the input list is empty *)
 val max : ('a -> 'a -> int) -> 'a list -> 'a

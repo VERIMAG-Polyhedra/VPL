@@ -20,8 +20,8 @@ one_prefixed_poly:
 	| EOF {[]}
 ;
 prefixed_polynomial:
-	| prefixed_element {[Pervasives.fst $1, Pervasives.snd $1]}
-	| prefixed_element PLUS prefixed_polynomial {((Pervasives.fst $1, Pervasives.snd $1) :: $3)}
+	| prefixed_element {[Stdlib.fst $1, Stdlib.snd $1]}
+	| prefixed_element PLUS prefixed_polynomial {((Stdlib.fst $1, Stdlib.snd $1) :: $3)}
 ;
 prefixed_element:
 	| prefixed_monomial {$1}

@@ -21,7 +21,7 @@ let nil : 'c t = []
 
 let isTop (s : 'c t) = (s = [])
 
-let list x = List.map Pervasives.snd x
+let list x = List.map Stdlib.snd x
 
 let equal (s1 : 'c1 t) (s2 : 'c2 t) =
 	if List.length s1 = List.length s2 then

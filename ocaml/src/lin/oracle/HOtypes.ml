@@ -137,40 +137,32 @@ module LPMaps = struct
 				let res = try let (_,value) = MapV.find v mapDB in value
 				with Not_found -> None in
 				MapV.add v (Some true, res) mapDB
-			in
-
-			let (updateMapB_left : mapBound -> Var.t -> int -> int -> mapBound)
+		in let (updateMapB_left : mapBound -> Var.t -> int -> int -> mapBound)
 			= fun mapB v i len ->
 				let res = try let (_,value) = MapV.find v mapB in value
 				with Not_found -> None in
 				let id = Index.Rat.unitary i len in
 				MapV.add v (Some id, res) mapB
-			in
-
-			let (updateMapDB_right : mapDetBound -> Var.t -> mapDetBound)
+		in let (updateMapDB_right : mapDetBound -> Var.t -> mapDetBound)
 			= fun mapDB v ->
 				let res = try let (value,_) = MapV.find v mapDB in value
 				with Not_found -> None in
 				MapV.add v (res, Some true) mapDB
-			in
-
-			let (updateMapB_right : mapBound -> Var.t -> int -> int -> mapBound)
+		in let (updateMapB_right : mapBound -> Var.t -> int -> int -> mapBound)
 			= fun mapB v i len ->
 				let res = try let (value,_) = MapV.find v mapB in value
 				with Not_found -> None in
 				let id = Index.Rat.unitary i len in
 				MapV.add v (res, Some id) mapB
-		in
-		fun polyhedron vars ->
+		in fun polyhedron vars ->
 		Debug.log DebugTypes.Detail
 			(lazy("LP.initMapDB, poly = " ^ (Misc.list_to_string Poly.to_string polyhedron " ; ")));
 		let n = List.length polyhedron in
 		let module MB = Poly.MonomialBasis in
-		let (mapDB,mapB) =
-		List.fold_left
-			(fun (mapDB, mapB) i ->
-				match List.nth polyhedron i
-					|> fun p -> (List.map Poly.Monomial.data (Poly.data p))
+		let rec frec i (mapDB, mapB) = (
+			if i = n
+			then (mapDB, mapB)
+			else let (mapDB', mapB') = (match List.map Poly.Monomial.data (Poly.data (List.nth polyhedron i))
 				with
 				| [(m,c)] when Q.leq Q.zero c && (MB.to_list_expanded m |> List.length = 1) ->
 					let v = List.hd (MB.to_list_expanded m) in
@@ -187,8 +179,11 @@ module LPMaps = struct
 					let v = List.hd (MB.to_list_expanded m) in
 					(updateMapDB_right mapDB v, updateMapB_right mapB v i n)
 				| _ -> (mapDB, mapB))
-			(MapV.empty, MapV.empty)
-			(Misc.range 0 n)
+				in
+				frec (i+1) (mapDB', mapB')
+			)
+		in
+		let (mapDB, mapB) = frec 0 (MapV.empty, MapV.empty)
 		|> fun (mapDB,mapB) -> List.fold_left
 			(fun (mapDB',mapB') v -> let mapDB' = if MapV.mem v mapDB' then mapDB' else MapV.add v (None,None) mapDB' in
 				let mapB' =  if MapV.mem v mapB' then mapB' else MapV.add v (None,None) mapB' in

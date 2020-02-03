@@ -46,7 +46,7 @@ let pivot : int -> int -> t -> unit
 	= fun i_row i_col tab ->
 	let pivot_coeff = tab.(i_row).(i_col) in
 	if Scalar.Rat.isZ pivot_coeff
-	then Pervasives.raise Invalid_Pivot
+	then Stdlib.raise Invalid_Pivot
 	else
 		Array.iteri (fun i_col coeff ->
 			Scalar.Rat.div coeff pivot_coeff
@@ -66,7 +66,7 @@ let pivot : int -> int -> t -> unit
 let iteri_col : (int -> Q.t -> Q.t) -> int -> t -> unit
     = fun f i_col tab ->
     for i_row = 0 to (nRows tab) - 1 do
-        Array.set tab.(i_row) i_col (f i_row tab.(i_row).(i_col)) 
+        Array.set tab.(i_row) i_col (f i_row tab.(i_row).(i_col))
     done
 
 let fold_left_cols : ('a -> Q.t -> Q.t -> 'a) -> 'a -> int -> int -> t -> 'a
@@ -92,9 +92,7 @@ let get_width_column : t -> int -> int
 
 let get_width_column_vector : t -> int list
 	= fun m ->
-	List.map (fun i ->
-		get_width_column m i
-	) (Misc.range 0 (nCols m));;
+	List.init (nCols m) (get_width_column m)
 
 let rec pretty_print_row : int -> t -> int list -> string
 	= fun i_row tab l ->

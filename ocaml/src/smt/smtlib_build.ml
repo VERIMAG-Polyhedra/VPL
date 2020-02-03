@@ -25,7 +25,7 @@ module Positive = struct
 	module Cs = CP.Cs
 	module Poly = CP.Poly
 
-	module MapS = Map.Make(struct type t = string let compare = Pervasives.compare end)
+	module MapS = Map.Make(struct type t = string let compare = Stdlib.compare end)
 
 	module DeclareFun = struct
 
@@ -46,13 +46,13 @@ module Positive = struct
 					vars := v :: !vars;
 					next_var := Var.next !next_var
 					end
-			| _ -> Pervasives.invalid_arg "Expected Symbol"
+			| _ -> Stdlib.invalid_arg "Expected Symbol"
 
 		let treat_one : Smtlib_syntax.command -> unit
 			= function
 			| Smtlib_syntax.CommandDeclareFun (_, symbol, (_,_), _) ->
 				symbol_to_var symbol
-			| _ -> Pervasives.invalid_arg "Expected assertion"
+			| _ -> Stdlib.invalid_arg "Expected assertion"
 
 		let init_map : Smtlib_syntax.command list -> unit
 			= fun l ->
@@ -76,7 +76,7 @@ module Positive = struct
 			= function
 			| Smtlib_syntax.SpecConstsDec (_,s) -> Q.of_string s
 			| Smtlib_syntax.SpecConstNum (_,s) -> Q.of_string s
-			| _ -> Pervasives.invalid_arg "expected ConstsDec of ConstNum"
+			| _ -> Stdlib.invalid_arg "expected ConstsDec of ConstNum"
 
 		type identifier =
 			| Var of Var.t
@@ -93,11 +93,11 @@ module Positive = struct
 					with Not_found ->
 						match state s with
 						| B_P p -> P p
-						| _ -> Pervasives.failwith "Symbol not defined"
+						| _ -> Stdlib.failwith "Symbol not defined"
 					end
-				| _ -> Pervasives.invalid_arg "Expected Symbol"
+				| _ -> Stdlib.invalid_arg "Expected Symbol"
 				end
-			| _ -> Pervasives.invalid_arg "Expected IdSymbol"
+			| _ -> Stdlib.invalid_arg "Expected IdSymbol"
 
 		(* Version where variables must be binded to polynomial constraints. *)
 		let identifier_to_var' : stateT -> Smtlib_syntax.identifier -> CP.t list
@@ -106,31 +106,31 @@ module Positive = struct
 			| Smtlib_syntax.IdSymbol (_,s) -> begin
 				match state s with
 				| B_CP cp -> cp
-				| _ -> Pervasives.failwith "Symbol not defined"
+				| _ -> Stdlib.failwith "Symbol not defined"
 				end
-			| _ -> Pervasives.invalid_arg "Expected IdSymbol"
+			| _ -> Stdlib.invalid_arg "Expected IdSymbol"
 
 		let qualidentifier_to_var : stateT -> Smtlib_syntax.qualidentifier -> identifier
 			= fun state ->
 			function
 			| Smtlib_syntax.QualIdentifierId (_,id) -> identifier_to_var state id
-			| _ -> Pervasives.invalid_arg "Expected QualIdentifierId"
+			| _ -> Stdlib.invalid_arg "Expected QualIdentifierId"
 
 		let identifier_to_operator : Smtlib_syntax.identifier -> string
 			= function
 			| Smtlib_syntax.IdSymbol (_,Smtlib_syntax.Symbol(_,symbol)) -> symbol
-			| _ -> Pervasives.invalid_arg "Expected IdSymbol"
+			| _ -> Stdlib.invalid_arg "Expected IdSymbol"
 
 		let qualidentifier_to_operator : Smtlib_syntax.qualidentifier -> string
 			= function
 			| Smtlib_syntax.QualIdentifierId (_,id) -> identifier_to_operator id
-			| _ -> Pervasives.invalid_arg "Expected QualIdentifierId"
+			| _ -> Stdlib.invalid_arg "Expected QualIdentifierId"
 
 		let division : Poly.t -> Poly.t -> Poly.t
 			= fun p1 p2 ->
 			if Poly.is_constant p1 && Poly.is_constant p2
 			then Poly.cste (Poly.Coeff.div (Poly.get_constant p1) (Poly.get_constant p2))
-			else Pervasives.invalid_arg "Polynomial Division not handled"
+			else Stdlib.invalid_arg "Polynomial Division not handled"
 
 		let binding_is_poly : Smtlib_syntax.term -> bool
 			= function
@@ -166,7 +166,7 @@ module Positive = struct
 				let p = operation_to_poly state t in
 				match operator with
 				| "-" -> Poly.neg p
-				| _ -> Pervasives.invalid_arg "operation with one operand : invalid operator"
+				| _ -> Stdlib.invalid_arg "operation with one operand : invalid operator"
 				end
 			| Smtlib_syntax.TermQualIdTerm (_, id, (_,t1::t2::[])) ->
 				begin
@@ -177,24 +177,24 @@ module Positive = struct
 				| "*" -> Poly.mul p1 p2
 				| "-" -> Poly.sub p1 p2
 				| "/" -> division p1 p2
-				| _ -> Pervasives.invalid_arg "operation with two operands : invalid operator"
+				| _ -> Stdlib.invalid_arg "operation with two operands : invalid operator"
 				end
-			| _ -> Pervasives.invalid_arg "operation_to_poly"
+			| _ -> Stdlib.invalid_arg "operation_to_poly"
 		and
 		comparison_to_cstr : stateT -> string -> Smtlib_syntax.term list -> CP.t list
 			= fun state operator terms ->
 			match operator with
 			| "not" ->
-				Pervasives.invalid_arg "Operator not not yet supported"
+				Stdlib.invalid_arg "Operator not not yet supported"
 			(*begin
 				match terms with
 				| [t] -> List.map CP.compl (term_to_cstr state t)
-				| _ -> Pervasives.invalid_arg "not : expected one operand"
+				| _ -> Stdlib.invalid_arg "not : expected one operand"
 				end*)
 			| "and" -> begin
 				match terms with
 				| t1 :: t2 :: [] -> (term_to_cstr state t1) @ (term_to_cstr state t2)
-				| _ -> Pervasives.invalid_arg "and : expected two operands"
+				| _ -> Stdlib.invalid_arg "and : expected two operands"
 				end
 			| "=" | "<=" | "<" | ">=" | ">" -> begin
 				match terms with
@@ -207,12 +207,12 @@ module Positive = struct
 					| "<" -> [CP.lt (Poly.sub p1 p2)]
 					| ">=" -> [CP.le (Poly.sub p2 p1)]
 					| ">" -> [CP.lt (Poly.sub p2 p1)]
-					| _ -> Pervasives.invalid_arg "expected comparison operator"
+					| _ -> Stdlib.invalid_arg "expected comparison operator"
 					end
-				| _ -> Pervasives.invalid_arg "comparison : expected two operands"
+				| _ -> Stdlib.invalid_arg "comparison : expected two operands"
 				end
-			| "or" -> Pervasives.invalid_arg "Operator or not yet supported"
-			| _ -> Pervasives.invalid_arg "comparison_to_cstr"
+			| "or" -> Stdlib.invalid_arg "Operator or not yet supported"
+			| _ -> Stdlib.invalid_arg "comparison_to_cstr"
 		and
 		state_of_binding : stateT -> Smtlib_syntax.varbinding list -> stateT
 			= fun state varbindings ->
@@ -222,7 +222,7 @@ module Positive = struct
 				 | Smtlib_syntax.Symbol(_,s1), Smtlib_syntax.Symbol (_, s2)
 				 | Smtlib_syntax.SymbolWithOr(_,s1), Smtlib_syntax.Symbol (_, s2)
 				 | Smtlib_syntax.SymbolWithOr(_,s1), Smtlib_syntax.SymbolWithOr (_, s2) ->
-				 	Pervasives.compare s1 s2 = 0
+				 	Stdlib.compare s1 s2 = 0
 			in
 			List.fold_left
 				(fun state (Smtlib_syntax.VarBindingSymTerm (_, symbol, term)) ->
@@ -246,7 +246,7 @@ module Positive = struct
 				begin
 				match state symbol with
 				| B_CP cp -> cp
-				| _ -> Pervasives.invalid_arg "invalid symbol"
+				| _ -> Stdlib.invalid_arg "invalid symbol"
 				end
 			| Smtlib_syntax.TermQualIdTerm (_, id, (_,termlist)) ->
 				let operator = qualidentifier_to_operator id in
@@ -254,12 +254,12 @@ module Positive = struct
 			| Smtlib_syntax.TermLetTerm (_, (_, varbindings), term) ->
 				 let state' = state_of_binding state varbindings in
 				 term_to_cstr state' term
-			| _ -> Pervasives.invalid_arg "invalid term"
+			| _ -> Stdlib.invalid_arg "invalid term"
 
 		let assert_to_cstr : Smtlib_syntax.command -> CP.t list
 			= function
 			| Smtlib_syntax.CommandAssert (_,term) -> term_to_cstr empty term
-			| _ -> Pervasives.invalid_arg "Expected assertion"
+			| _ -> Stdlib.invalid_arg "Expected assertion"
 
 	end
 
@@ -286,7 +286,7 @@ module Positive = struct
 			let parsed = Smtlib_parse.main Smtlib_lex.token lexbuf in
 			close_in in_ch;
 			match parsed with
-			| None -> Pervasives.failwith "Empty problem"
+			| None -> Stdlib.failwith "Empty problem"
 			| Some x -> x
 
 		type t = {
