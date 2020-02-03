@@ -281,9 +281,15 @@ let fmElim_one: 'c Factory.t -> Var.t -> 'c EqSet.t -> Var.t ->  'c t -> 'c t
 
 let plpElim : 'c Factory.t -> Cs.Vec.t -> Var.t list -> 'c t -> 'c t
 	= fun factory normalization_point xs s ->
-    let ineqs = Proj.proj factory normalization_point xs s.ineqs in {
-        ineqs = ineqs;
-        regions = None;
+    let res = Proj.proj factory normalization_point xs s.ineqs in
+    let (regs,ineqs) = List.split res in
+    let ineqs' = List.filter (fun cons ->
+        Cs.tellProp (Cons.get_c cons) <> Cs.Trivial
+    ) ineqs
+    |> Misc.rem_dupl Cons.equal
+    in {
+        ineqs = ineqs';
+        regions = Some regs;
     }
 
 (* TODO: use two factories *)

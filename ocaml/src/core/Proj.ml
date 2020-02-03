@@ -1,7 +1,7 @@
 module Debug = DebugTypes.Debug(struct let name = "Proj" end)
 module Cs = Cstr.Rat
 
-let regsToCs : ('c PLP.Region.t * 'c Cons.t) list -> 'c Cons.t list
+let regsToCs : ('c PLP.Region.t * 'c Cons.t) list -> ('c PLP.Region.t * 'c Cons.t) list
     = fun regs ->
     Debug.log DebugTypes.MOutput
         (lazy (Printf.sprintf "Regions: \n%s\n"
@@ -9,9 +9,10 @@ let regsToCs : ('c PLP.Region.t * 'c Cons.t) list -> 'c Cons.t list
                 (fun (reg,sol) -> Printf.sprintf "%s --> %s"
                     (Cons.to_string Var.to_string sol)
                     (PLP.Region.to_string reg)) regs "\n")));
-    Cons.clean (List.split regs |> Pervasives.snd)
+    regs
+(* Cons.clean (List.split regs |> Pervasives.snd) *)
 
-let explore : 'c Factory.t -> 'c PSplx.t -> 'c Cons.t list
+let explore : 'c Factory.t -> 'c PSplx.t -> ('c PLP.Region.t * 'c Cons.t) list
     = fun factory tab ->
     let config = { PLP.std_config with
         PLP.reg_t = (if !Flags.sum_lambda_1 then PLP.NCone else PLP.Cone);
@@ -21,7 +22,8 @@ let explore : 'c Factory.t -> 'c PSplx.t -> 'c Cons.t list
     | None -> []
     | Some regs -> regsToCs regs
 
-let proj : 'c Factory.t -> Cs.Vec.t -> Var.t list -> 'c Cons.t list -> 'c Cons.t list
+let proj : 'c Factory.t -> Cs.Vec.t -> Var.t list -> 'c Cons.t list
+    -> ('c PLP.Region.t * 'c Cons.t) list
 	= fun factory normalization_point vars ineqs ->
     Debug.log DebugTypes.Title (lazy "Building Projection");
     Debug.log DebugTypes.MInput (lazy (Printf.sprintf
