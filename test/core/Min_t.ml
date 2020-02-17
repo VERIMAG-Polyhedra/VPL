@@ -245,21 +245,6 @@ module Classic = struct
         Test.suite "Classic" [Rat.ts (); Float.ts (); Symbolic.ts ()]
 end
 
-module Raytracing = struct
-	module Glpk = struct
-		module Rat = Make_Tests(Min.Glpk(Vector.Rat))
-		module Float = Make_Tests(Min.Glpk(Vector.Float))
-		module Symbolic = Make_Tests(Min.Glpk(Vector.Symbolic))
-		let ts : Test.t
-			= fun () ->
-            Test.suite "Glpk" [Rat.ts (); Float.ts (); Symbolic.ts ()]
-	end
-
-	let ts : Test.t
-		= fun () ->
-        Test.suite "Raytracing" (if Wrapper.with_glpk then [Glpk.ts ()] else [])
-end
-
 let ts: Test.t
     = fun () ->
-    Test.suite "Min" [Classic.ts (); Raytracing.ts ()]
+    Test.suite "Min" [Classic.ts ();]

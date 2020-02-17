@@ -1,24 +1,24 @@
 open Vpl
 
-module Make_Tests(Coeff : Scalar.Type) = struct
-	module Vec = Vector.Make(Coeff)
-	let x = Vec.V.fromInt 1
-	let y = Vec.V.fromInt 2
-	let z = Vec.V.fromInt 3
+module Make_Tests(Vec : Vector.Type) = struct
+	module Coeff = Vec.Coeff
+	let x = Var.fromInt 1
+	let y = Var.fromInt 2
+	let z = Var.fromInt 3
 
-	let nxt = Vec.V.fromInt 4
+	let nxt = Var.fromInt 4
 
-	let varPr: Vec.V.t -> string
+	let varPr: Var.t -> string
 	= fun _x ->
-		let vars: (Vec.V.t * string) list
+		let vars: (Var.t * string) list
 		= [x, "x"; y, "y"; z, "z"]
 		in
 		try
 			List.assoc _x vars
 		with
-		| Not_found -> "v" ^ (Vec.V.to_string _x)
+		| Not_found -> "v" ^ (Var.to_string _x)
 
-	let v: (int * Vec.V.t) list -> Vec.t
+	let v: (int * Var.t) list -> Vec.t
 	= fun l -> Vec.mk (List.map (fun (i, v) -> (Coeff.of_int i, v)) l)
 
 	(* Vec.elim *)
@@ -142,11 +142,11 @@ module Make_Tests(Coeff : Scalar.Type) = struct
 				match r, nr with
 				| Rtree.Nil, Rtree.Nil -> true
 				| Rtree.Nil, Rtree.Sub (l, None, r) -> chk Rtree.Nil l && chk Rtree.Nil r
-				| Rtree.Nil, Rtree.Sub (l, Some x, r) -> (Vec.V.cmp x nxt1 = -1) && chk Rtree.Nil l && chk Rtree.Nil r
+				| Rtree.Nil, Rtree.Sub (l, Some x, r) -> (Var.cmp x nxt1 = -1) && chk Rtree.Nil l && chk Rtree.Nil r
 				| Rtree.Sub _, Rtree.Nil -> false
 				| Rtree.Sub (_, Some _, _), Rtree.Sub (_, None, _) -> false
 				| Rtree.Sub (l1, None, r1), Rtree.Sub (l2, None, r2) -> chk l1 l2 && chk r1 r2
-				| Rtree.Sub (l1, None, r1), Rtree.Sub (l2, Some x, r2) -> (Vec.V.cmp x nxt1 = -1) && chk l1 l2 && chk r1 r2
+				| Rtree.Sub (l1, None, r1), Rtree.Sub (l2, Some x, r2) -> (Var.cmp x nxt1 = -1) && chk l1 l2 && chk r1 r2
 				| Rtree.Sub (l1, Some x1, r1), Rtree.Sub (l2, Some x2, r2) -> x1 = x2 && chk l1 l2 && chk r1 r2
 			in
 			if chk r nr then
@@ -155,7 +155,7 @@ module Make_Tests(Coeff : Scalar.Type) = struct
 				Test.fail name "bad relocation table" state
 		in
 		let x1 = nxt in
-		let y1 = Vec.V.next x1 in
+		let y1 = Var.next x1 in
 		let tcs = [
 			"nil0", Vec.mk [], Rtree.mk None [];
 			"nil1", Vec.mk [], Rtree.mk None [x, Some x1];
@@ -179,11 +179,11 @@ module Make_Tests(Coeff : Scalar.Type) = struct
 	  =  fun () ->
       let chk (name, vars, vecs) state =
 			let vars' = Vec.getVars vecs in
-			if Vec.V.Set.equal (Vec.V.Set.of_list vars) vars'
+			if Var.Set.equal (Var.Set.of_list vars) vars'
 			then Test.succeed state
 			else Test.fail name "not equal" state
 		 in
-		 let x = Vec.V.XH and y = Vec.V.XO Vec.V.XH and z = Vec.V.XI Vec.V.XH and t = Vec.V.XO (Vec.V.XO Vec.V.XH) in
+		 let x = Var.XH and y = Var.XO Var.XH and z = Var.XI Var.XH and t = Var.XO (Var.XO Var.XH) in
 		 let tcs = [
 		"empty0", [], [Vec.mk []];
 		"empty1", [], [Vec.mk []; Vec.mk []];
@@ -200,13 +200,12 @@ module Make_Tests(Coeff : Scalar.Type) = struct
 end
 
 module Rat = struct
-	include Make_Tests(Scalar.Rat)
-	module Coeff = Vector.Rat.Coeff
+	include Make_Tests(Vector.Rat)
 		(* Vec.gcd *)
 
-	let x = Vector.Rat.V.fromInt 1
-	let y = Vector.Rat.V.fromInt 2
-	let z = Vector.Rat.V.fromInt 3
+	let x = Var.fromInt 1
+	let y = Var.fromInt 2
+	let z = Var.fromInt 3
 
 	let gcdTs: Test.t
 		= fun () ->
@@ -239,13 +238,11 @@ module Rat = struct
         |> Test.suite Coeff.name
 end
 
-module Symbolic = Make_Tests(Scalar.Symbolic)
+module Symbolic = Make_Tests(Vector.Symbolic)
 
-module Float = Make_Tests(Scalar.Float)
-
-module RelInt = Make_Tests(Scalar.RelInt)
+module Float = Make_Tests(Vector.Float)
 
 let ts : Test.t
 	= fun () ->
-    List.map Test.run [Rat.ts ; Symbolic.ts ; Float.ts ; RelInt.ts]
+    List.map Test.run [Rat.ts ; Symbolic.ts ; Float.ts]
     |> Test.suite "Vector"

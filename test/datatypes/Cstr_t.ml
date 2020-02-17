@@ -396,7 +396,7 @@ module Rat = struct
 					let _ = Cstr.elim c1 c2 x in
 					Test.fail name "Cs.NoElim not raised" state
 				with
-				| Cstr.NoElim -> Test.succeed state
+				| Cstr_type.NoElim -> Test.succeed state
 				| _ -> Test.fail name "unexpected exception raised" state
 			in
 			let tcs = [
@@ -424,7 +424,7 @@ module Rat = struct
 					let _ = Cstr.elim c1 c2 x in
 					Test.fail name "Cs.CannotElim not raised" state
 				with
-				| Cstr.CannotElim -> Test.succeed state
+				| Cstr_type.CannotElim -> Test.succeed state
 				| _ -> Test.fail name "unexpected exception raised" state
 			in
 			let tcs = [

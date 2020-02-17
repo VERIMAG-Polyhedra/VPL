@@ -1354,8 +1354,7 @@ module Make_Tests (F : sig
     		getLowerBoundTs;
     		renameTs
     	]
-        |> Test.suite (Printf.sprintf "%s:%s:%s"
-        (Flags.min_to_string())
+        |> Test.suite (Printf.sprintf "%s:%s"
         (Flags.proj_to_string())
         (Flags.join_to_string()))
 end
@@ -1364,7 +1363,6 @@ module Classic = Make_Tests
 	(struct
 		let set : unit -> unit
 			= fun () ->
-			Flags.min := Flags.Classic;
 			Flags.proj := Flags.FM;
 			Flags.join := Flags.Baryc;
 	end)
@@ -1376,7 +1374,6 @@ module PLP_Rat = Make_Tests
 	(struct
 		let set : unit -> unit
 			= fun () ->
-			Flags.min := Flags.Classic;
 			Flags.proj := Flags.Proj_PLP Flags.Rat;
 			Flags.join := Flags.Join_PLP Flags.Rat;
 	end)

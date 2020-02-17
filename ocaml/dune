@@ -1,0 +1,16 @@
+(include_subdirs unqualified)
+
+(library
+    (name           vpl)
+    (public_name    vpl-core)
+    (modes          byte native)
+    (wrapped        true)
+    (libraries      zarith unix)
+    (modules_without_implementation abstractDomain poly_type scalar_type vector_type)
+    (modules (:standard))
+    (flags (:standard -w "a-32-33"))
+)
+
+(documentation
+    (package vpl-core)
+)
