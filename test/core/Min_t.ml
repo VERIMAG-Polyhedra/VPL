@@ -45,7 +45,7 @@ module Make_Tests (Min : Min.Type) = struct
 					state
 			with Not_found ->
 			try
-			 	let all_cstrs = List.split cstrs |> Pervasives.fst in
+			 	let all_cstrs = List.split cstrs |> Stdlib.fst in
 				let (cstr,point) = List.find
 					(fun (cstr,point) ->
 						let point' = Vec.toRat point in
@@ -64,7 +64,7 @@ module Make_Tests (Min : Min.Type) = struct
 		in
 		let check_cstrs
 			= fun (name, cstrs, ecstrs, _) state ->
-			let acstrs = List.split cstrs |> Pervasives.fst in
+			let acstrs = List.split cstrs |> Stdlib.fst in
 			Test.equals
 				name
 				(fun l -> Misc.list_to_string (Cs.to_string Var.to_string) l " ; ")
@@ -245,21 +245,6 @@ module Classic = struct
         Test.suite "Classic" [Rat.ts (); Float.ts (); Symbolic.ts ()]
 end
 
-module Raytracing = struct
-	module Glpk = struct
-		module Rat = Make_Tests(Min.Glpk(Vector.Rat))
-		module Float = Make_Tests(Min.Glpk(Vector.Float))
-		module Symbolic = Make_Tests(Min.Glpk(Vector.Symbolic))
-		let ts : Test.t
-			= fun () ->
-            Test.suite "Glpk" [Rat.ts (); Float.ts (); Symbolic.ts ()]
-	end
-
-	let ts : Test.t
-		= fun () ->
-        Test.suite "Raytracing" (if Wrapper.with_glpk then [Glpk.ts ()] else [])
-end
-
 let ts: Test.t
     = fun () ->
-    Test.suite "Min" [Classic.ts (); Raytracing.ts ()]
+    Test.suite "Min" [Classic.ts ();]

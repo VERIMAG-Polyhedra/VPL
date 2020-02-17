@@ -7,6 +7,7 @@
 
 *)
 
+Require Import String.
 Require Import Itv.
 Require Import Bool.
 Require Import ZArith.

@@ -1,65 +1,52 @@
+# Defining default program for html
+ifeq ($(OS),Windows_NT)
+    OPEN := start
+else
+    UNAME := $(shell uname -s)
+    ifeq ($(UNAME),Linux)
+        OPEN := xdg-open
+	else
+		OPEN := open
+	endif
+endif
+
+BUILD = _build/default
+
 all: vpl
 
-vpl: setup
-	$(MAKE) -C ocaml/
+vpl:
+	dune build
 
-dev: setup_dev
-	$(MAKE) -C ocaml/
+doc:
+	dune build @doc
 
-doc: setup
-	$(MAKE) -C ocaml/ doc
+open_doc:
+	$(OPEN) $(BUILD)/_doc/_html/index.html
 
-setup:
-	cd ocaml; cp -f _oasis_no_glpk _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
+clean:
+	dune clean
 
-vpl_glpk: setup_glpk
-	$(MAKE) -C ocaml/
-
-setup_glpk:
-	cd ocaml; cp -f _oasis_glpk _oasis; cp -f src/Wrapper_glpk.ml src/Wrapper.ml; oasis setup
-
-setup_dev:
-	cd ocaml; cp -f _oasis_dev _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
-
-clean: test_clean
-	$(MAKE) -C ocaml/ clean
-	$(MAKE) -C test/ clean
-	$(MAKE) oasis_clean
-
-to_opam:
-	cd ocaml
-	oasis2opam --local
-
-allclean: clean coq_clean test_clean oasis_clean
-
-install:
-	$(MAKE) -C ocaml/ install
+install: vpl
+	dune build @install
+	dune install
 
 uninstall:
-	ocamlfind remove vpl
+	dune uninstall
 
 check: vpl
-	$(MAKE) -C test/ check
-
-test_clean:
-	$(MAKE) -C test/ clean
-
-oasis_clean:
-	$(RM) -f ocaml/Makefile ocaml/configure ocaml/_tags ocaml/myocamlbuild.ml ocaml/setup.ml ocaml/setup.data ocaml/setup.log
-	$(RM) -f ocaml/src/META ocaml/src/*lib ocaml/src/*pack
-	$(RM) -f ocaml/_oasis
+	./_build/default/test/run_tests.exe
 
 # extract Coq files into the expected  ocaml/ subdir.
 coq_update:
-	$(MAKE) -j -C coq/ OPT:="-opt" DemoExtract.vo
+	$(MAKE) -j$(PROCMAX) -C coq/ OPT:="-opt" DemoExtract.vo
 
 coq_extract:
 	$(MAKE) -C coq/ cleanextract
-	$(MAKE) -j -C coq/ OPT:="-opt" DemoExtract.vo
+	$(MAKE) -j$(PROCMAX) -C coq/ OPT:="-opt" DemoExtract.vo
 
 # targets for opam installation.
 coq_build:
-	$(MAKE) -j -C coq/ OPT:="-opt" build
+	$(MAKE) -j$(PROCMAX) -C coq/ OPT:="-opt" build
 
 coq_install:
 	$(MAKE) -C coq/ install
@@ -70,4 +57,4 @@ coq_uninstall:
 coq_clean:
 	$(MAKE) -C coq clean
 
-.PHONY: all vpl clean allclean install uninstall check coq_update coq_extract coq_build coq_install coq_uninstall coq_clean test_clean doc
+.PHONY: all vpl clean install uninstall doc open_doc check coq_update coq_extract coq_build coq_install coq_uninstall coq_clean

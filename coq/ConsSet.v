@@ -7,7 +7,6 @@ Require Import CstrLCF.
 Require Import Debugging.
 Require Import OptionMonad.
 
-
 Module CsImpl(Cstr: CstrSig).
 
   (* A first representation of Polyhedra as list of constraints *)
@@ -279,14 +278,15 @@ Module CsImpl(Cstr: CstrSig).
 
 End CsImpl.
 
+(* Ajout pour Handelman *)
+Require Import QArith.
+Require Import Ring_polynom_AddOnQ.
+Require Import Qop.
+
 (*Module Cs := CsImpl Cstr.*)
 Module Cs.
   Include CsImpl Cstr.
-  
-  (* Ajout pour Handelman *)
-  Require Import QArith.
-  Require Import Ring_polynom_AddOnQ.
-  Require Import Qop.
+
   Definition mem_compat (m:Mem.t QNum.t) (p:positive) : Q :=
   QNum.to_Q (m (p)).
   

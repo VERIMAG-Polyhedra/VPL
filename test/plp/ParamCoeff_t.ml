@@ -95,7 +95,7 @@ let mkSparseFailureTs : Test.t
   let chk : string * int * (int * Scalar.Rat.t) list * Scalar.Rat.t -> Test.stateT -> Test.stateT
 	   = fun (nm, i, l, a) state ->
 	   try
-	Pervasives.ignore (ParamCoeff.mkSparse i l a);
+	Stdlib.ignore (ParamCoeff.mkSparse i l a);
 	let e = Printf.sprintf "%s: expected Invalid_argument" nm in
 		Test.fail nm e state
 	   with Invalid_argument _ -> Test.succeed state
@@ -252,7 +252,7 @@ let is_constant_ts : Test.t
   let chk : string * bool * ParamCoeff.t -> Test.stateT -> Test.stateT
 	   = fun (nm, r, c) state ->
 	   let r' = ParamCoeff.is_constant c in
-	   Test.equals nm Pervasives.string_of_bool (=) r r' state
+	   Test.equals nm Stdlib.string_of_bool (=) r r' state
 	 in
 	 [
 		 "zero_no_param", true, ParamCoeff.mkCst Scalar.Rat.z;

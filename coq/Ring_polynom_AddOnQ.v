@@ -212,9 +212,9 @@ Qed.
 Fixpoint bound (pe:PExpr): positive :=
   match pe with
   | PEX _ x => x
-  | PEadd pe1 pe2 => Pmax (bound pe1) (bound pe2)
-  | PEsub pe1 pe2 => Pmax (bound pe1) (bound pe2)
-  | PEmul pe1 pe2 => Pmax (bound pe1) (bound pe2)
+  | PEadd pe1 pe2 => Pos.max (bound pe1) (bound pe2)
+  | PEsub pe1 pe2 => Pos.max (bound pe1) (bound pe2)
+  | PEmul pe1 pe2 => Pos.max (bound pe1) (bound pe2)
   | PEopp pe => bound pe
   | PEpow pe _ => bound pe
   | _ => xH
@@ -246,7 +246,7 @@ Qed.
 Theorem PExpr_eq_correct (pe1 pe2: PExpr) (m: positive -> Q):
   PExpr_eq pe1 pe2 = true -> Qeq (PEsem pe1 m) (PEsem pe2 m).
 Proof.
-  unfold PExpr_eq, Peq. intro H; rewrite! PEnorm_correct with (bnd:=Pmax (bound pe1) (bound pe2)); auto.
+  unfold PExpr_eq, Peq. intro H; rewrite! PEnorm_correct with (bnd:=Pos.max (bound pe1) (bound pe2)); auto.
   unfold Pphi. refine (Peq_ok Q_Setoid _ _ _ _ H _).
   - eapply Cring.cring_eq_ext.
   - eapply mkmorph.

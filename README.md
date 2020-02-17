@@ -38,8 +38,6 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
       opam install coq-vpltactic
       ```
 
-  In case of trouble with this `opam` install, you should read [this](https://github.com/VERIMAG-Polyhedra/opam-vpl/blob/master/README.md#using-the-vpl-on-a-vagrantvirtualbox-virtual-machine).
-
 2. __From sources__
 
     The VPL can use a C++ parallel algorithm to minimize the representation of polyhedra.
@@ -106,7 +104,7 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
            * [coq](https://coq.inria.fr/)
               (mandatory only if you want to re-extract files from Coq)
               _available in OPAM_
-              __required version 8.7__ (use coq-vpl.0.2 for coq 8.6)
+              __required version 8.9__ (use older opam packages of coq-vpl for previous versions of coq)
 
               __NB__ the `ocaml/src/extracted/` directory already contains extracted files from Coq.
 
@@ -137,9 +135,26 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 
 There are several ways to use the library.
 
-* As an Ocaml library (opam package `vpl-core`),
-the entry point is then the module UserInterface
+1. From Coq
+(see opam package `coq-vpl`)
 
-* From Coq (opam package `coq-vpl`)
+2. As a Coq tactic
+(see [VplTactic](https://github.com/VERIMAG-Polyhedra/VplTactic))
 
-* As a Coq tactic (see [VplTactic](https://github.com/VERIMAG-Polyhedra/VplTactic))
+3. As an OCaml library
+(see opam package `vpl-core`)
+
+As an OCaml library, the entry point of the VPL is the module UserInterface.
+It contains a functor `Make` that must be provided with a polyhedral domain (from module `Domains`).
+Polyhedral domains can work over Q or Z, and there are three levels of certification, which gives 6 possible domains to instantiate `Make` with.
+The level of certifications are:
+
+* _No certification_: no certificate is produced
+
+* _OCaml certification_: Each operator of the domain produces a _certificate_, ie a witness of its computation that can be checked.
+
+* _Coq certification_: In addition to guarantees offered by OCaml certification, certificates are here extracted from Coq proven types.
+
+```
+module domain = Vpl.UserInterface.Make(Vpl.Domains.CstrQ)
+```

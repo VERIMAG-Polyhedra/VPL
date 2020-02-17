@@ -250,7 +250,7 @@ module Make_Tests (Vec : Vector.Type) = struct
             let chk : string * Poly.t * bool -> (Test.stateT -> Test.stateT)
                 = fun (nm, p, er) state ->
                 let ar = Poly.is_constant p in
-                Test.equals nm Pervasives.string_of_bool (=) er ar state
+                Test.equals nm Stdlib.string_of_bool (=) er ar state
             in
             let tcs : (string * Poly.t * bool) list = [
                 "constant", Poly.of_string "-2/3", true;
@@ -265,7 +265,7 @@ module Make_Tests (Vec : Vector.Type) = struct
             let chk : string * Poly.t * bool -> (Test.stateT -> Test.stateT)
                 = fun (nm, p, er) state ->
                 let ar = Poly.isZ p in
-                Test.equals nm Pervasives.string_of_bool (=) er ar state
+                Test.equals nm Stdlib.string_of_bool (=) er ar state
             in
             let tcs : (string * Poly.t * bool) list = [
                 "constant", Poly.of_string "-2/3", false;
@@ -372,7 +372,7 @@ module Make_Tests (Vec : Vector.Type) = struct
             let chk : string * bool * Poly.t -> (Test.stateT -> Test.stateT)
                 = fun (nm, r, p) state ->
                 let r' = Poly.is_linear p in
-                Test.equals nm Pervasives.string_of_bool (=) r r' state
+                Test.equals nm Stdlib.string_of_bool (=) r r' state
             in [
                 "zero", true, Poly.add_cste [] Coeff.z;
                 "constant", true, Poly.add_cste [] (Coeff.of_int 2);

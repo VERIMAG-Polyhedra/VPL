@@ -420,11 +420,11 @@ let joinSetupTs: Test.t
 		let (_, _, s1) = EqSet.joinSetup dup (Var.fromInt nxt') Rtree.empty alpha idOff s in
 		let sorted =
 			let ids = List.map (fun c -> (Cons.get_id c)) (EqSet.list s) in
-			List.sort Pervasives.compare ids
+			List.sort Stdlib.compare ids
 		in
 		let sorted1 =
 			let ids1 = List.map (fun c -> (Cons.get_id c) - idOff) (EqSet.list s1) in
-			List.sort Pervasives.compare ids1
+			List.sort Stdlib.compare ids1
 		in
 		if sorted = sorted1 then
 			Test.succeed state

@@ -11,7 +11,7 @@ open Vpl
 			if eq el al  then
 				Test.succeed state
 			else
-				let e = Printf.sprintf "[%s]"(String.concat ";" (List.map Pervasives.string_of_int l)) in
+				let e = Printf.sprintf "[%s]"(String.concat ";" (List.map Stdlib.string_of_int l)) in
 				Test.fail nm e state
 		in
       let tcs : (string * int list * int * int * int list) list
