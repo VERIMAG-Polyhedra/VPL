@@ -1,4 +1,4 @@
-(** Inputs for the verifier extracted in Caml 
+(** Inputs for the verifier extracted in Caml
 
 NB: Coq notations gives use a cheap parser for PL language...
 
@@ -82,9 +82,9 @@ Definition basic_tests_ok : list (string * statement) :=
        Assert "post1" (101 <= x) -;
        Assert "post2" (0 <= x) )
     ::("split_eq",
-       Assume (1 <= x /\ x <= 3)-; 
+       Assume (1 <= x /\ x <= 3)-;
        x::=x+1 -;
-       Assert "post" (x = 2 \/ x = 3 \/ x = 4)  ) 
+       Assert "post" (x = 2 \/ x = 3 \/ x = 4)  )
     ::("trans1",
        Assume (0 <= x /\ x <= 0) -;
        Assert "post1" (x = 0))
@@ -124,7 +124,7 @@ Definition basic_tests_ok : list (string * statement) :=
     ::("convex_hull0",
        Assume (1 <= x /\ x <= 10) -;
        a::=3*x -;
-       If (x <= 5) Then 
+       If (x <= 5) Then
           y::=(x+5)  (* hence,  x in 1..5   and  y in 6..10 *)
        Else
           y::=(x-5)  (* hence,  x in 6..10  and  y in 1..5  *)
@@ -134,7 +134,7 @@ Definition basic_tests_ok : list (string * statement) :=
     ::("convex_hull1",
        Assume (1 <= x /\ x <= 10) -;
        a::=3*x -;
-       If (x <= 5) Then 
+       If (x <= 5) Then
           Assume (y <= (x+5))  (* hence,  x in 1..5   and  y <= 10 *)
        Else
           y::=(x-5)  (* hence,  x in 6..10  and  y in 1..5  *)
@@ -144,7 +144,7 @@ Definition basic_tests_ok : list (string * statement) :=
     ::("convex_hull2",
        Assume (1 <= x /\ x <= 10) -;
        a::=3*x -;
-       If (x <= 5) Then 
+       If (x <= 5) Then
           Assume ((x+5) <= y)  (* hence,  x in 1..5   and  6 <= y *)
        Else
           y::=(x-5)  (* hence,  x in 6..10  and  y in 1..5  *)
@@ -154,7 +154,7 @@ Definition basic_tests_ok : list (string * statement) :=
     ::("convex_hull3",
        Assume (1 <= x /\ x <= 10) -;
        a::=3*x -;
-       If (x <= 5) Then 
+       If (x <= 5) Then
           y::=(x+5)  (* hence,  x in 1..5   and  y in 6..10 *)
        Else
           Assume (y <= (x-5))  (* hence,  x in 6..10  and  y <= 5  *)
@@ -164,7 +164,7 @@ Definition basic_tests_ok : list (string * statement) :=
     ::("convex_hull4",
        Assume (1 <= x /\ x <= 10) -;
        a::=3*x -;
-       If (x <= 5) Then 
+       If (x <= 5) Then
           y::=(x+5)  (* hence,  x in 1..5   and  y in 6..10 *)
        Else
           Assume ((x-5) <= y)  (* hence,  x in 6..10  and  1 <= y  *)
@@ -174,7 +174,7 @@ Definition basic_tests_ok : list (string * statement) :=
     ::("convex_hull5",
        Assume (1 <= x /\ x <= 10) -;
        a::=3*x -;
-       If (x <= 5) Then 
+       If (x <= 5) Then
           Assume ((x+5) <= y)  (* hence,  x in 1..5   and  6 <= y *)
        Else
           Assume ((x-5) <= y) (* hence,  x in 6..10  and  1 <= y  *)
@@ -184,7 +184,7 @@ Definition basic_tests_ok : list (string * statement) :=
     ::("convex_hull6",
        Assume (1 <= x /\ x <= 10) -;
        a::=3*x -;
-       If (x <= 5) Then 
+       If (x <= 5) Then
           Assume (y <= (x+5))  (* hence,  x in 1..5   and  y <= 10 *)
        Else
           Assume (y <= (x-5)) (* hence,  x in 6..10  and  y <= 5  *)
@@ -204,7 +204,7 @@ Definition basic_tests_ok : list (string * statement) :=
        Assert "post" (8 <= r))
     ::("convex_hull8",
        Assume (1 <= x /\ x <= 10) -;
-       If (x <= 5) Then 
+       If (x <= 5) Then
           Assume (y <= (x+5)) -; (* hence,  x in 1..5   and  y <= 10 *)
           a::=3*x
        Else
@@ -217,7 +217,7 @@ Definition basic_tests_ok : list (string * statement) :=
        div2 true -;
        Assert "post" (0 <= q /\ 0 <= r /\ r <= 1) )
     ::("div2_ok1",
-       Assume(-100 < x /\ x < 100)-; 
+       Assume(-100 < x /\ x < 100)-;
        div2 (a < 100) -;
        Assert "post" (0 <= q /\ q <= 49 /\ 0 <= r /\ r <= 1)  )
     ::("div2_ok2",
@@ -225,26 +225,26 @@ Definition basic_tests_ok : list (string * statement) :=
        div2 (a = 0) -;
        Assert "post" (q=0 /\ r=0) )
     ::("div2_ok3",
-       Assume(x=99)-; 
+       Assume(x=99)-;
        div2 (a = 99) -;
        Assert "post" (q = 49 /\ 0 <= r /\ r <= 1)  )
     ::nil.
 
 (* Statement expected to be rejected (because either invalid or incompleteness) *)
 Definition basic_tests_ko : list (string * statement) :=
-    ("div2_ko_init",    
-       div2 (a < 100) -; 
+    ("div2_ko_init",
+       div2 (a < 100) -;
        Assert "post" (q <= 50)  )
     ::("div2_ko_post",
-       Assume(-100 < x /\ x < 100)-; 
-       div2 true -; 
+       Assume(-100 < x /\ x < 100)-;
+       div2 true -;
        Assert "post" (0 <= q /\ q <= 50 /\ 0 <= r /\ r <= 1)  )
     ::("div2_ko_preserv",
-       Assume(-100 < x /\ x < 100)-; 
-       div2 (q <= 50) -; 
+       Assume(-100 < x /\ x < 100)-;
+       div2 (q <= 50) -;
        Assert "post" (q <= 50)  )
-    ::("div2_ko_integer_incompletude", 
-       Assume(x=99)-; 
+    ::("div2_ko_integer_incompletude",
+       Assume(x=99)-;
        div2 (a=99) -;
        Assert "post" (q=49 /\ r=1)  )
     ::("assertko1-2-3",
@@ -281,7 +281,7 @@ Definition barycentre name (lbz ubz cz:Z) :=
   Assume(0 <= a /\ a <= c) -;
   Assume(lb <= (2*x1-3*x2) /\ (2*x1-3*x2) <= ub) -;
   Assume(lb <= (5*y1+3*y2) /\ (5*y1+3*y2) <= ub) -;
-  
+
   (* TESTS *)
   aux::|(0 <= aux /\ aux <= 2) -;
   If (aux=0) Then
@@ -289,14 +289,14 @@ Definition barycentre name (lbz ubz cz:Z) :=
   Else If (aux=1) Then
     r::=a*((2*x1-3*x2)-(5*y1+3*y2))+c*(5*y1+3*y2)
   Else
-    r::=(c-a)*(5*y1+3*y2)+(2*x1-3*x2)*a 
+    r::=(c-a)*(5*y1+3*y2)+(2*x1-3*x2)*a
   Fi Fi -;
 
   (* RESULT CHECK *)
   Assert (name++"Inf") (c*lb <= r) -;
   Assert (name++"Sup") (r <= c*ub).
 
-Definition test_barycentre := 
+Definition test_barycentre :=
   barycentre "b1" (-100) 100 5 -;
   barycentre "b2" (-20) 12 1 -;
   barycentre "b3" 10 20 2 -;
@@ -308,55 +308,55 @@ Definition test_barycentre :=
 
 Definition imul4 s a b c d e f :=
   (("mul4_" ++ s ++ "_ok1")%string,
-       Assume (a <= x /\ x <= b /\ c <= y /\ y <= d)-; 
+       Assume (a <= x /\ x <= b /\ c <= y /\ y <= d)-;
        r::=INTERV (STATIC (x*y)) -;
        Assert "post" (e <= r /\ r <= f))
   ::(("mul4_" ++ s ++ "_ok2")%string,
-       Assume (a <= x /\ x <= b /\ c <= y /\ y <= d)-; 
+       Assume (a <= x /\ x <= b /\ c <= y /\ y <= d)-;
        r::=INTERV (STATIC (y*x)) -;
        Assert "post" (e <= r /\ r <= f) )
   :: (("mul4_" ++ s ++ "_ok3")%string,
-       Assume (a <= x /\ x <= b /\ c <= y /\ y <= d)-; 
+       Assume (a <= x /\ x <= b /\ c <= y /\ y <= d)-;
        Assume (y*x <= r) -;
        Assert "post" (e <= r) )
   :: (("mul4_" ++ s ++ "_ok4")%string,
-       Assume (a <= x /\ x <= b /\ c <= y /\ y <= d)-; 
+       Assume (a <= x /\ x <= b /\ c <= y /\ y <= d)-;
        Assume (r <= x*y)  -;
        Assert "post" (r <= f) )
-  ::nil. 
+  ::nil.
 
 Definition imul30 s a b c e f :=
   (("mul30_" ++ s ++ "_ok1")%string,
-       Assume (a <= x /\ x <= b /\ c <= y)-; 
+       Assume (a <= x /\ x <= b /\ c <= y)-;
        r::=INTERV (STATIC (x*y)) -;
        Assert "post" (e <= r /\ r <= f) )
   ::(("mul30_" ++ s ++ "_ok2")%string,
-       Assume (a <= x /\ x <= b /\ c <= y)-; 
+       Assume (a <= x /\ x <= b /\ c <= y)-;
        r::=INTERV (STATIC (y*x)) -;
        Assert "post" (e <= r /\ r <= f) )
-  ::nil. 
+  ::nil.
 
 Definition imul31 s a b c e :=
   (("mul31_" ++ s ++ "_ok1")%string,
-       Assume (a <= x /\ x <= b /\ c <= y)-; 
+       Assume (a <= x /\ x <= b /\ c <= y)-;
        r::=INTERV (STATIC (x*y)) -;
        Assert "post" (e <= r) )
   ::(("mul31_" ++ s ++ "_ok2")%string,
-       Assume (a <= x /\ x <= b /\ c <= y)-; 
+       Assume (a <= x /\ x <= b /\ c <= y)-;
        r::=INTERV (STATIC (y*x)) -;
        Assert "post" (e <= r) )
-  ::nil. 
+  ::nil.
 
 Definition imul32 s a b c f :=
   (("mul32_" ++ s ++ "_ok1")%string,
-       Assume (a <= x /\ x <= b /\ c <= y)-; 
+       Assume (a <= x /\ x <= b /\ c <= y)-;
        r::=INTERV (STATIC (x*y)) -;
        Assert "post" (r <= f) )
   ::(("mul32_" ++ s ++ "_ok2")%string,
-       Assume (a <= x /\ x <= b /\ c <= y)-; 
+       Assume (a <= x /\ x <= b /\ c <= y)-;
        r::=INTERV (STATIC (y*x)) -;
        Assert "post" (r <= f) )
-  ::nil. 
+  ::nil.
 
 (* Statement expected to be accepted *)
 Definition itv_tests_ok : list (string * statement) :=
@@ -364,7 +364,7 @@ Definition itv_tests_ok : list (string * statement) :=
        Assume (1 <= x /\ x <= 0)-;
        x::=y*x -;
        Assert "post" false)
-(* remarque: on est sensible au signe du au caractere non-symetrique du test de signe 
+(* remarque: on est sensible au signe du au caractere non-symetrique du test de signe
    cf skip1_2
 *)
     ::("nonlin_skip1_1_ok",
@@ -387,19 +387,19 @@ Definition itv_tests_ok : list (string * statement) :=
        Assume (y < x)-;
        Assume (r * x <= y) -;
        Assert "post" (y < x) )
-    ::("nonlin1_ok", 
+    ::("nonlin1_ok",
        Assume (-3 <= x /\ x <= 3)-;
        Assume(12 <= INTERV ((x+1)*(x+1))) -;
        Assert "post" (1 <= x))
-    ::("nonlin2_ok", 
+    ::("nonlin2_ok",
        Assume (-3 <= x /\ x <= 3)-;
        Assume(12 <= (x+1)*(x+1)) -;
        Assert "post" (11 <= 5*x /\ x = 3))
-    ::("nonlin2_1_ok", 
+    ::("nonlin2_1_ok",
        Assume (-3 <= x /\ x <= 3)-;
        Assume(11 < (x+1)*(x+1)) -;
        Assert "post" (11 <= 5*x /\ x = 3))
-    ::("nonlin3_ok", 
+    ::("nonlin3_ok",
        Assume (-1 < x /\ x < 1)-;
        Assume(0 <> x*x) -;
        Assert "post" (false))
@@ -441,62 +441,62 @@ Definition itv_tests_ok : list (string * statement) :=
        Assert "post2" (2 <= y) -;
        Assert "post3" (false))
 (* Barycentre *)
-    ::("barycentre_ok1_1",   
+    ::("barycentre_ok1_1",
        Assume (1 <= a /\ a <= 5 /\ -10 <= x /\ x <= 10 /\ -10 <= y /\ y <= 10)-;
        r::= a*(x-y) + 5*y -;
        Assert "post" (-50 <= r /\ r <= 50)
-       )       
-    ::("barycentre_ok1_2",   
+       )
+    ::("barycentre_ok1_2",
        Assume (1 <= a /\ a <= 5 /\ -10 <= x /\ x <= 10 /\ -10 <= y /\ y <= 10)-;
        r::= a*x+(5-a)*y -;
        Assert "post" (-50 <= r /\ r <= 50)
        )
-    ::("barycentre_ok2_1_X1",   
+    ::("barycentre_ok2_1_X1",
        Assume (0 <= a /\ a <= 5 /\ -1 <= x /\ x <= 1 /\ -1 <= y /\ y <= 1)-;
        r::= a*(x-y)+5*y -;
        Assert "post1" (-5 <= r) -;
        Assert "post2" (r <= 5)
-       ) 
-    ::("barycentre_ok2_1_X2",   
+       )
+    ::("barycentre_ok2_1_X2",
        Assume (0 <= a /\ a <= 5 /\ -1 <= x /\ x <= 1 /\ -1 <= y /\ y <= 1)-;
        r::= SKIP_ORACLE (a*(x-y)+5*y) -;
        Assert "post" (-5 <= r /\ r <= 5)
-       ) 
-    ::("barycentre_ok2_2",   
+       )
+    ::("barycentre_ok2_2",
        Assume (0 <= a /\ a <= 5 /\ 1 <= x /\ x <= 3 /\ 1 <= y /\ y <= 3)-;
        r::= a*(x-y)+5*y -;
        Assert "post1" (5 <= r) -;
        Assert "post2" (r <= 15)
-       ) 
-    ::("barycentre_ok2_2_X",   
+       )
+    ::("barycentre_ok2_2_X",
        Assume (0 <= a /\ a <= 5 /\ 1 <= x /\ x <= 3 /\ 1 <= y /\ y <= 3)-;
        r::= SKIP_ORACLE (a*(x-y)+5*y) -;
        Assert "post" (5 <= r /\ r <= 15)
-       ) 
-    ::("barycentre_ok3",   
+       )
+    ::("barycentre_ok3",
        Assume (1 <= a /\ a <= 5 /\ y <= x)-;
        r::=a*(x-y) + 5*y -;
        Assume(y <= x) -;
        Assert "post" (r <= 5*x /\ 5*y <= r)
-       )     
+       )
     ::("big_barycentre_ok",test_barycentre)
-   
+
 (* Parabole *)
-    ::("parabola_ok", 
+    ::("parabola_ok",
        Assume (a=2 /\ y=10 /\ q=100)-;
        Assume (y <= x /\ x <= q) -;
        r::=a*x*x -;
        Assert "post1" (a*y*y <= r) -;
        Assert "post2" (r <= a*q*q) -;
        Assert "post3" (r <= a*((q+y)*x-q*y)))
-    ::("parabola_ok1", 
+    ::("parabola_ok1",
        Assume (a=2 /\ y=10 /\ q=100)-;
        Assume (y <= x /\ x <= q) -;
        r::=SKIP_ORACLE ((INTERV (a*(x-10)))*(x-y) + INTERV (2*a*10)*x - 100*a) -;
        Assert "post1" (a*y*y <= r) -;
        Assert "post2" (r <= a*q*q) -;
        Assert "post3" (r <= a*((q+y)*x-q*y)))
-    ::("parabola_ok2", 
+    ::("parabola_ok2",
        Assume (a=2 /\ y=10 /\ q=100)-;
        Assume (y <= x /\ x <= q) -;
        r::=SKIP_ORACLE ((INTERV a)*(x*10-100) + 100*a + (INTERV (a*(x-10)))*(x-y) + (INTERV(a*10))*(x-10)) -;
@@ -526,7 +526,7 @@ Definition itv_tests_ko : list (string * statement) :=
        Assume (y < x /\ 1 <= r)-;
        Assume (r * x <= y) -;
        Assert "post" (x < 0 /\ y < 0) )
-    ::("nonlin1_ko", 
+    ::("nonlin1_ko",
        Assume (-3 <= x /\ x <= 3)-;
        Assume(12 <= SKIP_ORACLE (INTERV ((x+1)*(x+1)))) -;
        Assert "post" (2 <= x))
@@ -554,15 +554,14 @@ Definition itv_tests_ko : list (string * statement) :=
        Assume (1 <= x /\ x <= 10)-;
        r::= x*(5-x) -;
        Assert "post" (r <= 21))
-    ::("barycentre_ko",   
+    ::("barycentre_ko",
        Assume (1 <= a /\ a <= 5 /\ 1 <= x /\ x <= 3 /\ 1 <= y /\ y <= 3)-;
        r::=SKIP_ORACLE (INTERV (a*x+(5-a)*y)) -;
        Assert "post" (5 <= r /\ r <= 15)
-       ) 
+       )
    ::nil.
 
 Definition tests_ok := basic_tests_ok ++ itv_tests_ok.
 Definition tests_ko := basic_tests_ko ++ itv_tests_ko.
 
 End Examples.
-

@@ -1,52 +1,40 @@
-PROCMAX := $(shell nproc)
+# Defining default program for html
+ifeq ($(OS),Windows_NT)
+    OPEN := start
+else
+    UNAME := $(shell uname -s)
+    ifeq ($(UNAME),Linux)
+        OPEN := xdg-open
+	else
+		OPEN := open
+	endif
+endif
+
+BUILD = _build/default
 
 all: vpl
 
-vpl: setup
-	$(MAKE) -C ocaml/
+vpl:
+	dune build
 
-dev: setup_dev
-	$(MAKE) -C ocaml/
+doc:
+	dune build @doc
 
-setup:
-	cd ocaml; cp -f _oasis_no_glpk _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
-
-vpl_glpk: setup_glpk
-	$(MAKE) -C ocaml/
-
-setup_glpk:
-	cd ocaml; cp -f _oasis_glpk _oasis; cp -f src/Wrapper_glpk.ml src/Wrapper.ml; oasis setup
-
-setup_dev:
-	cd ocaml; cp -f _oasis_dev _oasis; cp -f src/Wrapper_no_glpk.ml src/Wrapper.ml; oasis setup
+open_doc:
+	$(OPEN) $(BUILD)/_doc/_html/index.html
 
 clean:
-	$(MAKE) -C ocaml/ clean
-	$(MAKE) -C test/ clean
-	rm -f ocaml/setup.data ocaml/setup.log
-	rm -f ocaml/src/*.mllib ocaml/src/*.mlpack ocaml/src/*.mldylib
+	dune clean
 
-to_opam:
-	cd ocaml
-	oasis2opam --local
-
-allclean: clean coq_clean test_clean oasis_clean
-
-install:
-	$(MAKE) -C ocaml/ install
+install: vpl
+	dune build @install
+	dune install
 
 uninstall:
-	ocamlfind remove vpl
+	dune uninstall
 
-check:
-	$(MAKE) -C test/ check
-
-test_clean:
-	$(MAKE) -C test/ clean
-
-oasis_clean:
-	$(RM) -f ocaml/Makefile ocaml/configure ocaml/_tags ocaml/myocamlbuild.ml ocaml/setup.ml ocaml/setup.data ocaml/setup.log
-	$(RM) -f ocaml/src/META ocaml/src/*lib ocaml/src/*pack
+check: vpl
+	./_build/default/test/run_tests.exe
 
 # extract Coq files into the expected  ocaml/ subdir.
 coq_update:
@@ -69,4 +57,4 @@ coq_uninstall:
 coq_clean:
 	$(MAKE) -C coq clean
 
-.PHONY: all vpl clean allclean install uninstall check coq_update coq_extract coq_build coq_install coq_uninstall coq_clean test_clean
+.PHONY: all vpl clean install uninstall doc open_doc check coq_update coq_extract coq_build coq_install coq_uninstall coq_clean

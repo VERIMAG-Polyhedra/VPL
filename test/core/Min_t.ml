@@ -1,13 +1,13 @@
 open Vpl
 
-module Cs = Cstr.Rat.Positive
+module Cs = Cstr.Rat
 
 module Make_Tests (Min : Min.Type) = struct
 
-	module Vec = Min.Vec
+	module Vec = Min.VecInput
 
-	let x = Vec.V.fromInt 1
-	let y = Vec.V.fromInt 2
+	let x = Var.fromInt 1
+	let y = Var.fromInt 2
 
 	let minimizeTs: Test.t
 		(* The boolean is true if the points can saturate constraints. *)
@@ -25,8 +25,8 @@ module Make_Tests (Min : Min.Type) = struct
 				in
 				Test.fail name
 					(Printf.sprintf "Point %s, associated with constraint %s, does not satisfy compl(cstr)."
-						(Vec.to_string Vec.V.to_string point)
-						(Cs.to_string Cs.Vec.V.to_string cstr))
+						(Vec.to_string Var.to_string point)
+						(Cs.to_string Var.to_string cstr))
 					state
 			with Not_found ->
 			try
@@ -40,12 +40,12 @@ module Make_Tests (Min : Min.Type) = struct
 				in
 				Test.fail name
 					(Printf.sprintf "Point %s, associated with constraint %s, saturates the constraint."
-						(Vec.to_string Vec.V.to_string point)
-						(Cs.to_string Cs.Vec.V.to_string cstr))
+						(Vec.to_string Var.to_string point)
+						(Cs.to_string Var.to_string cstr))
 					state
 			with Not_found ->
 			try
-			 	let all_cstrs = List.split cstrs |> Pervasives.fst in
+			 	let all_cstrs = List.split cstrs |> Stdlib.fst in
 				let (cstr,point) = List.find
 					(fun (cstr,point) ->
 						let point' = Vec.toRat point in
@@ -57,17 +57,17 @@ module Make_Tests (Min : Min.Type) = struct
 				in
 				Test.fail name
 					(Printf.sprintf "Point %s, associated with constraint %s, does not saturate other constraints."
-						(Vec.to_string Vec.V.to_string point)
-						(Cs.to_string Cs.Vec.V.to_string cstr))
+						(Vec.to_string Var.to_string point)
+						(Cs.to_string Var.to_string cstr))
 					state
 			with Not_found -> Test.succeed state
 		in
 		let check_cstrs
 			= fun (name, cstrs, ecstrs, _) state ->
-			let acstrs = List.split cstrs |> Pervasives.fst in
+			let acstrs = List.split cstrs |> Stdlib.fst in
 			Test.equals
 				name
-				(fun l -> Misc.list_to_string (Cs.to_string Cs.Vec.V.to_string) l " ; ")
+				(fun l -> Misc.list_to_string (Cs.to_string Var.to_string) l " ; ")
 				(Misc.list_eq (fun cstr cstrs -> List.exists (fun c -> Cs.equal c cstr) cstrs))
 				ecstrs acstrs state
 		in
@@ -75,83 +75,83 @@ module Make_Tests (Min : Min.Type) = struct
 			= [
 					"singleton",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u],
 					false
 				;
 					"interval",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
 					 false
 				;
 					"one_red",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
 					false
 				;
 					"one_red_1-epsilon",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.sub Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.sub Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u],
 					false
 				;
 					"one_red_1+epsilon",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.add Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.add Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.add Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.add Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
 					false
 				;
 					"one_red_epsilon_lt",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.add Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Lt [Cs.Vec.Coeff.add Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.add Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.add Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
 					false
 				;
 					"interval_one_red",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2);
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2);
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
 					 false
 				;
 					"interval_syntactic_red",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2);
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2);
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
 					 false
 				;
 					"triangle_le",
 					Vec.mk [Vec.Coeff.u, x ; Vec.Coeff.u, y],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.)],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.)],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.)],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.)],
 					 false
 				;
 					"triangle_lt",
 					Vec.mk [Vec.Coeff.u, x ; Vec.Coeff.u, y],
-					[Cs.mk Cstr.Lt [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.)],
-					[Cs.mk Cstr.Lt [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.)],
+					[Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.)],
+					[Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.)],
 					 false
 				]
                 @ (* following : known to fail for GLPK *)
@@ -160,65 +160,65 @@ module Make_Tests (Min : Min.Type) = struct
                  else [
 					"triangle_le_lt",
 					Vec.mk [Vec.Coeff.u, x ; Vec.Coeff.u, y],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z],
 					 true
 				;
 					"interval_proportional_red",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2);
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
-                     Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-5.), x] (Cs.Vec.Coeff.of_float 2.4)],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 0.5, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2);
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
+                     Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-5.), x] (Cs.Vec.Coeff.of_float 2.4)],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-2.5), x] (Cs.Vec.Coeff.of_float 1.2)],
 					 false
                 ;
 					"triangle_le_one_red",
 					Vec.mk [Vec.Coeff.u, x ; Vec.Coeff.u, y],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.negU;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.negU;
-                    Cs.mk Cstr.Le [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.negU],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.negU;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.negU;],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.negU;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.negU;
+                    Cs.mk Cstr_type.Le [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.negU],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.negU;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.negU;],
 					 false
                 ;
                     "one_red_1-epsilon_lt",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.sub Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.sub Cs.Vec.Coeff.u Cs.Vec.Coeff.delta, x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u],
 					false
                 ; (* known to fail *)(*
                     "one_red_epsilon/10_lt",
 					Vec.nil,
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.add Cs.Vec.Coeff.u (Cs.Vec.Coeff.div Cs.Vec.Coeff.delta (Cs.Vec.Coeff.of_float 10.)), x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Lt [Cs.Vec.Coeff.add Cs.Vec.Coeff.u (Cs.Vec.Coeff.div Cs.Vec.Coeff.delta (Cs.Vec.Coeff.of_float 10.)), x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.add Cs.Vec.Coeff.u (Cs.Vec.Coeff.div Cs.Vec.Coeff.delta (Cs.Vec.Coeff.of_float 10.)), x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.add Cs.Vec.Coeff.u (Cs.Vec.Coeff.div Cs.Vec.Coeff.delta (Cs.Vec.Coeff.of_float 10.)), x] Cs.Vec.Coeff.u],
 					false
                 ;*)
 					"triangle_le_lt2",
 					Vec.mk [Vec.Coeff.u, x ; Vec.Coeff.u, y],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.);
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z],
-					[Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.);
-					 Cs.mk Cstr.Lt [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.);
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z],
+					[Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), x] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float (-1.), y] Cs.Vec.Coeff.z;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.u, x ; Cs.Vec.Coeff.u, y] (Cs.Vec.Coeff.of_float 3.);
+					 Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.negU, x ; Cs.Vec.Coeff.negU, y] Cs.Vec.Coeff.z],
 					 true
                 ;
                 	"one_strict_red_swapped",
 					Vec.nil,
-					[Cs.mk Cstr.Lt [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
-					 Cs.mk Cstr.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
-					[Cs.mk Cstr.Lt [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u;
+					 Cs.mk Cstr_type.Le [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
+					[Cs.mk Cstr_type.Lt [Cs.Vec.Coeff.of_float 2., x] Cs.Vec.Coeff.u],
 					true
                 ])
 		|> List.fold_left (fun res (name, point, cstrs, ecstrs, b) ->
@@ -236,43 +236,15 @@ module Make_Tests (Min : Min.Type) = struct
 end
 
 module Classic = struct
-	module Rat = Make_Tests(Min.Classic(Vector.Rat.Positive))
-	module Float = Make_Tests(Min.Classic(Vector.Float.Positive))
-	module Symbolic = Make_Tests(Min.Classic(Vector.Symbolic.Positive))
+	module Rat = Make_Tests(Min.Classic(Vector.Rat))
+	module Float = Make_Tests(Min.Classic(Vector.Float))
+	module Symbolic = Make_Tests(Min.Classic(Vector.Symbolic))
 
 	let ts : Test.t
 		= fun () ->
         Test.suite "Classic" [Rat.ts (); Float.ts (); Symbolic.ts ()]
 end
 
-module Raytracing = struct
-	module Glpk = struct
-		module Rat = Make_Tests(Min.Glpk(Vector.Rat.Positive))
-		module Float = Make_Tests(Min.Glpk(Vector.Float.Positive))
-		module Symbolic = Make_Tests(Min.Glpk(Vector.Symbolic.Positive))
-		let ts : Test.t
-			= fun () ->
-            Test.suite "Glpk" [Rat.ts (); Float.ts (); Symbolic.ts ()]
-	end
-	module Splx = struct
-		module Rat = Make_Tests(Min.Splx(Vector.Rat.Positive))
-		module Float = Make_Tests(Min.Splx(Vector.Float.Positive))
-		module Symbolic = Make_Tests(Min.Splx(Vector.Symbolic.Positive))
-		let ts : Test.t
-			= fun () ->
-            Test.suite "Splx" [Rat.ts ();  Float.ts (); Symbolic.ts ()]
-	end
-
-	let ts : Test.t
-		= fun () ->
-        Test.suite "Raytracing" ((if Wrapper.with_glpk then [Glpk.ts ()] else []) @ [Splx.ts ()])
-end
-
 let ts: Test.t
     = fun () ->
-    (*Min.Debug.enable DebugTypes.([Title ; MInput ; MOutput ; Normal ; Detail]);
-    Debug.print_enable();
-    Debug.set_colors();*)
-    let t = Test.suite "Min" [Classic.ts (); Raytracing.ts ()] in
-    Debug.disable();
-    t
+    Test.suite "Min" [Classic.ts ();]

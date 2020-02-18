@@ -1,34 +1,34 @@
 open Vpl
 
 module Make_Tests (Cs : Cstr.Type) = struct
-	let x = Cs.Vec.V.fromInt 1
-	let y = Cs.Vec.V.fromInt 2
-	let z = Cs.Vec.V.fromInt 3
+	let x = Var.fromInt 1
+	let y = Var.fromInt 2
+	let z = Var.fromInt 3
 
-	let varPr: Cs.Vec.V.t -> string
+	let varPr: Var.t -> string
 	= fun _x ->
-		let vars: (Cs.Vec.V.t * string) list
+		let vars: (Var.t * string) list
 		= [x, "x"; y, "y"; z, "z"]
 		in
 		try
 			List.assoc _x vars
 		with
-		| Not_found -> "v" ^ (Cs.Vec.V.to_string _x)
+		| Not_found -> "v" ^ (Var.to_string _x)
 
 	let mkc t v c =
-		Cs.mk t (List.map (fun (i, v) -> (Cs.Vec.Coeff.mk1 i, v)) v) (Cs.Vec.Coeff.mk1 c)
+		Cs.mk t (List.map (fun (i, v) -> (Cs.Vec.Coeff.of_int i, v)) v) (Cs.Vec.Coeff.of_int c)
 
-	let eq = mkc Cstr.Eq
-	let le = mkc Cstr.Le
-	let lt = mkc Cstr.Lt
+	let eq = mkc Cstr_type.Eq
+	let le = mkc Cstr_type.Le
+	let lt = mkc Cstr_type.Lt
 
-	let v iv = Cs.Vec.mk (List.map (fun (i, v) -> (Cs.Vec.Coeff.mk1 i, v)) iv)
+	let v iv = Cs.Vec.mk (List.map (fun (i, v) -> (Cs.Vec.Coeff.of_int i, v)) iv)
 
-	(* Cs.eval *)
-	let evalTs: Test.t
+	(* Cs.satisfy *)
+	let satisfyTs: Test.t
 	= fun () ->
 		let chk (name, c, p, r) = fun state ->
-			if r = Cs.eval c p then
+			if r = Cs.satisfy p c then
 				Test.succeed state
 			else
 				let err =
@@ -45,7 +45,7 @@ module Make_Tests (Cs : Cstr.Type) = struct
 			"le0", le [1, x] 2, v [1, x; 2, y], true;
 			"eq0", eq [1, x] 2, v [2, x; 2, y], true;
 		] in
-		Test.suite "eval" (List.map chk tcs)
+		Test.suite "satisfy" (List.map chk tcs)
 
 	(* Cs.compl *)
 	let complOkTs: Test.t
@@ -53,10 +53,10 @@ module Make_Tests (Cs : Cstr.Type) = struct
 		let chk (name, c, inpts, outpts) = fun state ->
 			let cbar: Cs.t = Cs.compl c in
 			let r_in = List.fold_left
-				(fun r pt -> r && Cs.eval cbar pt) true inpts
+				(fun r pt -> r && Cs.satisfy pt cbar) true inpts
 			in
 			let r_out = List.fold_left
-				(fun r pt -> r && not (Cs.eval cbar pt)) true outpts
+				(fun r pt -> r && not (Cs.satisfy pt cbar)) true outpts
 			in
 			if r_in && r_out then
 				Test.succeed state
@@ -332,12 +332,12 @@ module Make_Tests (Cs : Cstr.Type) = struct
 			"c1contrad0", le [] (-1), le [1, x] 1, false;
 			"c1trivial0", le [] 1, le [1, x] 1, false;
             "raytracing_bug",
-                Cs.mk Cstr.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ),
-                Cs.mk Cstr.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ),
+                Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ),
+                Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ),
                 true;
             "raytracing_bug_reversed",
-                Cs.mk Cstr.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ),
-                Cs.mk Cstr.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ),
+                Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/2251799813685248" |> Cs.Vec.Coeff.ofQ),
+                Cs.mk Cstr_type.Le [Scalar.Rat.of_string "-5/2" |> Cs.Vec.Coeff.ofQ, x] (Scalar.Rat.of_string "5404319552844595/4503599627370496" |> Cs.Vec.Coeff.ofQ),
                 true;
 		] in
 		Test.suite "isIncl" (List.map chk tcs)
@@ -374,13 +374,18 @@ module Make_Tests (Cs : Cstr.Type) = struct
 
     let ts: Test.t
         = fun () ->
-        List.map Test.run [evalTs; complTs; splitTs; isInclSynTs; isEqTs; isInclTs; tellPropTs]
+        List.map Test.run [satisfyTs; complTs; splitTs; isInclSynTs; isEqTs; isInclTs; tellPropTs]
         |> Test.suite Cs.Vec.Coeff.name
 end
 
 module Rat = struct
 
-	module Make_Tests (Cstr : Cstr.Rat.Type) = struct
+	module Make_Tests (Cstr : sig
+        include Cstr.Type
+        val elim : t -> t -> Var.t -> (t * Vec.Coeff.t * Vec.Coeff.t)
+        val canon : t -> t
+        end) = struct
+
 		include Make_Tests(Cstr)
 
 		(* Cs.elim *)
@@ -391,7 +396,7 @@ module Rat = struct
 					let _ = Cstr.elim c1 c2 x in
 					Test.fail name "Cs.NoElim not raised" state
 				with
-				| Cstr.NoElim -> Test.succeed state
+				| Cstr_type.NoElim -> Test.succeed state
 				| _ -> Test.fail name "unexpected exception raised" state
 			in
 			let tcs = [
@@ -419,7 +424,7 @@ module Rat = struct
 					let _ = Cstr.elim c1 c2 x in
 					Test.fail name "Cs.CannotElim not raised" state
 				with
-				| Cstr.CannotElim -> Test.succeed state
+				| Cstr_type.CannotElim -> Test.succeed state
 				| _ -> Test.fail name "unexpected exception raised" state
 			in
 			let tcs = [
@@ -506,36 +511,16 @@ module Rat = struct
 
 		let ts : Test.t
 			=  fun () ->
-            List.map Test.run [evalTs; complTs; elimTs; splitTs ; isInclSynTs; isEqTs; isInclTs; tellPropTs]
+            List.map Test.run [satisfyTs; complTs; elimTs; splitTs ; isInclSynTs; isEqTs; isInclTs; tellPropTs]
             |> Test.suite Cstr.Vec.Coeff.name
 	end
 
-	module Positive = Make_Tests(Cstr.Rat.Positive)
-
-	module Int = Make_Tests(Cstr.Rat.Int)
+	module Positive = Make_Tests(Cstr.Rat)
 
 	let ts : Test.t
-		= fun () -> Test.suite "Rat" [Positive.ts() ; Int.ts()]
-end
-
-module Float = struct
-	module Cstr = Cstr.Float
-
-	module Positive = struct
-		module Cstr = Cstr.Positive
-		include Make_Tests(Cstr)
-	end
-
-	module Int = struct
-		module Cstr = Cstr.Int
-		include Make_Tests(Cstr)
-	end
-
-	let ts : Test.t
-		= fun () ->
-        Test.suite "Float" [Positive.ts() ; Int.ts()]
+		= fun () -> Test.suite "Rat" [Positive.ts()]
 end
 
 let ts : Test.t
 	= fun () ->
-    Test.suite "Cstr" [Rat.ts() ; Float.ts()]
+    Test.suite "Cstr" [Rat.ts()]

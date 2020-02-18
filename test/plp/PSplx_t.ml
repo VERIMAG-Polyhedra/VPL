@@ -1,11 +1,9 @@
 open Vpl
-module Cs = CstrPoly.Positive.Cs
+module Cs = Cstr.Rat
 module Vec = Cs.Vec
-module PSplx_ = PSplx.PSplx(Cs)
-module PSplx = PSplx_.PSplx(Vec)
+module PSplxDebug = PSplx.Debug
+module PSplx = PSplx.Make(Vec)
 
-module Objective = PSplx.Objective
-module ParamCoeff = PSplx.ParamCoeff
 module Naming = PSplx.Naming
 module Poly = ParamCoeff.Poly
 
@@ -18,31 +16,31 @@ let addSlackAt_ts : Test.t
 	 in
 	 [
 		 "simplest", 0,
-		 {
+		 { PSplx.empty with
 			PSplx.obj = Objective.mk [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat =  [[Scalar.Rat.u]];
 			PSplx.basis = [];
-			PSplx.names = Naming.empty
+			PSplx.names = Naming.empty;
 		 },
-		 {
+		 { PSplx.empty with
 			PSplx.obj = Objective.mkSparse 1 [] (ParamCoeff.mkCst Scalar.Rat.z);
 			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]];
 			PSplx.basis = [0];
-			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty
+			PSplx.names = Naming.allocAt Naming.Slack (Var.u) 0 Naming.empty;
 		 };
 
 		 "two_cons", 0,
-		 {
+		 { PSplx.empty with
 			PSplx.obj = Objective.mk [] (ParamCoeff.mkCst Scalar.Rat.z);
-			PSplx.mat = [[Scalar.Rat.u]; [Scalar.Rat.mk1 2]];
+			PSplx.mat = [[Scalar.Rat.u]; [Scalar.Rat.of_int 2]];
 			PSplx.basis = [];
-			PSplx.names = Naming.empty
+			PSplx.names = Naming.empty;
 		 },
-		 {
+		 { PSplx.empty with
 			PSplx.obj = Objective.mkSparse 1 [] (ParamCoeff.mkCst Scalar.Rat.z);
-			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]; [Scalar.Rat.z; Scalar.Rat.mk1 2]];
+			PSplx.mat = [[Scalar.Rat.u; Scalar.Rat.u]; [Scalar.Rat.z; Scalar.Rat.of_int 2]];
 			PSplx.basis = [0];
-			PSplx.names = Naming.allocAt Naming.Slack (Vec.V.u) 0 Naming.empty
+			PSplx.names = Naming.allocAt Naming.Slack (Var.u) 0 Naming.empty
 		 }
 	 ]
 	 |> List.map chk
@@ -51,13 +49,17 @@ let addSlackAt_ts : Test.t
 let m : int list list -> Tableau.Matrix.t
   = List.map (List.map Q.of_int)
 
+let q : int -> int -> Q.t
+    = Scalar.Rat.mk
+
 let get_row_pivot_ts : Test.t
   = fun () ->
    let chk : string * int * int option * Tableau.Matrix.t -> (Test.stateT -> Test.stateT)
 	   = fun (nm, col, er, m) st ->
 	   let ar =
-			try Some (PSplx.get_row_pivot m col)
-			with Failure _ -> None
+            let basis = [] in (* The basis is not used in the standard pivot  *)
+			try PSplx.get_row_pivot PSplx_type.Standard basis m col
+			with PSplx.Unbounded_problem -> None
 	   in
 	   if ar = er
 	   then Test.succeed st
@@ -65,7 +67,7 @@ let get_row_pivot_ts : Test.t
 	   	let pr : int option -> string
 		  = function
 		  | None -> "None"
-		  | Some i -> "Some " ^ Pervasives.string_of_int i
+		  | Some i -> "Some " ^ Stdlib.string_of_int i
 		in
 		Printf.printf "%s: expected %s but got %s\n" nm (pr er) (pr ar);
 		st
@@ -94,27 +96,28 @@ let get_row_pivot_ts : Test.t
 	 ] in
 	 List.map chk tcs |> Test.suite "get_row_pivot"
 
+
 (** Comparison of PSplx with Splx. *)
 module Explore = struct
 
 	let ineq_to_cstr : Poly.t -> Cs.t
 		= fun ineq ->
-		CstrPoly.Positive.mk Cstr.Le ineq
-		|> CstrPoly.Positive.toCstr
+		CstrPoly.mk Cstr_type.Le ineq
+		|> CstrPoly.toCstr
 
 	let eq_to_cstr : Poly.t -> Cs.t
 		= fun eq ->
-		CstrPoly.Positive.mk Cstr.Eq eq
-		|> CstrPoly.Positive.toCstr
+		CstrPoly.mk Cstr_type.Eq eq
+		|> CstrPoly.toCstr
 
-	let positivity_constraints : Vec.V.t list -> Cs.t list
+	let positivity_constraints : Var.t list -> Cs.t list
 		= fun vars ->
-		List.map (fun v -> Cs.mk Cstr.Le [Vec.Coeff.negU,v] Vec.Coeff.z) vars
+		List.map (fun v -> Cs.mk Cstr_type.Le [Vec.Coeff.negU,v] Vec.Coeff.z) vars
 
 	(* On évalue les paramètres *)
-	let obj_to_vec : Vec.V.t list -> Poly.t -> Vec.t -> Vec.t * Vec.Coeff.t
+	let obj_to_vec : Var.t list -> Poly.t -> Vec.t -> Vec.t * Vec.Coeff.t
 		= fun params obj point ->
-		let eval : Vec.V.t -> Vec.Coeff.t option
+		let eval : Var.t -> Vec.Coeff.t option
 			= fun v ->
 			if not (List.mem v params)
 			then None
@@ -122,23 +125,23 @@ module Explore = struct
 		in
 		Poly.eval_partial obj eval
 		|> Poly.neg (* XXX: because PSplx is minimizing?*)
-		|>	CstrPoly.Positive.mk Cstr.Eq
-		|> CstrPoly.Positive.toCstr
+		|>	CstrPoly.mk Cstr_type.Eq
+		|> CstrPoly.toCstr
 		|> fun c -> (Cs.get_v c, Cs.get_c c)
 
-	let to_splx : Vec.V.t list -> Vec.V.t list -> Poly.t list -> Poly.t list -> Poly.t -> Vec.t -> Splx.t Splx.mayUnsatT * Vec.t * Vec.Coeff.t
+	let to_splx : Var.t list -> Var.t list -> Poly.t list -> Poly.t list -> Poly.t -> Vec.t -> Splx.t Splx.mayUnsatT * Vec.t * Vec.Coeff.t
 		= fun vars params ineqs eqs obj point ->
 		let cstrs = List.mapi
 			(fun i c -> (i,c))
 			((List.map ineq_to_cstr ineqs) @ (List.map eq_to_cstr eqs) @ (positivity_constraints vars))
 		in
 		let (obj,cste) = obj_to_vec params obj point in
-		(Splx.mk (Vec.V.next (Vec.V.max vars)) cstrs
+		(Splx.mk (Var.next (Var.max vars)) cstrs
 			|> Splx.checkFromAdd,
 		obj,
 		cste)
 
-	let eval : Vec.t -> Vec.V.t -> Vec.Coeff.t
+	let eval : Vec.t -> Var.t -> Vec.Coeff.t
 		= fun point v ->
 		Vec.get point v
 
@@ -159,29 +162,56 @@ module Explore = struct
 				(Scalar.Rat.to_string res)
 				(PSplx.to_string psx)
 				(Scalar.Rat.to_string sol)
-				(Splx.pr Vec.V.to_string sx)) st
+				(Splx.pr Var.to_string sx)) st
 
-	let check : string * Poly.V.t list * Poly.V.t list * Poly.t list * Poly.t list * Poly.t * Vec.t -> (Test.stateT -> Test.stateT)
+    let check_pivot : string -> PSplx.t -> PSplx.t -> (Test.stateT -> Test.stateT)
+        = fun test_name sx_before sx_after st ->
+        List.fold_left (fun st i ->
+            let pcoeff = Objective.get i sx_before.PSplx.obj
+            and c = Tableau.Matrix.getCol i sx_before.PSplx.mat
+            in
+            let (pcoeff', c') = sx_after.PSplx.pivot (pcoeff, c) in
+            let pcoeff_expected = Objective.get i sx_after.PSplx.obj
+            and c_expected = Tableau.Matrix.getCol i sx_after.PSplx.mat
+            in
+            if ParamCoeff.equal pcoeff' pcoeff_expected
+                && Tableau.Vector.equal c' c_expected
+            then Test.succeed st
+            else let error_msg = Printf.sprintf
+                ("Reapplying pivots on each column: \nexpected %s\n%s\ngot %s\n%s")
+                (ParamCoeff.to_string pcoeff_expected)
+                (Tableau.Vector.to_string c_expected)
+                (ParamCoeff.to_string pcoeff')
+                (Tableau.Vector.to_string c')
+                in
+                Test.fail test_name error_msg st
+        ) st (Misc.range 0 ((PSplx.nCols sx_before) - 1))
+
+	let check : string * Var.t list * Var.t list * Poly.t list * Poly.t list * Poly.t * Vec.t -> (Test.stateT -> Test.stateT)
 		= fun (name,vars,params,ineqs,eqs,obj,point) st ->
 		let psx = PSplx.Build.from_poly vars ineqs eqs obj in
-		let res = PSplx.Explore.init_and_push Objective.Bland point psx in
+		let res = PSplx.Explore.init_and_push Objective.Bland PSplx_type.Standard point psx in
 		let (sx, sx_obj, cste) = to_splx vars params ineqs eqs obj point in
 		let max = Opt.max' sx sx_obj in
+        let st' = match res with
+            | None -> st
+            | Some sx' -> check_pivot name psx sx' st
+        in
 		match res, max with
-		| None, Splx.IsUnsat _ | None, Splx.IsOk (Opt.Infty) -> Test.succeed st
+		| None, Splx.IsUnsat _ | None, Splx.IsOk (Opt.Infty) -> Test.succeed st'
 		| None, Splx.IsOk sx -> Test.fail name
 			(Printf.sprintf "PSplx unsat  : \n%s\nwhile Splx sat : \n%s"
 				(PSplx.to_string psx)
 				(Opt.prOpt sx))
-			st
-		| Some _, Splx.IsUnsat _ -> Test.fail name "PSplx sat while Splx unsat" st
-		| Some psx, Splx.IsOk opt -> check_sol name opt psx point cste st
+			st'
+		| Some _, Splx.IsUnsat _ -> Test.fail name "PSplx sat while Splx unsat" st'
+		| Some psx, Splx.IsOk opt -> check_sol name opt psx point cste st'
 
 	let ts : Test.t =
 		fun () ->
-        let var = Vec.V.fromInt
+        let var = Var.fromInt
 		in
-		let tcs : (string * Poly.V.t list * Poly.V.t list * Poly.t list * Poly.t list * Poly.t * Vec.t) list
+		let tcs : (string * Var.t list * Var.t list * Poly.t list * Poly.t list * Poly.t * Vec.t) list
 		= [
 			"no_param_triangle",
 			[var 1 ; var 2],
@@ -242,11 +272,11 @@ module Init
      let chk : string * int * int * PSplx.t -> (Test.stateT -> Test.stateT)
 	= fun (nm, col, r, sx) st ->
 	let i = PSplx.Explore.Init.getReplacementForA sx col in
-	Test.equals nm Pervasives.string_of_int (=) r i st
+	Test.equals nm Stdlib.string_of_int (=) r i st
 	   in
 	   [
 	"selectionBug", 0, 1,
-	{
+	{ PSplx.empty with
 	  PSplx.obj = Objective.mk [
 				 ParamCoeff.mkSparse 1 [] Q.zero;
 				 ParamCoeff.mkSparse 1 [0, Q.one] Q.zero;
@@ -260,26 +290,26 @@ module Init
 	   |> List.map chk
 	   |> Test.suite "getReplacementForA"
 
-	let var : int -> Vec.V.t = Vec.V.fromInt
+	let var : int -> Var.t = Var.fromInt
 
   let buildInitFeasibilityPb_ts : Test.t
 	=  fun () ->
     let chk : string * PSplx.t -> (Test.stateT -> Test.stateT)
 	= fun (nm, sx) st ->
 	let sx' = PSplx.Explore.Init.buildInitFeasibilityPb sx in
-	if PSplx.Diag.isCanon sx'
+	if PSplx.isCanon sx'
 	then Test.succeed st
 	else
 	  let e = Printf.sprintf "\n%s: tableau is not in canonical form\n%s"
 				 nm (PSplx.to_string sx')
 	  in
-	  Pervasives.print_endline e;
+	  Stdlib.print_endline e;
 	  st
 	   in
 	   let v = List.map Q.of_int in
 	   [
 	"rearchitecture_bug",
-	{
+	{ PSplx.empty with
 	  PSplx.obj =
 		 Objective.mkSparse
 		   5 [
@@ -307,16 +337,16 @@ module Init
 			= fun (nm, sat, sx, vec) st ->
 			if not sat
 			then Test.succeed st
-			else match PSplx.Explore.Init.findFeasibleBasis sx vec with
+			else match PSplx.Explore.Init.findFeasibleBasis Objective.Bland PSplx_type.Standard sx vec with
 				| None -> Test.fail nm "" st (* handled in chkFeasible *)
 				| Some sx' ->
-					if PSplx.Diag.isCanon sx'
+					if PSplx.isCanon sx'
 		  			then Test.succeed st
 		 			else Test.fail nm "tableau not in canonical form" st
 	   in
 	   let chkFeasible : string * bool * PSplx.t * Vec.t -> (Test.stateT -> Test.stateT)
 			= fun (nm, sat, sx, vec) st ->
-			match PSplx.Explore.Init.findFeasibleBasis sx vec with
+			match PSplx.Explore.Init.findFeasibleBasis Objective.Bland PSplx_type.Standard sx vec with
 			| None ->
 				if sat then Test.fail nm "unsat" st
 				else Test.succeed st
@@ -436,4 +466,4 @@ let ts : Test.t
 		  Explore.ts;
 		  Init.ts
 		]
-  |> Test.suite Vec.V.name
+  |> Test.suite "PSplx"

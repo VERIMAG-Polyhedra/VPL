@@ -1,0 +1,9 @@
+(include_subdirs unqualified)
+
+(executable
+    (name       run_tests)
+    (modes      exe)
+    (libraries  vpl)
+    (modules (:standard \ demo_vplcoq PSplx_t ParamCoeff_t Intervalization_t))
+    (flags (:standard -w "-a"))
+)

@@ -1,0 +1,13 @@
+(rule
+    (target PolyLexer.ml)
+    (deps   PolyLexer.mll)
+    (action (chdir %{workspace_root}
+    (run %{bin:ocamllex} -q -o %{target} %{deps})))
+)
+
+(rule
+    (targets PolyParser.ml PolyParser.mli)
+    (deps    PolyParser.mly)
+    (action  (chdir %{workspace_root}
+    (run %{bin:ocamlyacc} %{deps})))
+)

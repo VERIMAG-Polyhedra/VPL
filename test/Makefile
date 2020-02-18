@@ -5,7 +5,7 @@ INCLUDES = $(TEST)
 USE_VPL =
 #-cflags '-I ../ocaml/_build/src' -lflags '-I ../ocaml/_build/src vpl.cmxa'
 
-OCB_FLAGS = -use-ocamlfind $(INCLUDES)
+OCB_FLAGS = -cflag -g -use-ocamlfind $(INCLUDES)
 # -package vpl
 
 OCB = ocamlbuild $(OCB_FLAGS)
@@ -18,6 +18,10 @@ clean:
 check:
 	$(OCB) Run_tests.byte
 	./_build/Run_tests.byte
+
+check_debug:
+	$(OCB) Run_tests.byte
+	./_build/Run_tests.byte -debug
 
 coq_update:
 	$(MAKE) -C ../coq DemoExtractTests.vo

@@ -1,0 +1,18 @@
+{0 Verified Polyhedra Library}
+
+The VPL is an Ocaml library allowing to compute with convex polyhedra.
+It provides standard operators -- certified in Coq -- to use this library as an abstract domain of polyhedra.
+
+{1 Datatypes}
+
+{{:Vpl__Scalar/index.html} Scalar values}
+
+{{:Vpl__Var/index.html} Variables}
+
+{{:Vpl__Vector/index.html} Vectors}
+
+{{:Vpl__Cstr/index.html} Constraints}
+
+{1 User interface}
+
+{{:Vpl__UserInterface/index.html} User interface}

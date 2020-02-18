@@ -1,3 +1,0 @@
-<**/*>: use_vpl
-true: package(zarith)
-true: package(unix)
