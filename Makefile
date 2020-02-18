@@ -31,6 +31,7 @@ install: vpl
 	dune install
 
 uninstall:
+	dune build @install
 	dune uninstall
 
 check: vpl
@@ -43,6 +44,8 @@ coq_update:
 coq_extract:
 	$(MAKE) -C coq/ cleanextract
 	$(MAKE) -j$(PROCMAX) -C coq/ OPT:="-opt" DemoExtract.vo
+	# Fixing a problem in extraction
+	sed -i 's/let skip =/let skip : cdac =/g' ocaml/extracted/DomainGCL.ml
 
 # targets for opam installation.
 coq_build:
