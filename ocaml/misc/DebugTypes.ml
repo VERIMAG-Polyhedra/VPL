@@ -82,7 +82,7 @@ module Debug (D : sig val name : string end) = struct
     let enable_all : unit -> unit
         = fun () ->
         enable levels
-        
+
 	let print_enable : unit -> unit
 	  = fun () -> print_on_fly := true
 

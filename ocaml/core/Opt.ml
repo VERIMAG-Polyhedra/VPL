@@ -252,7 +252,11 @@ let getAsg_and_value : Var.t -> (int * Cs.t) list -> (Vector.Symbolic.t * Scalar
         | None -> None
         end
 	| IsOk (Sup (sx,obj_value,_)) | IsOk (Finite (sx,obj_value,_)) ->
-        Debug.log DebugTypes.Detail (lazy "getAsg_and_value: epsilon problem bounded");
+        Debug.log DebugTypes.Detail (
+            lazy (Printf.sprintf "getAsg_and_value: epsilon problem bounded. epsilon = %s"
+            (Scalar.Rat.to_string obj_value)
+            )
+        );
 		let point = Vector.Symbolic.set (getAsg sx) horizon Scalar.Symbolic.z in
 		Some (point, Some obj_value)
 
