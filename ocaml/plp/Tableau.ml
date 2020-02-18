@@ -92,7 +92,7 @@ let get_width_column : t -> int -> int
 
 let get_width_column_vector : t -> int list
 	= fun m ->
-	List.init (nCols m) (get_width_column m)
+	Misc.init_list (nCols m) (get_width_column m)
 
 let pretty_print_row : int -> t -> int list -> string
 	= fun i_row tab l ->

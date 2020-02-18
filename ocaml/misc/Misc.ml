@@ -192,8 +192,13 @@ let string_equal : string -> string -> bool
 	String.compare s1 s2 = 0
 
 let init_list : int -> (int -> 'a) -> 'a list
-    = fun len f ->
-    List.init len f
+	= fun len f ->
+	let rec init_list_rec i acc =
+		if i = 0 then acc
+		else init_list_rec (i-1) (f (i-1) :: acc)
+	in
+  	if len < 0 then raise (Invalid_argument "init_list");
+	init_list_rec len []
 
 let subtract : 'a list -> 'a list -> 'a list
 	= fun l1 l2 ->

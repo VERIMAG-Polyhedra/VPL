@@ -40,96 +40,49 @@ If you find a bug or have any comment, feel free to contact us at verimag-polyhe
 
 2. __From sources__
 
-    The VPL can use a C++ parallel algorithm to minimize the representation of polyhedra.
-    This feature requires several dependencies.
-    If you are not interested in this feature or do not want to install dependencies, a "vanilla" VPL can be installed (see point 1. below).
+    1. _Dependencies_
 
-    1. __Without C++ dependencies__
-        1. _Dependencies_
+        The VPL requires the following packages:
 
-           The VPL requires the following packages:
+        * [ocaml](http://caml.inria.fr/ocaml/index.en.html)
+        __required version >= 4.08.0__
 
-           * [ocaml](http://caml.inria.fr/ocaml/index.en.html)
-              __required version >= 4.02.3__
+        * [zarith](https://forge.ocamlcore.org/projects/zarith)
+        _available in OPAM_
+        __tested with version 1.4.1 and 1.9.1__
 
-           * [zarith](https://forge.ocamlcore.org/projects/zarith)
-              _available in OPAM_
-              __tested with version 1.4.1__
+        * [dune](https://dune.readthedocs.io/en/stable/)
+        _available in OPAM_
+        __required version >= 2.1__
 
-        2. _Compiling the VPL_
+    2. _Compiling the VPL_
 
-           (Optional) To re-extract from the coq files, simply run at the root directory
+       (Optional) To re-extract from the coq files, simply run at the root directory
 
-                make coq_extract
+            make coq_extract
 
-           To compile the VPL, simply run from the root directory
+       To compile the VPL, simply run from the root directory
 
-                make vpl
+            make vpl
 
-           Tests can be run by typing
+       Tests can be run by typing
 
-                make check
+            make check
 
-           Finally, to install the library with ocamlfind, type
+       Finally, to install the library with ocamlfind, type
 
-                make install
+            make install
 
-           To uninstall the library from ocamlfind, run
+       To uninstall the library from ocamlfind, run
 
-                make uninstall
+            make uninstall
 
-    2. __With C++ dependencies__
-        1. _Dependencies_
+## Documentation
+Documentation can be built from sources with
 
-           The VPL requires the following packages:
+    make doc; make open_doc
 
-           * [ocaml](http://caml.inria.fr/ocaml/index.en.html)
-              __required version >= 4.02.3__
-
-           * [zarith](https://forge.ocamlcore.org/projects/zarith)
-              _available in OPAM_
-              __tested with version 1.4.1__
-
-           * [glpk](https://www.gnu.org/software/glpk/)
-              __required version >= 4.61__
-
-           * [eigen](http://eigen.tuxfamily.org/)
-              _debian package libeigen3-dev_
-              __tested with version 3.3.3__
-
-           * [flint](http://www.flintlib.org/)
-              _debian package libflint-dev_
-              __tested with version 2.5.2__
-
-           * [coq](https://coq.inria.fr/)
-              (mandatory only if you want to re-extract files from Coq)
-              _available in OPAM_
-              __required version 8.9__ (use older opam packages of coq-vpl for previous versions of coq)
-
-              __NB__ the `ocaml/src/extracted/` directory already contains extracted files from Coq.
-
-        2. _Compiling the VPL_
-
-           (Optional) To re-extract from the coq files, simply run at the root directory
-
-                make coq_extract
-
-           To compile the VPL, simply run from the root directory
-
-                make vpl_glpk
-
-           Tests can be run by typing
-
-                make check
-
-           Finally, to install the library with ocamlfind, type
-
-                make install
-
-           To uninstall the library from ocamlfind, run
-
-                make uninstall
-
+It contains the interface of main modules.
 
 ## Using the VPL
 
@@ -144,17 +97,13 @@ There are several ways to use the library.
 3. As an OCaml library
 (see opam package `vpl-core`)
 
-As an OCaml library, the entry point of the VPL is the module UserInterface.
-It contains a functor `Make` that must be provided with a polyhedral domain (from module `Domains`).
-Polyhedral domains can work over Q or Z, and there are three levels of certification, which gives 6 possible domains to instantiate `Make` with.
+As an OCaml library, the entry point of the VPL is the module UserInterface, which contains several version of the abstract domain.
+Polyhedral domains can work over Q or Z, and there are three levels of certification, which gives 6 possible domains.
 The level of certifications are:
 
-* _No certification_: no certificate is produced
+* _No certification_: no certificate is produced. This is implemented in modules _UncertifiedZ_ and _UncertifiedQ_.
 
-* _OCaml certification_: Each operator of the domain produces a _certificate_, ie a witness of its computation that can be checked.
+* _OCaml certification_: Each operator of the domain produces a _certificate_, ie a witness of its computation that can be checked. This is implemented in modules _OCamlCertifiedZ_ and _OCamlCertifiedQ_.  
 
-* _Coq certification_: In addition to guarantees offered by OCaml certification, certificates are here extracted from Coq proven types.
 
-```
-module domain = Vpl.UserInterface.Make(Vpl.Domains.CstrQ)
-```
+* _Coq certification_: In addition to guarantees offered by OCaml certification, certificates are here extracted from Coq proven types. This is implemented in modules _CoqCertifiedZ_ and _CoqCertifiedQ_.  

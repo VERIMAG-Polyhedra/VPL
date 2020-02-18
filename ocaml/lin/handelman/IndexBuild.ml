@@ -23,7 +23,7 @@ module IndexList = struct
 	(** [get_min dim il] returns an index [ind] such that [ind(i)] = min_j il(j)(i). *)
 	let get_min : int -> t -> Index.Int.t
 		= fun dim il ->
-		List.init dim (fun i ->
+		Misc.init_list dim (fun i ->
 			Misc.min Stdlib.compare (List.map (fun j -> Index.Int.get j i) il)
 		)
 		|> Index.Int.mk
@@ -37,7 +37,7 @@ module IndexList = struct
 			if List.length il <= 1
 			then (ind, il, n_pred)
 			else
-			 	let l = List.init dim (fun i ->
+			 	let l = Misc.init_list dim (fun i ->
 					let ind' = Index.Int.incr ind i in (* Index incremented at cell i *)
 					let il' = List.filter (Index.Int.le ind') il in
 					let n_pred = List.length il' in
@@ -71,7 +71,7 @@ module IndexList = struct
 		Misc.fold_left_i (fun i res v ->
                 if v <> 0
                 then let id = Index.Int.set init i 1 in
-                (List.init v (fun _ -> id)) @ res
+                (Misc.init_list v (fun _ -> id)) @ res
                 else res
             ) [] ind
 
