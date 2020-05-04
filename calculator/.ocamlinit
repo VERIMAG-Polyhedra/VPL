@@ -1,2 +1,2 @@
 #use "topfind";;
-#require "vpl";;
+#require "vpl-core";;

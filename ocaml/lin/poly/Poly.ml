@@ -173,7 +173,7 @@ module Make (Vec: Vector.Type) = struct
 			List.fold_left (fun res (v,e) ->
 				res
 				@
-				List.init e	(fun _ -> v)
+				Misc.init_list e	(fun _ -> v)
             ) [] m
 
         let change_variable : (t -> t option) -> t -> t
@@ -527,7 +527,7 @@ module Make (Vec: Vector.Type) = struct
 
 	let pow : t -> int -> t
 		= fun p i ->
-		List.init i (fun _ -> p) |> prod
+		Misc.init_list i (fun _ -> p) |> prod
 
 	let equal : t -> t -> bool
 		= fun p1 p2 ->

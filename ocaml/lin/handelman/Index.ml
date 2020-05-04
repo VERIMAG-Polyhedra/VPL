@@ -30,7 +30,7 @@ module Make (Coeff : Scalar) = struct
 	(** [init n] returns an index of length [n] filled with zeros. *)
 	let init : int -> t
 		= fun len ->
-		List.init len (fun _ -> Coeff.z)
+		Misc.init_list len (fun _ -> Coeff.z)
 
 	(** [len ind] returns the length of index [ind]. *)
 	let len : t -> int
@@ -56,7 +56,7 @@ module Make (Coeff : Scalar) = struct
 	(** [unitary i len] returns an index of length [len], whose value is 1 at index [i] and 0 otherwise. *)
 	let unitary : int -> int -> t
 		= fun i len ->
-		List.init len (fun j ->
+		Misc.init_list len (fun j ->
 			if i = j then Coeff.u else Coeff.z
 		)
 

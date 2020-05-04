@@ -32,7 +32,7 @@ let to_string: (Var.t -> string) -> 'c t -> string
 	= fun varPr p ->
 	if EqSet.isTop p.eqs && IneqSet.is_top p.ineqs
 	then "top"
-	else Printf.sprintf "%s%s%s"
+	else Printf.sprintf "%s%s\nPoint: %s"
         (EqSet.to_string varPr p.eqs)
         (IneqSet.to_string varPr p.ineqs)
         (match p.point with
@@ -65,16 +65,26 @@ let to_string_ext_raw: 'c Factory.t -> 'c t -> string
 
 let get_point : 'c t -> Vector.Symbolic.t
     = fun p ->
+	Debug.log DebugTypes.Title (lazy (Printf.sprintf
+		"Getting point of polyhedron %s"
+		(to_string_raw p)));
     match p.point with
-        | Some point -> point
+        | Some point ->
+			Debug.exec point DebugTypes.Normal (lazy (Printf.sprintf
+			"Point already computed: %s"
+			(Vector.Symbolic.to_string Var.to_string point)))
         | None -> begin
             let ineqs = List.map Cons.get_c p.ineqs.ineqs in
             let horizon = Cs.getVars ineqs |> Var.horizon in
             match Splx.getPointInside_cone horizon ineqs with
-            | Some point -> point
+            | Some point -> Debug.exec point DebugTypes.Normal (lazy (Printf.sprintf
+			"Computed by Splx.getPointInside_code: %s"
+			(Vector.Symbolic.to_string Var.to_string point)))
             | None -> match Opt.getAsg horizon (List.mapi (fun i cstr -> i, cstr) ineqs) with
                 | None -> failwith "Pol.get_point: Unexpected empty polyhedron"
-                | Some point -> point
+                | Some point -> Debug.exec point DebugTypes.Normal (lazy (Printf.sprintf
+				"Computed by Opt.getAsg: %s"
+				(Vector.Symbolic.to_string Var.to_string point)))
             end
 
 type 'c rel_t =

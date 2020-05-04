@@ -7,7 +7,7 @@ module Float = struct
 
 	let name = "Float"
 
-	let delta = 0.00000001
+	let delta = 0.00000000001
 
 	let to_string x =
 		if x < 0.001
