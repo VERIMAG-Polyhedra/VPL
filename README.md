@@ -158,3 +158,11 @@ The level of certifications are:
 ```
 module domain = Vpl.UserInterface.Make(Vpl.Domains.CstrQ)
 ```
+
+## Documentation
+
+1. Online: [link](https://marechalalex.github.io/projects/vpl/vpl-core/)
+
+2. From sources: `make doc`
+
+The html documentation is then generated in the folder `_build/_doc/_html/index.html`
