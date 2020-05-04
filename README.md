@@ -105,5 +105,15 @@ The level of certifications are:
 
 * _OCaml certification_: Each operator of the domain produces a _certificate_, ie a witness of its computation that can be checked. This is implemented in modules _OCamlCertifiedZ_ and _OCamlCertifiedQ_.  
 
+3. As an OCaml library
+(see opam package `vpl-core`)
 
 * _Coq certification_: In addition to guarantees offered by OCaml certification, certificates are here extracted from Coq proven types. This is implemented in modules _CoqCertifiedZ_ and _CoqCertifiedQ_.  
+
+## Documentation
+
+1. Online: [link](https://marechalalex.github.io/projects/vpl/vpl-core/)
+
+2. From sources: `make doc`
+
+The html documentation is then generated in the folder `_build/_doc/_html/index.html`
