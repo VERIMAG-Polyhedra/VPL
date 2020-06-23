@@ -112,7 +112,7 @@ The level of certifications are:
 
 ## Documentation
 
-1. Online: [link](https://marechalalex.github.io/projects/vpl/vpl-core/)
+1. Online: [link](https://amarechal.gitlab.io/home/projects/vpl/vpl-core/)
 
 2. From sources: `make doc`
 
