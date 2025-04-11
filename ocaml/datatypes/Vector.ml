@@ -267,8 +267,8 @@ module Make (Coeff : Scalar.Type) = struct
 		= fun f vec ->
         getVars [vec]
         |> Var.Set.elements
-        |> List.fast_sort (fun v1 v2 -> Var.cmp v2 v1)
-		|> List.fold_left (
+	|> List.fast_sort Var.cmp
+	|> List.fold_left (
             fun vec' var -> rename var (f var) vec'
             ) vec
 
